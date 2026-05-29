@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evaluation that matches the task — BrewSLM Academy</title>
+    <meta name="description" content="Evaluation turns 'seems better' into a defensible number. This lesson covers choosing a metric that fits the task shape, computing it on the gold set, baselines and gates, and reporting honestly — including where the model loses." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/evaluation-fundamentals.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Evaluation that matches the task — BrewSLM Academy" />
+    <meta property="og:description" content="Evaluation turns 'seems better' into a defensible number. This lesson covers choosing a metric that fits the task shape, computing it on the gold set, baselines and gates, and reporting honestly — including where the model loses." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/evaluation-fundamentals.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Evaluation that matches the task — BrewSLM Academy" />
+    <meta name="twitter:description" content="Evaluation turns 'seems better' into a defensible number. This lesson covers choosing a metric that fits the task shape, computing it on the gold set, baselines and gates, and reporting honestly — including where the model loses." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Evaluation that matches the task",
+        "description": "Evaluation turns 'seems better' into a defensible number. This lesson covers choosing a metric that fits the task shape, computing it on the gold set, baselines and gates, and reporting honestly — including where the model loses.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/evaluation-fundamentals.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["evaluation metric", "baseline", "quality gate", "accuracy and F1", "honest reporting"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Evaluation that matches the task", "item": "https://brewslm.com/academy/sft-fundamentals/evaluation-fundamentals.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Evaluation that matches the task"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "Why report a fine-tuned model's score next to the base model's?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Because a number alone isn't evidence \u2014 the lift over baseline is what training bought"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Recall measures\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Of what it should have found, how much it caught"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is a quality gate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A pass threshold committed to before seeing results"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "The most important reporting principle is to\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Surface where the model loses, not just where it wins"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/evaluation-fundamentals">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">SFT fundamentals</a></li><li>Evaluation fundamentals</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 18</span>
+          <h1>Evaluation that matches the task</h1>
+          <p class="lesson-header__outcome">After this lesson you can design an evaluation for your task: pick a shape-appropriate metric, run it on the gold set against a baseline, set a pass gate, and report results honestly.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="overfitting-and-loss-curves.html">Overfitting, underfitting, and reading a loss curve</a></span>
+          </div>
+        </header>
+
+        <p>Training produces a model; evaluation tells you whether it's any good. This capstone of Track 1 ties the whole loop together: a fine-tune isn't finished when the loss flattens — it's finished when a metric on the gold set clears a bar you set in advance.</p>
+
+        <h2>Pick a metric that fits the shape</h2>
+        <p>From the task-shapes lesson: the metric must match the shape, or the number is meaningless. Quick map:</p>
+        <ul>
+          <li><strong>Classification</strong> → accuracy, and per-class <strong>precision / recall / F1</strong> (plus a confusion matrix to see <em>which</em> classes confuse).</li>
+          <li><strong>Extraction / NER</strong> → span-set precision/recall/F1 on exact <code>(type, span)</code> matches.</li>
+          <li><strong>QA</strong> → exact-match / F1 against references, or an LLM judge for open answers.</li>
+          <li><strong>Summarization</strong> → ROUGE for overlap <em>plus</em> a faithfulness check.</li>
+          <li><strong>Structured output</strong> → valid-format rate + per-field correctness.</li>
+        </ul>
+        <p>A word on precision vs recall, since they recur everywhere: <strong>precision</strong> is "of what the model flagged, how much was right"; <strong>recall</strong> is "of what it should have found, how much it caught." <strong>F1</strong> is their harmonic mean — one number when you care about both. Which matters more is a product decision (a PII detector usually prizes recall; a spam filter, precision).</p>
+
+        <h2>Always compare to a baseline</h2>
+        <p>A number alone is not evidence. <strong>"Is it better than what?"</strong> Evaluate the <em>base</em> model (before fine-tuning) on the same gold set, and report the fine-tuned model's score next to it. The lift over baseline is the thing your training actually bought. Other useful baselines: a simple prompt on a larger model, or the previous deployed version.</p>
+
+        <h2>Gates: decide the bar in advance</h2>
+        <p>A <strong>quality gate</strong> is a threshold you commit to <em>before</em> seeing the result ("ship only if gold-set F1 ≥ 0.85 and no safety regressions"). Setting it in advance stops you from rationalizing a mediocre model after the fact. Gates turn evaluation from a vibe into a decision rule.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Honest reporting (the rule that matters most)</p>
+          <p>Report where the model <strong>loses</strong>, not just where it wins. Show the failing class, the slice with low recall, the examples it gets wrong. An evaluation that only surfaces good news is worse than none — it builds false confidence. The point of measuring is to find what to fix next.</p>
+        </div>
+
+        <h2>Evaluate on the gold set, then iterate</h2>
+        <p>Run the metric on the held-out <strong>gold set</strong> (never the training data), read the failures, and feed them back into the data-centric loop (Track 0, Lesson 9): the classes and slices where the model loses tell you exactly which examples to add or fix before the next run.</p>
+        <p>That completes Track 1. You now understand <em>why and what</em> for every part of supervised fine-tuning — objectives, data, the loss mask and chat templates, the training loop and its loss, learning rate and batch, LoRA and memory, and how to read and evaluate the result. In <strong>Track 2</strong> you'll do all of it <em>by hand</em> in PyTorch and Transformers, turning this understanding into a working fine-tune.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Evaluation metric</dt><dd>A shape-appropriate measure of quality (accuracy/F1, span-set F1, ROUGE + faithfulness, etc.).</dd>
+            <dt>Precision / recall / F1</dt><dd>Of flagged, how much right / of what should be found, how much caught / their harmonic mean.</dd>
+            <dt>Baseline</dt><dd>A reference score (base model, prompt, or previous version) the fine-tune is compared against.</dd>
+            <dt>Quality gate</dt><dd>A pass threshold set in advance that a model must clear to ship.</dd>
+            <dt>Honest reporting</dt><dd>Surfacing where the model loses, not only where it wins, to guide the next iteration.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "Why report a fine-tuned model's score next to the base model's?",
+    "options": [
+      "To use more compute",
+      "Because a number alone isn't evidence \u2014 the lift over baseline is what training bought",
+      "To change the metric",
+      "Baselines are required by AdamW"
+    ],
+    "answer": 1,
+    "explanation": "'Better than what?' \u2014 the comparison to a baseline is what makes the result meaningful."
+  },
+  {
+    "q": "Recall measures\u2026",
+    "options": [
+      "Of what the model flagged, how much was right",
+      "Of what it should have found, how much it caught",
+      "The training speed",
+      "The number of parameters"
+    ],
+    "answer": 1,
+    "explanation": "Recall = caught / should-have-found; precision = right / flagged; F1 combines them."
+  },
+  {
+    "q": "What is a quality gate?",
+    "options": [
+      "A firewall rule",
+      "A pass threshold committed to before seeing results",
+      "A type of LoRA",
+      "The validation set"
+    ],
+    "answer": 1,
+    "explanation": "Setting the bar in advance prevents rationalizing a mediocre model after the fact."
+  },
+  {
+    "q": "The most important reporting principle is to\u2026",
+    "options": [
+      "Only show the best metric",
+      "Surface where the model loses, not just where it wins",
+      "Hide the baseline",
+      "Report perplexity only"
+    ],
+    "answer": 1,
+    "explanation": "Honest reporting reveals failures so you know what to fix \u2014 the point of evaluating."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="overfitting-and-loss-curves.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Overfitting, underfitting, and reading a loss curve</span></a>
+          <a href="../index.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next · Track 2 publishing soon</span><span class="lesson-nav__title">Track 2: Hands-on — back to the hub</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Learning rate, schedules, warmup, epochs vs steps — BrewSLM Academy</title>
+    <meta name="description" content="The learning rate is the most important knob in fine-tuning. This lesson covers sensible LR ranges, warmup, decay schedules (cosine), and the difference between epochs and steps — plus how to read when the LR is wrong." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/learning-rate-and-schedules.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Learning rate, schedules, warmup, epochs vs steps — BrewSLM Academy" />
+    <meta property="og:description" content="The learning rate is the most important knob in fine-tuning. This lesson covers sensible LR ranges, warmup, decay schedules (cosine), and the difference between epochs and steps — plus how to read when the LR is wrong." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/learning-rate-and-schedules.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Learning rate, schedules, warmup, epochs vs steps — BrewSLM Academy" />
+    <meta name="twitter:description" content="The learning rate is the most important knob in fine-tuning. This lesson covers sensible LR ranges, warmup, decay schedules (cosine), and the difference between epochs and steps — plus how to read when the LR is wrong." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Learning rate, schedules, warmup, epochs vs steps",
+        "description": "The learning rate is the most important knob in fine-tuning. This lesson covers sensible LR ranges, warmup, decay schedules (cosine), and the difference between epochs and steps — plus how to read when the LR is wrong.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/learning-rate-and-schedules.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["learning rate", "warmup", "cosine schedule", "epochs vs steps", "LR diagnosis"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Learning rate, schedules, warmup, epochs vs steps", "item": "https://brewslm.com/academy/sft-fundamentals/learning-rate-and-schedules.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Learning rate, schedules, warmup, epochs vs steps"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "Fine-tuning learning rates are typically\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Small (e.g. ~1e-5\u20135e-5 full, ~1e-4\u20133e-4 LoRA)"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is warmup?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Ramping the LR from 0 up to target over the first steps"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why decay the learning rate over training?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Big steps early to move fast, small steps late to settle precisely"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do epochs and steps relate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "steps_per_epoch = examples / effective_batch_size"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/learning-rate-and-schedules">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">SFT fundamentals</a></li><li>Learning rate & schedules</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 11</span>
+          <h1>Learning rate, schedules, warmup, epochs vs steps</h1>
+          <p class="lesson-header__outcome">After this lesson you can choose a sensible learning rate for fine-tuning, explain warmup and a decay schedule, and reason in both epochs and steps.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="cross-entropy-loss.html">Cross-entropy loss for token prediction</a></span>
+          </div>
+        </header>
+
+        <p>The learning rate set how big a step gradient descent takes. In fine-tuning it is the knob you'll touch most and the one most able to make or break a run. This lesson gives you defaults that work and the intuition to adjust them.</p>
+
+        <h2>Sensible ranges</h2>
+        <p>Fine-tuning uses <em>small</em> learning rates, because you're nudging an already-capable model, not training from scratch. Typical ranges: around <code>1e-5</code> to <code>5e-5</code> for full fine-tuning, and a bit higher — roughly <code>1e-4</code> to <code>3e-4</code> — for LoRA (which trains far fewer parameters and tolerates larger steps). These are starting points, not laws; the right value depends on your data and model.</p>
+        <div class="callout callout--warning">
+          <p class="callout__label">Reading a wrong LR</p>
+          <p><strong>Too high</strong>: loss spikes, oscillates wildly, or goes to <code>NaN</code>. <strong>Too low</strong>: loss descends painfully slowly or barely at all. When in doubt, change the LR by factors of 3–10 (not 10%) to find the right order of magnitude first.</p>
+        </div>
+
+        <h2>Warmup</h2>
+        <p>Starting at the full learning rate on step one can destabilize a model whose optimizer statistics are still cold. <strong>Warmup</strong> ramps the LR from 0 up to its target over the first small fraction of training (often a few percent of steps), then hands off to the main schedule. It's a cheap insurance policy against early divergence; a warmup ratio like <code>0.03</code> is common.</p>
+
+        <h2>The decay schedule</h2>
+        <p>After warmup, the LR typically <strong>decays</strong> over training so the model takes big steps early (to move fast) and small steps late (to settle precisely). The <strong>cosine schedule</strong> — a smooth decay following a cosine curve down toward zero — is the common default. Linear decay is also fine. The shape matters less than having <em>some</em> decay: ending at a high LR tends to leave the model bouncing instead of converging.</p>
+        <figure class="diagram">
+          <svg viewBox="0 0 620 150" role="img" aria-label="A learning-rate schedule: a short linear warmup ramp up, then a cosine decay down toward zero.">
+            <line x1="50" y1="120" x2="590" y2="120" stroke="#d4d4d4"></line>
+            <line x1="50" y1="120" x2="50" y2="20" stroke="#d4d4d4"></line>
+            <text x="48" y="18" text-anchor="end" font-family="Geist, sans-serif" font-size="11" fill="#737373">LR</text>
+            <text x="590" y="138" text-anchor="end" font-family="Geist, sans-serif" font-size="11" fill="#737373">step</text>
+            <path d="M50,120 L110,35 C250,35 360,118 580,118" fill="none" stroke="#171717" stroke-width="1.5"></path>
+            <text x="95" y="20" font-family="Geist, sans-serif" font-size="10" fill="#a3a3a3">warmup</text>
+            <text x="360" y="60" font-family="Geist, sans-serif" font-size="10" fill="#a3a3a3">cosine decay</text>
+          </svg>
+          <figcaption>Warmup ramps the LR up over the first few percent of steps; a cosine schedule then decays it toward zero.</figcaption>
+        </figure>
+
+        <h2>Epochs vs steps</h2>
+        <p>Two ways to count training length. An <strong>epoch</strong> is one full pass over the training data; a <strong>step</strong> is one parameter update (one minibatch). They relate by <code>steps_per_epoch = examples / effective_batch_size</code>. Fine-tuning usually runs a small number of epochs (often 1–3) — too many and the model starts memorizing. Schedules are usually defined over <em>total steps</em>, so the LR decays to near-zero exactly as training ends. Knowing both lets you translate "train for 3 epochs" into the step count your scheduler needs.</p>
+        <p>Closely tied to the learning rate is how many examples each step sees — the batch size and gradient accumulation — which is next.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Learning rate</dt><dd>The step-size multiplier; the most important fine-tuning knob (small values: ~1e-5–5e-5 full, ~1e-4–3e-4 LoRA).</dd>
+            <dt>Warmup</dt><dd>Ramping the LR from 0 to target over the first few percent of steps to avoid early divergence.</dd>
+            <dt>Cosine schedule</dt><dd>A smooth LR decay toward zero over training; big steps early, small steps late.</dd>
+            <dt>Epoch</dt><dd>One full pass over the training data.</dd>
+            <dt>Step</dt><dd>One parameter update (one minibatch); schedules are usually defined over total steps.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "Fine-tuning learning rates are typically\u2026",
+    "options": [
+      "Large, like 0.1",
+      "Small (e.g. ~1e-5\u20135e-5 full, ~1e-4\u20133e-4 LoRA)",
+      "Always exactly 1.0",
+      "Zero"
+    ],
+    "answer": 1,
+    "explanation": "You nudge an already-capable model, so LRs are small; LoRA tolerates somewhat larger ones."
+  },
+  {
+    "q": "What is warmup?",
+    "options": [
+      "Pre-tokenizing the data",
+      "Ramping the LR from 0 up to target over the first steps",
+      "Running validation first",
+      "Loading the model"
+    ],
+    "answer": 1,
+    "explanation": "Warmup avoids early instability by ramping the LR up before the main schedule."
+  },
+  {
+    "q": "Why decay the learning rate over training?",
+    "options": [
+      "To save memory",
+      "Big steps early to move fast, small steps late to settle precisely",
+      "To change the loss",
+      "To enlarge batches"
+    ],
+    "answer": 1,
+    "explanation": "A decay (e.g. cosine) lets the model converge instead of bouncing at a high LR near the end."
+  },
+  {
+    "q": "How do epochs and steps relate?",
+    "options": [
+      "They are identical",
+      "steps_per_epoch = examples / effective_batch_size",
+      "An epoch is one step",
+      "Steps only matter for LoRA"
+    ],
+    "answer": 1,
+    "explanation": "A step is one update; an epoch is a full pass = examples / effective batch size steps."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="cross-entropy-loss.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Cross-entropy loss for token prediction</span></a>
+          <a href="batch-size-and-accumulation.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Batch size, gradient accumulation, and the effective batch</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Data quality I: dedup, balance, leakage, and splits — BrewSLM Academy</title>
+    <meta name="description" content="Most of a fine-tune's quality comes from data, not hyperparameters. This lesson covers deduplication, class balance, the train/validation/test split, and the silent killer — data leakage between train and test." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/data-quality-splits.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Data quality I: dedup, balance, leakage, and splits — BrewSLM Academy" />
+    <meta property="og:description" content="Most of a fine-tune's quality comes from data, not hyperparameters. This lesson covers deduplication, class balance, the train/validation/test split, and the silent killer — data leakage between train and test." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/data-quality-splits.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Data quality I: dedup, balance, leakage, and splits — BrewSLM Academy" />
+    <meta name="twitter:description" content="Most of a fine-tune's quality comes from data, not hyperparameters. This lesson covers deduplication, class balance, the train/validation/test split, and the silent killer — data leakage between train and test." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Data quality I: dedup, balance, leakage, and splits",
+        "description": "Most of a fine-tune's quality comes from data, not hyperparameters. This lesson covers deduplication, class balance, the train/validation/test split, and the silent killer — data leakage between train and test.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/data-quality-splits.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["deduplication", "class balance", "train/validation/test split", "data leakage", "representativeness"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Data quality I: dedup, balance, leakage, and splits", "item": "https://brewslm.com/academy/sft-fundamentals/data-quality-splits.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Data quality I: dedup, balance, leakage, and splits"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What usually drives more quality \u2014 better data or tuned hyperparameters?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Better data"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why deduplicate across splits, not just within train?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "So a duplicate doesn't land in both train and test, inflating eval"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the validation set for?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Watching overfitting and picking the best checkpoint during training"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "You split a multi-row-per-document dataset by row. What's the risk?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Rows from the same document straddle train/test \u2014 leakage"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/data-quality-splits">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">SFT fundamentals</a></li><li>Data quality I: dedup, balance, leakage</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 7</span>
+          <h1>Data quality I: dedup, balance, leakage, and splits</h1>
+          <p class="lesson-header__outcome">After this lesson you can prepare a clean SFT dataset: deduplicate, balance classes, split into train/validation/test correctly, and prevent leakage that would make your metrics lie.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="tokenization-deep-dive.html">Tokenization in practice: padding, truncation, packing</a></span>
+          </div>
+        </header>
+
+        <p>If you remember one thing from this track, make it this: <strong>data quality beats hyperparameter tuning, almost every time.</strong> A clean, representative dataset on default settings usually outperforms a messy dataset with perfectly tuned knobs. This lesson is the unglamorous, decisive work.</p>
+
+        <h2>Deduplication</h2>
+        <p>Duplicate or near-duplicate examples skew training toward whatever is repeated and inflate your evaluation if the duplicate lands in both train and test. <strong>Deduplicate</strong> exact and near-exact rows before anything else. It's cheap and it routinely removes a surprising fraction of scraped or merged datasets.</p>
+
+        <h2>Balance</h2>
+        <p>For classification especially, <strong>class balance</strong> matters. If 95% of your examples are one label, the model can score 95% by always guessing that label and learn nothing useful. Aim for a reasonable balance, or be deliberate about it (and measure per-class metrics, not just overall accuracy). Imbalance isn't always wrong — but unexamined imbalance is a trap.</p>
+
+        <h2>The train / validation / test split</h2>
+        <p>Partition your data into three disjoint sets:</p>
+        <ul>
+          <li><strong>Train</strong> — what the model learns from.</li>
+          <li><strong>Validation</strong> — checked <em>during</em> training to watch for overfitting and pick the best checkpoint; the model never trains on it.</li>
+          <li><strong>Test</strong> — touched only at the very end, to estimate real-world performance once.</li>
+        </ul>
+        <p>The validation and test sets exist so you measure <em>generalization</em>, not memorization. (The most trusted slice of all — the curated gold set — gets its own lesson next.)</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">The silent killer: leakage</p>
+          <p><strong>Data leakage</strong> is when information from your test set sneaks into training — the same example (or a near-duplicate, or a row from the same source document) appears in both. The result: gorgeous eval numbers that evaporate in production, because the model was tested on what it had already seen. Deduplicate <em>across</em> splits, and split by the right unit (e.g. by document or user, not by row) so related rows can't straddle the boundary.</p>
+        </div>
+
+        <h2>Representativeness</h2>
+        <p>Finally, your data should look like the inputs the model will actually face. A dataset of tidy, well-formed examples produces a model that's great on tidy inputs and brittle on the messy reality. Include the hard cases, the edge cases, and the formats real users will send. Representativeness is what makes the metric you compute later actually predict production behavior.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Clean data, honest splits, no leakage. Get these right and ordinary training settings will carry you a long way; get them wrong and no amount of tuning will save the run.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Deduplication</dt><dd>Removing exact/near-duplicate examples before training and across splits.</dd>
+            <dt>Class balance</dt><dd>Avoiding one label dominating, so accuracy reflects real skill; measure per-class metrics.</dd>
+            <dt>Train/validation/test split</dt><dd>Disjoint sets for learning, in-training checking, and a final one-time estimate.</dd>
+            <dt>Data leakage</dt><dd>Test information appearing in training (duplicates, same-source rows), inflating metrics dishonestly.</dd>
+            <dt>Representativeness</dt><dd>Training data resembling the real inputs the model will face, including hard/edge cases.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What usually drives more quality \u2014 better data or tuned hyperparameters?",
+    "options": [
+      "Hyperparameters",
+      "Better data",
+      "They are equal",
+      "Neither"
+    ],
+    "answer": 1,
+    "explanation": "Model-building is data-centric; clean, representative data outperforms tuning a messy dataset."
+  },
+  {
+    "q": "Why deduplicate across splits, not just within train?",
+    "options": [
+      "To save disk",
+      "So a duplicate doesn't land in both train and test, inflating eval",
+      "To change the tokenizer",
+      "It isn't necessary"
+    ],
+    "answer": 1,
+    "explanation": "Cross-split duplicates are leakage \u2014 the model is tested on what it trained on."
+  },
+  {
+    "q": "What is the validation set for?",
+    "options": [
+      "Final one-time reporting",
+      "Watching overfitting and picking the best checkpoint during training",
+      "Training the model",
+      "Padding batches"
+    ],
+    "answer": 1,
+    "explanation": "Validation is checked during training (never trained on) to monitor generalization and select checkpoints."
+  },
+  {
+    "q": "You split a multi-row-per-document dataset by row. What's the risk?",
+    "options": [
+      "Slower training",
+      "Rows from the same document straddle train/test \u2014 leakage",
+      "Smaller vocabulary",
+      "No risk"
+    ],
+    "answer": 1,
+    "explanation": "Split by the right unit (document/user); otherwise related rows leak across the boundary."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="tokenization-deep-dive.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Tokenization in practice: padding, truncation, packing</span></a>
+          <a href="gold-sets.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Data quality II: gold sets</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

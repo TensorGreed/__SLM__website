@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Data quality II: gold sets — BrewSLM Academy</title>
+    <meta name="description" content="A gold set is a small, curated, never-trained-on set of examples with known-correct answers — your single source of truth for whether a model is good enough. This lesson explains how to build one and why it anchors every decision." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/gold-sets.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Data quality II: gold sets — BrewSLM Academy" />
+    <meta property="og:description" content="A gold set is a small, curated, never-trained-on set of examples with known-correct answers — your single source of truth for whether a model is good enough. This lesson explains how to build one and why it anchors every decision." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/gold-sets.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Data quality II: gold sets — BrewSLM Academy" />
+    <meta name="twitter:description" content="A gold set is a small, curated, never-trained-on set of examples with known-correct answers — your single source of truth for whether a model is good enough. This lesson explains how to build one and why it anchors every decision." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Data quality II: gold sets",
+        "description": "A gold set is a small, curated, never-trained-on set of examples with known-correct answers — your single source of truth for whether a model is good enough. This lesson explains how to build one and why it anchors every decision.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/gold-sets.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT8M", "isAccessibleForFree": true,
+        "teaches": ["gold set", "ground truth", "held-out evaluation", "coverage", "label quality"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Data quality II: gold sets", "item": "https://brewslm.com/academy/sft-fundamentals/gold-sets.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Data quality II: gold sets"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What defines a gold set?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A curated, verified set the model never trains on, used to measure quality"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why must the gold set stay fixed across experiments?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "So results are comparable run-to-run"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "100 impeccable gold examples vs 1,000 sloppy ones \u2014 which is better?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "100 impeccable"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the cardinal rule of a gold set?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Never train on it"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/gold-sets">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">SFT fundamentals</a></li><li>Data quality II: gold sets</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 8</span>
+          <h1>Data quality II: gold sets</h1>
+          <p class="lesson-header__outcome">After this lesson you can explain what a gold set is, how it differs from the test split, how to build a trustworthy one, and why every quality decision should be answered against it.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~8 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="data-quality-splits.html">Data quality I: dedup, balance, leakage, and splits</a></span>
+          </div>
+        </header>
+
+        <p>The previous lesson split your data so you could measure generalization. This lesson is about the most important measurement artifact of all: the <strong>gold set</strong>. If your project has one thing that is beyond reproach, it should be this.</p>
+
+        <h2>What a gold set is</h2>
+        <p>A <strong>gold set</strong> is a small, carefully curated collection of examples with <strong>known-correct answers</strong> (ground truth), that the model <strong>never trains on</strong>. Its only job is to answer the question "is the model good — and is this version better than the last?" Where a test split is often sampled automatically, a gold set is deliberately constructed and trusted: every label checked, every edge case you care about deliberately included.</p>
+
+        <h2>Why it's your north star</h2>
+        <p>Every meaningful decision in a fine-tuning project is answered against the gold set: Did this data change help? Is checkpoint B better than A? Is it good enough to ship? Is the larger model worth its cost? Without a fixed, trustworthy gold set, "better" becomes a vibe. With one, it becomes a number you can defend.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>The gold set is the project's source of truth. Keep it fixed across experiments so results are comparable, keep it clean so the numbers mean something, and <strong>never, ever train on it</strong> — the moment you do, your metrics become fiction.</p>
+        </div>
+
+        <h2>Building a trustworthy one</h2>
+        <ul>
+          <li><strong>Coverage</strong> — include the common cases <em>and</em> the hard/edge cases that matter; the gold set should probe where the model is likely to fail, not just where it's easy.</li>
+          <li><strong>Label quality</strong> — verify every answer; a gold set with wrong labels gives confidently wrong guidance. It's better to have 100 impeccable examples than 1,000 sloppy ones.</li>
+          <li><strong>Size</strong> — big enough that the metric is stable run-to-run, small enough to curate by hand and inspect failures individually. A few dozen to a few hundred is common for a narrow task.</li>
+          <li><strong>Isolation</strong> — store it separately and guard it from ever entering training (and from leakage via near-duplicates).</li>
+        </ul>
+
+        <h2>Gold set vs test split</h2>
+        <p>They overlap in spirit but differ in trust and use. The <strong>test split</strong> is a held-out sample for a final, broad estimate. The <strong>gold set</strong> is a hand-curated instrument you consult repeatedly to steer the project — the thing you stare at when deciding what to fix next. In practice the gold set is where data-centric iteration (Track 0, Lesson 9) gets its signal: you read the gold-set failures, fix the training data accordingly, and retrain.</p>
+        <p>With clean data and a trustworthy gold set in hand, you're ready to actually train. The next lessons open up the training loop, the loss, and the knobs that govern it.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Gold set</dt><dd>A small, curated, never-trained-on set with verified answers; the source of truth for quality.</dd>
+            <dt>Ground truth</dt><dd>The known-correct answer for an example.</dd>
+            <dt>Held-out evaluation</dt><dd>Measuring on data the model didn't train on, to estimate generalization.</dd>
+            <dt>Coverage</dt><dd>Including common and hard/edge cases so the gold set probes real weaknesses.</dd>
+            <dt>Label quality</dt><dd>The correctness of the gold answers; wrong labels give confidently wrong guidance.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What defines a gold set?",
+    "options": [
+      "The largest split",
+      "A curated, verified set the model never trains on, used to measure quality",
+      "The training data",
+      "The validation set used to pick checkpoints"
+    ],
+    "answer": 1,
+    "explanation": "A gold set is hand-curated ground truth, held out from training, used as the source of truth for quality."
+  },
+  {
+    "q": "Why must the gold set stay fixed across experiments?",
+    "options": [
+      "To save space",
+      "So results are comparable run-to-run",
+      "To speed up training",
+      "Because it is small"
+    ],
+    "answer": 1,
+    "explanation": "A stable gold set makes 'is this version better?' a fair, comparable question."
+  },
+  {
+    "q": "100 impeccable gold examples vs 1,000 sloppy ones \u2014 which is better?",
+    "options": [
+      "1,000 sloppy",
+      "100 impeccable",
+      "They're equal",
+      "Neither is usable"
+    ],
+    "answer": 1,
+    "explanation": "Label quality is paramount; wrong gold labels give confidently wrong guidance."
+  },
+  {
+    "q": "What is the cardinal rule of a gold set?",
+    "options": [
+      "Train on it last",
+      "Never train on it",
+      "Keep it as large as the train set",
+      "Regenerate it every run"
+    ],
+    "answer": 1,
+    "explanation": "Training on the gold set turns your metrics into fiction (memorization)."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="data-quality-splits.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Data quality I: dedup, balance, leakage, and splits</span></a>
+          <a href="the-training-loop.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">The training loop, step by step</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

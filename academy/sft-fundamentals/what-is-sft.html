@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>What is Supervised Fine-Tuning? — BrewSLM Academy</title>
+    <meta name="description" content="Supervised Fine-Tuning continues training a pretrained model on labeled input-output examples so it reliably produces the outputs you want. This lesson defines SFT precisely, says what it is good at, and — just as important — when not to use it." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/what-is-sft.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="What is Supervised Fine-Tuning? — BrewSLM Academy" />
+    <meta property="og:description" content="Supervised Fine-Tuning continues training a pretrained model on labeled input-output examples so it reliably produces the outputs you want. This lesson defines SFT precisely, says what it is good at, and — just as important — when not to use it." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/what-is-sft.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="What is Supervised Fine-Tuning? — BrewSLM Academy" />
+    <meta name="twitter:description" content="Supervised Fine-Tuning continues training a pretrained model on labeled input-output examples so it reliably produces the outputs you want. This lesson defines SFT precisely, says what it is good at, and — just as important — when not to use it." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "What is Supervised Fine-Tuning?",
+        "description": "Supervised Fine-Tuning continues training a pretrained model on labeled input-output examples so it reliably produces the outputs you want. This lesson defines SFT precisely, says what it is good at, and — just as important — when not to use it.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/what-is-sft.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["supervised fine-tuning", "base vs instruct model", "behavior vs knowledge", "when not to fine-tune"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "What is Supervised Fine-Tuning?", "item": "https://brewslm.com/academy/sft-fundamentals/what-is-sft.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "What is Supervised Fine-Tuning?"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "SFT primarily changes a model's\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Behavior (how it responds), via its parameters"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which problem is the WRONG fit for SFT?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Recall today's private, frequently-changing inventory facts"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why often start from an instruct model rather than a base model?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It already follows instructions, so you reach a polished result with less data"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What matters most for SFT data?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Quality and representativeness, not just count"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/what-is-sft">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">SFT fundamentals</a></li><li>What is Supervised Fine-Tuning?</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 1</span>
+          <h1>What is Supervised Fine-Tuning?</h1>
+          <p class="lesson-header__outcome">After this lesson you can define SFT precisely, say what changes versus the base model, and decide when SFT is the right tool versus prompting, RAG, or a bigger model.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="../foundations/slm-project-lifecycle.html">The SLM project lifecycle</a></span>
+          </div>
+        </header>
+
+        <p>Track 0 gave you the machine and the four levers for steering it. Track 1 zooms in on one lever — Supervised Fine-Tuning — and makes every part of it precise. We start with the definition and, crucially, with when <em>not</em> to reach for it.</p>
+
+        <h2>SFT in one sentence</h2>
+        <p><strong>Supervised Fine-Tuning</strong> continues training a pretrained model on a curated set of <strong>(prompt, completion)</strong> examples — inputs paired with the exact outputs you want — so the model learns to produce those outputs. "Supervised" means every example carries a known target; the model is corrected toward it. Mechanically it is the same next-token training from Track 0, run on your examples instead of raw web text.</p>
+
+        <h2>What actually changes</h2>
+        <p>SFT shifts the model's parameters so that, for inputs like yours, the next-token distribution favors the responses you demonstrated. You are not adding a module or a rulebook — you are nudging the same weights you met in Lesson&nbsp;1 of Track&nbsp;0. The new behavior is baked in: no per-call examples, consistent format, learned tone and task shape.</p>
+        <p>A note on starting points. A <strong>base</strong> model is raw next-token prediction; an <strong>instruct</strong> model has already been fine-tuned to follow instructions and chat. You can SFT either, but starting from an instruct model usually gets you to a polished, on-format result with less data.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>SFT changes <strong>behavior</strong>, not <strong>knowledge</strong>. It is excellent at teaching a model <em>how</em> to respond — format, style, task — and unreliable at teaching it new <em>facts</em>. For facts that change or are private, reach for RAG (Track 0, Lesson 7).</p>
+        </div>
+
+        <h2>What SFT is good at</h2>
+        <ul>
+          <li><strong>Format and structure</strong> — always emit strict JSON, a fixed label set, spans in a schema.</li>
+          <li><strong>Style and tone</strong> — answer in a specific voice or length.</li>
+          <li><strong>A narrow task at accuracy</strong> — classification, extraction, domain QA, where a small fine-tuned model can rival a far larger one.</li>
+          <li><strong>Following one instruction pattern</strong> reliably, without re-explaining it every call.</li>
+        </ul>
+
+        <h2>When NOT to use SFT</h2>
+        <ul>
+          <li><strong>You need fresh or private facts</strong> → use RAG; SFT won't reliably memorize them.</li>
+          <li><strong>Prompting already works</strong> → don't pay for a training run you don't need.</li>
+          <li><strong>You have almost no data and no way to make more</strong> → too few examples to learn from (later tracks show synthetic data, distillation, and warm starts that lower the bar).</li>
+          <li><strong>The base genuinely lacks the capability</strong> → consider a stronger base or continued pretraining; SFT sharpens existing ability more than it creates new ability from nothing.</li>
+        </ul>
+        <p>How much data? There is no universal number, but for a narrow task a few hundred to a few thousand clean examples is a realistic starting range — and quality matters more than raw count. The rest of this track is about getting that data right and running the training that turns it into a better model.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Supervised Fine-Tuning (SFT)</dt><dd>Continuing training on labeled (prompt, completion) examples to change a model's behavior for a task.</dd>
+            <dt>(prompt, completion) pair</dt><dd>One SFT example: an input and the target output you want the model to produce.</dd>
+            <dt>Base vs instruct model</dt><dd>A base model is raw next-token prediction; an instruct model is already tuned to follow instructions.</dd>
+            <dt>Behavior vs knowledge</dt><dd>SFT reshapes how a model responds (behavior); it does not reliably add new facts (knowledge — use RAG).</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "SFT primarily changes a model's\u2026",
+    "options": [
+      "Vocabulary size",
+      "Behavior (how it responds), via its parameters",
+      "Tokenizer",
+      "Context window"
+    ],
+    "answer": 1,
+    "explanation": "SFT shifts parameters so the model produces your target outputs; it changes behavior, not the tokenizer or context window."
+  },
+  {
+    "q": "Which problem is the WRONG fit for SFT?",
+    "options": [
+      "Always output strict JSON",
+      "Answer in a fixed brand voice",
+      "Recall today's private, frequently-changing inventory facts",
+      "Classify tickets into 5 labels"
+    ],
+    "answer": 2,
+    "explanation": "Fresh/private facts are RAG's job; SFT changes behavior, not knowledge."
+  },
+  {
+    "q": "Why often start from an instruct model rather than a base model?",
+    "options": [
+      "It has more parameters",
+      "It already follows instructions, so you reach a polished result with less data",
+      "It skips tokenization",
+      "It needs no GPU"
+    ],
+    "answer": 1,
+    "explanation": "Instruct models are pre-tuned to follow instructions/chat, lowering the data needed for a good SFT result."
+  },
+  {
+    "q": "What matters most for SFT data?",
+    "options": [
+      "Sheer quantity above all",
+      "Quality and representativeness, not just count",
+      "That it includes the gold set",
+      "That it is unlabeled"
+    ],
+    "answer": 1,
+    "explanation": "Clean, representative, correctly-labeled examples beat raw volume; SFT data is labeled, and the gold set is held out."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="../foundations/slm-project-lifecycle.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">The SLM project lifecycle</span></a>
+          <a href="choosing-the-objective.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Choosing the training objective: SFT, DPO, ORPO, RLHF</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

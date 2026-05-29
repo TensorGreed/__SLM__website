@@ -138,6 +138,38 @@
           <dt id="vocabulary">Vocabulary</dt><dd>The fixed set of tokens a tokenizer knows; each has an integer ID.</dd>
           <dt id="vram">VRAM</dt><dd>GPU memory; weights need ≈ params × bytes-per-param, training needs several times more.</dd>
         </dl>
+
+        <h2>Track 1 — SFT fundamentals</h2>
+        <dl>
+          <dt id="adamw">AdamW (optimizer)</dt><dd>The standard optimizer; adapts the step per-parameter for stable training, at the cost of ~8 bytes/param of state.</dd>
+          <dt id="batch-size">Batch size</dt><dd>How many examples a step processes at once; larger = smoother gradient but more memory.</dd>
+          <dt id="chat-template">Chat template</dt><dd>The tokenizer rule that renders a messages list into the exact formatted string (with role/special tokens) a model expects. See <a class="inline-link" href="sft-fundamentals/chat-templates.html">Chat templates</a>.</dd>
+          <dt id="checkpoint">Checkpoint</dt><dd>Saved parameters (or LoRA adapter) on disk, for resuming and keeping the best version by validation.</dd>
+          <dt id="completion">Completion</dt><dd>The target output part of an SFT example (the part the loss is computed on).</dd>
+          <dt id="dpo">DPO</dt><dd>Direct Preference Optimization: train on (chosen, rejected) pairs to prefer better responses, no reward model. See <a class="inline-link" href="sft-fundamentals/choosing-the-objective.html">Choosing the objective</a>.</dd>
+          <dt id="early-stopping">Early stopping</dt><dd>Keeping the checkpoint at the validation-loss minimum rather than the final step.</dd>
+          <dt id="effective-batch">Effective batch size</dt><dd>per_device_batch × gradient_accumulation × devices — the number that governs training dynamics.</dd>
+          <dt id="f1">F1 (precision, recall)</dt><dd>Precision = right / flagged; recall = caught / should-have-found; F1 is their harmonic mean.</dd>
+          <dt id="generalization-gap">Generalization gap</dt><dd>The distance between training and validation loss; a widening gap signals overfitting.</dd>
+          <dt id="grad-accum">Gradient accumulation</dt><dd>Summing gradients over several micro-batches before one optimizer step, to simulate a larger batch on a small GPU.</dd>
+          <dt id="grad-checkpointing">Gradient checkpointing</dt><dd>Re-computing activations during backprop instead of storing them — trades compute for large memory savings.</dd>
+          <dt id="loss-mask">Loss mask</dt><dd>Computing the loss only on completion tokens so the model learns to produce the answer, not echo the prompt. See <a class="inline-link" href="sft-fundamentals/anatomy-of-an-sft-example.html">Anatomy of an SFT example</a>.</dd>
+          <dt id="lora-alpha">LoRA alpha</dt><dd>Scales the adapter's contribution (~alpha/r); often set to 2×r.</dd>
+          <dt id="lora-rank">LoRA rank (r)</dt><dd>The adapter's inner dimension / capacity; higher = more room (and more overfit risk). Common: 16.</dd>
+          <dt id="max-seq-length">max_seq_length</dt><dd>The per-example token cap; set it from the data's length distribution so completions are never clipped.</dd>
+          <dt id="mixed-precision">Mixed precision (bf16)</dt><dd>Computing/storing in 16-bit to roughly halve memory with stable training.</dd>
+          <dt id="orpo">ORPO</dt><dd>An objective that combines SFT and preference learning in a single stage.</dd>
+          <dt id="overfitting">Overfitting / underfitting</dt><dd>Training loss falls while validation rises (memorizing) / both stay high (hasn't learned enough). See <a class="inline-link" href="sft-fundamentals/overfitting-and-loss-curves.html">Reading a loss curve</a>.</dd>
+          <dt id="perplexity">Perplexity</dt><dd>The exponential of cross-entropy; roughly how many tokens the model is choosing among (1 = certain).</dd>
+          <dt id="prompt">Prompt</dt><dd>The input part of an SFT example (instruction, optionally with context); masked from the loss.</dd>
+          <dt id="qlora">QLoRA</dt><dd>LoRA on a 4-bit quantized frozen base, to fit fine-tuning into far less memory.</dd>
+          <dt id="quality-gate">Quality gate</dt><dd>A pass threshold set in advance that a model must clear on the gold set to ship.</dd>
+          <dt id="quantization">Quantization</dt><dd>Storing weights in fewer bits (e.g. 4) to save memory.</dd>
+          <dt id="rlhf">RLHF</dt><dd>Reinforcement Learning from Human Feedback: train a reward model, then optimize with RL; powerful but complex (DPO is the simpler modern alternative).</dd>
+          <dt id="scheduler">Scheduler / warmup</dt><dd>Warmup ramps the LR up over the first steps; the scheduler (e.g. cosine) then decays it toward zero. See <a class="inline-link" href="sft-fundamentals/learning-rate-and-schedules.html">Learning rate &amp; schedules</a>.</dd>
+          <dt id="sequence-packing">Sequence packing</dt><dd>Concatenating short examples into one full-length sequence to avoid wasting compute on padding.</dd>
+          <dt id="target-modules">Target modules</dt><dd>Which weight matrices get LoRA adapters (commonly the attention query/value projections).</dd>
+        </dl>
       </section>
 
       <p class="form-note"><a class="inline-link" href="index.html">← Back to the Academy</a></p>

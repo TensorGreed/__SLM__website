@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Full fine-tuning vs LoRA — BrewSLM Academy</title>
+    <meta name="description" content="Full fine-tuning updates every parameter; LoRA freezes the model and trains tiny added matrices instead. This lesson explains how LoRA works, why it slashes memory and storage, and the trade-offs versus full fine-tuning." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/full-finetuning-vs-lora.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Full fine-tuning vs LoRA — BrewSLM Academy" />
+    <meta property="og:description" content="Full fine-tuning updates every parameter; LoRA freezes the model and trains tiny added matrices instead. This lesson explains how LoRA works, why it slashes memory and storage, and the trade-offs versus full fine-tuning." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/full-finetuning-vs-lora.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Full fine-tuning vs LoRA — BrewSLM Academy" />
+    <meta name="twitter:description" content="Full fine-tuning updates every parameter; LoRA freezes the model and trains tiny added matrices instead. This lesson explains how LoRA works, why it slashes memory and storage, and the trade-offs versus full fine-tuning." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Full fine-tuning vs LoRA",
+        "description": "Full fine-tuning updates every parameter; LoRA freezes the model and trains tiny added matrices instead. This lesson explains how LoRA works, why it slashes memory and storage, and the trade-offs versus full fine-tuning.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/full-finetuning-vs-lora.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["full fine-tuning", "LoRA", "low-rank adapter", "parameter-efficient fine-tuning", "adapter merging"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Full fine-tuning vs LoRA", "item": "https://brewslm.com/academy/sft-fundamentals/full-finetuning-vs-lora.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Full fine-tuning vs LoRA"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What does LoRA train?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Small added low-rank matrices, with the base model frozen"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does LoRA slash memory versus full fine-tuning?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Gradients/optimizer state are stored only for the tiny adapter, not the whole model"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does 'merging' a LoRA adapter do?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Folds its learned change into the base weights to make a standalone model"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "For the narrow SFT tasks in this course, LoRA usually\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Matches full fine-tuning closely at a fraction of the cost"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/full-finetuning-vs-lora">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">SFT fundamentals</a></li><li>Full fine-tuning vs LoRA</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 13</span>
+          <h1>Full fine-tuning vs LoRA</h1>
+          <p class="lesson-header__outcome">After this lesson you can explain the difference between full fine-tuning and LoRA, describe how LoRA's low-rank adapters work, and say why LoRA is the default for fine-tuning small models on modest hardware.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="batch-size-and-accumulation.html">Batch size, gradient accumulation, and the effective batch</a></span>
+          </div>
+        </header>
+
+        <p>The training loop updates parameters — but <em>which</em> parameters? The classic answer is "all of them" (full fine-tuning). The modern default for small-model work is <strong>LoRA</strong>, which updates almost none of them and yet works remarkably well. Understanding why is one of the most useful things in this track.</p>
+
+        <h2>Full fine-tuning</h2>
+        <p><strong>Full fine-tuning</strong> updates every parameter in the model. It's the most expressive option — nothing is held back — and for large datasets it can squeeze out the best quality. But it's expensive: you must store gradients and optimizer state for <em>every</em> parameter (several times the model's size in memory), and each fine-tuned variant is a full copy of the model on disk. For a small SLM this is feasible on one GPU; it gets painful fast as models grow.</p>
+
+        <h2>LoRA: train a tiny add-on instead</h2>
+        <p><strong>LoRA</strong> (Low-Rank Adaptation) starts from an insight: the <em>change</em> a fine-tune makes to a big weight matrix is usually "low-rank" — it can be well approximated by a much smaller pair of matrices multiplied together. So LoRA <strong>freezes the original model entirely</strong> and, next to chosen weight matrices, inserts two small trainable matrices whose product is added to the original output. Only those small matrices — the <strong>adapter</strong> — are trained.</p>
+        <p>The numbers are striking: a LoRA adapter is often well under 1% of the model's parameters. That cascades into every cost that matters.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Why LoRA wins on small hardware</p>
+          <p>Because the base is frozen, you only store gradients and optimizer state for the <em>tiny</em> adapter — slashing the memory that usually blocks fine-tuning. And each fine-tune is a few megabytes of adapter, not a full model copy, so you can keep dozens of task-specific adapters over one shared base.</p>
+        </div>
+
+        <h2>Using the result: keep or merge</h2>
+        <p>At inference you can either load the frozen base plus the adapter (swap adapters to switch tasks), or <strong>merge</strong> the adapter's learned change back into the base weights to produce a standalone model with no runtime overhead. Merging is common when you'll deploy one task; keeping adapters separate is handy when you serve many.</p>
+
+        <h2>The trade-off</h2>
+        <p>LoRA trains far fewer parameters, so in principle it's slightly less expressive than full fine-tuning — for very large datasets or when you're reshaping the model deeply, full fine-tuning can edge ahead. In practice, for the narrow SFT tasks this Academy targets, <strong>LoRA matches full fine-tuning closely while costing a fraction</strong>, which is why it's the default. (You'll also hear <strong>QLoRA</strong> — LoRA on top of a quantized base — which cuts memory even further; that and LoRA's knobs are the next lesson.)</p>
+        <p>LoRA, full fine-tuning, and the optimizer all consume GPU memory in specific ways. To choose batch sizes and avoid crashes, you need to be able to estimate that memory — which is exactly where we go next.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Full fine-tuning</dt><dd>Updating every parameter; most expressive, but heavy on memory and storage.</dd>
+            <dt>LoRA</dt><dd>Low-Rank Adaptation: freeze the base and train small added low-rank matrices (the adapter).</dd>
+            <dt>Low-rank adapter</dt><dd>The small trainable matrices LoRA adds next to chosen weights; often <1% of parameters.</dd>
+            <dt>Parameter-efficient fine-tuning (PEFT)</dt><dd>The family of methods (incl. LoRA) that train a small subset of parameters.</dd>
+            <dt>Adapter merging</dt><dd>Folding a LoRA adapter back into the base weights to produce a standalone model.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What does LoRA train?",
+    "options": [
+      "Every parameter",
+      "Small added low-rank matrices, with the base model frozen",
+      "Only the tokenizer",
+      "The learning rate"
+    ],
+    "answer": 1,
+    "explanation": "LoRA freezes the base and trains tiny low-rank adapter matrices \u2014 often under 1% of parameters."
+  },
+  {
+    "q": "Why does LoRA slash memory versus full fine-tuning?",
+    "options": [
+      "It uses a smaller vocabulary",
+      "Gradients/optimizer state are stored only for the tiny adapter, not the whole model",
+      "It skips the forward pass",
+      "It removes attention"
+    ],
+    "answer": 1,
+    "explanation": "The frozen base needs no gradients/optimizer state; only the small adapter does."
+  },
+  {
+    "q": "What does 'merging' a LoRA adapter do?",
+    "options": [
+      "Deletes the adapter",
+      "Folds its learned change into the base weights to make a standalone model",
+      "Doubles the parameters",
+      "Retrains from scratch"
+    ],
+    "answer": 1,
+    "explanation": "Merging produces a single deployable model with no adapter overhead at inference."
+  },
+  {
+    "q": "For the narrow SFT tasks in this course, LoRA usually\u2026",
+    "options": [
+      "Fails to learn",
+      "Matches full fine-tuning closely at a fraction of the cost",
+      "Requires more GPUs than full FT",
+      "Changes the task shape"
+    ],
+    "answer": 1,
+    "explanation": "On narrow tasks LoRA is close to full FT in quality while far cheaper \u2014 hence the default."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="batch-size-and-accumulation.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Batch size, gradient accumulation, and the effective batch</span></a>
+          <a href="lora-knobs.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">LoRA knobs: rank, alpha, dropout, target modules, QLoRA</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

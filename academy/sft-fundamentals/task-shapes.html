@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task shapes: classification, QA, extraction, summarization, chat — BrewSLM Academy</title>
+    <meta name="description" content="A task shape dictates your data format, loss, and evaluation metric. This lesson surveys the common SFT shapes — classification, QA, extraction/NER, summarization, chat — and why the metric must match the shape." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/task-shapes.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Task shapes: classification, QA, extraction, summarization, chat — BrewSLM Academy" />
+    <meta property="og:description" content="A task shape dictates your data format, loss, and evaluation metric. This lesson surveys the common SFT shapes — classification, QA, extraction/NER, summarization, chat — and why the metric must match the shape." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/task-shapes.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Task shapes: classification, QA, extraction, summarization, chat — BrewSLM Academy" />
+    <meta name="twitter:description" content="A task shape dictates your data format, loss, and evaluation metric. This lesson surveys the common SFT shapes — classification, QA, extraction/NER, summarization, chat — and why the metric must match the shape." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Task shapes: classification, QA, extraction, summarization, chat",
+        "description": "A task shape dictates your data format, loss, and evaluation metric. This lesson surveys the common SFT shapes — classification, QA, extraction/NER, summarization, chat — and why the metric must match the shape.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/task-shapes.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["task shape", "classification", "extraction / NER", "structured output", "summarization", "metric-shape fit"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Task shapes: classification, QA, extraction, summarization, chat", "item": "https://brewslm.com/academy/sft-fundamentals/task-shapes.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Task shapes: classification, QA, extraction, summarization, chat"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "Why does the task shape matter so much?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It determines the data format, the loss target, and the evaluation metric"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How should named-entity extraction (NER) be scored?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Span-set matching on (type, start, end)"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "A generated summary scored only by exact-match against one reference will\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Look terrible even when good, because wording differs"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Most business SFT tasks reduce to which shapes?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Classification, extraction, or QA"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/task-shapes">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">SFT fundamentals</a></li><li>Task shapes</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 5</span>
+          <h1>Task shapes: classification, QA, extraction, summarization, chat</h1>
+          <p class="lesson-header__outcome">After this lesson you can identify the common SFT task shapes, describe how each frames its data and completion, and pick an evaluation metric that actually fits the shape.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="chat-templates.html">Chat templates & special tokens</a></span>
+          </div>
+        </header>
+
+        <p>Before you collect a single example, decide your <strong>task shape</strong>. The shape determines three things at once: how the data is formatted, what the completion looks like, and which metric tells you whether the model is any good. BrewSLM organizes its whole pipeline around shapes for exactly this reason.</p>
+
+        <h2>The common shapes</h2>
+        <ul>
+          <li><strong>Classification</strong> — input → one of N fixed labels. Completion is short (the label). Metric: accuracy, per-class precision/recall/F1, confusion matrix.</li>
+          <li><strong>QA / instruction following</strong> — a question (often with context) → a free-text answer. Metric: exact match / F1 against a reference, or an LLM judge for open answers.</li>
+          <li><strong>Extraction / NER</strong> — input → a set of typed spans (e.g. names, dates, PII). Completion is a structured list of <code>(type, start, end)</code> or the extracted strings. Metric: span-set matching, not classification F1.</li>
+          <li><strong>Structured output</strong> — input → a JSON object with specific fields. Metric: valid-JSON rate plus per-field correctness.</li>
+          <li><strong>Summarization</strong> — long input → short, faithful summary. Metric: ROUGE for overlap <em>and</em> a faithfulness check (did it invent anything?).</li>
+          <li><strong>Chat</strong> — multi-turn dialogue with a persona/behavior. Metric: task-specific or an LLM judge.</li>
+        </ul>
+        <p>(There's also the <strong>preference</strong> shape — (prompt, chosen, rejected) — used by DPO, which we covered as an objective and revisit in Track 4.)</p>
+
+        <h2>The shape determines the completion</h2>
+        <p>Notice how the <em>completion</em> differs: a single word for classification, a structured JSON for extraction, a paragraph for summarization. That shape flows straight into the loss mask (what you train to produce) and the chat template (how it's framed). Picking the shape is the first design decision of a fine-tuning project, not an afterthought.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>The metric must match the shape. Scoring NER with classification F1, or a generated summary with exact-match, produces numbers that look precise and mean nothing. "Your F1 is 4% because the reference was one word" is a measurement bug, not a model failure.</p>
+        </div>
+
+        <h2>Choosing your shape</h2>
+        <p>Map your real problem onto the closest shape, and if it doesn't fit cleanly, reframe it until it does — a well-chosen shape makes data collection, training, and evaluation all straightforward, while a forced one fights you at every stage. Most business tasks reduce to classification, extraction, or QA. Once the shape is fixed, the next thing that determines success is the quality of the data itself — the subject of the next two lessons.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Task shape</dt><dd>The structural form of a task (classification, QA, extraction, summarization, chat) that sets the data format, loss, and metric.</dd>
+            <dt>Classification</dt><dd>Input → one of N fixed labels.</dd>
+            <dt>Extraction / NER</dt><dd>Input → a set of typed spans; scored by span-set matching.</dd>
+            <dt>Structured output</dt><dd>Input → a JSON object with specific fields; scored by valid-JSON rate + field correctness.</dd>
+            <dt>Summarization</dt><dd>Long input → short faithful summary; scored by overlap (ROUGE) + faithfulness.</dd>
+            <dt>Metric-shape fit</dt><dd>Choosing an evaluation metric that matches the task shape so the numbers are meaningful.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "Why does the task shape matter so much?",
+    "options": [
+      "It sets the GPU type",
+      "It determines the data format, the loss target, and the evaluation metric",
+      "It changes the tokenizer",
+      "It only affects speed"
+    ],
+    "answer": 1,
+    "explanation": "Shape drives format, completion, and metric \u2014 the core design decisions of the project."
+  },
+  {
+    "q": "How should named-entity extraction (NER) be scored?",
+    "options": [
+      "Classification F1 over the whole sentence",
+      "Span-set matching on (type, start, end)",
+      "ROUGE",
+      "Exact string match of the input"
+    ],
+    "answer": 1,
+    "explanation": "NER is a span task; it needs span-set matching, not classification F1."
+  },
+  {
+    "q": "A generated summary scored only by exact-match against one reference will\u2026",
+    "options": [
+      "Be measured accurately",
+      "Look terrible even when good, because wording differs",
+      "Crash the evaluator",
+      "Always score 100%"
+    ],
+    "answer": 1,
+    "explanation": "Free-text outputs need overlap + faithfulness metrics; exact-match punishes valid paraphrases."
+  },
+  {
+    "q": "Most business SFT tasks reduce to which shapes?",
+    "options": [
+      "Only chat",
+      "Classification, extraction, or QA",
+      "Only summarization",
+      "Only preference pairs"
+    ],
+    "answer": 1,
+    "explanation": "Classification, extraction, and QA cover the bulk of practical tasks."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="chat-templates.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Chat templates & special tokens</span></a>
+          <a href="tokenization-deep-dive.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Tokenization in practice: padding, truncation, packing</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

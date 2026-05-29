@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat templates & special tokens — BrewSLM Academy</title>
+    <meta name="description" content="Instruct models expect a precise format with role markers and special tokens. Using the wrong chat template silently wrecks quality. This lesson explains chat templates, apply_chat_template, the generation prompt, and why training and inference must match." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/chat-templates.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Chat templates & special tokens — BrewSLM Academy" />
+    <meta property="og:description" content="Instruct models expect a precise format with role markers and special tokens. Using the wrong chat template silently wrecks quality. This lesson explains chat templates, apply_chat_template, the generation prompt, and why training and inference must match." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/chat-templates.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Chat templates & special tokens — BrewSLM Academy" />
+    <meta name="twitter:description" content="Instruct models expect a precise format with role markers and special tokens. Using the wrong chat template silently wrecks quality. This lesson explains chat templates, apply_chat_template, the generation prompt, and why training and inference must match." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Chat templates & special tokens",
+        "description": "Instruct models expect a precise format with role markers and special tokens. Using the wrong chat template silently wrecks quality. This lesson explains chat templates, apply_chat_template, the generation prompt, and why training and inference must match.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/chat-templates.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["chat template", "role markers", "special tokens", "apply_chat_template", "add_generation_prompt"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Chat templates & special tokens", "item": "https://brewslm.com/academy/sft-fundamentals/chat-templates.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Chat templates & special tokens"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "Why must training and inference use the same chat template?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Because a format mismatch pushes the model off its training distribution and silently wrecks quality"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the right way to format chat data?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Use the tokenizer's own apply_chat_template"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does add_generation_prompt=True do?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Appends the assistant-turn opener so the model knows to start responding"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "A fine-tuned model shows decent loss but emits garbled, mis-formatted text. First thing to check?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The chat template / formatting"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/chat-templates">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">SFT fundamentals</a></li><li>Chat templates</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 4</span>
+          <h1>Chat templates & special tokens</h1>
+          <p class="lesson-header__outcome">After this lesson you can explain why chat formatting is a correctness issue, use the tokenizer's own chat template, and recognize the silent failure that a template mismatch causes.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="anatomy-of-an-sft-example.html">Anatomy of an SFT example: prompt, completion, and the loss mask</a></span>
+          </div>
+        </header>
+
+        <p>An instruct model wasn't trained on bare text — it was trained on conversations formatted in a very specific way, with special tokens marking who is speaking. If you feed it a different format, you push it off the data it understands, and quality collapses. This is one of the most common silent failures in fine-tuning, and it's entirely avoidable.</p>
+
+        <h2>Roles and special tokens</h2>
+        <p>A chat is a list of messages, each with a <strong>role</strong>: <code>system</code> (standing instructions), <code>user</code> (the human), and <code>assistant</code> (the model). To turn that list into a single token stream, the model's training used <strong>special tokens</strong> — control tokens in the vocabulary that aren't ordinary text — to delimit each turn. Different model families use different markers; one common style looks like:</p>
+        <div class="code-block">
+          <p>&lt;|im_start|&gt;system</p>
+          <p>You are a helpful assistant.&lt;|im_end|&gt;</p>
+          <p>&lt;|im_start|&gt;user</p>
+          <p>Classify: I loved it&lt;|im_end|&gt;</p>
+          <p>&lt;|im_start|&gt;assistant</p>
+          <p>positive&lt;|im_end|&gt;</p>
+        </div>
+
+        <h2>The chat template does this for you</h2>
+        <p>Every instruct tokenizer ships a <strong>chat template</strong> — a rule that turns a messages list into exactly the formatted string that model expects. You call <code>tokenizer.apply_chat_template(messages)</code> and get the correct string with the right special tokens, every time. The cardinal rule:</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Use the model's <strong>own</strong> chat template for both training and inference, and never hand-format. The format you train on must match the format you serve on — and both must match what the base model was trained with.</p>
+        </div>
+
+        <h2>The generation prompt</h2>
+        <p>At inference you pass the system + user messages and set <code>add_generation_prompt=True</code>. That appends the opening of the assistant turn (e.g. <code>&lt;|im_start|&gt;assistant</code>) so the model knows it's now its turn to speak and starts generating the response. During training you don't add it — the assistant turn is already present as the completion.</p>
+
+        <h2>Where templates meet the loss mask</h2>
+        <p>Combine this with the previous lesson: the chat template lays out the full conversation, and the loss mask is set so that only the <em>assistant</em> content (plus its end token) is a learning target. Good tooling derives the mask from the template automatically — another reason to let the template do the work rather than building strings by hand.</p>
+        <div class="callout callout--warning">
+          <p class="callout__label">The silent failure</p>
+          <p>A template mismatch rarely errors. You'll see a plausible training loss and then <strong>garbage or oddly formatted outputs</strong> at inference. If a freshly fine-tuned model behaves strangely, check the chat template first — it's the usual culprit.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Chat template</dt><dd>A tokenizer rule that converts a messages list into the exact formatted string the model expects.</dd>
+            <dt>Role</dt><dd>Who is speaking: system, user, or assistant.</dd>
+            <dt>Special/control tokens</dt><dd>Non-text tokens (e.g. turn delimiters) the model was trained with.</dd>
+            <dt>apply_chat_template</dt><dd>The function that renders messages into the correct formatted string.</dd>
+            <dt>add_generation_prompt</dt><dd>At inference, appends the assistant-turn opener so the model starts responding.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "Why must training and inference use the same chat template?",
+    "options": [
+      "To save tokens",
+      "Because a format mismatch pushes the model off its training distribution and silently wrecks quality",
+      "Because it changes the parameters",
+      "To avoid padding"
+    ],
+    "answer": 1,
+    "explanation": "Instruct models expect a precise format; mismatched formatting is out-of-distribution and degrades outputs without erroring."
+  },
+  {
+    "q": "What is the right way to format chat data?",
+    "options": [
+      "Hand-write the strings",
+      "Use the tokenizer's own apply_chat_template",
+      "Concatenate messages with spaces",
+      "Use JSON only"
+    ],
+    "answer": 1,
+    "explanation": "Always use the model's own chat template so the special tokens and layout match what it was trained on."
+  },
+  {
+    "q": "What does add_generation_prompt=True do?",
+    "options": [
+      "Adds training labels",
+      "Appends the assistant-turn opener so the model knows to start responding",
+      "Removes special tokens",
+      "Doubles the context window"
+    ],
+    "answer": 1,
+    "explanation": "It cues the assistant's turn at inference so generation begins in the right place."
+  },
+  {
+    "q": "A fine-tuned model shows decent loss but emits garbled, mis-formatted text. First thing to check?",
+    "options": [
+      "The learning rate",
+      "The chat template / formatting",
+      "The GPU model",
+      "The vocabulary size"
+    ],
+    "answer": 1,
+    "explanation": "Template mismatch is the classic silent cause of good-loss-but-bad-output."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="anatomy-of-an-sft-example.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Anatomy of an SFT example: prompt, completion, and the loss mask</span></a>
+          <a href="task-shapes.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Task shapes: classification, QA, extraction, summarization, chat</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

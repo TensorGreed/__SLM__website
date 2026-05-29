@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Anatomy of an SFT example: prompt, completion, and the loss mask — BrewSLM Academy</title>
+    <meta name="description" content="An SFT example is a prompt plus a target completion, concatenated into one token sequence. The loss mask makes the model learn to produce the answer rather than echo the question. This lesson dissects both and the mistakes that break them." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/anatomy-of-an-sft-example.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Anatomy of an SFT example: prompt, completion, and the loss mask — BrewSLM Academy" />
+    <meta property="og:description" content="An SFT example is a prompt plus a target completion, concatenated into one token sequence. The loss mask makes the model learn to produce the answer rather than echo the question. This lesson dissects both and the mistakes that break them." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/anatomy-of-an-sft-example.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Anatomy of an SFT example: prompt, completion, and the loss mask — BrewSLM Academy" />
+    <meta name="twitter:description" content="An SFT example is a prompt plus a target completion, concatenated into one token sequence. The loss mask makes the model learn to produce the answer rather than echo the question. This lesson dissects both and the mistakes that break them." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Anatomy of an SFT example: prompt, completion, and the loss mask",
+        "description": "An SFT example is a prompt plus a target completion, concatenated into one token sequence. The loss mask makes the model learn to produce the answer rather than echo the question. This lesson dissects both and the mistakes that break them.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/anatomy-of-an-sft-example.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["prompt and completion", "loss mask", "label masking", "EOS token", "multi-turn masking"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Anatomy of an SFT example: prompt, completion, and the loss mask", "item": "https://brewslm.com/academy/sft-fundamentals/anatomy-of-an-sft-example.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Anatomy of an SFT example: prompt, completion, and the loss mask"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "Why does SFT compute loss only on the completion tokens?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "So the model learns to produce the answer rather than predict the user's prompt"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What happens if the EOS token is left out of the loss?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The model may produce the answer then never stop"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "In a multi-turn chat example, which tokens are learning targets?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Only the assistant turns"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "A 'silent' SFT data bug is one that\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Still lets the loss go down but quietly hurts the result"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/anatomy-of-an-sft-example">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">SFT fundamentals</a></li><li>Anatomy of an SFT example</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 3</span>
+          <h1>Anatomy of an SFT example: prompt, completion, and the loss mask</h1>
+          <p class="lesson-header__outcome">After this lesson you can dissect an SFT training example, explain what the loss mask does and why it matters, and avoid the two classic data bugs (training on the prompt, missing the stop token).</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="choosing-the-objective.html">Choosing the training objective: SFT, DPO, ORPO, RLHF</a></span>
+          </div>
+        </header>
+
+        <p>SFT trains on examples, but what exactly is <em>one</em> example, and how does the model know which part to learn to produce? The answer is a small idea with big consequences: the <strong>loss mask</strong>.</p>
+
+        <h2>One example = prompt + completion</h2>
+        <p>An SFT example has two parts: the <strong>prompt</strong> (the input — an instruction, maybe with context) and the <strong>completion</strong> (the target output you want). For training, they are <strong>concatenated into one token sequence</strong> — usually wrapped by a chat template (next lesson) — and fed through the model as a single stream.</p>
+
+        <h2>The loss mask: learn the answer, not the question</h2>
+        <p>Recall that a causal language model predicts the next token at every position. If we computed the training loss over <em>all</em> positions, the model would spend half its effort learning to predict the user's prompt — which is pointless; at inference the user supplies the prompt. So SFT applies a <strong>loss mask</strong>: the loss is computed <strong>only on the completion tokens</strong>. The prompt tokens are still present as context (the model reads them via attention) but they contribute zero to the loss. This is also called <strong>label masking</strong> — masked positions get a "label" that the loss ignores.</p>
+        <figure class="diagram">
+          <svg viewBox="0 0 640 130" role="img" aria-label="A token row: the prompt tokens are greyed and marked masked (no loss); the completion tokens are highlighted and marked loss.">
+            <g font-family="Geist Mono, monospace" font-size="12">
+              <rect x="20" y="40" width="120" height="30" rx="4" fill="#f0f0f0" stroke="#d4d4d4"></rect><text x="80" y="60" text-anchor="middle" fill="#a3a3a3">Classify:</text>
+              <rect x="148" y="40" width="120" height="30" rx="4" fill="#f0f0f0" stroke="#d4d4d4"></rect><text x="208" y="60" text-anchor="middle" fill="#a3a3a3">I loved it →</text>
+              <rect x="276" y="40" width="120" height="30" rx="4" fill="#ffffff" stroke="#171717" stroke-width="1.5"></rect><text x="336" y="60" text-anchor="middle" fill="#171717">positive</text>
+              <rect x="404" y="40" width="60" height="30" rx="4" fill="#ffffff" stroke="#171717" stroke-width="1.5"></rect><text x="434" y="60" text-anchor="middle" fill="#171717">&lt;eos&gt;</text>
+            </g>
+            <text x="148" y="95" font-family="Geist, sans-serif" font-size="11" fill="#a3a3a3">prompt — masked, no loss</text>
+            <text x="290" y="95" font-family="Geist, sans-serif" font-size="11" fill="#737373">completion — loss computed here</text>
+          </svg>
+          <figcaption>Loss is computed only on the completion (and its end-of-sequence token). The prompt provides context but isn't a learning target.</figcaption>
+        </figure>
+
+        <h2>Don't forget the stop token</h2>
+        <p>The completion should end with the <strong>end-of-sequence (EOS)</strong> token, and the loss must include it. That is how the model learns <em>when to stop</em>. Omit it and your fine-tuned model may generate the right answer and then ramble forever, because it never learned to emit a stop.</p>
+
+        <h2>Multi-turn conversations</h2>
+        <p>For a multi-turn chat example, the same rule generalizes: mask everything except the <strong>assistant</strong> turns. The system prompt and user turns are context; only the assistant's responses are learning targets. Frameworks and chat templates handle this for you when configured correctly — which is exactly why the next lesson on chat templates matters.</p>
+        <div class="callout callout--warning">
+          <p class="callout__label">Two classic data bugs</p>
+          <p><strong>Training on the prompt</strong> (no mask) dilutes the signal and wastes capacity. <strong>Missing the EOS in the loss</strong> produces a model that won't stop. Both pass silently — the loss still goes down — and both quietly hurt the result.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Prompt</dt><dd>The input part of an SFT example (instruction, optionally with context).</dd>
+            <dt>Completion</dt><dd>The target output the model should learn to produce.</dd>
+            <dt>Loss mask / label masking</dt><dd>Computing the loss only on completion tokens, so the model learns to produce the answer, not echo the prompt.</dd>
+            <dt>EOS token</dt><dd>End-of-sequence marker; including it in the loss teaches the model when to stop.</dd>
+            <dt>Multi-turn masking</dt><dd>In a dialogue, masking everything except the assistant turns.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "Why does SFT compute loss only on the completion tokens?",
+    "options": [
+      "To save memory",
+      "So the model learns to produce the answer rather than predict the user's prompt",
+      "Because prompts have no tokens",
+      "To skip the EOS token"
+    ],
+    "answer": 1,
+    "explanation": "Masking the prompt focuses learning on generating the target output; the prompt is context the user supplies at inference."
+  },
+  {
+    "q": "What happens if the EOS token is left out of the loss?",
+    "options": [
+      "Training diverges immediately",
+      "The model may produce the answer then never stop",
+      "The tokenizer breaks",
+      "Nothing"
+    ],
+    "answer": 1,
+    "explanation": "Including EOS in the loss teaches the model when to stop; omitting it causes runaway generation."
+  },
+  {
+    "q": "In a multi-turn chat example, which tokens are learning targets?",
+    "options": [
+      "All tokens",
+      "Only the system prompt",
+      "Only the assistant turns",
+      "Only the user turns"
+    ],
+    "answer": 2,
+    "explanation": "Mask everything except assistant turns; user/system messages are context."
+  },
+  {
+    "q": "A 'silent' SFT data bug is one that\u2026",
+    "options": [
+      "Crashes training",
+      "Still lets the loss go down but quietly hurts the result",
+      "Changes the vocabulary",
+      "Only happens on CPU"
+    ],
+    "answer": 1,
+    "explanation": "Training-on-the-prompt and missing-EOS both let loss decrease while degrading the model \u2014 they don't error."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="choosing-the-objective.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Choosing the training objective: SFT, DPO, ORPO, RLHF</span></a>
+          <a href="chat-templates.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Chat templates & special tokens</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

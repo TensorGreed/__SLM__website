@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Batch size, gradient accumulation, and the effective batch — BrewSLM Academy</title>
+    <meta name="description" content="Batch size affects gradient stability and memory. Gradient accumulation lets a small GPU simulate a large batch. This lesson explains the effective batch size and how it interacts with the learning rate." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/batch-size-and-accumulation.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Batch size, gradient accumulation, and the effective batch — BrewSLM Academy" />
+    <meta property="og:description" content="Batch size affects gradient stability and memory. Gradient accumulation lets a small GPU simulate a large batch. This lesson explains the effective batch size and how it interacts with the learning rate." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/batch-size-and-accumulation.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Batch size, gradient accumulation, and the effective batch — BrewSLM Academy" />
+    <meta name="twitter:description" content="Batch size affects gradient stability and memory. Gradient accumulation lets a small GPU simulate a large batch. This lesson explains the effective batch size and how it interacts with the learning rate." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Batch size, gradient accumulation, and the effective batch",
+        "description": "Batch size affects gradient stability and memory. Gradient accumulation lets a small GPU simulate a large batch. This lesson explains the effective batch size and how it interacts with the learning rate.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/batch-size-and-accumulation.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT8M", "isAccessibleForFree": true,
+        "teaches": ["batch size", "gradient accumulation", "effective batch size", "gradient noise"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Batch size, gradient accumulation, and the effective batch", "item": "https://brewslm.com/academy/sft-fundamentals/batch-size-and-accumulation.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Batch size, gradient accumulation, and the effective batch"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "A larger batch size generally gives\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A smoother, less noisy gradient but uses more memory"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Gradient accumulation lets you\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Simulate a large effective batch on a small GPU by summing micro-batch gradients before one step"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Effective batch size equals\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "per_device_batch \u00d7 accumulation_steps \u00d7 devices"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "If you substantially increase the effective batch size, you may need to\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Revisit (often raise) the learning rate"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/batch-size-and-accumulation">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">SFT fundamentals</a></li><li>Batch size & accumulation</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 12</span>
+          <h1>Batch size, gradient accumulation, and the effective batch</h1>
+          <p class="lesson-header__outcome">After this lesson you can explain what batch size does, use gradient accumulation to fit a large effective batch on a small GPU, and reason about the effective batch as the number that really matters.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~8 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="learning-rate-and-schedules.html">Learning rate, schedules, warmup, epochs vs steps</a></span>
+          </div>
+        </header>
+
+        <p>How many examples should each training step see at once? That's the <strong>batch size</strong>, and it trades off gradient quality against memory. When memory runs short — which it will on a single GPU — <strong>gradient accumulation</strong> is the trick that rescues you.</p>
+
+        <h2>What batch size does</h2>
+        <p>Each step estimates the gradient from a minibatch (Track 0). A <strong>larger batch</strong> averages over more examples, so the gradient is smoother and less noisy — training is more stable, though sometimes a little noise actually helps generalization. A <strong>smaller batch</strong> is noisier but uses far less memory. The catch: every example in the batch must fit in GPU memory simultaneously (activations for all of them), so batch size is often capped not by what you want but by what fits.</p>
+
+        <h2>Gradient accumulation</h2>
+        <p>Suppose you want the stability of a batch of 32 but only 8 fit in memory. <strong>Gradient accumulation</strong> solves this: run 4 micro-batches of 8, <em>accumulating</em> their gradients without updating, then take one optimizer step using the summed gradient. The model sees 32 examples' worth of gradient per update while only ever holding 8 in memory at once.</p>
+        <div class="code-block">
+          <p>for i, micro_batch in enumerate(batches):</p>
+          <p>&nbsp;&nbsp;loss = forward(micro_batch) / accum_steps   # scale so the sum averages correctly</p>
+          <p>&nbsp;&nbsp;loss.backward()                             # accumulate gradients</p>
+          <p>&nbsp;&nbsp;if (i + 1) % accum_steps == 0:</p>
+          <p>&nbsp;&nbsp;&nbsp;&nbsp;optimizer.step(); optimizer.zero_grad() # update once per accum_steps</p>
+        </div>
+
+        <h2>The number that matters: effective batch size</h2>
+        <p>What actually governs training dynamics is the <strong>effective batch size</strong>:</p>
+        <div class="code-block">
+          <p>effective_batch = per_device_batch_size × gradient_accumulation_steps × num_devices</p>
+        </div>
+        <p>A per-device batch of 8 with 4 accumulation steps on one GPU gives an effective batch of 32 — identical dynamics to a single GPU that could hold 32 at once. So you tune the <em>effective</em> batch for the result you want, then split it into whatever per-device size your memory allows via accumulation.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Think in effective batch size, not per-device batch size. Gradient accumulation lets a modest GPU reproduce the training dynamics of a much bigger one — trading wall-clock time (more forward/backward passes per update) for memory you don't have.</p>
+        </div>
+
+        <h2>Interaction with the learning rate</h2>
+        <p>Batch size and learning rate are linked: larger effective batches give cleaner gradients that can tolerate (and often want) a somewhat larger learning rate, and vice versa. You don't need a precise formula at this stage — just know that if you substantially change the effective batch, you may need to revisit the LR. With the loop, loss, LR, and batch understood, the next question is <em>which parameters</em> you update — full fine-tuning or LoRA.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Batch size</dt><dd>How many examples a step processes at once; larger = smoother gradient but more memory.</dd>
+            <dt>Gradient accumulation</dt><dd>Summing gradients over several micro-batches before one optimizer step, to simulate a larger batch.</dd>
+            <dt>Effective batch size</dt><dd>per_device_batch × accumulation_steps × devices — the number that governs training dynamics.</dd>
+            <dt>Gradient noise</dt><dd>Variance in the minibatch gradient estimate; smaller batches are noisier.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "A larger batch size generally gives\u2026",
+    "options": [
+      "A noisier gradient",
+      "A smoother, less noisy gradient but uses more memory",
+      "A smaller vocabulary",
+      "A higher loss"
+    ],
+    "answer": 1,
+    "explanation": "More examples per step average out noise, at the cost of memory."
+  },
+  {
+    "q": "Gradient accumulation lets you\u2026",
+    "options": [
+      "Train without a GPU",
+      "Simulate a large effective batch on a small GPU by summing micro-batch gradients before one step",
+      "Skip the loss mask",
+      "Increase the vocabulary"
+    ],
+    "answer": 1,
+    "explanation": "Accumulate gradients over micro-batches, then step once \u2014 large effective batch, small memory footprint."
+  },
+  {
+    "q": "Effective batch size equals\u2026",
+    "options": [
+      "per_device_batch only",
+      "per_device_batch \u00d7 accumulation_steps \u00d7 devices",
+      "the number of epochs",
+      "the learning rate"
+    ],
+    "answer": 1,
+    "explanation": "It's the product of per-device batch, accumulation steps, and device count \u2014 the dynamics-governing number."
+  },
+  {
+    "q": "If you substantially increase the effective batch size, you may need to\u2026",
+    "options": [
+      "Lower the vocabulary",
+      "Revisit (often raise) the learning rate",
+      "Disable the attention mask",
+      "Remove checkpoints"
+    ],
+    "answer": 1,
+    "explanation": "Batch size and LR are linked; bigger, cleaner-gradient batches often tolerate a larger LR."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="learning-rate-and-schedules.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Learning rate, schedules, warmup, epochs vs steps</span></a>
+          <a href="full-finetuning-vs-lora.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Full fine-tuning vs LoRA</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

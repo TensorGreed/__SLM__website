@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OOM and how to survive it — BrewSLM Academy</title>
+    <meta name="description" content="CUDA out-of-memory is the most common fine-tuning failure. This lesson is a practical field guide: the levers (batch size, sequence length, gradient checkpointing, LoRA/QLoRA, precision) ordered by impact and cost." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/surviving-oom.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="OOM and how to survive it — BrewSLM Academy" />
+    <meta property="og:description" content="CUDA out-of-memory is the most common fine-tuning failure. This lesson is a practical field guide: the levers (batch size, sequence length, gradient checkpointing, LoRA/QLoRA, precision) ordered by impact and cost." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/surviving-oom.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="OOM and how to survive it — BrewSLM Academy" />
+    <meta name="twitter:description" content="CUDA out-of-memory is the most common fine-tuning failure. This lesson is a practical field guide: the levers (batch size, sequence length, gradient checkpointing, LoRA/QLoRA, precision) ordered by impact and cost." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "OOM and how to survive it",
+        "description": "CUDA out-of-memory is the most common fine-tuning failure. This lesson is a practical field guide: the levers (batch size, sequence length, gradient checkpointing, LoRA/QLoRA, precision) ordered by impact and cost.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/surviving-oom.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT8M", "isAccessibleForFree": true,
+        "teaches": ["CUDA OOM", "gradient checkpointing", "sequence length", "batch size", "QLoRA fallback"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "OOM and how to survive it", "item": "https://brewslm.com/academy/sft-fundamentals/surviving-oom.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "OOM and how to survive it"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What is usually the first, cheapest lever against OOM?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Lower per-device batch size + gradient accumulation"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Gradient checkpointing saves memory by\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Re-computing activations during backprop instead of storing them"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Switching from full fine-tuning to LoRA helps OOM because it\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Removes the base model's gradients and optimizer state"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which is the WRONG way to fix OOM?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Silently truncating completions / dropping hard examples"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/surviving-oom">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">SFT fundamentals</a></li><li>Surviving OOM</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 16</span>
+          <h1>OOM and how to survive it</h1>
+          <p class="lesson-header__outcome">After this lesson you can diagnose a CUDA out-of-memory error and apply the right levers — in the right order — to make a run fit without needlessly sacrificing quality.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~8 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="gpu-memory-math.html">GPU memory math</a></span>
+          </div>
+        </header>
+
+        <p>Sooner or later you'll see <code>CUDA out of memory</code>. It's the most common fine-tuning failure and, armed with the last lesson's memory model, an entirely solvable one. This is the field guide.</p>
+
+        <h2>Read the error</h2>
+        <p>The OOM means the four consumers — weights, gradients, optimizer state, activations — summed to more than your GPU has. Usually it strikes on the first training step (activations spike during the backward pass) or when a long sequence arrives. The fix is to reduce one or more consumers. Below, levers are ordered roughly from "cheapest to quality" to "biggest hammer."</p>
+
+        <h2>The levers, in order</h2>
+        <ol>
+          <li><strong>Lower the per-device batch size</strong>, and restore the effective batch with <strong>gradient accumulation</strong>. This directly cuts activation memory with <em>no</em> change to training dynamics — almost always the first move.</li>
+          <li><strong>Enable gradient checkpointing.</strong> Instead of storing all activations for the backward pass, it re-computes them on the fly — trading ~20–30% more compute for a large drop in activation memory. Often the single most effective fix.</li>
+          <li><strong>Reduce <code>max_seq_length</code></strong> if your data allows (recall activations scale with sequence length). Don't clip completions to do it.</li>
+          <li><strong>Use mixed precision (bf16)</strong> if you somehow aren't — it halves much of the memory.</li>
+          <li><strong>Switch to LoRA</strong> if you were full fine-tuning — this removes the base model's gradients and optimizer state, usually the biggest win of all.</li>
+          <li><strong>Use QLoRA</strong> (4-bit quantized base) if even LoRA's weight memory won't fit — quarters the weight footprint.</li>
+          <li><strong>Lower the LoRA rank / target fewer modules</strong> for a final trim.</li>
+        </ol>
+        <div class="callout callout--key">
+          <p class="callout__label">Order of operations</p>
+          <p>Start with batch size + gradient accumulation and gradient checkpointing — they cost you almost nothing in quality. Only escalate to QLoRA or smaller rank when the cheaper levers run out. Change one lever at a time so you know what worked.</p>
+        </div>
+
+        <h2>Why "auto-retry on OOM" exists</h2>
+        <p>Because OOM is so common, mature training systems (BrewSLM included) automate this: on an OOM they automatically retry with a smaller sequence length or batch before giving up, so a single oversized example doesn't kill an overnight run. Knowing the manual levers means you understand exactly what such auto-retry is doing — and can configure it sensibly.</p>
+
+        <h2>A caution</h2>
+        <p>Don't fix OOM by silently truncating completions or dropping hard examples — that trades a crash for a quieter quality bug (recall the truncation warning from the tokenization lesson). The levers above shrink memory without corrupting your data; reach for those first. With memory under control, the last two lessons of the track turn to reading the result: spotting overfitting, and evaluating properly.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>CUDA OOM</dt><dd>Out-of-memory error when the four memory consumers exceed GPU capacity.</dd>
+            <dt>Gradient checkpointing</dt><dd>Re-computing activations during backprop instead of storing them — trades compute for big memory savings.</dd>
+            <dt>Batch-size lever</dt><dd>Lowering per-device batch (then restoring effective batch via accumulation) to cut activation memory without changing dynamics.</dd>
+            <dt>Auto-OOM retry</dt><dd>Automatically re-running a step with smaller sequence/batch after an OOM, so one big example doesn't kill a run.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What is usually the first, cheapest lever against OOM?",
+    "options": [
+      "Buy a bigger GPU",
+      "Lower per-device batch size + gradient accumulation",
+      "Truncate completions",
+      "Increase the learning rate"
+    ],
+    "answer": 1,
+    "explanation": "Smaller per-device batch (with accumulation to keep the effective batch) cuts activation memory with no change to dynamics."
+  },
+  {
+    "q": "Gradient checkpointing saves memory by\u2026",
+    "options": [
+      "Storing all activations",
+      "Re-computing activations during backprop instead of storing them",
+      "Removing the optimizer",
+      "Quantizing the base"
+    ],
+    "answer": 1,
+    "explanation": "It trades ~20\u201330% extra compute for a large reduction in activation memory."
+  },
+  {
+    "q": "Switching from full fine-tuning to LoRA helps OOM because it\u2026",
+    "options": [
+      "Shrinks the dataset",
+      "Removes the base model's gradients and optimizer state",
+      "Disables attention",
+      "Reduces the vocabulary"
+    ],
+    "answer": 1,
+    "explanation": "Freezing the base removes its (large) gradient + optimizer-state memory."
+  },
+  {
+    "q": "Which is the WRONG way to fix OOM?",
+    "options": [
+      "Gradient checkpointing",
+      "Lower batch size with accumulation",
+      "Silently truncating completions / dropping hard examples",
+      "Switching to QLoRA"
+    ],
+    "answer": 2,
+    "explanation": "That trades a crash for a silent data/quality bug; use the memory levers that don't corrupt data."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="gpu-memory-math.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">GPU memory math</span></a>
+          <a href="overfitting-and-loss-curves.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Overfitting, underfitting, and reading a loss curve</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

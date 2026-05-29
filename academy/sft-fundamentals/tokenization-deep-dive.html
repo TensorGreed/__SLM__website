@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tokenization in practice: padding, truncation, packing — BrewSLM Academy</title>
+    <meta name="description" content="Training adds practical tokenization concerns beyond the basics: padding and attention masks, truncation and max_seq_length, sequence packing, and padding side. This lesson covers each and the data bug that truncation can silently introduce." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/tokenization-deep-dive.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Tokenization in practice: padding, truncation, packing — BrewSLM Academy" />
+    <meta property="og:description" content="Training adds practical tokenization concerns beyond the basics: padding and attention masks, truncation and max_seq_length, sequence packing, and padding side. This lesson covers each and the data bug that truncation can silently introduce." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/tokenization-deep-dive.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Tokenization in practice: padding, truncation, packing — BrewSLM Academy" />
+    <meta name="twitter:description" content="Training adds practical tokenization concerns beyond the basics: padding and attention masks, truncation and max_seq_length, sequence packing, and padding side. This lesson covers each and the data bug that truncation can silently introduce." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Tokenization in practice: padding, truncation, packing",
+        "description": "Training adds practical tokenization concerns beyond the basics: padding and attention masks, truncation and max_seq_length, sequence packing, and padding side. This lesson covers each and the data bug that truncation can silently introduce.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/tokenization-deep-dive.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["padding", "attention mask", "truncation", "max_seq_length", "sequence packing", "padding side"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Tokenization in practice: padding, truncation, packing", "item": "https://brewslm.com/academy/sft-fundamentals/tokenization-deep-dive.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Tokenization in practice: padding, truncation, packing"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What is the attention mask for?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Telling the model to ignore padded positions"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why can naive truncation be a silent bug?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It can clip the completion you train on, teaching partial/empty targets"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Sequence packing improves training by\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Concatenating short examples to avoid wasting compute on padding"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How should you choose max_seq_length?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "From your data's length distribution \u2014 fit completions, avoid paying for empty context"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/tokenization-deep-dive">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">SFT fundamentals</a></li><li>Tokenization in practice</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 6</span>
+          <h1>Tokenization in practice: padding, truncation, packing</h1>
+          <p class="lesson-header__outcome">After this lesson you can configure max sequence length sensibly, explain padding and attention masks, use sequence packing, and avoid truncation silently dropping your completions.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="task-shapes.html">Task shapes: classification, QA, extraction, summarization, chat</a></span>
+          </div>
+        </header>
+
+        <p>You met tokenization in Track 0: text → subword tokens → IDs → embeddings. Training adds a handful of practical mechanics that, done wrong, quietly corrupt your data. None are hard; all are worth getting right.</p>
+
+        <h2>Padding and the attention mask</h2>
+        <p>The GPU processes a <strong>batch</strong> of sequences at once, and a batch must be rectangular — every row the same length. Real examples vary in length, so shorter ones are <strong>padded</strong> with a special pad token up to the batch's longest. To stop the model from treating padding as real content, each example carries an <strong>attention mask</strong>: a 1 for real tokens, 0 for padding, telling attention to ignore the padded positions. Padding affects only batching efficiency, never the meaning.</p>
+
+        <h2>Truncation and max_seq_length</h2>
+        <p><strong>max_seq_length</strong> caps how many tokens an example may have. Anything longer is <strong>truncated</strong> — cut to fit. This is where a real bug hides: if you truncate from the end, you can chop off the <em>completion</em> (the part you actually train on), leaving the model nothing to learn. Choose <code>max_seq_length</code> from your data's actual length distribution, and when you must truncate, truncate the <em>prompt/context</em> side so the completion survives.</p>
+        <div class="callout callout--warning">
+          <p class="callout__label">Silent data bug</p>
+          <p>Truncation that clips completions lets training run normally while teaching the model partial or empty targets. Always inspect your token-length distribution and confirm completions fit before a long run.</p>
+        </div>
+
+        <h2>Sequence packing</h2>
+        <p>If your examples are short and <code>max_seq_length</code> is large, most of each padded sequence is wasted compute. <strong>Sequence packing</strong> concatenates several short examples into one full-length sequence, so the GPU does useful work instead of multiplying padding. It needs care: examples shouldn't "attend across" each other (attention boundaries are reset per example) and position counting restarts at each boundary. Good trainers handle this; the payoff is a sizable throughput win on short-example datasets.</p>
+
+        <h2>Padding side and cost</h2>
+        <p>For causal (decoder-only) models, the <strong>padding side</strong> matters at inference — typically left-padding so the real tokens end at the sequence's end where generation continues. And remember the cost lever: attention work grows roughly with the square of sequence length, so a larger <code>max_seq_length</code> is more expensive per step. Pick the smallest length that comfortably fits your data.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Set <code>max_seq_length</code> from your data, not a round number: large enough that completions are never clipped, small enough that you're not paying for empty context.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Padding</dt><dd>Filling shorter sequences with a pad token so a batch is rectangular.</dd>
+            <dt>Attention mask</dt><dd>A 0/1 marker telling the model to ignore padded positions.</dd>
+            <dt>Truncation</dt><dd>Cutting sequences longer than max_seq_length; truncate the prompt side to protect the completion.</dd>
+            <dt>max_seq_length</dt><dd>The cap on tokens per example; set it from the data's length distribution.</dd>
+            <dt>Sequence packing</dt><dd>Concatenating short examples into one full-length sequence to avoid wasted padding compute.</dd>
+            <dt>Padding side</dt><dd>Which end padding is added; causal models often left-pad at inference.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What is the attention mask for?",
+    "options": [
+      "Choosing the next token",
+      "Telling the model to ignore padded positions",
+      "Setting the learning rate",
+      "Merging LoRA weights"
+    ],
+    "answer": 1,
+    "explanation": "The attention mask marks real (1) vs padded (0) tokens so padding is ignored."
+  },
+  {
+    "q": "Why can naive truncation be a silent bug?",
+    "options": [
+      "It changes the vocabulary",
+      "It can clip the completion you train on, teaching partial/empty targets",
+      "It always crashes",
+      "It doubles memory"
+    ],
+    "answer": 1,
+    "explanation": "End-truncation can remove the completion; training proceeds but learns nothing useful from those rows."
+  },
+  {
+    "q": "Sequence packing improves training by\u2026",
+    "options": [
+      "Increasing the learning rate",
+      "Concatenating short examples to avoid wasting compute on padding",
+      "Removing the attention mask",
+      "Shrinking the model"
+    ],
+    "answer": 1,
+    "explanation": "Packing fills sequences with real tokens instead of padding, raising throughput on short-example data."
+  },
+  {
+    "q": "How should you choose max_seq_length?",
+    "options": [
+      "Always 2048",
+      "The largest number your GPU allows",
+      "From your data's length distribution \u2014 fit completions, avoid paying for empty context",
+      "Equal to the vocabulary size"
+    ],
+    "answer": 2,
+    "explanation": "Pick the smallest length that never clips completions; attention cost grows ~quadratically with length."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="task-shapes.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Task shapes: classification, QA, extraction, summarization, chat</span></a>
+          <a href="data-quality-splits.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Data quality I: dedup, balance, leakage, and splits</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Overfitting, underfitting, and reading a loss curve — BrewSLM Academy</title>
+    <meta name="description" content="A loss curve tells you whether a run is healthy, underfitting, or overfitting. This lesson teaches you to read training vs validation curves, recognize the diverging-validation signature of overfitting, and respond." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/overfitting-and-loss-curves.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Overfitting, underfitting, and reading a loss curve — BrewSLM Academy" />
+    <meta property="og:description" content="A loss curve tells you whether a run is healthy, underfitting, or overfitting. This lesson teaches you to read training vs validation curves, recognize the diverging-validation signature of overfitting, and respond." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/overfitting-and-loss-curves.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Overfitting, underfitting, and reading a loss curve — BrewSLM Academy" />
+    <meta name="twitter:description" content="A loss curve tells you whether a run is healthy, underfitting, or overfitting. This lesson teaches you to read training vs validation curves, recognize the diverging-validation signature of overfitting, and respond." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Overfitting, underfitting, and reading a loss curve",
+        "description": "A loss curve tells you whether a run is healthy, underfitting, or overfitting. This lesson teaches you to read training vs validation curves, recognize the diverging-validation signature of overfitting, and respond.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/overfitting-and-loss-curves.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["overfitting", "underfitting", "training vs validation loss", "early stopping", "generalization gap"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Overfitting, underfitting, and reading a loss curve", "item": "https://brewslm.com/academy/sft-fundamentals/overfitting-and-loss-curves.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Overfitting, underfitting, and reading a loss curve"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What is the classic signature of overfitting?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Training loss falls while validation loss flattens then rises"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Both training and validation loss stay high and barely move. This is\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Underfitting"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "The simplest response to overfitting is\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Early stopping \u2014 keep the checkpoint at the validation minimum"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why isn't a low training loss enough to call a run good?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Training loss nearly always drops; the train/val relationship (and gold-set metric) is the real signal"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/overfitting-and-loss-curves">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">SFT fundamentals</a></li><li>Overfitting & loss curves</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 17</span>
+          <h1>Overfitting, underfitting, and reading a loss curve</h1>
+          <p class="lesson-header__outcome">After this lesson you can read training and validation loss curves together, diagnose underfitting vs overfitting vs a healthy run, and choose the right response (more data, fewer epochs, regularization, early stopping).</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="surviving-oom.html">OOM and how to survive it</a></span>
+          </div>
+        </header>
+
+        <p>Training emits a stream of numbers; the loss curve is how you read the run's health at a glance. The single most informative habit you can build is plotting <strong>training loss and validation loss together</strong> and watching the gap between them.</p>
+
+        <h2>The three shapes</h2>
+        <ul>
+          <li><strong>Healthy</strong>: both training and validation loss fall and then flatten, staying close together. The model is learning generalizable patterns. Stop around where validation flattens.</li>
+          <li><strong>Underfitting</strong>: both losses stay high or barely move. The model hasn't learned enough — too few epochs, learning rate too low, too little capacity (e.g. LoRA rank too small), or a data problem.</li>
+          <li><strong>Overfitting</strong>: training loss keeps dropping while <strong>validation loss flattens and then rises</strong>. The model is memorizing the training set instead of generalizing — the gap between the two curves (the <strong>generalization gap</strong>) widens.</li>
+        </ul>
+        <figure class="diagram">
+          <svg viewBox="0 0 620 180" role="img" aria-label="Two curves over steps: training loss keeps falling; validation loss falls, reaches a minimum, then rises — the overfitting signature.">
+            <line x1="50" y1="150" x2="590" y2="150" stroke="#d4d4d4"></line>
+            <line x1="50" y1="150" x2="50" y2="20" stroke="#d4d4d4"></line>
+            <text x="48" y="18" text-anchor="end" font-family="Geist, sans-serif" font-size="11" fill="#737373">loss</text>
+            <text x="590" y="168" text-anchor="end" font-family="Geist, sans-serif" font-size="11" fill="#737373">step</text>
+            <path d="M55,40 C200,120 400,140 585,148" fill="none" stroke="#171717" stroke-width="1.5"></path>
+            <path d="M55,50 C200,110 330,108 585,70" fill="none" stroke="#a3a3a3" stroke-width="1.5" stroke-dasharray="4 3"></path>
+            <circle cx="320" cy="108" r="3.5" fill="#171717"></circle>
+            <text x="320" y="100" text-anchor="middle" font-family="Geist, sans-serif" font-size="10" fill="#171717">best checkpoint</text>
+            <text x="540" y="60" font-family="Geist, sans-serif" font-size="10" fill="#737373">val ↑</text>
+            <text x="540" y="140" font-family="Geist, sans-serif" font-size="10" fill="#171717">train ↓</text>
+          </svg>
+          <figcaption>Solid = training loss; dashed = validation loss. The minimum of the validation curve is the checkpoint to keep; beyond it the model overfits.</figcaption>
+        </figure>
+
+        <h2>Responding to overfitting</h2>
+        <p>When validation turns up, you have several moves, roughly in order of preference:</p>
+        <ul>
+          <li><strong>Early stopping</strong> — just keep the checkpoint at the validation minimum (you saved several, per Lesson 9). The simplest fix.</li>
+          <li><strong>Fewer epochs</strong> next run — you were training past the sweet spot.</li>
+          <li><strong>More / more varied data</strong> — the real cure; a model overfits most easily on thin data.</li>
+          <li><strong>More regularization</strong> — e.g. a bit more LoRA dropout or weight decay.</li>
+          <li><strong>Less capacity</strong> — a smaller LoRA rank if it's wildly over-parameterized for the data.</li>
+        </ul>
+
+        <h2>Responding to underfitting</h2>
+        <p>If both losses are stuck high: train longer (more epochs/steps), raise the learning rate (carefully), increase capacity (higher LoRA rank or more target modules), or check that the data and loss mask are actually correct — a broken mask or mis-formatted data shows up as a model that won't learn.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Training loss alone can fool you — it almost always goes down. The <em>relationship</em> between training and validation loss is the diagnosis. And remember: the loss is a proxy; the final verdict is the gold-set metric, which the next lesson makes precise.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Overfitting</dt><dd>Training loss falls while validation loss rises — the model memorizes instead of generalizing.</dd>
+            <dt>Underfitting</dt><dd>Both losses stay high; the model hasn't learned enough (too few steps, low LR, too little capacity).</dd>
+            <dt>Generalization gap</dt><dd>The distance between training and validation loss; a widening gap signals overfitting.</dd>
+            <dt>Early stopping</dt><dd>Keeping the checkpoint at the validation-loss minimum rather than the final step.</dd>
+            <dt>Validation loss</dt><dd>Loss on held-out data; the signal for generalization and checkpoint selection.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What is the classic signature of overfitting?",
+    "options": [
+      "Both losses rise",
+      "Training loss falls while validation loss flattens then rises",
+      "Both losses stay flat and high",
+      "Validation loss is always zero"
+    ],
+    "answer": 1,
+    "explanation": "Diverging curves \u2014 training improving, validation worsening \u2014 mean memorization, not generalization."
+  },
+  {
+    "q": "Both training and validation loss stay high and barely move. This is\u2026",
+    "options": [
+      "Overfitting",
+      "Underfitting",
+      "A perfect run",
+      "Leakage"
+    ],
+    "answer": 1,
+    "explanation": "Underfitting: train longer, raise LR carefully, add capacity, or check the data/loss mask."
+  },
+  {
+    "q": "The simplest response to overfitting is\u2026",
+    "options": [
+      "Train for more epochs",
+      "Early stopping \u2014 keep the checkpoint at the validation minimum",
+      "Remove the validation set",
+      "Increase the LoRA rank"
+    ],
+    "answer": 1,
+    "explanation": "You saved checkpoints; keep the one where validation was best."
+  },
+  {
+    "q": "Why isn't a low training loss enough to call a run good?",
+    "options": [
+      "It always equals validation loss",
+      "Training loss nearly always drops; the train/val relationship (and gold-set metric) is the real signal",
+      "It measures speed",
+      "It changes the tokenizer"
+    ],
+    "answer": 1,
+    "explanation": "Training loss can fall while the model overfits; judge by validation and ultimately the gold-set metric."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="surviving-oom.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">OOM and how to survive it</span></a>
+          <a href="evaluation-fundamentals.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Evaluation that matches the task</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

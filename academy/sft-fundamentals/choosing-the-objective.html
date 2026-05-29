@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Choosing the training objective: SFT, DPO, ORPO, RLHF — BrewSLM Academy</title>
+    <meta name="description" content="Beyond SFT there are preference-based objectives (DPO, ORPO, RLHF) and continued pretraining. This lesson explains what each optimizes, when comparative 'A is better than B' data beats single-target data, and how to choose." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/choosing-the-objective.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Choosing the training objective: SFT, DPO, ORPO, RLHF — BrewSLM Academy" />
+    <meta property="og:description" content="Beyond SFT there are preference-based objectives (DPO, ORPO, RLHF) and continued pretraining. This lesson explains what each optimizes, when comparative 'A is better than B' data beats single-target data, and how to choose." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/choosing-the-objective.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Choosing the training objective: SFT, DPO, ORPO, RLHF — BrewSLM Academy" />
+    <meta name="twitter:description" content="Beyond SFT there are preference-based objectives (DPO, ORPO, RLHF) and continued pretraining. This lesson explains what each optimizes, when comparative 'A is better than B' data beats single-target data, and how to choose." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Choosing the training objective: SFT, DPO, ORPO, RLHF",
+        "description": "Beyond SFT there are preference-based objectives (DPO, ORPO, RLHF) and continued pretraining. This lesson explains what each optimizes, when comparative 'A is better than B' data beats single-target data, and how to choose.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/choosing-the-objective.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["training objective", "DPO", "ORPO", "RLHF", "preference pair", "continued pretraining"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Choosing the training objective: SFT, DPO, ORPO, RLHF", "item": "https://brewslm.com/academy/sft-fundamentals/choosing-the-objective.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Choosing the training objective: SFT, DPO, ORPO, RLHF"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "When is SFT the right objective?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "When each input has a clear target output"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "DPO learns from\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "(chosen, rejected) preference pairs"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why has DPO largely displaced RLHF for fine-tuning small models?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It achieves similar ends with far less machinery (no separate reward model + RL)"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "You need a model to speak a brand-new technical domain it has never seen. Best first move?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Continued pretraining on a domain corpus, then SFT"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/choosing-the-objective">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">SFT fundamentals</a></li><li>Choosing the objective</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 2</span>
+          <h1>Choosing the training objective: SFT, DPO, ORPO, RLHF</h1>
+          <p class="lesson-header__outcome">After this lesson you can name the main training objectives, explain what each one optimizes, and pick the right one for a goal — including when to chain SFT with preference optimization.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="what-is-sft.html">What is Supervised Fine-Tuning?</a></span>
+          </div>
+        </header>
+
+        <p>SFT is one training objective: imitate a target output. Sometimes that's not the right thing to optimize — when "the right answer" is comparative ("response A is better than B") rather than a single fixed string. This lesson maps the objectives so you choose deliberately. (Prompting and RAG from Track 0 are not on this map — they don't train the model at all.)</p>
+
+        <h2>SFT: imitate the target</h2>
+        <p>SFT minimizes cross-entropy on the completion tokens — it pushes the model toward reproducing the demonstrated output. Use it when each input has a clear target: a label, an extraction, a correct answer, a desired format. It is the workhorse and almost always the first objective you run.</p>
+
+        <h2>Preference optimization: learn what's better</h2>
+        <p>For open-ended outputs ("write a helpful reply"), there's no single correct string — but humans can say which of two responses is better. <strong>Preference pairs</strong> capture that: a prompt with a <em>chosen</em> and a <em>rejected</em> response. <strong>DPO</strong> (Direct Preference Optimization) trains the model to make chosen responses more likely than rejected ones, directly from those pairs. It's typically applied <em>after</em> SFT to refine quality, style, or safety where "better" is a judgment, not a fact.</p>
+        <p><strong>ORPO</strong> folds preference learning into the SFT step itself (one stage instead of SFT-then-DPO), which can be simpler when you have preference data up front.</p>
+
+        <h2>RLHF: the heavyweight ancestor</h2>
+        <p><strong>RLHF</strong> (Reinforcement Learning from Human Feedback) trains a separate <em>reward model</em> from preferences, then optimizes the language model against it with reinforcement learning (PPO). It is powerful but complex and finicky to stabilize. For most teams, <strong>DPO achieves similar ends with far less machinery</strong>, which is why it has largely displaced RLHF for fine-tuning small models.</p>
+
+        <h2>Continued pretraining: build base ability</h2>
+        <p>If the problem is that the base model doesn't speak your domain's language at all, <strong>continued pretraining</strong> — more raw next-token training on a large domain corpus — comes <em>before</em> SFT. It's expensive and rarely the first move; most projects start from an existing base and skip straight to SFT.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Decision guide</p>
+          <p>One right answer per input → <strong>SFT</strong>. "A is better than B" judgments to refine an already-decent model → <strong>DPO</strong> (or ORPO) after SFT. A whole new domain's language, with budget → <strong>continued pretraining</strong>, then SFT. Reach for RLHF only if you specifically need a reward model.</p>
+        </div>
+        <p>The overwhelming majority of practical projects are SFT, occasionally followed by DPO. This Academy focuses on SFT and returns to alignment (DPO/ORPO) as an advanced topic in Track 4. Next, we dissect a single SFT example.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Training objective</dt><dd>What the loss optimizes — e.g. imitate a target (SFT) or prefer one response over another (DPO).</dd>
+            <dt>DPO</dt><dd>Direct Preference Optimization: train on (chosen, rejected) pairs to prefer better responses, no reward model.</dd>
+            <dt>ORPO</dt><dd>An objective that combines SFT and preference learning in a single stage.</dd>
+            <dt>RLHF</dt><dd>Reinforcement Learning from Human Feedback: train a reward model, then optimize with RL; powerful but complex.</dd>
+            <dt>Preference pair</dt><dd>A prompt with a chosen and a rejected response, used by DPO/ORPO/RLHF.</dd>
+            <dt>Continued pretraining</dt><dd>Further raw next-token training on a domain corpus to build base ability, before SFT.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "When is SFT the right objective?",
+    "options": [
+      "When there is no single correct output",
+      "When each input has a clear target output",
+      "Only for chat",
+      "When you have a reward model"
+    ],
+    "answer": 1,
+    "explanation": "SFT imitates a target, so it fits inputs with a clear correct output (label, extraction, answer, format)."
+  },
+  {
+    "q": "DPO learns from\u2026",
+    "options": [
+      "A single target per input",
+      "(chosen, rejected) preference pairs",
+      "Raw web text",
+      "A reward model trained with PPO"
+    ],
+    "answer": 1,
+    "explanation": "DPO optimizes directly on preference pairs, making chosen responses more likely than rejected ones."
+  },
+  {
+    "q": "Why has DPO largely displaced RLHF for fine-tuning small models?",
+    "options": [
+      "It needs more GPUs",
+      "It achieves similar ends with far less machinery (no separate reward model + RL)",
+      "It changes the tokenizer",
+      "It is a form of prompting"
+    ],
+    "answer": 1,
+    "explanation": "DPO skips the reward-model + RL complexity of RLHF while reaching comparable results."
+  },
+  {
+    "q": "You need a model to speak a brand-new technical domain it has never seen. Best first move?",
+    "options": [
+      "DPO",
+      "RLHF",
+      "Continued pretraining on a domain corpus, then SFT",
+      "Lower the learning rate"
+    ],
+    "answer": 2,
+    "explanation": "Building base domain ability calls for continued pretraining before task-specific SFT."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="what-is-sft.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">What is Supervised Fine-Tuning?</span></a>
+          <a href="anatomy-of-an-sft-example.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Anatomy of an SFT example: prompt, completion, and the loss mask</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

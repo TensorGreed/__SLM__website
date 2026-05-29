@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LoRA knobs: rank, alpha, dropout, target modules, QLoRA — BrewSLM Academy</title>
+    <meta name="description" content="LoRA exposes a few settings: rank r, alpha, dropout, and which modules to adapt — plus QLoRA for quantized bases. This lesson explains what each knob does and sensible defaults." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/lora-knobs.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="LoRA knobs: rank, alpha, dropout, target modules, QLoRA — BrewSLM Academy" />
+    <meta property="og:description" content="LoRA exposes a few settings: rank r, alpha, dropout, and which modules to adapt — plus QLoRA for quantized bases. This lesson explains what each knob does and sensible defaults." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/lora-knobs.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="LoRA knobs: rank, alpha, dropout, target modules, QLoRA — BrewSLM Academy" />
+    <meta name="twitter:description" content="LoRA exposes a few settings: rank r, alpha, dropout, and which modules to adapt — plus QLoRA for quantized bases. This lesson explains what each knob does and sensible defaults." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "LoRA knobs: rank, alpha, dropout, target modules, QLoRA",
+        "description": "LoRA exposes a few settings: rank r, alpha, dropout, and which modules to adapt — plus QLoRA for quantized bases. This lesson explains what each knob does and sensible defaults.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/lora-knobs.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["LoRA rank", "LoRA alpha", "target modules", "LoRA dropout", "QLoRA", "quantization"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "LoRA knobs: rank, alpha, dropout, target modules, QLoRA", "item": "https://brewslm.com/academy/sft-fundamentals/lora-knobs.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "LoRA knobs: rank, alpha, dropout, target modules, QLoRA"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What does the LoRA rank r control?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The adapter's capacity (how much change it can express)"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "A common convention for alpha is\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "alpha = 2 \u00d7 r"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does QLoRA add over plain LoRA?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It quantizes the frozen base (e.g. to 4-bit) to save memory"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which is a sensible minimal target-modules choice?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The attention query/value projections"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/lora-knobs">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">SFT fundamentals</a></li><li>LoRA knobs</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 14</span>
+          <h1>LoRA knobs: rank, alpha, dropout, target modules, QLoRA</h1>
+          <p class="lesson-header__outcome">After this lesson you can configure a LoRA fine-tune: choose the rank and alpha, pick target modules, set dropout, and decide when QLoRA is worth it.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="full-finetuning-vs-lora.html">Full fine-tuning vs LoRA</a></span>
+          </div>
+        </header>
+
+        <p>LoRA has a handful of settings. You can get a good result with defaults, but understanding each knob lets you trade capacity, regularization, and memory deliberately.</p>
+
+        <h2>Rank (r): the adapter's capacity</h2>
+        <p>The <strong>rank</strong> <code>r</code> is the inner dimension of LoRA's two small matrices — effectively how much "room" the adapter has to express a change. Small <code>r</code> (e.g. 8) is cheap and often plenty for a narrow task; larger <code>r</code> (16, 32, 64) adds capacity for harder or broader tasks at the cost of more adapter parameters and memory. More is not always better — too much rank on a small dataset just gives the model more room to overfit. A common starting point is <code>r = 16</code>.</p>
+
+        <h2>Alpha: how strongly the adapter speaks</h2>
+        <p><strong>alpha</strong> scales the adapter's contribution before it's added to the frozen weights (the effective scale is roughly <code>alpha / r</code>). A frequent convention is to set <code>alpha = 2 × r</code> (e.g. r=16, alpha=32). If you change <code>r</code>, people often scale <code>alpha</code> with it to keep the effective strength similar. Treat the pair together rather than tuning each blindly.</p>
+
+        <h2>Target modules: where to put adapters</h2>
+        <p>You choose which weight matrices get an adapter — the <strong>target modules</strong>. The attention projections (the query/key/value/output matrices from Track 0) are the usual targets; adapting the feed-forward layers too increases capacity and cost. A minimal, common choice is the query and value projections; "all linear layers" is the more thorough, heavier option. Start minimal and expand only if quality demands it.</p>
+
+        <h2>Dropout: light regularization</h2>
+        <p><strong>LoRA dropout</strong> randomly zeroes some of the adapter's activations during training, a mild regularizer that helps avoid overfitting on small datasets. A small value like <code>0.05</code> is typical; raise it slightly if you see overfitting, lower it toward 0 for larger datasets.</p>
+
+        <h2>QLoRA: LoRA on a quantized base</h2>
+        <p><strong>QLoRA</strong> shrinks memory further by <strong>quantizing</strong> the frozen base model — storing its weights in 4 bits instead of 16 — while still training a normal LoRA adapter on top. Since the base is frozen anyway, quantizing it costs little quality but roughly quarters the memory the weights occupy, letting you fine-tune a model that wouldn't otherwise fit. The trade is slightly slower steps and a small quality risk. Reach for QLoRA when memory is the binding constraint.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Sensible starting point</p>
+          <p><code>r = 16</code>, <code>alpha = 32</code>, dropout <code>0.05</code>, target the attention projections, full-precision base if it fits (QLoRA if not). Change one thing at a time and measure on the gold set.</p>
+        </div>
+        <p>These knobs spend memory. To set them — and the batch size — without crashing, you need to estimate the GPU memory a run will use, which is the next lesson.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>LoRA rank (r)</dt><dd>The adapter's inner dimension / capacity; higher = more room (and more overfit risk). Common: 16.</dd>
+            <dt>LoRA alpha</dt><dd>Scales the adapter's contribution (~alpha/r); often set to 2×r.</dd>
+            <dt>Target modules</dt><dd>Which weight matrices get adapters (commonly the attention query/value projections).</dd>
+            <dt>LoRA dropout</dt><dd>Mild regularization zeroing some adapter activations during training (e.g. 0.05).</dd>
+            <dt>QLoRA</dt><dd>LoRA on a 4-bit quantized frozen base, to fit fine-tuning into far less memory.</dd>
+            <dt>Quantization</dt><dd>Storing weights in fewer bits (e.g. 4) to save memory.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What does the LoRA rank r control?",
+    "options": [
+      "The learning rate",
+      "The adapter's capacity (how much change it can express)",
+      "The vocabulary size",
+      "The number of epochs"
+    ],
+    "answer": 1,
+    "explanation": "r is the adapter's inner dimension; higher r = more capacity and more parameters/overfit risk."
+  },
+  {
+    "q": "A common convention for alpha is\u2026",
+    "options": [
+      "alpha = r / 2",
+      "alpha = 2 \u00d7 r",
+      "alpha = 0",
+      "alpha = vocabulary size"
+    ],
+    "answer": 1,
+    "explanation": "alpha is often set to about twice the rank; the effective scale is ~alpha/r."
+  },
+  {
+    "q": "What does QLoRA add over plain LoRA?",
+    "options": [
+      "It trains the whole model",
+      "It quantizes the frozen base (e.g. to 4-bit) to save memory",
+      "It removes the adapter",
+      "It changes the task shape"
+    ],
+    "answer": 1,
+    "explanation": "QLoRA quantizes the frozen base so fine-tuning fits in much less memory, with a small quality risk."
+  },
+  {
+    "q": "Which is a sensible minimal target-modules choice?",
+    "options": [
+      "The embedding table only",
+      "The attention query/value projections",
+      "The tokenizer",
+      "The loss function"
+    ],
+    "answer": 1,
+    "explanation": "Adapting the attention q/v projections is a common minimal, effective choice; expand only if needed."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="full-finetuning-vs-lora.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Full fine-tuning vs LoRA</span></a>
+          <a href="gpu-memory-math.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">GPU memory math</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The training loop, step by step — BrewSLM Academy</title>
+    <meta name="description" content="An SFT training loop is the gradient-descent loop applied to batches of tokenized examples: forward pass, compute loss on the completion, backward pass, optimizer step, repeat — with checkpoints and validation along the way. This lesson walks the whole loop." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/the-training-loop.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="The training loop, step by step — BrewSLM Academy" />
+    <meta property="og:description" content="An SFT training loop is the gradient-descent loop applied to batches of tokenized examples: forward pass, compute loss on the completion, backward pass, optimizer step, repeat — with checkpoints and validation along the way. This lesson walks the whole loop." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/the-training-loop.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="The training loop, step by step — BrewSLM Academy" />
+    <meta name="twitter:description" content="An SFT training loop is the gradient-descent loop applied to batches of tokenized examples: forward pass, compute loss on the completion, backward pass, optimizer step, repeat — with checkpoints and validation along the way. This lesson walks the whole loop." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "The training loop, step by step",
+        "description": "An SFT training loop is the gradient-descent loop applied to batches of tokenized examples: forward pass, compute loss on the completion, backward pass, optimizer step, repeat — with checkpoints and validation along the way. This lesson walks the whole loop.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/the-training-loop.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["training step", "optimizer", "AdamW", "gradient", "checkpoint", "validation pass"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "The training loop, step by step", "item": "https://brewslm.com/academy/sft-fundamentals/the-training-loop.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "The training loop, step by step"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What is the correct order within one training step?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "forward \u2192 loss \u2192 backward \u2192 optimizer step"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why use AdamW instead of plain SGD?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It adapts the step per-parameter for faster, more stable training"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which signal best answers 'is the model actually better?'",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Validation loss/metric on held-out data"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why save multiple checkpoints?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Because training may not end at its best point \u2014 keep the best by validation"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/the-training-loop">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">SFT fundamentals</a></li><li>The training loop</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 9</span>
+          <h1>The training loop, step by step</h1>
+          <p class="lesson-header__outcome">After this lesson you can trace one step of an SFT training loop end to end, name what the optimizer and scheduler do, and explain checkpoints and validation passes.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="gold-sets.html">Data quality II: gold sets</a></span>
+          </div>
+        </header>
+
+        <p>You now have clean, formatted, masked, tokenized data. Time to train. The SFT training loop is exactly the gradient-descent loop from Track 0, now operating on batches of tokenized examples through a Transformer. Let's walk one full step and the loop around it.</p>
+
+        <h2>One training step</h2>
+        <div class="code-block">
+          <p>for batch in dataloader:                 # a minibatch of examples</p>
+          <p>&nbsp;&nbsp;logits = model(batch.input_ids,         # forward pass</p>
+          <p>&nbsp;&nbsp;               attention_mask=batch.mask)</p>
+          <p>&nbsp;&nbsp;loss   = cross_entropy(logits, batch.labels)  # loss on completion tokens only</p>
+          <p>&nbsp;&nbsp;loss.backward()                        # backprop: gradients for every parameter</p>
+          <p>&nbsp;&nbsp;optimizer.step()                       # nudge parameters</p>
+          <p>&nbsp;&nbsp;scheduler.step()                       # adjust the learning rate</p>
+          <p>&nbsp;&nbsp;optimizer.zero_grad()                  # reset gradients for the next step</p>
+        </div>
+        <p>Five familiar moves: run the batch forward to get next-token logits, compute the loss <em>only on the completion tokens</em> (the loss mask, encoded in <code>labels</code>), backpropagate to get the gradient for every parameter, and take an optimizer step. Then reset and repeat. That's the entire engine.</p>
+
+        <h2>The optimizer (AdamW)</h2>
+        <p>Plain gradient descent works, but in practice we use a smarter optimizer — almost always <strong>AdamW</strong>. It keeps a running estimate of each parameter's recent gradient behavior and adapts the step per-parameter, which makes training faster and more stable than vanilla SGD. It also costs memory: AdamW stores two extra numbers per parameter (we'll account for that in the memory lesson). The <strong>scheduler</strong> changes the learning rate over time — the subject of an upcoming lesson.</p>
+
+        <h2>Checkpoints</h2>
+        <p>Periodically the loop saves a <strong>checkpoint</strong> — the current parameters (or, for LoRA, the adapter) written to disk. Checkpoints let you resume after a crash, and — more importantly — let you keep the <em>best</em> version rather than the last. Training doesn't always end at its best point, so you save several and select by validation performance.</p>
+
+        <h2>Validation passes</h2>
+        <p>Every so often the loop runs the model over the <strong>validation set</strong> (no gradient updates) and records the validation loss or metric. This is your early-warning system: while training loss almost always keeps dropping, validation loss tells you when the model is starting to <em>memorize</em> rather than generalize. You pick the checkpoint where validation was best — not where training loss was lowest.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Training loss measures fit to the data you trained on; validation loss estimates generalization. Trust validation for "is it actually better?", and save checkpoints so you can keep the best one.</p>
+        </div>
+        <p>Everything else in this track tunes this loop: the loss (next lesson), the learning rate and schedule, the batch size, and which parameters you train (full vs LoRA). The loop itself never changes.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Training step</dt><dd>One iteration: forward → loss → backward → optimizer step → zero gradients.</dd>
+            <dt>Optimizer / AdamW</dt><dd>The rule that updates parameters from gradients; AdamW adapts per-parameter and is the standard choice.</dd>
+            <dt>Scheduler</dt><dd>Adjusts the learning rate over the course of training.</dd>
+            <dt>Checkpoint</dt><dd>Saved parameters (or LoRA adapter) on disk, for resuming and keeping the best version.</dd>
+            <dt>Validation pass</dt><dd>Running the model on the validation set without updates to estimate generalization.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What is the correct order within one training step?",
+    "options": [
+      "backward \u2192 forward \u2192 step",
+      "forward \u2192 loss \u2192 backward \u2192 optimizer step",
+      "optimizer step \u2192 forward \u2192 loss",
+      "loss \u2192 forward \u2192 backward"
+    ],
+    "answer": 1,
+    "explanation": "Forward pass to logits, compute loss, backpropagate gradients, then the optimizer updates parameters."
+  },
+  {
+    "q": "Why use AdamW instead of plain SGD?",
+    "options": [
+      "It uses no memory",
+      "It adapts the step per-parameter for faster, more stable training",
+      "It removes the loss mask",
+      "It enlarges the vocabulary"
+    ],
+    "answer": 1,
+    "explanation": "AdamW adapts updates per-parameter (at the cost of extra memory), improving stability and speed."
+  },
+  {
+    "q": "Which signal best answers 'is the model actually better?'",
+    "options": [
+      "Training loss",
+      "Validation loss/metric on held-out data",
+      "The number of steps",
+      "GPU temperature"
+    ],
+    "answer": 1,
+    "explanation": "Validation estimates generalization; training loss can keep dropping while the model overfits."
+  },
+  {
+    "q": "Why save multiple checkpoints?",
+    "options": [
+      "To use more disk",
+      "Because training may not end at its best point \u2014 keep the best by validation",
+      "To change the tokenizer",
+      "They are required by AdamW"
+    ],
+    "answer": 1,
+    "explanation": "You select the checkpoint with the best validation performance, which isn't always the final step."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="gold-sets.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Data quality II: gold sets</span></a>
+          <a href="cross-entropy-loss.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Cross-entropy loss for token prediction</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GPU memory math — BrewSLM Academy</title>
+    <meta name="description" content="Knowing what consumes GPU memory — weights, gradients, optimizer state, and activations — lets you predict whether a run fits and why LoRA and mixed precision help. This lesson builds a back-of-envelope memory model." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/gpu-memory-math.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="GPU memory math — BrewSLM Academy" />
+    <meta property="og:description" content="Knowing what consumes GPU memory — weights, gradients, optimizer state, and activations — lets you predict whether a run fits and why LoRA and mixed precision help. This lesson builds a back-of-envelope memory model." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/gpu-memory-math.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="GPU memory math — BrewSLM Academy" />
+    <meta name="twitter:description" content="Knowing what consumes GPU memory — weights, gradients, optimizer state, and activations — lets you predict whether a run fits and why LoRA and mixed precision help. This lesson builds a back-of-envelope memory model." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "GPU memory math",
+        "description": "Knowing what consumes GPU memory — weights, gradients, optimizer state, and activations — lets you predict whether a run fits and why LoRA and mixed precision help. This lesson builds a back-of-envelope memory model.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/gpu-memory-math.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["GPU memory", "optimizer state", "activations", "mixed precision", "memory budgeting"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "GPU memory math", "item": "https://brewslm.com/academy/sft-fundamentals/gpu-memory-math.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "GPU memory math"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "In full fine-tuning, which is often the LARGEST memory consumer?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "AdamW optimizer state (~8 bytes/param)"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does LoRA fit where full fine-tuning doesn't?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Gradients and optimizer state exist only for the tiny adapter, not the frozen base"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Activation memory scales mainly with\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Batch size \u00d7 sequence length"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does mixed precision (bf16) do?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Roughly halves weight/gradient/activation memory with stable training"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/gpu-memory-math">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">SFT fundamentals</a></li><li>GPU memory math</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 15</span>
+          <h1>GPU memory math</h1>
+          <p class="lesson-header__outcome">After this lesson you can estimate the GPU memory a fine-tune will use, explain why full fine-tuning needs several times the model size, and see exactly where LoRA and mixed precision save memory.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="lora-knobs.html">LoRA knobs: rank, alpha, dropout, target modules, QLoRA</a></span>
+          </div>
+        </header>
+
+        <p>"Will this fit on my GPU?" is a question you'll ask constantly, and you can answer it with arithmetic. There are four consumers of training memory; knowing them turns out-of-memory errors from mysteries into predictions.</p>
+
+        <h2>The four consumers</h2>
+        <ul>
+          <li><strong>Weights</strong> — the parameters themselves. ≈ params × bytes-per-param. At bf16 (2 bytes), a 1B model ≈ 2&nbsp;GB.</li>
+          <li><strong>Gradients</strong> — one per trainable parameter, same size as the weights you're training. Full fine-tuning: another ≈ 2&nbsp;GB for a 1B model.</li>
+          <li><strong>Optimizer state</strong> — AdamW keeps two extra values per trainable parameter (and often in 32-bit), so roughly <em>8 bytes</em> per trainable parameter — frequently the <em>largest</em> single consumer. For a 1B model fully fine-tuned, ≈ 8&nbsp;GB.</li>
+          <li><strong>Activations</strong> — intermediate values from the forward pass, kept for the backward pass. These scale with batch size and sequence length (not parameter count), and can be large.</li>
+        </ul>
+
+        <h2>Why full fine-tuning needs several times the model size</h2>
+        <p>Add the first three for a fully-fine-tuned 1B model at bf16: ~2 (weights) + ~2 (gradients) + ~8 (AdamW state) = ~12&nbsp;GB <em>before activations</em>. That's the rule of thumb "full fine-tuning needs several times the model's size in memory." It's why a model whose weights fit easily can still refuse to train.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Where LoRA saves</p>
+          <p>With LoRA the base is frozen, so gradients and optimizer state exist only for the <em>tiny</em> adapter — the ~2&nbsp;GB + ~8&nbsp;GB above nearly vanish. You pay full weight memory (and can quarter that with QLoRA's 4-bit base) plus a sliver for the adapter. This is the concrete reason LoRA fits where full fine-tuning doesn't.</p>
+        </div>
+
+        <h2>Mixed precision</h2>
+        <p><strong>Mixed precision</strong> stores and computes most things in 16-bit (bf16/fp16) instead of 32-bit, roughly halving weight, gradient, and activation memory while keeping training stable. <strong>bf16</strong> is preferred on modern GPUs for its numerical range. It's nearly free quality-wise and standard practice.</p>
+
+        <h2>Managing activations</h2>
+        <p>Activations are the lever you control at run time. They grow with <strong>batch size × sequence length</strong>, so the two biggest knobs for fitting a run are exactly those. <strong>Gradient checkpointing</strong> (next lesson) trades compute to shrink activation memory dramatically. Combined with the earlier lessons: pick <code>max_seq_length</code> from your data, set a per-device batch that fits, and recover the effective batch with gradient accumulation.</p>
+        <p>You now have a mental calculator: weights + gradients + optimizer state + activations, scaled by precision. When the sum exceeds your GPU, you get an OOM — and the next lesson is the field guide to surviving exactly that.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Weights memory</dt><dd>≈ params × bytes-per-param (2 bytes at bf16).</dd>
+            <dt>Gradient memory</dt><dd>One value per trainable parameter (≈ weights size for the trained params).</dd>
+            <dt>Optimizer state</dt><dd>AdamW's ~8 bytes per trainable parameter — often the biggest consumer in full fine-tuning.</dd>
+            <dt>Activations</dt><dd>Forward-pass intermediates kept for backprop; scale with batch size × sequence length.</dd>
+            <dt>Mixed precision (bf16)</dt><dd>Computing/storing in 16-bit to roughly halve memory with stable training.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "In full fine-tuning, which is often the LARGEST memory consumer?",
+    "options": [
+      "The weights",
+      "The tokenizer",
+      "AdamW optimizer state (~8 bytes/param)",
+      "The vocabulary"
+    ],
+    "answer": 2,
+    "explanation": "AdamW stores ~2 extra values per parameter, often dwarfing the weights themselves."
+  },
+  {
+    "q": "Why does LoRA fit where full fine-tuning doesn't?",
+    "options": [
+      "It uses a bigger GPU",
+      "Gradients and optimizer state exist only for the tiny adapter, not the frozen base",
+      "It removes activations",
+      "It shrinks the vocabulary"
+    ],
+    "answer": 1,
+    "explanation": "Freezing the base eliminates its gradient and optimizer-state memory \u2014 usually the bulk."
+  },
+  {
+    "q": "Activation memory scales mainly with\u2026",
+    "options": [
+      "Parameter count",
+      "Batch size \u00d7 sequence length",
+      "Vocabulary size",
+      "Learning rate"
+    ],
+    "answer": 1,
+    "explanation": "Activations grow with how much data flows through per step: batch \u00d7 sequence length."
+  },
+  {
+    "q": "What does mixed precision (bf16) do?",
+    "options": [
+      "Doubles memory",
+      "Roughly halves weight/gradient/activation memory with stable training",
+      "Removes the optimizer",
+      "Changes the task shape"
+    ],
+    "answer": 1,
+    "explanation": "16-bit storage/compute halves much of the memory while staying numerically stable (bf16 preferred)."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="lora-knobs.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">LoRA knobs: rank, alpha, dropout, target modules, QLoRA</span></a>
+          <a href="surviving-oom.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">OOM and how to survive it</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cross-entropy loss for token prediction — BrewSLM Academy</title>
+    <meta name="description" content="Cross-entropy is the loss behind next-token training: it is small when the model gave high probability to the correct next token and large when it didn't. This lesson builds the intuition and connects it to perplexity." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/cross-entropy-loss.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Cross-entropy loss for token prediction — BrewSLM Academy" />
+    <meta property="og:description" content="Cross-entropy is the loss behind next-token training: it is small when the model gave high probability to the correct next token and large when it didn't. This lesson builds the intuition and connects it to perplexity." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/cross-entropy-loss.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Cross-entropy loss for token prediction — BrewSLM Academy" />
+    <meta name="twitter:description" content="Cross-entropy is the loss behind next-token training: it is small when the model gave high probability to the correct next token and large when it didn't. This lesson builds the intuition and connects it to perplexity." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Cross-entropy loss for token prediction",
+        "description": "Cross-entropy is the loss behind next-token training: it is small when the model gave high probability to the correct next token and large when it didn't. This lesson builds the intuition and connects it to perplexity.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/cross-entropy-loss.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["cross-entropy", "negative log likelihood", "perplexity", "confidence penalty"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Cross-entropy loss for token prediction", "item": "https://brewslm.com/academy/sft-fundamentals/cross-entropy-loss.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Cross-entropy loss for token prediction"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "Cross-entropy loss for a position depends on\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The probability assigned to the correct next token"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Being very confident in the WRONG token produces\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A very large loss"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does perplexity represent?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Roughly how many tokens the model is effectively choosing among"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "For judging an SFT task, what ultimately matters most?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The gold-set metric for the task"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/cross-entropy-loss">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">SFT fundamentals</a></li><li>Cross-entropy loss</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 10</span>
+          <h1>Cross-entropy loss for token prediction</h1>
+          <p class="lesson-header__outcome">After this lesson you can explain, intuitively, what cross-entropy loss measures for token prediction, why it punishes confident wrong answers, and how it relates to perplexity.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="the-training-loop.html">The training loop, step by step</a></span>
+          </div>
+        </header>
+
+        <p>We've said "the loss" many times. For language-model training — pretraining and SFT alike — that loss is almost always <strong>cross-entropy</strong>. You don't need the calculus, but you should understand exactly what it rewards and punishes, because reading the loss is a daily skill.</p>
+
+        <h2>The setup</h2>
+        <p>At each completion position the model outputs a probability distribution over the whole vocabulary (logits → softmax, from Track 0). There is one correct next token. Cross-entropy looks <em>only</em> at the probability the model assigned to that correct token, and the loss for that position is the <strong>negative logarithm</strong> of that probability.</p>
+
+        <h2>What the logarithm does</h2>
+        <p>The negative-log shape is the whole point:</p>
+        <ul>
+          <li>Assign the correct token probability <strong>1.0</strong> → loss <strong>0</strong> (perfect).</li>
+          <li>Assign it <strong>0.5</strong> → a small positive loss.</li>
+          <li>Assign it <strong>0.01</strong> → a large loss.</li>
+          <li>Assign it near <strong>0</strong> → loss shoots toward infinity.</li>
+        </ul>
+        <p>So cross-entropy doesn't just want the right token to be likely — it <strong>punishes confident mistakes harshly</strong>. Being very sure of the wrong token is far worse than being unsure. This is what pushes the model to be well-calibrated, not just frequently right. The total loss is the average of this per-token loss over all the (unmasked) completion tokens.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Cross-entropy = "how surprised was the model by the correct next token?" Low loss means it found the true continuation unsurprising. Training drives the model to assign high probability to the tokens that actually occur in your examples.</p>
+        </div>
+
+        <h2>Why this is exactly the SFT objective</h2>
+        <p>SFT applies this loss to your <em>completion</em> tokens (via the loss mask). Minimizing it makes the model assign high probability to your demonstrated answers — which is precisely "learn to produce these outputs." Pretraining used the same loss over raw text; SFT just points it at curated examples.</p>
+
+        <h2>Perplexity: cross-entropy in friendlier units</h2>
+        <p>You'll often see <strong>perplexity</strong> reported alongside loss. Perplexity is just the exponential of the cross-entropy, and it has an intuitive reading: roughly "how many tokens is the model effectively choosing among?" A perplexity of 1 means perfect certainty about the next token; higher means more confusion. It moves in lockstep with the loss (lower is better) but is sometimes easier to reason about. Don't over-index on it, though — for an SFT task what ultimately matters is the gold-set metric, not the loss or perplexity per se.</p>
+        <p>Now you can read a training curve meaningfully. Next we tune the single knob that most controls whether that curve descends nicely: the learning rate.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Cross-entropy</dt><dd>The next-token loss: the negative log of the probability the model gave the correct token.</dd>
+            <dt>Negative log likelihood</dt><dd>Another name for the same quantity; small when correct-token probability is high.</dd>
+            <dt>Confidence penalty</dt><dd>Cross-entropy punishes confident wrong answers far more than uncertain ones.</dd>
+            <dt>Perplexity</dt><dd>The exponential of cross-entropy; roughly how many tokens the model is choosing among (1 = certain).</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "Cross-entropy loss for a position depends on\u2026",
+    "options": [
+      "The probability assigned to the correct next token",
+      "The total number of tokens",
+      "The learning rate",
+      "The batch size"
+    ],
+    "answer": 0,
+    "explanation": "It's the negative log of the probability the model gave the correct token."
+  },
+  {
+    "q": "Being very confident in the WRONG token produces\u2026",
+    "options": [
+      "Zero loss",
+      "A small loss",
+      "A very large loss",
+      "Negative loss"
+    ],
+    "answer": 2,
+    "explanation": "The negative-log shape punishes confident mistakes harshly (loss \u2192 \u221e as the correct-token probability \u2192 0)."
+  },
+  {
+    "q": "What does perplexity represent?",
+    "options": [
+      "The number of parameters",
+      "Roughly how many tokens the model is effectively choosing among",
+      "The GPU memory",
+      "The vocabulary size"
+    ],
+    "answer": 1,
+    "explanation": "Perplexity = exp(cross-entropy); ~1 means certainty, higher means more confusion."
+  },
+  {
+    "q": "For judging an SFT task, what ultimately matters most?",
+    "options": [
+      "The training loss alone",
+      "Perplexity alone",
+      "The gold-set metric for the task",
+      "The number of epochs"
+    ],
+    "answer": 2,
+    "explanation": "Loss/perplexity guide training, but the task's gold-set metric is the real measure of success."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="the-training-loop.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">The training loop, step by step</span></a>
+          <a href="learning-rate-and-schedules.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Learning rate, schedules, warmup, epochs vs steps</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>
