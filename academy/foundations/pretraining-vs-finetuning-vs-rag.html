@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pretraining vs fine-tuning vs prompting vs RAG — BrewSLM Academy</title>
+    <meta name="description" content="Four ways to make a language model do what you want: prompting, retrieval-augmented generation (RAG), supervised fine-tuning, and continued pretraining. This lesson explains what each changes, what it costs, and how to choose — with a decision guide." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/foundations/pretraining-vs-finetuning-vs-rag.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Pretraining vs fine-tuning vs prompting vs RAG — BrewSLM Academy" />
+    <meta property="og:description" content="The four levers for steering a model — prompting, RAG, fine-tuning, pretraining — what each changes, what it costs, and when to use it." />
+    <meta property="og:url" content="https://brewslm.com/academy/foundations/pretraining-vs-finetuning-vs-rag.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Pretraining vs fine-tuning vs prompting vs RAG" />
+    <meta name="twitter:description" content="The four levers for steering a model, and when to use each." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Pretraining vs fine-tuning vs prompting vs RAG",
+        "description": "The four levers for steering a model: prompting, retrieval-augmented generation, supervised fine-tuning, and continued pretraining — with a decision guide.",
+        "url": "https://brewslm.com/academy/foundations/pretraining-vs-finetuning-vs-rag.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["prompting", "retrieval-augmented generation", "supervised fine-tuning", "continued pretraining"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Foundations", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Pretraining vs fine-tuning vs RAG", "item": "https://brewslm.com/academy/foundations/pretraining-vs-finetuning-vs-rag.html" } ] }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="foundations/pretraining-vs-finetuning-vs-rag">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html" aria-current="page">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Foundations</a></li><li>Pretraining vs fine-tuning vs RAG</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 0 · Foundations · Lesson 7</span>
+          <h1>Pretraining vs fine-tuning vs prompting vs RAG</h1>
+          <p class="lesson-header__outcome">After this lesson you can name the four levers for making a model do what you want, say what each one changes and costs, and choose the right one (or combination) for a given problem.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="how-language-models-work.html">How language models work</a></span>
+          </div>
+        </header>
+
+        <p>Suppose a base model isn't doing what you need — wrong format, missing knowledge, wrong tone. You have four levers, and they differ on one crucial axis: <strong>do you change the model's parameters, or only what you feed it?</strong> Knowing which lever fits which problem saves enormous time and money. This course is about one of them (fine-tuning), but you should know all four to know when fine-tuning is the right call.</p>
+
+        <h2>Lever 1: Prompting (change the input)</h2>
+        <p>The cheapest lever: leave the model untouched and write a better input. Give instructions, show a few examples right in the prompt (this is <strong>in-context learning</strong>), specify the format you want. Zero training, instant iteration, no infrastructure.</p>
+        <p>Limits: you're bounded by the base model's existing ability and by the context window — every example you paste in is tokens you pay for on every call, and the model "forgets" it the moment the call ends. Great for prototyping and for tasks the base model can already mostly do.</p>
+
+        <h2>Lever 2: RAG (supply knowledge at inference)</h2>
+        <p><strong>Retrieval-augmented generation</strong> keeps the model fixed but, at question time, <em>retrieves</em> relevant documents from your own data and pastes them into the prompt. The model then answers using that supplied context. RAG is the right tool when the problem is <em>knowledge</em>: facts the model never saw, private documents, or information that changes often (you update the document store, not the model).</p>
+        <p>It changes nothing about the model's behavior or format — it only changes what the model knows <em>for that one call</em>. Get the retrieval wrong and the answer is wrong; get it right and even a small model can answer questions about your latest docs.</p>
+
+        <h2>Lever 3: Fine-tuning / SFT (change the parameters on examples)</h2>
+        <p><strong>Supervised fine-tuning</strong> continues training the base model on examples of <em>your</em> inputs paired with the outputs you want. Unlike prompting and RAG, this actually changes the parameters, so the new behavior is baked in — no per-call example tokens, consistent format, learned style and task shape. It's the right lever when the problem is <em>behavior or form</em>: "always output strict JSON," "classify into these labels," "extract spans in this schema," "respond in this voice."</p>
+        <p>It costs a training run (a GPU and some examples), and it does not, by itself, teach the model fresh facts reliably — that's RAG's job. The headline of this whole Academy: with a modest dataset, SFT can make a <em>small</em> model excellent at one specific task.</p>
+
+        <h2>Lever 4: (Continued) pretraining (build base ability)</h2>
+        <p>The heaviest lever: train on a very large corpus of raw text to build broad capability or deep domain fluency (e.g., adapting a general model to legal or biomedical language). This is what creates base models in the first place. <strong>Continued pretraining</strong> extends a base model on a big domain corpus before any task-specific fine-tuning. It's expensive — lots of data, lots of compute — and rarely the first thing you reach for. Most practitioners never need it; they start from someone else's pretrained base and fine-tune.</p>
+
+        <figure class="diagram">
+          <svg viewBox="0 0 640 230" role="img" aria-label="A 2x2 framing: prompting and RAG leave parameters unchanged; fine-tuning and pretraining change parameters. RAG and prompting act at inference; fine-tuning and pretraining act in advance.">
+            <line x1="320" y1="20" x2="320" y2="210" stroke="#d4d4d4"></line>
+            <line x1="40" y1="115" x2="600" y2="115" stroke="#d4d4d4"></line>
+            <text x="180" y="16" text-anchor="middle" font-family="Geist, sans-serif" font-size="11" fill="#737373">leaves model unchanged</text>
+            <text x="460" y="16" text-anchor="middle" font-family="Geist, sans-serif" font-size="11" fill="#737373">changes parameters</text>
+            <text x="35" y="70" text-anchor="end" font-family="Geist, sans-serif" font-size="11" fill="#737373" transform="rotate(-90 35 70)">acts at inference</text>
+            <text x="35" y="170" text-anchor="end" font-family="Geist, sans-serif" font-size="11" fill="#737373" transform="rotate(-90 35 170)">acts in advance</text>
+            <g font-family="Geist, sans-serif">
+              <text x="180" y="70" text-anchor="middle" font-size="14" fill="#171717">Prompting</text>
+              <text x="180" y="90" text-anchor="middle" font-size="11" fill="#a3a3a3">better input; in-context examples</text>
+              <text x="460" y="70" text-anchor="middle" font-size="14" fill="#171717">RAG</text>
+              <text x="460" y="90" text-anchor="middle" font-size="11" fill="#a3a3a3">retrieve docs into the prompt</text>
+              <text x="180" y="165" text-anchor="middle" font-size="14" fill="#171717">— (n/a)</text>
+              <text x="460" y="160" text-anchor="middle" font-size="14" fill="#171717">Fine-tuning · Pretraining</text>
+              <text x="460" y="180" text-anchor="middle" font-size="11" fill="#a3a3a3">train on examples / large corpora</text>
+            </g>
+          </svg>
+          <figcaption>Two axes: does it change the parameters, and does it act in advance or at inference time? RAG adds knowledge at call time; fine-tuning bakes behavior in beforehand.</figcaption>
+        </figure>
+
+        <h2>A decision guide</h2>
+        <ul>
+          <li><strong>Wrong format / tone / task behavior</strong>, repeated at volume → <strong>fine-tune (SFT)</strong>.</li>
+          <li><strong>Needs private or fresh facts</strong> → <strong>RAG</strong>.</li>
+          <li><strong>Quick experiment, or the base can nearly do it</strong> → <strong>prompting</strong>.</li>
+          <li><strong>A whole new domain's language</strong>, and you have data + budget → <strong>continued pretraining</strong>.</li>
+        </ul>
+        <p>These combine. A common production stack is RAG <em>plus</em> a fine-tuned model: fine-tune so the model reliably uses retrieved context and outputs your format, and use RAG to supply the facts. BrewSLM treats both as first-class — but the skill this Academy builds, the one that most changes what a small model can do, is fine-tuning.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Prompting and RAG steer a fixed model by changing its input; fine-tuning and pretraining change the model itself. Use RAG for <em>knowledge</em>, fine-tuning for <em>behavior</em> — and don't reach for the expensive levers when a cheaper one solves it.</p>
+        </div>
+
+        <h2>Where we go next</h2>
+        <p>You now know <em>why</em> you'd fine-tune. The last Foundations lesson asks a money question: given that fine-tuning a small model is so effective for a narrow task, when should you pick a small model over a giant one at all?</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Prompting</dt><dd>Steering a fixed model by writing a better input; no training.</dd>
+            <dt>In-context learning</dt><dd>Showing examples inside the prompt so the model imitates them for that call.</dd>
+            <dt>RAG (retrieval-augmented generation)</dt><dd>Retrieving relevant documents at inference and adding them to the prompt; supplies knowledge, not behavior.</dd>
+            <dt>Fine-tuning / SFT</dt><dd>Continuing training on your input→output examples; changes parameters to bake in behavior/format.</dd>
+            <dt>Continued pretraining</dt><dd>Training on a large domain corpus to build broad ability; expensive, rarely the first choice.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
+          <script type="application/json">
+            [
+              { "q": "Which lever supplies private or frequently-changing facts without retraining?", "options": ["Prompting alone", "RAG", "Fine-tuning", "Continued pretraining"], "answer": 1, "explanation": "RAG retrieves your documents at inference and adds them to the prompt; the model isn't changed." },
+              { "q": "You need a model to always output strict JSON in a fixed schema, on every call. Best lever?", "options": ["RAG", "Continued pretraining", "Fine-tuning (SFT)", "A bigger context window"], "answer": 2, "explanation": "Consistent behavior/format is exactly what SFT bakes into the parameters." },
+              { "q": "What do prompting and RAG have in common?", "options": ["Both change the model's parameters", "Both leave the model fixed and change its input", "Both require a GPU to train", "Both teach new domain grammar"], "answer": 1, "explanation": "Prompting and RAG steer a fixed model by changing what you feed it; they don't update parameters." },
+              { "q": "Why is continued pretraining usually NOT the first lever you reach for?", "options": ["It never works", "It is the cheapest option", "It is expensive (lots of data + compute) and most tasks don't need it", "It only runs on laptops"], "answer": 2, "explanation": "Pretraining is the heaviest lever; most practitioners fine-tune an existing base instead." }
+            ]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="how-language-models-work.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">How language models work</span></a>
+          <a href="llms-vs-slms.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">LLMs vs SLMs: scale, cost, latency</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

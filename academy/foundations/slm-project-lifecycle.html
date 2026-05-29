@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The mental model of an SLM project — BrewSLM Academy</title>
+    <meta name="description" content="A small-model project is a loop: data, train, evaluate, iterate, ship, monitor. This lesson lays out each stage, what 'good' looks like, why the gold set is your north star, and why iteration on data — not the model — is the real work." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/foundations/slm-project-lifecycle.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="The mental model of an SLM project — BrewSLM Academy" />
+    <meta property="og:description" content="The data → train → evaluate → iterate → ship → monitor loop, and why data-centric iteration is the real work." />
+    <meta property="og:url" content="https://brewslm.com/academy/foundations/slm-project-lifecycle.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="The mental model of an SLM project" />
+    <meta name="twitter:description" content="The full data → train → eval → ship loop for a small-model project." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "The mental model of an SLM project",
+        "description": "The data → train → evaluate → iterate → export → deploy → monitor loop, the role of the gold set, and data-centric iteration.",
+        "url": "https://brewslm.com/academy/foundations/slm-project-lifecycle.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT8M", "isAccessibleForFree": true,
+        "teaches": ["ML project lifecycle", "gold set", "evaluation", "data-centric iteration", "deployment", "drift"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Foundations", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "The SLM project lifecycle", "item": "https://brewslm.com/academy/foundations/slm-project-lifecycle.html" } ] }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="foundations/slm-project-lifecycle">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html" aria-current="page">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Foundations</a></li><li>The SLM project lifecycle</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 0 · Foundations · Lesson 9</span>
+          <h1>The mental model of an SLM project</h1>
+          <p class="lesson-header__outcome">After this lesson you can describe the end-to-end loop of a fine-tuning project, name what each stage produces, explain why the gold set is your single source of truth, and see how the rest of the Academy maps onto this loop.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~8 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="llms-vs-slms.html">LLMs vs SLMs</a></span>
+          </div>
+        </header>
+
+        <p>You now understand the parts. This lesson assembles them into the <em>process</em> you'll repeat for the rest of the course. Training a model is not a one-shot event; it's a loop you go around several times, and most of the work is not in the training step at all — it's in the data and the evaluation around it.</p>
+
+        <h2>The loop</h2>
+        <p>A fine-tuning project has six stages, and the last one usually sends you back to the start:</p>
+        <ol>
+          <li><strong>Data.</strong> Gather and prepare examples of your task: inputs paired with the outputs you want. Clean them, format them, split them. This is where most of your time goes and where most of your quality comes from.</li>
+          <li><strong>Train.</strong> Run supervised fine-tuning (usually with LoRA) on a base model. This is the gradient-descent loop from Lesson 2, now over a Transformer.</li>
+          <li><strong>Evaluate.</strong> Measure the trained model against held-out examples it never trained on, using a metric that fits the task. This tells you whether you actually improved.</li>
+          <li><strong>Iterate.</strong> Look at where it fails, fix the <em>data</em> (add examples for weak cases, remove bad ones, rebalance), and retrain. Repeat until the metric clears your bar.</li>
+          <li><strong>Export &amp; deploy.</strong> Package the model into a servable artifact and stand it up behind an endpoint, with a version you can roll back.</li>
+          <li><strong>Monitor.</strong> Watch real-world inputs for drift — the day the live data stops resembling your training data, quality slips and you loop back to step 1.</li>
+        </ol>
+
+        <figure class="diagram">
+          <svg viewBox="0 0 640 200" role="img" aria-label="A cyclic pipeline: data → train → evaluate → ship → monitor, with an iterate arrow from evaluate back to data.">
+            <defs><marker id="ar3" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#525252"></path></marker></defs>
+            <g font-family="Geist, sans-serif" font-size="12" fill="#171717">
+              <rect x="20" y="70" width="90" height="40" rx="6" fill="#fafafa" stroke="#d4d4d4"></rect><text x="65" y="94" text-anchor="middle">Data</text>
+              <rect x="160" y="70" width="90" height="40" rx="6" fill="#fafafa" stroke="#d4d4d4"></rect><text x="205" y="94" text-anchor="middle">Train</text>
+              <rect x="300" y="70" width="90" height="40" rx="6" fill="#ffffff" stroke="#171717"></rect><text x="345" y="94" text-anchor="middle">Evaluate</text>
+              <rect x="440" y="70" width="90" height="40" rx="6" fill="#fafafa" stroke="#d4d4d4"></rect><text x="485" y="94" text-anchor="middle">Ship</text>
+              <rect x="560" y="70" width="70" height="40" rx="6" fill="#fafafa" stroke="#d4d4d4"></rect><text x="595" y="94" text-anchor="middle">Monitor</text>
+            </g>
+            <g stroke="#525252">
+              <line x1="110" y1="90" x2="156" y2="90" marker-end="url(#ar3)"></line>
+              <line x1="250" y1="90" x2="296" y2="90" marker-end="url(#ar3)"></line>
+              <line x1="390" y1="90" x2="436" y2="90" marker-end="url(#ar3)"></line>
+              <line x1="530" y1="90" x2="558" y2="90" marker-end="url(#ar3)"></line>
+            </g>
+            <path d="M345,112 C345,165 65,165 65,114" fill="none" stroke="#a3a3a3" stroke-dasharray="4 4" marker-end="url(#ar3)"></path>
+            <text x="205" y="158" text-anchor="middle" font-family="Geist, sans-serif" font-size="11" fill="#737373">iterate: fix the data, retrain</text>
+          </svg>
+          <figcaption>The dashed arrow is the real job. You rarely train once; you train, look at failures, improve the data, and train again.</figcaption>
+        </figure>
+
+        <h2>Your north star: the gold set</h2>
+        <p>The most important artifact in the whole loop is the <strong>gold set</strong> — a curated batch of examples, with known-correct answers, that the model <em>never trains on</em>. It exists solely to measure quality. Every decision ("is this version better?", "did this data change help?", "is it good enough to ship?") is answered against the gold set. If you train on your evaluation data, your numbers become fiction — the model can memorize the test. Keeping the gold set separate and trustworthy is the discipline that makes all your metrics meaningful.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Modern model-building is <strong>data-centric</strong>: you usually improve results far more by fixing data than by fiddling with the model. The loop's center of gravity is "evaluate → understand failures → improve data," not "tweak hyperparameters."</p>
+        </div>
+
+        <h2>What "good" looks like at each stage</h2>
+        <ul>
+          <li><strong>Good data</strong>: representative of real inputs, correctly labelled, deduplicated, balanced across cases, with a clean train/validation/test split and a trustworthy gold set.</li>
+          <li><strong>A good training run</strong>: a loss that descends and stabilizes, no divergence, a checkpoint saved — and a model that does better on the gold set than the base did.</li>
+          <li><strong>Good evaluation</strong>: a metric that matches the task shape, reported honestly — including where the model still loses.</li>
+          <li><strong>A good deployment</strong>: a versioned, reproducible artifact you can roll back, with monitoring that will tell you when reality drifts.</li>
+        </ul>
+
+        <h2>How the rest of the Academy maps to this loop</h2>
+        <p>Everything ahead is this loop, at increasing depth:</p>
+        <ul>
+          <li><strong>Track 1 — SFT fundamentals</strong>: the <em>why and what</em> of each stage — datasets, tokenization, the training loop, LoRA, evaluation — in detail.</li>
+          <li><strong>Track 2 — Hands-on</strong>: you run the whole loop <em>by hand</em> in PyTorch and Transformers, with no platform, so nothing is magic.</li>
+          <li><strong>Track 3 — With BrewSLM</strong>: the same loop, with the platform automating the tedious parts (import, gates, eval packs, deployment) so you can iterate faster.</li>
+          <li><strong>Track 4 — Graduating</strong>: advanced moves that bend the quality/cost curve — distillation, warm starts, hyperparameter bake-offs, and proving your SLM is good enough versus a frontier model.</li>
+        </ul>
+        <p>That completes the foundations. You can now talk about what a model is, how it learns, how language models produce text, the levers for steering them, and the shape of a real project. Next, Track 1 makes Supervised Fine-Tuning precise — starting with what SFT actually is, and when not to use it.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Project lifecycle</dt><dd>The loop: data → train → evaluate → iterate → export/deploy → monitor.</dd>
+            <dt>Gold set</dt><dd>Curated, known-correct examples the model never trains on; the source of truth for quality.</dd>
+            <dt>Train/validation/test split</dt><dd>Partitioning data so you train on one part and measure on data the model hasn't seen.</dd>
+            <dt>Data-centric iteration</dt><dd>Improving results primarily by fixing data, guided by failure analysis.</dd>
+            <dt>Deployment</dt><dd>Packaging and serving the model as a versioned, rollback-able artifact.</dd>
+            <dt>Drift</dt><dd>When live inputs stop resembling training data, degrading quality over time.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
+          <script type="application/json">
+            [
+              { "q": "Why must the gold set never be trained on?", "options": ["It is too small", "So evaluation measures real generalization, not memorization", "To save GPU memory", "Because it has no labels"], "answer": 1, "explanation": "If you train on your eval data the model can memorize it and your metrics become meaningless." },
+              { "q": "What does 'data-centric' iteration mean?", "options": ["Buy a bigger GPU", "Improve results mainly by fixing the data, guided by failures", "Only change the learning rate", "Train for more epochs blindly"], "answer": 1, "explanation": "Most quality gains come from better data; the loop centers on evaluate → understand → fix data." },
+              { "q": "What signals that you should loop back from Monitor to Data?", "options": ["The model file got larger", "Live inputs drift away from the training distribution and quality drops", "The GPU is idle", "The vocabulary changed"], "answer": 1, "explanation": "Drift — real-world data diverging from training data — degrades quality and triggers another iteration." },
+              { "q": "In this Academy, what does Track 2 do that Track 3 does not?", "options": ["Skips evaluation", "Runs the whole loop by hand in PyTorch/Transformers, no platform", "Only uses RAG", "Trains frontier models"], "answer": 1, "explanation": "Track 2 builds the loop by hand so nothing is magic; Track 3 then automates it with BrewSLM." }
+            ]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="llms-vs-slms.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">LLMs vs SLMs</span></a>
+          <a href="../index.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next · Track 1 publishing soon</span><span class="lesson-nav__title">SFT fundamentals — back to the Academy hub</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

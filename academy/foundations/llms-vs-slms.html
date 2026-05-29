@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LLMs vs SLMs: scale, cost, latency — BrewSLM Academy</title>
+    <meta name="description" content="Large and small language models differ mainly in parameter count, which drives memory, latency, and cost. This lesson covers the trade-offs and the core thesis: on a narrow task, a fine-tuned small model can rival a model hundreds of times larger." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/foundations/llms-vs-slms.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="LLMs vs SLMs: scale, cost, latency — BrewSLM Academy" />
+    <meta property="og:description" content="What scale buys and costs, and why a fine-tuned small model can rival a giant one on a narrow task." />
+    <meta property="og:url" content="https://brewslm.com/academy/foundations/llms-vs-slms.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="LLMs vs SLMs: scale, cost, latency" />
+    <meta name="twitter:description" content="Why a fine-tuned small model can rival a giant one on a narrow task." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "LLMs vs SLMs: scale, cost, latency",
+        "description": "Parameter count drives memory, latency, and cost. Trade-offs of large vs small models and why fine-tuned SLMs can rival much larger models on narrow tasks.",
+        "url": "https://brewslm.com/academy/foundations/llms-vs-slms.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["small language model", "parameter count", "VRAM", "latency", "cost per token"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Foundations", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "LLMs vs SLMs", "item": "https://brewslm.com/academy/foundations/llms-vs-slms.html" } ] }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="foundations/llms-vs-slms">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html" aria-current="page">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Foundations</a></li><li>LLMs vs SLMs</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 0 · Foundations · Lesson 8</span>
+          <h1>LLMs vs SLMs: scale, cost, latency</h1>
+          <p class="lesson-header__outcome">After this lesson you can reason about the trade-off between large and small models in concrete terms — memory, latency, cost — and explain when a fine-tuned small model is the right choice over a frontier LLM.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="pretraining-vs-finetuning-vs-rag.html">The four levers</a></span>
+          </div>
+        </header>
+
+        <p>"Large" and "small" language models run on the exact same machinery you've now seen — tokens, embeddings, Transformer blocks, next-token prediction. The difference is one number: the <strong>parameter count</strong>. That single number cascades into memory, speed, cost, and capability, and understanding the cascade tells you which model to reach for.</p>
+
+        <h2>The one axis: parameters</h2>
+        <p>Model size is measured in parameters: a small model like SmolLM2 has ~135&nbsp;<strong>million</strong>; mid-size open models are 1–8&nbsp;<strong>billion</strong>; frontier models are tens to hundreds of billions. More parameters means more capacity to absorb patterns during pretraining, which is why the biggest models display the broadest knowledge and strongest general reasoning.</p>
+        <p>But every parameter has to be stored and multiplied on every token. So scale is not free.</p>
+
+        <h2>What scale costs: memory, latency, money</h2>
+        <ul>
+          <li><strong>Memory (VRAM).</strong> Parameters live in GPU memory. A rough rule: bytes ≈ parameters × bytes-per-parameter. At 2 bytes each (bf16), a 135M model needs ~0.27&nbsp;GB just for weights; a 70B model needs ~140&nbsp;GB — many GPUs. Training needs several times more (for gradients and optimizer state), which is why fine-tuning a giant model is a data-center activity and fine-tuning an SLM fits on one consumer GPU.</li>
+          <li><strong>Latency.</strong> Generating each token runs the whole network. More parameters → more arithmetic per token → slower responses. Small models reply faster, which matters for interactive and high-volume use.</li>
+          <li><strong>Cost.</strong> Whether you pay an API per token or rent a GPU per hour, cost tracks compute, which tracks size. A task served billions of times is dramatically cheaper on a small model.</li>
+        </ul>
+
+        <figure class="diagram">
+          <svg viewBox="0 0 640 200" role="img" aria-label="A rough comparison table: a 135M small model versus a 70B large model on weights memory, relative latency, and where it runs.">
+            <g font-family="Geist, sans-serif" font-size="12">
+              <text x="40" y="40" fill="#737373">metric</text>
+              <text x="300" y="40" fill="#171717">SLM (≈135M)</text>
+              <text x="470" y="40" fill="#171717">LLM (≈70B)</text>
+              <line x1="40" y1="50" x2="600" y2="50" stroke="#d4d4d4"></line>
+              <text x="40" y="78" fill="#525252">weights @ bf16</text><text x="300" y="78" fill="#171717">~0.27 GB</text><text x="470" y="78" fill="#171717">~140 GB</text>
+              <text x="40" y="108" fill="#525252">runs on</text><text x="300" y="108" fill="#171717">laptop / 1 GPU</text><text x="470" y="108" fill="#171717">multi-GPU server</text>
+              <text x="40" y="138" fill="#525252">relative latency</text><text x="300" y="138" fill="#171717">low</text><text x="470" y="138" fill="#171717">high</text>
+              <text x="40" y="168" fill="#525252">broad knowledge</text><text x="300" y="168" fill="#171717">narrow</text><text x="470" y="168" fill="#171717">broad</text>
+            </g>
+          </svg>
+          <figcaption>Orders of magnitude, not exact figures. Memory uses the bytes ≈ params × bytes-per-param rule of thumb (bf16 = 2 bytes).</figcaption>
+        </figure>
+
+        <h2>What small models give up — and what they don't</h2>
+        <p>Out of the box, a small model knows less and reasons less broadly. Ask a 135M base model open-ended trivia and it will disappoint. That's the honest downside.</p>
+        <p>But most production work is not open-ended. It's one narrow, repeated task: classify this ticket, extract these fields, answer questions about <em>these</em> docs, rewrite in <em>this</em> format. For a narrow task, broad knowledge is mostly wasted — and this is the crux:</p>
+        <div class="callout callout--key">
+          <p class="callout__label">The thesis of this course</p>
+          <p>On a single, well-defined task, a <em>fine-tuned</em> small model can match — sometimes beat — a model hundreds of times larger, at a fraction of the cost and latency, running on hardware you control. Fine-tuning concentrates a small model's limited capacity onto your task.</p>
+        </div>
+
+        <h2>When to pick which</h2>
+        <ul>
+          <li><strong>Pick a large general model</strong> when you need broad, open-ended capability, low volume, and don't want to train anything — a do-everything assistant, exploratory work, or the first prototype.</li>
+          <li><strong>Pick a fine-tuned small model</strong> when you have one repeatable task at meaningful volume, care about cost/latency/privacy, or need to run locally/offline. This is BrewSLM's target: take a small base, fine-tune it on your data, and ship something cheap and fast that's good enough — and then <em>prove</em> it's good enough (Track 4's SLM-vs-frontier report does exactly this).</li>
+        </ul>
+        <div class="callout callout--note">
+          <p class="callout__label">A useful habit</p>
+          <p>Frame the decision as quality-per-dollar (or per-millisecond) <em>for your task</em>, not quality in the abstract. A model that's 95% as good at 2% of the cost is usually the better engineering choice — and you can only know those numbers by evaluating, which is why evaluation gets its own lessons.</p>
+        </div>
+
+        <h2>End of the foundations</h2>
+        <p>You now have the whole mental model: what a model is, how it learns, how text becomes math, how the Transformer and next-token prediction produce language, the four levers for steering a model, and why small models are worth fine-tuning. The final Foundations lesson zooms all the way out to the shape of a real SLM project — the loop you'll execute for the rest of the course.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Parameter count</dt><dd>The number of weights in a model; the primary axis of "size."</dd>
+            <dt>Small language model (SLM)</dt><dd>A model with relatively few parameters (millions to a few billion).</dd>
+            <dt>VRAM</dt><dd>GPU memory; weights need ≈ params × bytes-per-param, training needs several times more.</dd>
+            <dt>Latency</dt><dd>Time to produce output; rises with model size since each token runs the whole network.</dd>
+            <dt>Cost per token</dt><dd>The price of generating output, which tracks compute and therefore size.</dd>
+            <dt>Narrow vs general task</dt><dd>A single repeatable job vs open-ended capability; narrow tasks favor fine-tuned SLMs.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
+          <script type="application/json">
+            [
+              { "q": "What is the primary axis distinguishing an LLM from an SLM?", "options": ["The programming language", "The parameter count", "The tokenizer", "The decoding strategy"], "answer": 1, "explanation": "Size = parameter count, which then drives memory, latency, and cost." },
+              { "q": "Roughly how much GPU memory do a 135M model's weights need at bf16 (2 bytes/param)?", "options": ["~0.27 GB", "~27 GB", "~140 GB", "~2 bytes total"], "answer": 0, "explanation": "135M × 2 bytes ≈ 0.27 GB for weights (training needs several times more)." },
+              { "q": "On a single narrow, high-volume task, a fine-tuned small model can…", "options": ["Never compete with a large model", "Match or beat a much larger model at far lower cost/latency", "Only work with RAG", "Require a data center"], "answer": 1, "explanation": "Fine-tuning concentrates a small model's capacity on your task; this is the course's thesis." },
+              { "q": "The best way to frame the LLM-vs-SLM choice is…", "options": ["Always pick the biggest model", "Quality-per-dollar (and per-millisecond) for your specific task", "Whichever has more parameters", "Whichever is newest"], "answer": 1, "explanation": "Decide on quality-per-cost for your task — which requires actually evaluating both." }
+            ]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="pretraining-vs-finetuning-vs-rag.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">The four levers</span></a>
+          <a href="slm-project-lifecycle.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">The mental model of an SLM project</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

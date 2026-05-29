@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>How language models work: next-token prediction — BrewSLM Academy</title>
+    <meta name="description" content="A language model turns a sequence of tokens into a probability for every possible next token, then generates text by sampling one and repeating. This lesson covers logits, softmax, autoregressive generation, and decoding settings like temperature and top-p." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/foundations/how-language-models-work.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="How language models work: next-token prediction — BrewSLM Academy" />
+    <meta property="og:description" content="Logits, softmax, autoregressive generation, and decoding (temperature, top-p) — what 'generating text' actually means." />
+    <meta property="og:url" content="https://brewslm.com/academy/foundations/how-language-models-work.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="How language models work: next-token prediction" />
+    <meta name="twitter:description" content="What 'generating text' actually means, step by step." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "How language models work: next-token prediction",
+        "description": "Logits, softmax, autoregressive generation, and decoding strategies (greedy, temperature, top-p).",
+        "url": "https://brewslm.com/academy/foundations/how-language-models-work.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["next-token prediction", "logits", "softmax", "autoregressive generation", "temperature", "top-p sampling"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Foundations", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "How language models work", "item": "https://brewslm.com/academy/foundations/how-language-models-work.html" } ] }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="foundations/how-language-models-work">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html" aria-current="page">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Foundations</a></li><li>How language models work</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 0 · Foundations · Lesson 6</span>
+          <h1>How language models work: next-token prediction</h1>
+          <p class="lesson-header__outcome">After this lesson you can trace a prompt all the way to generated text: how the model produces a probability for every next token, how it picks one, and how decoding settings like temperature change the output.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="attention-and-the-transformer.html">Attention &amp; the Transformer</a></span>
+          </div>
+        </header>
+
+        <p>We've assembled the machine: text becomes tokens, tokens become embeddings, and a stack of Transformer blocks gives every token a context-aware representation. This lesson connects that final representation to the one thing a language model is trained to do — predict the next token — and shows how repeating that prediction produces paragraphs.</p>
+
+        <h2>From the last layer to a guess about the next token</h2>
+        <p>After the Transformer stack, the representation at the <em>last</em> position is fed into a final linear layer called the <strong>LM head</strong>. It outputs one number for every token in the vocabulary — these raw scores are called <strong>logits</strong>. A high logit means "this token is a good continuation"; a low one means "unlikely."</p>
+        <p>Logits aren't probabilities (they can be negative, and they don't sum to 1). To convert them, the model applies <strong>softmax</strong>: exponentiate each logit and normalize so they're all positive and sum to 1. The result is a <strong>probability distribution over the next token</strong> — the model's full answer to "what comes next?"</p>
+
+        <figure class="diagram">
+          <svg viewBox="0 0 640 220" role="img" aria-label="After the prompt 'The capital of France is', the model outputs a probability distribution where 'Paris' is by far the most likely next token.">
+            <text x="20" y="34" font-family="Geist Mono, monospace" font-size="13" fill="#171717">"The capital of France is&#8230;"</text>
+            <text x="20" y="52" font-family="Geist, sans-serif" font-size="11" fill="#a3a3a3">prompt → model → P(next token)</text>
+            <g font-family="Geist Mono, monospace" font-size="12" fill="#171717">
+              <text x="40" y="96">Paris</text><text x="40" y="126">a</text><text x="40" y="156">the</text><text x="40" y="186">London</text>
+            </g>
+            <g>
+              <rect x="120" y="84" width="360" height="14" fill="#171717"></rect>
+              <rect x="120" y="114" width="70" height="14" fill="#a3a3a3"></rect>
+              <rect x="120" y="144" width="45" height="14" fill="#a3a3a3"></rect>
+              <rect x="120" y="174" width="14" height="14" fill="#d4d4d4"></rect>
+            </g>
+            <g font-family="Geist Mono, monospace" font-size="11" fill="#737373">
+              <text x="490" y="96">0.78</text><text x="490" y="126">0.07</text><text x="490" y="156">0.05</text><text x="490" y="186">0.01</text>
+            </g>
+            <text x="300" y="210" text-anchor="middle" font-family="Geist, sans-serif" font-size="11" fill="#a3a3a3">softmax turns logits into these probabilities (shown: top few of the whole vocabulary)</text>
+          </svg>
+          <figcaption>The model never returns "the answer." It returns a probability for every token; generation chooses from that distribution.</figcaption>
+        </figure>
+
+        <h2>How it learns to do this: the training objective</h2>
+        <p>Pretraining is exactly the loop from Lesson 2, with one specific loss. Take an ocean of text, and at every position ask the model to predict the next token. The loss — <strong>cross-entropy</strong> — is large when the model assigned low probability to the token that actually came next, and small when it assigned high probability. Gradient descent then nudges the parameters to make the real next token more likely.</p>
+        <p>The profound part: to get good at this one narrow game across trillions of tokens, the model is forced to internalize grammar, facts, styles, and reasoning patterns — because all of those help predict what comes next. "Just predicting the next token" is deceptively powerful. (We'll meet cross-entropy properly in Track 1; for now, "make the true next token more probable" is enough.)</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>A base language model is a next-token probability machine. Everything it appears to "do" — answer, summarize, translate — is that machine producing one plausible token after another.</p>
+        </div>
+
+        <h2>Generation: do it again, and again</h2>
+        <p>One forward pass gives the distribution for a single next token. To produce more than one token, the model is <strong>autoregressive</strong>: it picks a next token, appends it to the sequence, and runs again to get the following token's distribution — repeating until it emits an end-of-sequence token or hits a length limit.</p>
+        <div class="code-block">
+          <p>tokens = tokenize(prompt)</p>
+          <p>while not done:</p>
+          <p>&nbsp;&nbsp;logits   = model(tokens)         # scores for next token</p>
+          <p>&nbsp;&nbsp;probs    = softmax(logits)</p>
+          <p>&nbsp;&nbsp;next_tok = choose(probs)         # see "decoding" below</p>
+          <p>&nbsp;&nbsp;tokens.append(next_tok)</p>
+        </div>
+
+        <h2>Decoding: how a token is chosen</h2>
+        <p>That <code>choose</code> step is <strong>decoding</strong>, and it has settings you'll tune:</p>
+        <ul>
+          <li><strong>Greedy</strong>: always take the single most probable token (argmax). Deterministic and safe, but can be repetitive and bland.</li>
+          <li><strong>Sampling</strong>: randomly draw a token according to the probabilities — more varied, more creative, occasionally wrong.</li>
+          <li><strong>Temperature</strong>: a knob that sharpens or flattens the distribution before sampling. Low temperature (→0) approaches greedy and stays "safe"; high temperature spreads probability out and increases surprise.</li>
+          <li><strong>Top-p (nucleus)</strong>: only sample from the smallest set of tokens whose probabilities add up to <em>p</em> (e.g., 0.9), discarding the long tail of unlikely tokens. Curbs nonsense while keeping variety.</li>
+        </ul>
+        <div class="callout callout--note">
+          <p class="callout__label">Heads up</p>
+          <p>Decoding does not change the model's parameters — it only changes how you sample from a fixed distribution. For evaluation you usually want greedy (deterministic) decoding so results are reproducible; for creative generation you raise temperature/top-p.</p>
+        </div>
+
+        <h2>What this means for fine-tuning</h2>
+        <p>Fine-tuning, the subject of the rest of this course, works on exactly this machine. SFT shows the model examples of the inputs you care about and the outputs you want, and runs the same next-token training so that, for your task, the distribution it produces favors the responses you want. You are not bolting on a new ability; you are reshaping the next-token probabilities a base model already has.</p>
+        <p>That's the full Track-0 mechanism. The remaining two lessons zoom out: the different ways to steer a model (prompting, RAG, fine-tuning, pretraining), and why small models are worth the effort.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>LM head</dt><dd>The final layer producing a score (logit) for every vocabulary token.</dd>
+            <dt>Logits</dt><dd>Raw, unnormalized scores for each possible next token.</dd>
+            <dt>Softmax</dt><dd>Turns logits into a probability distribution that sums to 1.</dd>
+            <dt>Cross-entropy</dt><dd>The training loss; small when the true next token was given high probability.</dd>
+            <dt>Autoregressive generation</dt><dd>Producing text by repeatedly predicting and appending the next token.</dd>
+            <dt>Greedy / sampling</dt><dd>Take the most likely token, or randomly draw according to probabilities.</dd>
+            <dt>Temperature / top-p</dt><dd>Decoding knobs that flatten/sharpen the distribution and trim the unlikely tail.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
+          <script type="application/json">
+            [
+              { "q": "What does softmax do in a language model?", "options": ["Tokenizes the input", "Converts logits into a probability distribution summing to 1", "Updates the parameters", "Chooses the learning rate"], "answer": 1, "explanation": "Softmax normalizes the LM head's logits into next-token probabilities." },
+              { "q": "What makes generation 'autoregressive'?", "options": ["It trains automatically", "It predicts a token, appends it, and feeds the result back to predict the next", "It uses multiple GPUs", "It regresses house prices"], "answer": 1, "explanation": "Each generated token is appended and fed back in to predict the following one." },
+              { "q": "Raising the temperature during decoding…", "options": ["Changes the model's parameters", "Flattens the distribution, increasing variety/surprise", "Always improves accuracy", "Shrinks the vocabulary"], "answer": 1, "explanation": "Temperature reshapes the fixed distribution before sampling; higher = more varied. Parameters are unchanged." },
+              { "q": "For reproducible evaluation you generally want…", "options": ["High temperature sampling", "Greedy (deterministic) decoding", "A larger vocabulary", "More attention heads"], "answer": 1, "explanation": "Greedy decoding is deterministic, so eval results are reproducible run-to-run." }
+            ]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="attention-and-the-transformer.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Attention &amp; the Transformer</span></a>
+          <a href="pretraining-vs-finetuning-vs-rag.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Pretraining vs fine-tuning vs prompting vs RAG</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

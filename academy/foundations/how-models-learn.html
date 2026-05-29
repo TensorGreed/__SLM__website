@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>How models learn: loss &amp; gradient descent — BrewSLM Academy</title>
+    <meta name="description" content="Training a model means adjusting its parameters to reduce a loss. This lesson makes 'reduce the loss' precise with gradient descent, learning rate, minibatches, and epochs — the engine behind every model you will train." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/foundations/how-models-learn.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="How models learn: loss &amp; gradient descent — BrewSLM Academy" />
+    <meta property="og:description" content="Make 'reduce the loss' precise: gradient descent, learning rate, minibatches, and epochs — the engine behind training." />
+    <meta property="og:url" content="https://brewslm.com/academy/foundations/how-models-learn.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="How models learn: loss &amp; gradient descent" />
+    <meta name="twitter:description" content="Gradient descent, learning rate, minibatches, epochs — the engine behind training." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "LearningResource",
+        "name": "How models learn: loss and gradient descent",
+        "description": "Training adjusts a model's parameters to reduce a loss. This lesson explains gradient descent, learning rate, minibatches (SGD), and epochs.",
+        "url": "https://brewslm.com/academy/foundations/how-models-learn.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["loss function", "gradient descent", "learning rate", "stochastic gradient descent", "epoch"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Foundations", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "How models learn", "item": "https://brewslm.com/academy/foundations/how-models-learn.html" } ] }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="foundations/how-models-learn">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html" aria-current="page">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Foundations</a></li><li>How models learn</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 0 · Foundations · Lesson 2</span>
+          <h1>How models learn: loss &amp; gradient descent</h1>
+          <p class="lesson-header__outcome">After this lesson you can describe, precisely, the loop that turns "nudge the knobs" into an algorithm — loss, gradient, learning rate — and explain what an epoch and a minibatch are.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="what-is-a-model.html">What is a model?</a></span>
+          </div>
+        </header>
+
+        <p>In the last lesson we said training is a loop: predict, measure how wrong you are, nudge the parameters to be less wrong, repeat. That word "nudge" was doing a lot of work. This lesson replaces it with an actual algorithm — <strong>gradient descent</strong> — which is, with surprisingly few changes, how every model in this course is trained.</p>
+
+        <h2>Step one: turn "wrong" into a number</h2>
+        <p>You can't minimize something you can't measure. So the first ingredient is a <strong>loss function</strong>: it takes the model's prediction and the true answer and returns a single number that is large when the prediction is bad and small when it's good.</p>
+        <p>For the house-price model, a natural loss is the <em>squared error</em>: take the gap between predicted and actual price, and square it. Predict 250k when the truth is 240k and the loss for that example is <code>(250k − 240k)² = 100,000,000</code>. Square it so over- and under-shooting both count as positive error, and bigger mistakes are penalized harder. The loss over a dataset is just the average over all examples.</p>
+        <p>Different tasks use different loss functions — language models use <em>cross-entropy</em>, which we'll meet in Track 1 — but the role is always the same: <strong>one number, smaller is better.</strong></p>
+
+        <h2>The loss is a landscape over the parameters</h2>
+        <p>Here is the key mental shift. Hold the data fixed and think of the loss as a function of the <em>parameters</em>. For the two-knob house model, every choice of <code>(w, b)</code> produces some average loss. Picture that as a landscape: the two knobs are your east–west and north–south position, and the loss is the altitude. Training is the search for the lowest valley.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Training does not search over <em>predictions</em>; it searches over <em>parameters</em>. The data defines the shape of the landscape; the parameters are where you're standing on it.</p>
+        </div>
+
+        <h2>Gradient descent: roll downhill</h2>
+        <p>How do you get to the valley when you can only feel the ground right under your feet? You measure the <strong>slope</strong> and step downhill. In more than one dimension the slope is called the <strong>gradient</strong>: it points in the direction the loss <em>increases</em> fastest. So to decrease the loss, you step in the <em>opposite</em> direction. That's the whole idea — <strong>gradient descent</strong>:</p>
+        <div class="code-block">
+          <p>for each step:</p>
+          <p>&nbsp;&nbsp;prediction = model(inputs)            # forward pass</p>
+          <p>&nbsp;&nbsp;loss       = loss_fn(prediction, truth)</p>
+          <p>&nbsp;&nbsp;gradient   = how loss changes w.r.t. each parameter</p>
+          <p>&nbsp;&nbsp;parameter  = parameter − learning_rate × gradient   # the nudge</p>
+        </div>
+        <p>That last line is "the nudge," now precise: move every parameter a little, against its gradient. Repeat thousands of times and you descend into a valley of low loss.</p>
+
+        <figure class="diagram">
+          <svg viewBox="0 0 640 240" role="img" aria-label="A bowl-shaped loss curve plotted against a parameter, with a ball taking three steps downhill toward the minimum.">
+            <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#525252"></path></marker></defs>
+            <line x1="60" y1="200" x2="600" y2="200" stroke="#d4d4d4"></line>
+            <line x1="60" y1="200" x2="60" y2="30" stroke="#d4d4d4"></line>
+            <text x="600" y="220" text-anchor="end" font-family="Geist, sans-serif" font-size="12" fill="#737373">parameter value</text>
+            <text x="50" y="40" text-anchor="end" font-family="Geist, sans-serif" font-size="12" fill="#737373">loss</text>
+            <path d="M70,50 Q330,360 590,50" fill="none" stroke="#171717" stroke-width="1.5"></path>
+            <!-- steps -->
+            <circle cx="120" cy="120" r="6" fill="#a3a3a3"></circle>
+            <circle cx="200" cy="178" r="6" fill="#737373"></circle>
+            <circle cx="290" cy="200" r="6" fill="#171717"></circle>
+            <line x1="126" y1="124" x2="194" y2="172" stroke="#525252" stroke-dasharray="3 3" marker-end="url(#ar)"></line>
+            <line x1="206" y1="180" x2="284" y2="197" stroke="#525252" stroke-dasharray="3 3" marker-end="url(#ar)"></line>
+            <text x="330" y="225" text-anchor="middle" font-family="Geist, sans-serif" font-size="11" fill="#737373">each step moves downhill against the gradient</text>
+          </svg>
+          <figcaption>One parameter shown for clarity; a real model descends this landscape in millions of dimensions at once.</figcaption>
+        </figure>
+
+        <h2>The learning rate: how big a step</h2>
+        <p>The <strong>learning rate</strong> is the multiplier on the step. It is the single most important number you'll tune. Too small and training crawls, taking forever to reach the valley. Too large and you leap clear over the valley and bounce around — or diverge entirely, with the loss shooting to infinity. Typical values for fine-tuning are small, like <code>2e-4</code> (0.0002); we'll discuss why in Track 1.</p>
+        <div class="callout callout--warning">
+          <p class="callout__label">Common failure</p>
+          <p>A loss that explodes to <code>NaN</code> after a few steps almost always means the learning rate is too high. A loss that barely moves means it's too low. Reading the loss curve is a skill you'll use constantly.</p>
+        </div>
+
+        <h2>Minibatches and epochs</h2>
+        <p>Computing the gradient over the <em>entire</em> dataset for every step is accurate but slow. Instead we use a <strong>minibatch</strong>: a small random handful of examples (say 8 or 32). Each step computes the gradient on one minibatch and updates. Because the batch is a random sample, the gradient is a noisy estimate of the true one — hence the name <strong>stochastic gradient descent (SGD)</strong>. The noise is mostly harmless and often helpful.</p>
+        <p>One full pass through all the training data is an <strong>epoch</strong>. You typically train for a few epochs. "Train for 3 epochs with batch size 8" means: shuffle the data, walk through it in groups of 8 updating each time, and do that whole walk 3 times.</p>
+
+        <h2>Does it actually find the bottom?</h2>
+        <p>In theory the landscape can have dips that aren't the deepest valley (local minima) and flat plateaus. In practice, for the large models we train, gradient descent reliably finds parameter settings that are good enough — that's the empirical miracle deep learning runs on. You won't be proving convergence; you'll be watching a loss curve go down and stop when it stops improving.</p>
+        <p>That's the engine. Everything else — neural networks, Transformers, LoRA — changes <em>what</em> the model computes and <em>which</em> parameters exist, but the training loop stays this loop. Next we look at the kind of model that makes language possible: the neural network.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Loss function</dt><dd>A function returning one number measuring how wrong the model's predictions are; smaller is better.</dd>
+            <dt>Gradient</dt><dd>The direction (over all parameters) in which the loss increases fastest; we step the opposite way.</dd>
+            <dt>Gradient descent</dt><dd>Repeatedly nudging parameters against the gradient to reduce loss.</dd>
+            <dt>Learning rate</dt><dd>The step-size multiplier; too high diverges, too low crawls.</dd>
+            <dt>Minibatch / SGD</dt><dd>Estimating the gradient on a small random batch each step (stochastic gradient descent).</dd>
+            <dt>Epoch</dt><dd>One complete pass through the training dataset.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
+          <script type="application/json">
+            [
+              { "q": "What does a loss function produce?", "options": ["The model's parameters", "A single number measuring how wrong predictions are", "The learning rate", "The next token"], "answer": 1, "explanation": "A loss function collapses 'how wrong are we' into one number to minimize." },
+              { "q": "Gradient descent updates parameters by moving them…", "options": ["In the direction of the gradient (loss increases fastest)", "Randomly until the loss drops", "Opposite the gradient, scaled by the learning rate", "Only once, after seeing all the data"], "answer": 2, "explanation": "Step opposite the gradient (downhill), scaled by the learning rate." },
+              { "q": "Your loss jumps to NaN after a few steps. Most likely cause?", "options": ["Learning rate too high", "Too many epochs", "The dataset is too small", "The batch size is 8"], "answer": 0, "explanation": "Exploding/NaN loss is the classic symptom of too large a learning rate." },
+              { "q": "What is an epoch?", "options": ["One minibatch", "One parameter update", "One full pass through the training data", "One layer of the network"], "answer": 2, "explanation": "An epoch is one complete pass over the training set; training usually runs a few epochs." }
+            ]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="what-is-a-model.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">What is a model?</span></a>
+          <a href="neural-networks.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Neural networks in one page</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

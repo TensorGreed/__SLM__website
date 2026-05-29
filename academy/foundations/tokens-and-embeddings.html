@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>From text to numbers: tokens &amp; embeddings — BrewSLM Academy</title>
+    <meta name="description" content="Language models do arithmetic on numbers, not letters. This lesson explains tokenization (splitting text into subword tokens), token IDs, and embeddings (the learned vectors that represent each token) — plus special tokens and the context window." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/foundations/tokens-and-embeddings.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="From text to numbers: tokens &amp; embeddings — BrewSLM Academy" />
+    <meta property="og:description" content="Tokenization, token IDs, embeddings, special tokens, and the context window — how text becomes math." />
+    <meta property="og:url" content="https://brewslm.com/academy/foundations/tokens-and-embeddings.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="From text to numbers: tokens &amp; embeddings" />
+    <meta name="twitter:description" content="How text becomes the numbers a model can process." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "From text to numbers: tokens and embeddings",
+        "description": "Tokenization into subword tokens, integer token IDs, and learned embedding vectors; special tokens and the context window.",
+        "url": "https://brewslm.com/academy/foundations/tokens-and-embeddings.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["tokenization", "subword tokens", "vocabulary", "token id", "embedding", "context window"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Foundations", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Tokens and embeddings", "item": "https://brewslm.com/academy/foundations/tokens-and-embeddings.html" } ] }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="foundations/tokens-and-embeddings">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html" aria-current="page">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Foundations</a></li><li>Tokens &amp; embeddings</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 0 · Foundations · Lesson 4</span>
+          <h1>From text to numbers: tokens &amp; embeddings</h1>
+          <p class="lesson-header__outcome">After this lesson you can explain how a string of text becomes the numbers a neural network processes: tokenization into subwords, integer IDs, and learned embedding vectors — and what the context window limits.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="neural-networks.html">Neural networks in one page</a></span>
+          </div>
+        </header>
+
+        <p>A neural network multiplies and adds numbers. Text is a sequence of characters. Bridging that gap takes two steps that every language model performs before it can do anything: <strong>tokenize</strong> the text into pieces, then <strong>embed</strong> each piece as a vector of numbers.</p>
+
+        <h2>Step 1: tokenization</h2>
+        <p>A <strong>tokenizer</strong> chops text into <strong>tokens</strong>. Tokens are usually <em>subwords</em>, not whole words and not single characters. For example, a tokenizer might split <code>"tokenization"</code> into <code>["token", "ization"]</code>, and <code>"BrewSLM"</code> into <code>["Brew", "SL", "M"]</code>. Common words are often a single token; rare or novel words break into smaller, reusable pieces.</p>
+        <p>Why subwords rather than words? Two reasons. A whole-word vocabulary would be enormous and would still fail on any word it had never seen. Single characters, at the other extreme, make sequences painfully long. Subwords are the sweet spot: a fixed-size vocabulary that can spell out <em>any</em> string by combining pieces. The standard algorithm for building this vocabulary is <strong>Byte-Pair Encoding (BPE)</strong>, which greedily merges the most frequent character pairs until it has the desired number of tokens.</p>
+
+        <h2>Step 2: tokens become IDs</h2>
+        <p>The tokenizer holds a fixed <strong>vocabulary</strong> — a list of every token it knows, perhaps 32,000 or 150,000 entries — and each token has an integer <strong>token ID</strong> (its index in that list). So tokenizing produces a list of integers:</p>
+        <div class="code-block">
+          <p>"the cat sat"  →  ["the", " cat", " sat"]  →  [578, 8415, 7937]</p>
+        </div>
+        <p>(The leading spaces are part of the tokens — most tokenizers attach the space before a word to the word.) Those integers are what actually enters the model. When the model later outputs an ID, the tokenizer maps it back to text. Two practical consequences: the model's "view" of your text is its token count, not its character count; and a model can only ever produce tokens that exist in its vocabulary.</p>
+
+        <h2>Step 3: IDs become embeddings</h2>
+        <p>An integer ID still isn't useful for arithmetic — ID 8415 isn't "bigger" than ID 578 in any meaningful sense. So the model's first layer is an <strong>embedding table</strong>: a big lookup that maps each token ID to a learned vector of numbers (say 768 of them). That vector is the token's <strong>embedding</strong> — the model's numeric representation of it.</p>
+        <p>Crucially, the embedding table is made of parameters, so it is <em>learned</em> during training. Tokens that behave similarly end up with similar vectors. After training, the embeddings for "cat" and "dog" sit close together; "cat" and "thermodynamics" sit far apart. The model discovers this geometry on its own from the predict-next-token objective.</p>
+
+        <figure class="diagram">
+          <svg viewBox="0 0 640 210" role="img" aria-label="The phrase 'the cat sat' is split into three tokens, mapped to three integer IDs, then to three embedding vectors.">
+            <defs><marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#525252"></path></marker></defs>
+            <text x="20" y="40" font-family="Geist Mono, monospace" font-size="13" fill="#171717">"the cat sat"</text>
+            <text x="20" y="60" font-family="Geist, sans-serif" font-size="11" fill="#a3a3a3">raw text</text>
+            <text x="250" y="40" font-family="Geist Mono, monospace" font-size="12" fill="#171717">the · cat · sat</text>
+            <text x="250" y="60" font-family="Geist, sans-serif" font-size="11" fill="#a3a3a3">tokens</text>
+            <text x="450" y="40" font-family="Geist Mono, monospace" font-size="12" fill="#171717">578, 8415, 7937</text>
+            <text x="450" y="60" font-family="Geist, sans-serif" font-size="11" fill="#a3a3a3">token IDs</text>
+            <line x1="150" y1="35" x2="244" y2="35" stroke="#525252" marker-end="url(#ar2)"></line>
+            <line x1="360" y1="35" x2="444" y2="35" stroke="#525252" marker-end="url(#ar2)"></line>
+            <g font-family="Geist Mono, monospace" font-size="10" fill="#525252">
+              <rect x="250" y="95" width="120" height="70" rx="6" fill="#fafafa" stroke="#d4d4d4"></rect>
+              <text x="262" y="115">[0.12, -0.4, …]</text>
+              <text x="262" y="133">[-0.9, 0.3, …]</text>
+              <text x="262" y="151">[0.05, 0.7, …]</text>
+            </g>
+            <text x="310" y="185" text-anchor="middle" font-family="Geist, sans-serif" font-size="11" fill="#a3a3a3">embedding vectors (learned) → into the network</text>
+            <line x1="380" y1="48" x2="330" y2="90" stroke="#525252" marker-end="url(#ar2)"></line>
+          </svg>
+          <figcaption>Three stages every prompt passes through before the first matrix multiply. The embedding table is parameters, so this mapping is learned.</figcaption>
+        </figure>
+
+        <h2>Special tokens and the context window</h2>
+        <p>Vocabularies include a few <strong>special tokens</strong> that aren't ordinary text: markers for the start/end of a sequence, a padding token to make batches rectangular, and — important for fine-tuning — tokens that delimit roles in a conversation (system / user / assistant). Getting these exactly right is a correctness issue we'll dwell on in Track 1's lesson on chat templates.</p>
+        <p>Finally, a model can only attend to a bounded number of tokens at once: its <strong>context window</strong> (e.g., 2,048, 8,192, or far more). Everything — your instructions, any retrieved documents, the conversation so far, and the room left to generate — must fit inside it. When people say "the model ran out of context," they mean the token budget was exceeded.</p>
+        <div class="callout callout--note">
+          <p class="callout__label">Practical note</p>
+          <p>Cost and speed are usually measured <em>per token</em>, and limits are <em>in tokens</em>. A rough rule for English: one token ≈ 0.75 words, so 1,000 tokens ≈ 750 words. Always think in tokens, not characters.</p>
+        </div>
+
+        <h2>Where this leaves us</h2>
+        <p>Text is now a sequence of embedding vectors — exactly the numeric input a neural network wants. The remaining question is what network architecture turns that sequence into a good next-token prediction. The answer, and the reason modern language models work at all, is <strong>attention</strong> and the Transformer. That's next.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Tokenization</dt><dd>Splitting text into tokens (usually subwords) the model can process.</dd>
+            <dt>Subword / BPE</dt><dd>Tokens smaller than words; Byte-Pair Encoding builds the vocabulary by merging frequent pairs.</dd>
+            <dt>Vocabulary</dt><dd>The fixed set of tokens a tokenizer knows; each has an integer ID.</dd>
+            <dt>Token ID</dt><dd>The integer index of a token in the vocabulary — what actually enters the model.</dd>
+            <dt>Embedding</dt><dd>A learned vector representing a token; similar tokens get similar vectors.</dd>
+            <dt>Special tokens</dt><dd>Non-text markers (start/end, padding, chat roles) in the vocabulary.</dd>
+            <dt>Context window</dt><dd>The maximum number of tokens the model can process at once.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
+          <script type="application/json">
+            [
+              { "q": "Why do modern tokenizers use subwords rather than whole words?", "options": ["Subwords are easier to read", "A fixed-size vocabulary can still spell any string, including unseen words", "Whole words train faster", "Subwords use less memory at inference only"], "answer": 1, "explanation": "Subwords give a fixed vocabulary that composes to represent any string, including rare/novel words." },
+              { "q": "What actually enters the model after tokenization?", "options": ["The raw characters", "A list of integer token IDs (then mapped to embeddings)", "The English words", "The loss"], "answer": 1, "explanation": "Tokens map to integer IDs, which the embedding table turns into vectors that enter the network." },
+              { "q": "What is an embedding?", "options": ["A compressed image", "A learned vector representing a token; similar tokens are nearby", "The token's position in the sentence", "A special token"], "answer": 1, "explanation": "Embeddings are learned per-token vectors; training places similar tokens close together." },
+              { "q": "What does the context window limit?", "options": ["The model's parameter count", "How fast training runs", "The maximum number of tokens processed at once", "The vocabulary size"], "answer": 2, "explanation": "The context window caps how many tokens (prompt + generation) fit at once." }
+            ]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="neural-networks.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Neural networks in one page</span></a>
+          <a href="attention-and-the-transformer.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Attention &amp; the Transformer, gently</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

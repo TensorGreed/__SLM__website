@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neural networks in one page — BrewSLM Academy</title>
+    <meta name="description" content="A neural network stacks simple units — weighted sums plus a nonlinear activation — into layers that can model complex patterns. This lesson explains neurons, layers, the forward pass, and what backpropagation does." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/foundations/neural-networks.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Neural networks in one page — BrewSLM Academy" />
+    <meta property="og:description" content="Neurons, layers, the forward pass, and what backpropagation does — the model family behind language models." />
+    <meta property="og:url" content="https://brewslm.com/academy/foundations/neural-networks.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Neural networks in one page" />
+    <meta name="twitter:description" content="Neurons, layers, the forward pass, and backpropagation." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Neural networks in one page",
+        "description": "Neurons (weighted sum + activation), layers, the forward pass, and the role of backpropagation in training.",
+        "url": "https://brewslm.com/academy/foundations/neural-networks.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["neuron", "activation function", "neural network layer", "forward pass", "backpropagation"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Foundations", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Neural networks in one page", "item": "https://brewslm.com/academy/foundations/neural-networks.html" } ] }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="foundations/neural-networks">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html" aria-current="page">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Foundations</a></li><li>Neural networks in one page</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 0 · Foundations · Lesson 3</span>
+          <h1>Neural networks in one page</h1>
+          <p class="lesson-header__outcome">After this lesson you can explain what a neuron and a layer are, why the nonlinear activation is the whole point, and what "backpropagation" buys you — without any calculus.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="how-models-learn.html">How models learn</a></span>
+          </div>
+        </header>
+
+        <p>The house-price model was a straight line: <code>w × size + b</code>. Straight lines are limited — most real relationships bend. A <strong>neural network</strong> is how we build models that can bend arbitrarily, while still being trainable by the exact gradient-descent loop from the last lesson. The trick is to stack many simple pieces.</p>
+
+        <h2>The piece: a neuron</h2>
+        <p>A single <strong>neuron</strong> does two things. First it takes a weighted sum of its inputs and adds a bias — that's just the linear model again: <code>z = w₁x₁ + w₂x₂ + … + b</code>. Then it passes that sum through a <strong>nonlinear activation function</strong>. The most common one is <strong>ReLU</strong> ("rectified linear unit"), which is almost insultingly simple: if the number is negative, output 0; otherwise output the number unchanged.</p>
+        <p>The weights and bias are parameters — the knobs gradient descent will tune. A neuron, then, is a tiny learnable function with a kink in it.</p>
+
+        <h2>Why the nonlinearity is the entire point</h2>
+        <p>Here is the fact that makes neural networks work: if you stack linear layers with <em>no</em> activation between them, the whole stack collapses back into a single linear function. A line of lines is still a line. You gain nothing from depth.</p>
+        <p>The activation breaks that. Insert a nonlinearity between layers and stacking them lets the network compose bends into bends — approximating essentially any function given enough neurons. So the activation isn't a detail; it is the reason a "deep" network can model things a line never could.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Linear layers provide capacity; the nonlinear activation provides <em>expressiveness</em>. Remove the activations and a 50-layer network is mathematically identical to a single linear layer.</p>
+        </div>
+
+        <h2>From neuron to layer to network</h2>
+        <p>Put many neurons side by side, all reading the same inputs, and you have a <strong>layer</strong>. Feed one layer's outputs into the next and you have a stack of layers. The layers between input and output are <strong>hidden layers</strong> — "hidden" only because you don't directly observe their values. "Deep learning" is just neural networks with several hidden layers.</p>
+        <p>Running data left to right — input, through each layer, to the output — is the <strong>forward pass</strong>. It's the same "model(inputs)" step from the training loop, now unpacked into layer-by-layer arithmetic.</p>
+
+        <figure class="diagram">
+          <svg viewBox="0 0 640 240" role="img" aria-label="A small neural network: three input nodes connect to four hidden nodes, which connect to one output node.">
+            <g fill="#fafafa" stroke="#d4d4d4">
+              <circle cx="90" cy="70" r="16"></circle><circle cx="90" cy="120" r="16"></circle><circle cx="90" cy="170" r="16"></circle>
+            </g>
+            <g fill="#ffffff" stroke="#171717">
+              <circle cx="320" cy="50" r="16"></circle><circle cx="320" cy="100" r="16"></circle><circle cx="320" cy="150" r="16"></circle><circle cx="320" cy="200" r="16"></circle>
+            </g>
+            <g fill="#171717" stroke="#171717"><circle cx="550" cy="120" r="16"></circle></g>
+            <g stroke="#e0e0e0">
+              <line x1="106" y1="70" x2="304" y2="50"></line><line x1="106" y1="70" x2="304" y2="100"></line><line x1="106" y1="70" x2="304" y2="150"></line><line x1="106" y1="70" x2="304" y2="200"></line>
+              <line x1="106" y1="120" x2="304" y2="50"></line><line x1="106" y1="120" x2="304" y2="100"></line><line x1="106" y1="120" x2="304" y2="150"></line><line x1="106" y1="120" x2="304" y2="200"></line>
+              <line x1="106" y1="170" x2="304" y2="50"></line><line x1="106" y1="170" x2="304" y2="100"></line><line x1="106" y1="170" x2="304" y2="150"></line><line x1="106" y1="170" x2="304" y2="200"></line>
+              <line x1="336" y1="50" x2="534" y2="120"></line><line x1="336" y1="100" x2="534" y2="120"></line><line x1="336" y1="150" x2="534" y2="120"></line><line x1="336" y1="200" x2="534" y2="120"></line>
+            </g>
+            <text x="90" y="210" text-anchor="middle" font-family="Geist, sans-serif" font-size="12" fill="#737373">inputs</text>
+            <text x="320" y="228" text-anchor="middle" font-family="Geist, sans-serif" font-size="12" fill="#737373">hidden layer</text>
+            <text x="550" y="155" text-anchor="middle" font-family="Geist, sans-serif" font-size="12" fill="#737373">output</text>
+          </svg>
+          <figcaption>Every edge is a weight; every hidden/output node adds a bias and applies an activation. A real network has many such layers and millions of edges.</figcaption>
+        </figure>
+
+        <h2>How does it learn? Backpropagation</h2>
+        <p>Training still needs the gradient: for every one of those millions of weights, which way should it move to reduce the loss? <strong>Backpropagation</strong> is the efficient algorithm that computes all of them in a single backward sweep. Intuitively, it runs the network in reverse, distributing "blame" for the final error back through the layers — each weight learns how much it contributed to the mistake.</p>
+        <p>You will essentially never implement backpropagation by hand. Frameworks like PyTorch record the operations of the forward pass and differentiate them automatically ("autograd"). What matters for you: backprop produces the gradient, and gradient descent uses it. Same loop as before — now over a network instead of a line.</p>
+        <div class="callout callout--note">
+          <p class="callout__label">Heads up</p>
+          <p>People say a network has "billions of parameters." Those parameters are exactly these weights and biases, counted across every layer. Training sets all of them; inference reads all of them. There is nothing else inside.</p>
+        </div>
+
+        <h2>Why this matters for language</h2>
+        <p>A language model is a particular, large neural network whose inputs and outputs are about text. It has special structure — the Transformer — that we'll meet in two lessons. But it is trained by backprop + gradient descent on a loss, exactly like the toy network above. Before we get to the Transformer, we have to solve one problem: a network does arithmetic on numbers, and text is not numbers. That's the next lesson.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Neuron</dt><dd>A weighted sum of inputs plus a bias, passed through a nonlinear activation.</dd>
+            <dt>Weight / bias</dt><dd>The learnable parameters of a neuron.</dd>
+            <dt>Activation function (ReLU)</dt><dd>The nonlinearity that lets stacked layers model non-linear patterns; ReLU outputs 0 for negatives, the input otherwise.</dd>
+            <dt>Layer / hidden layer</dt><dd>Many neurons in parallel; hidden layers sit between input and output.</dd>
+            <dt>Forward pass</dt><dd>Computing outputs from inputs, layer by layer.</dd>
+            <dt>Backpropagation</dt><dd>The algorithm that computes the gradient for every parameter in one backward sweep.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
+          <script type="application/json">
+            [
+              { "q": "What does a single neuron compute?", "options": ["A random number", "A weighted sum plus bias, passed through a nonlinear activation", "The loss", "The learning rate"], "answer": 1, "explanation": "Neuron = linear combination of inputs + bias, then an activation like ReLU." },
+              { "q": "Why is the nonlinear activation essential?", "options": ["It speeds up training", "Without it, stacked linear layers collapse into a single linear function", "It stores the data", "It chooses the learning rate"], "answer": 1, "explanation": "Nonlinearity is what makes depth meaningful; otherwise the stack is equivalent to one linear layer." },
+              { "q": "What does backpropagation produce?", "options": ["The model's predictions", "The gradient for every parameter", "The tokenizer", "The dataset"], "answer": 1, "explanation": "Backprop computes the gradient efficiently; gradient descent then uses it to update parameters." },
+              { "q": "A network's 'billions of parameters' are…", "options": ["The training examples", "The weights and biases across its layers", "The number of layers", "The vocabulary"], "answer": 1, "explanation": "Parameters are the weights and biases; nothing else is stored inside the model." }
+            ]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="how-models-learn.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">How models learn</span></a>
+          <a href="tokens-and-embeddings.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">From text to numbers: tokens &amp; embeddings</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

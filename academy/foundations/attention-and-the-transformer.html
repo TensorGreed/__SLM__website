@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attention &amp; the Transformer, gently — BrewSLM Academy</title>
+    <meta name="description" content="Attention lets each token pull in information from the other tokens that matter. This lesson explains self-attention, multi-head attention, and the Transformer block — the architecture behind every modern language model — without the heavy math." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/foundations/attention-and-the-transformer.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Attention &amp; the Transformer, gently — BrewSLM Academy" />
+    <meta property="og:description" content="Self-attention, multi-head attention, and the Transformer block — the architecture behind language models, explained gently." />
+    <meta property="og:url" content="https://brewslm.com/academy/foundations/attention-and-the-transformer.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Attention &amp; the Transformer, gently" />
+    <meta name="twitter:description" content="The architecture behind language models, explained gently." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Attention and the Transformer, gently",
+        "description": "Self-attention, multi-head attention, and the Transformer block — the architecture behind modern language models.",
+        "url": "https://brewslm.com/academy/foundations/attention-and-the-transformer.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT11M", "isAccessibleForFree": true,
+        "teaches": ["attention", "self-attention", "multi-head attention", "Transformer block", "causal masking"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Foundations", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Attention and the Transformer", "item": "https://brewslm.com/academy/foundations/attention-and-the-transformer.html" } ] }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="foundations/attention-and-the-transformer">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html" aria-current="page">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Foundations</a></li><li>Attention &amp; the Transformer</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 0 · Foundations · Lesson 5</span>
+          <h1>Attention &amp; the Transformer, gently</h1>
+          <p class="lesson-header__outcome">After this lesson you can explain, in plain language, what attention does, why "self-attention" lets a model use context, what multi-head means, and how a Transformer block is assembled — enough to read the rest of the course without fear.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~11 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="tokens-and-embeddings.html">Tokens &amp; embeddings</a></span>
+          </div>
+        </header>
+
+        <p>We now have a sequence of token embeddings and a way to train networks. But a plain stack of layers treats each token in isolation — and language is all about relationships. In "the trophy didn't fit in the suitcase because <em>it</em> was too big," the word "it" means the trophy, and you only know that by looking at the rest of the sentence. The mechanism that lets a model do this look-around is <strong>attention</strong>, and the architecture built around it is the <strong>Transformer</strong>. This lesson stays at the intuition level; you do not need the math to use it.</p>
+
+        <h2>The problem attention solves</h2>
+        <p>To produce a good representation of a token, the model should mix in information from the <em>other</em> tokens that are relevant to it — and ignore the ones that aren't. "It" needs to gather meaning from "trophy"; "big" needs to gather from "trophy" and "suitcase." Different tokens need different neighbors. Attention is a learnable, content-based way to decide, for each token, which other tokens to pull from and how much.</p>
+
+        <h2>Self-attention, in three moves</h2>
+        <p>For every token, the model derives three vectors from its embedding (each via learned weights):</p>
+        <ul>
+          <li>a <strong>query</strong> — "what am I looking for?"</li>
+          <li>a <strong>key</strong> — "what do I offer to others?"</li>
+          <li>a <strong>value</strong> — "the information I'll hand over if chosen."</li>
+        </ul>
+        <p>Then, for a given token, the model compares its query against every token's key to get a relevance score, turns those scores into weights that sum to 1 (a softmax — the same operation we'll use for next-token probabilities), and takes the weighted average of all the <em>values</em>. The result replaces the token's representation with a blend of the information it found most relevant. Because every token attends to tokens in the same sequence, this is called <strong>self-attention</strong>.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Attention is a soft, learned lookup: each token asks a question (query), every token advertises (key), and the answer is a relevance-weighted mix of what they offer (values). Nothing is hand-wired — the query/key/value projections are parameters trained by gradient descent.</p>
+        </div>
+
+        <figure class="diagram">
+          <svg viewBox="0 0 640 200" role="img" aria-label="The token 'it' attends most strongly to 'trophy', weakly to other tokens earlier in the sentence.">
+            <g font-family="Geist Mono, monospace" font-size="13" fill="#171717">
+              <text x="40" y="60">the</text><text x="110" y="60">trophy</text><text x="210" y="60">did&#8230;</text><text x="300" y="60">because</text><text x="410" y="60">it</text>
+            </g>
+            <g stroke="#171717" fill="none">
+              <path d="M415,52 C360,10 175,10 130,50" stroke-width="2.4"></path>
+              <path d="M418,52 C400,20 250,20 235,50" stroke-width="1" stroke-dasharray="3 3"></path>
+              <path d="M420,52 C420,24 330,24 320,50" stroke-width="0.8" stroke-dasharray="3 3"></path>
+            </g>
+            <text x="270" y="120" text-anchor="middle" font-family="Geist, sans-serif" font-size="12" fill="#737373">"it" attends strongly to "trophy" (thick), weakly to others (dashed)</text>
+            <text x="270" y="150" text-anchor="middle" font-family="Geist, sans-serif" font-size="11" fill="#a3a3a3">attention weights are learned and depend on the content of each token</text>
+          </svg>
+          <figcaption>A single attention pattern for the token "it." The weights are computed from queries and keys, not written by a human.</figcaption>
+        </figure>
+
+        <h2>Many heads, looking for different things</h2>
+        <p>One attention pattern can only capture one kind of relationship. Real language has many at once: subject–verb agreement, pronoun reference, adjective–noun, topic. So the model runs several attention computations in parallel — <strong>multi-head attention</strong> — each with its own query/key/value weights, free to specialize in a different pattern. Their outputs are combined. Heads aren't told what to specialize in; they differentiate during training.</p>
+
+        <h2>The Transformer block</h2>
+        <p>Attention is the centerpiece, but a <strong>Transformer block</strong> wraps it with a few supporting parts, and the model stacks many such blocks (a small model might have a dozen; a large one, a hundred):</p>
+        <ul>
+          <li><strong>Multi-head self-attention</strong> — mix information across tokens (what we just covered).</li>
+          <li><strong>A feed-forward network</strong> — a small two-layer neural net (from Lesson 3) applied to each token independently, to transform the mixed representation.</li>
+          <li><strong>Residual connections</strong> — add each sub-layer's input to its output, so information and gradients flow cleanly through a deep stack.</li>
+          <li><strong>Layer normalization</strong> — rescales activations to keep training stable.</li>
+        </ul>
+        <p>You don't need to memorize these. The thing to retain: a Transformer is a tall stack of blocks, each of which lets every token gather context (attention) and then think about it (feed-forward), with residuals and normalization keeping the whole tower trainable.</p>
+
+        <h2>One detail that matters for generation: causal masking</h2>
+        <p>The language models in this course are <strong>decoder-only</strong> (also called <strong>causal</strong>). When predicting the next token, a token is only allowed to attend to tokens <em>before</em> it — never ahead. This <strong>causal mask</strong> is what makes "predict the next token" a fair game: the model can't peek at the answer it's supposed to produce. It's why the same trained network can both read a prompt and continue it, one token at a time.</p>
+        <div class="callout callout--note">
+          <p class="callout__label">Why it scales</p>
+          <p>Attention compares all tokens to all tokens, which is heavy — but it's highly parallel and captures long-range relationships a word-by-word model would miss. That combination is why Transformers, not older recurrent networks, power modern language models.</p>
+        </div>
+
+        <h2>Where we are</h2>
+        <p>We can now see the whole pipe: text → tokens → embeddings → a stack of Transformer blocks that contextualize each token. The only missing piece is how the model turns that final per-token representation into an actual next-token prediction — and how it generates text from there. That is the next lesson, and it ties Track 0 together.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Attention</dt><dd>A learned, content-based mechanism for a token to pull information from relevant tokens.</dd>
+            <dt>Self-attention</dt><dd>Attention where tokens attend to other tokens in the same sequence.</dd>
+            <dt>Query / key / value</dt><dd>Per-token vectors: what I seek, what I offer, what I hand over when chosen.</dd>
+            <dt>Multi-head attention</dt><dd>Several attention computations in parallel, each specializing in a different relationship.</dd>
+            <dt>Transformer block</dt><dd>Self-attention + feed-forward network + residual connections + layer norm; stacked many times.</dd>
+            <dt>Causal mask (decoder-only)</dt><dd>Restricting each token to attend only to earlier tokens, so next-token prediction is fair.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
+          <script type="application/json">
+            [
+              { "q": "What does self-attention let a token do?", "options": ["Memorize the dataset", "Pull information from other relevant tokens in the sequence", "Skip the activation function", "Increase the vocabulary"], "answer": 1, "explanation": "Self-attention mixes in information from other tokens, weighted by learned relevance." },
+              { "q": "In attention, the 'query/key/value' projections are…", "options": ["Hand-written rules", "Learned parameters trained by gradient descent", "Parts of the tokenizer", "The loss function"], "answer": 1, "explanation": "Q/K/V come from learned weight matrices; the relationships emerge during training." },
+              { "q": "Why use multiple attention heads?", "options": ["To save memory", "So different heads can specialize in different relationships at once", "To make the vocabulary larger", "To avoid the context window"], "answer": 1, "explanation": "Each head can capture a different kind of relationship in parallel." },
+              { "q": "What does the causal mask enforce in a decoder-only model?", "options": ["Tokens attend only to earlier tokens, not ahead", "Tokens attend to every token including future ones", "No token attends to any other", "Only the first token attends"], "answer": 0, "explanation": "Causal masking prevents peeking ahead, which is what makes next-token prediction a fair objective." }
+            ]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="tokens-and-embeddings.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Tokens &amp; embeddings</span></a>
+          <a href="how-language-models-work.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">How language models work: next-token prediction</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>
