@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>What is a model? — BrewSLM Academy</title>
+    <meta
+      name="description"
+      content="A machine-learning model is a function with adjustable parameters learned from data. This first BrewSLM Academy lesson builds that intuition from a two-parameter example up to a language model — and explains training vs inference."
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/foundations/what-is-a-model.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="What is a model? — BrewSLM Academy" />
+    <meta property="og:description" content="A model is a function with adjustable parameters learned from data. From a two-parameter example to a language model, plus training vs inference." />
+    <meta property="og:url" content="https://brewslm.com/academy/foundations/what-is-a-model.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="What is a model? — BrewSLM Academy" />
+    <meta name="twitter:description" content="A model is a function with adjustable parameters learned from data." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "LearningResource",
+        "name": "What is a model?",
+        "headline": "What is a model?",
+        "description": "A machine-learning model is a function with adjustable parameters learned from data. This lesson builds that intuition from a two-parameter example up to a language model, and distinguishes training from inference.",
+        "url": "https://brewslm.com/academy/foundations/what-is-a-model.html",
+        "inLanguage": "en",
+        "learningResourceType": "Lesson",
+        "educationalLevel": "Beginner",
+        "timeRequired": "PT8M",
+        "isAccessibleForFree": true,
+        "teaches": ["machine learning model", "model parameters", "training vs inference", "language model"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+          { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+          { "@type": "ListItem", "position": 3, "name": "Foundations", "item": "https://brewslm.com/academy/" },
+          { "@type": "ListItem", "position": 4, "name": "What is a model?", "item": "https://brewslm.com/academy/foundations/what-is-a-model.html" }
+        ]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "What is a model?" },
+        "hasPart": [
+          { "@type": "Question", "name": "What are a model's parameters?", "acceptedAnswer": { "@type": "Answer", "text": "The numbers inside the model that are adjusted during training to fit the data." } },
+          { "@type": "Question", "name": "What is the difference between training and inference?", "acceptedAnswer": { "@type": "Answer", "text": "Training adjusts the parameters using example data; inference fixes the parameters and computes outputs for new inputs." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="foundations/what-is-a-model">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home">
+        <img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" />
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html" aria-current="page">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="../index.html">Academy</a></li>
+        <li><a href="../index.html">Foundations</a></li>
+        <li>What is a model?</li>
+      </ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page">
+        <p class="lesson-toc__title">On this page</p>
+        <ol data-toc></ol>
+      </aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 0 · Foundations · Lesson 1</span>
+          <h1>What is a model?</h1>
+          <p class="lesson-header__outcome">
+            After this lesson you can explain what a machine-learning model is, what its
+            <em>parameters</em> are, and why <em>training</em> and <em>inference</em> are two
+            different things — using a concrete example you could compute by hand.
+          </p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~8 min</span>
+            <span><strong>Prerequisites:</strong> none</span>
+          </div>
+        </header>
+
+        <p>
+          People say "AI model" and "language model" constantly, usually as if a model were a
+          mysterious brain. It isn't. A model is something much more boring and much more useful:
+          a <strong>function with adjustable numbers inside it</strong>, where the numbers were
+          chosen automatically to fit a pile of examples. If you understand that one sentence,
+          everything else in this course is detail.
+        </p>
+
+        <h2>A model is a function with knobs</h2>
+        <p>
+          A function takes an input and returns an output. <code>f(x) = x + 2</code> is a function:
+          give it <code>3</code>, it returns <code>5</code>. A model is a function too — but it has
+          extra numbers built into it that we get to choose. Those numbers are called
+          <strong>parameters</strong> (also called <strong>weights</strong>).
+        </p>
+        <p>
+          Here is the smallest useful model. Suppose you want to predict a house's price from its
+          size. You guess the relationship is a straight line:
+        </p>
+        <div class="code-block">
+          <p>price = <span class="code-key">w</span> &times; size + <span class="code-key">b</span></p>
+        </div>
+        <p>
+          Here <code>w</code> and <code>b</code> are the parameters — the knobs. If <code>w = 200</code>
+          and <code>b = 50,000</code>, then a 1,000&nbsp;sq&nbsp;ft house is predicted at
+          <code>200 &times; 1000 + 50,000 = 250,000</code>. Change the knobs and you get a different
+          prediction. This two-knob model is real machine learning; it's called linear regression.
+          A modern language model is the same idea with <em>hundreds of millions</em> of knobs
+          instead of two.
+        </p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>
+            The structure of the model (here, "a straight line") is chosen by a human. The
+            <em>values</em> of the parameters are <strong>not</strong> typed in by a human — they are
+            found automatically from data. That automatic search is what "machine learning" refers to.
+          </p>
+        </div>
+
+        <h2>Where the knobs come from: training</h2>
+        <p>
+          We don't know good values for <code>w</code> and <code>b</code> in advance. So we collect
+          <strong>examples</strong> — real houses where we know both the size and the actual price —
+          and let the computer find knob values that make the model's predictions close to the truth.
+        </p>
+        <p>The recipe, which we'll make precise in the next lesson, is:</p>
+        <ol>
+          <li>Start with random knob values.</li>
+          <li>Run some examples through the model and compare predictions to the real answers.</li>
+          <li>Measure how wrong you are with a single number called the <strong>loss</strong>.</li>
+          <li>Nudge every knob a little in the direction that makes the loss smaller.</li>
+          <li>Repeat thousands of times.</li>
+        </ol>
+        <p>
+          That loop — predict, measure error, nudge the knobs — is <strong>training</strong>. The
+          output of training is just a set of numbers: the learned parameters. A trained model is
+          nothing more than its structure plus those numbers saved to a file.
+        </p>
+
+        <figure class="diagram">
+          <svg viewBox="0 0 640 220" role="img" aria-label="Diagram: an input flows through a model controlled by parameters to produce an output; a training loop measures loss and adjusts the parameters.">
+            <defs>
+              <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+                <path d="M0,0 L9,4.5 L0,9 z" fill="#525252"></path>
+              </marker>
+            </defs>
+            <!-- input -->
+            <rect x="20" y="80" width="110" height="48" rx="6" fill="#fafafa" stroke="#d4d4d4"></rect>
+            <text x="75" y="100" text-anchor="middle" font-family="Geist, sans-serif" font-size="13" fill="#171717">input</text>
+            <text x="75" y="117" text-anchor="middle" font-family="Geist Mono, monospace" font-size="11" fill="#737373">size = 1000</text>
+            <!-- model -->
+            <rect x="250" y="68" width="150" height="72" rx="8" fill="#ffffff" stroke="#171717" stroke-width="1.5"></rect>
+            <text x="325" y="92" text-anchor="middle" font-family="Geist, sans-serif" font-size="13" fill="#171717">model</text>
+            <text x="325" y="112" text-anchor="middle" font-family="Geist Mono, monospace" font-size="11" fill="#525252">w &#215; size + b</text>
+            <text x="325" y="128" text-anchor="middle" font-family="Geist Mono, monospace" font-size="10" fill="#a3a3a3">parameters: w, b</text>
+            <!-- output -->
+            <rect x="510" y="80" width="110" height="48" rx="6" fill="#fafafa" stroke="#d4d4d4"></rect>
+            <text x="565" y="100" text-anchor="middle" font-family="Geist, sans-serif" font-size="13" fill="#171717">output</text>
+            <text x="565" y="117" text-anchor="middle" font-family="Geist Mono, monospace" font-size="11" fill="#737373">price = 250k</text>
+            <!-- forward arrows -->
+            <line x1="132" y1="104" x2="248" y2="104" stroke="#525252" marker-end="url(#arrow)"></line>
+            <line x1="402" y1="104" x2="508" y2="104" stroke="#525252" marker-end="url(#arrow)"></line>
+            <!-- training loop -->
+            <path d="M565,132 C565,185 325,195 325,144" fill="none" stroke="#a3a3a3" stroke-dasharray="4 4" marker-end="url(#arrow)"></path>
+            <text x="445" y="188" text-anchor="middle" font-family="Geist, sans-serif" font-size="11" fill="#737373">training: measure loss, nudge w &amp; b</text>
+          </svg>
+          <figcaption>One example flowing forward through the model; training is the dashed loop that adjusts the parameters to shrink the loss.</figcaption>
+        </figure>
+
+        <h2>Using the model: inference</h2>
+        <p>
+          Once training is done, you <strong>freeze</strong> the knobs. Now you can feed the model a
+          brand-new house size it has never seen and read off a predicted price. Running a trained,
+          frozen model on new inputs is called <strong>inference</strong> (or "prediction").
+        </p>
+        <p>
+          The distinction matters for everything that follows:
+        </p>
+        <ul>
+          <li><strong>Training</strong> changes the parameters. It needs labelled examples, lots of compute, and a GPU for anything large.</li>
+          <li><strong>Inference</strong> keeps the parameters fixed. It just runs the function forward — far cheaper.</li>
+        </ul>
+        <div class="callout callout--note">
+          <p class="callout__label">Heads up</p>
+          <p>
+            When people say a model "knows" something, they mean its frozen parameters encode a
+            pattern that produces useful outputs. There is no lookup table and no reasoning engine
+            hiding inside — just numbers and arithmetic. Useful arithmetic, but arithmetic.
+          </p>
+        </div>
+
+        <h2>From numbers to language</h2>
+        <p>
+          A language model is the same machine, scaled up and pointed at text. Two things change:
+        </p>
+        <ul>
+          <li>
+            <strong>The input and output are tokens, not house sizes.</strong> Text is first chopped
+            into small chunks called <em>tokens</em> (we cover this in a later lesson). The model
+            reads a sequence of tokens and outputs a <em>probability for every possible next token</em>.
+          </li>
+          <li>
+            <strong>There are far more knobs.</strong> Instead of two parameters, a small language
+            model like SmolLM2-135M has about 135&nbsp;<em>million</em>. A large one can have hundreds
+            of billions. The structure is more elaborate (the Transformer, also a later lesson), but
+            it is still a function with parameters learned by the predict-measure-nudge loop above.
+          </li>
+        </ul>
+        <p>
+          So "the model generates text" unpacks to: predict the next token, append it, feed the new
+          sequence back in, predict the next token, and repeat. Every one of those predictions is the
+          same frozen function doing arithmetic with its learned parameters.
+        </p>
+
+        <h2>So what is a <em>small</em> language model?</h2>
+        <p>
+          A small language model (SLM) is simply one with relatively few parameters — millions to a
+          few billion, rather than the tens or hundreds of billions of a frontier LLM. Fewer
+          parameters means it is cheaper to run, faster to respond, and can live on a single GPU or
+          even a laptop. The trade-off is that out of the box it knows less.
+        </p>
+        <p>
+          That trade-off is the entire premise of this course. The rest of the Academy is about a
+          specific, powerful move: take a small base model and <strong>fine-tune</strong> it on a
+          modest amount of your own data so that, for <em>your one task</em>, it rivals a model
+          hundreds of times its size — at a fraction of the cost and latency. To do that well, you
+          first have to understand the predict-measure-nudge loop in detail. That's the next lesson.
+        </p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Model</dt><dd>A function with adjustable parameters that maps inputs to outputs.</dd>
+            <dt>Parameter (weight)</dt><dd>A number inside the model, set by training rather than by hand.</dd>
+            <dt>Training</dt><dd>The process of adjusting parameters from example data to reduce a loss.</dd>
+            <dt>Loss</dt><dd>A single number measuring how wrong the model's predictions are.</dd>
+            <dt>Inference</dt><dd>Running a trained, frozen model on new inputs to get outputs.</dd>
+            <dt>Language model</dt><dd>A model whose inputs/outputs are tokens; it predicts the next token.</dd>
+            <dt>Small language model (SLM)</dt><dd>A language model with relatively few parameters — cheaper and faster, the focus of this course.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
+          <script type="application/json">
+            [
+              {
+                "q": "What are a model's parameters?",
+                "options": [
+                  "The inputs you feed the model at inference time",
+                  "Numbers inside the model that are adjusted during training to fit the data",
+                  "The programming language the model is written in",
+                  "The rules a human writes describing the task"
+                ],
+                "answer": 1,
+                "explanation": "Parameters (weights) are the model's internal numbers. Their structure is chosen by a human; their values are learned automatically from data."
+              },
+              {
+                "q": "What is the difference between training and inference?",
+                "options": [
+                  "There is no difference; they are two words for the same thing",
+                  "Training runs on a CPU, inference runs on a GPU",
+                  "Training adjusts the parameters from examples; inference keeps them fixed and computes outputs for new inputs",
+                  "Inference changes the parameters; training freezes them"
+                ],
+                "answer": 2,
+                "explanation": "Training is the predict-measure-nudge loop that changes parameters. Inference freezes the parameters and just runs the function forward."
+              },
+              {
+                "q": "What does a language model output for a sequence of tokens?",
+                "options": [
+                  "The single correct answer, looked up in a table",
+                  "A probability for each possible next token",
+                  "A house price",
+                  "Nothing until it is trained again"
+                ],
+                "answer": 1,
+                "explanation": "A language model predicts a probability distribution over the next token. Generation = repeatedly predicting and appending the next token."
+              },
+              {
+                "q": "What primarily makes a language model 'small'?",
+                "options": [
+                  "It was trained for fewer minutes",
+                  "It only runs on phones",
+                  "It has relatively few parameters (millions to a few billion)",
+                  "It can only output short text"
+                ],
+                "answer": 2,
+                "explanation": "An SLM has comparatively few parameters, which makes it cheaper and faster. Fine-tuning closes much of the quality gap for a specific task."
+              }
+            ]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="../index.html">
+            <span class="lesson-nav__dir">← Back</span>
+            <span class="lesson-nav__title">Academy overview</span>
+          </a>
+          <a href="../index.html" class="lesson-nav__next">
+            <span class="lesson-nav__dir">Next · publishing soon</span>
+            <span class="lesson-nav__title">What "learning" means: loss &amp; gradient descent</span>
+          </a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>
