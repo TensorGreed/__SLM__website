@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Capstone A: fine-tune SmolLM2 end-to-end, by hand — BrewSLM Academy</title>
+    <meta name="description" content="The full by-hand pipeline in one runnable script: load SmolLM2, build and tokenize data with a loss mask, train a LoRA adapter, evaluate against the base on a gold set, and merge to a shippable model — with success criteria and what to do if it falls short." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/capstone-end-to-end.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Capstone A: fine-tune SmolLM2 end-to-end, by hand — BrewSLM Academy" />
+    <meta property="og:description" content="The full by-hand pipeline in one runnable script: load SmolLM2, build and tokenize data with a loss mask, train a LoRA adapter, evaluate against the base on a gold set, and merge to a shippable model — with success criteria and what to do if it falls short." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/capstone-end-to-end.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Capstone A: fine-tune SmolLM2 end-to-end, by hand — BrewSLM Academy" />
+    <meta name="twitter:description" content="The full by-hand pipeline in one runnable script: load SmolLM2, build and tokenize data with a loss mask, train a LoRA adapter, evaluate against the base on a gold set, and merge to a shippable model — with success criteria and what to do if it falls short." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Capstone A: fine-tune SmolLM2 end-to-end, by hand",
+        "description": "The full by-hand pipeline in one runnable script: load SmolLM2, build and tokenize data with a loss mask, train a LoRA adapter, evaluate against the base on a gold set, and merge to a shippable model — with success criteria and what to do if it falls short.",
+        "url": "https://brewslm.com/academy/hands-on/capstone-end-to-end.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["end-to-end pipeline", "capstone", "success criteria", "iteration"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Hands-on", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Capstone A: fine-tune SmolLM2 end-to-end, by hand", "item": "https://brewslm.com/academy/hands-on/capstone-end-to-end.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Capstone A: fine-tune SmolLM2 end-to-end, by hand"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What is the success criterion for this capstone?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The tuned model clearly beats the base on the held-out gold set, in the right format"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "The tuned model shows no lift over the base. Where do you look first?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The data \u2014 too few/ wrong-label/ unrepresentative examples"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "The model rambles instead of emitting just the label. Likely cause?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Chat template / loss-mask issue"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why move on to a platform (Track 3) after doing this by hand?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Doing the loop many times \u2014 with imports, gates, eval, deployment \u2014 is toil worth automating"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="hands-on/capstone-end-to-end">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html" aria-current="page">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Hands-on</a></li><li>Capstone A: end-to-end</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 9</span>
+          <h1>Capstone A: fine-tune SmolLM2 end-to-end, by hand</h1>
+          <p class="lesson-header__outcome">After this capstone you can run a complete fine-tune from scratch in one script, judge success against the base on a gold set, and know exactly which earlier lesson to revisit when something falls short.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="merge-and-infer.html">Merge the adapter, run inference, ship an artifact</a></span>
+          </div>
+        </header>
+
+        <p>This capstone assembles Lessons 2.1–2.8 into one script you can run top to bottom. Nothing here is new — it's the whole loop in one place, so you can see how few moving parts a real fine-tune has once you understand each one.</p>
+
+        <h2>The whole pipeline, one script</h2>
+        <pre class="code-block"><code>import torch
+from datasets import Dataset
+from transformers import (AutoModelForCausalLM, AutoTokenizer,
+                          TrainingArguments, Trainer, DataCollatorForSeq2Seq)
+from peft import LoraConfig, get_peft_model, PeftModel
+
+MODEL_ID, MAX_LEN = "HuggingFaceTB/SmolLM2-135M-Instruct", 256
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+# 1) data --------------------------------------------------------------
+raw = [  # in practice: hundreds of clean, balanced, deduplicated rows
+    {"prompt": "Classify the sentiment as positive or negative: I loved this movie.", "completion": "positive"},
+    {"prompt": "Classify the sentiment as positive or negative: A complete waste of time.", "completion": "negative"},
+    # ...
+]
+ds = Dataset.from_list(raw).train_test_split(test_size=0.2, seed=42)
+
+# 2) model + tokenizer -------------------------------------------------
+tok = AutoTokenizer.from_pretrained(MODEL_ID)
+if tok.pad_token is None: tok.pad_token = tok.eos_token
+model = AutoModelForCausalLM.from_pretrained(MODEL_ID, dtype=torch.bfloat16).to(device)
+model.config.pad_token_id = tok.pad_token_id
+
+# 3) tokenize with a loss mask ----------------------------------------
+def tokenize(row):
+    full = tok.apply_chat_template(
+        [{"role":"user","content":row["prompt"]},{"role":"assistant","content":row["completion"]}], tokenize=False)
+    prompt = tok.apply_chat_template(
+        [{"role":"user","content":row["prompt"]}], tokenize=False, add_generation_prompt=True)
+    ids = tok(full, truncation=True, max_length=MAX_LEN, add_special_tokens=False)["input_ids"]
+    p = len(tok(prompt, add_special_tokens=False)["input_ids"])
+    labels = [-100]*min(p, len(ids)) + ids[min(p, len(ids)):]
+    return {"input_ids": ids, "attention_mask":[1]*len(ids), "labels": labels}
+train_tok = ds["train"].map(tokenize, remove_columns=ds["train"].column_names)
+val_tok   = ds["test"].map(tokenize, remove_columns=ds["test"].column_names)
+
+# 4) LoRA + train ------------------------------------------------------
+model = get_peft_model(model, LoraConfig(
+    r=16, lora_alpha=32, lora_dropout=0.05,
+    target_modules=["q_proj","v_proj"], task_type="CAUSAL_LM"))
+model.print_trainable_parameters()
+Trainer(
+    model=model,
+    args=TrainingArguments(output_dir="sft-out", per_device_train_batch_size=8,
+        gradient_accumulation_steps=2, learning_rate=2e-4, num_train_epochs=3,
+        lr_scheduler_type="cosine", warmup_ratio=0.03, bf16=True,
+        logging_steps=5, eval_strategy="epoch", save_strategy="epoch", report_to=[]),
+    train_dataset=train_tok, eval_dataset=val_tok,
+    data_collator=DataCollatorForSeq2Seq(tok, model=model), processing_class=tok,
+).train()
+model.save_pretrained("sft-out/adapter")
+
+# 5) evaluate vs base on a gold set -----------------------------------
+@torch.no_grad()
+def predict(m, prompt):
+    text = tok.apply_chat_template([{"role":"user","content":prompt}], tokenize=False, add_generation_prompt=True)
+    ids = tok(text, return_tensors="pt").to(m.device)
+    return tok.decode(m.generate(**ids, max_new_tokens=8, do_sample=False, pad_token_id=tok.pad_token_id)[0][ids["input_ids"].shape[1]:], skip_special_tokens=True).strip().lower()
+
+gold = [{"prompt":"Classify the sentiment as positive or negative: This made my week.","label":"positive"}]  # + more
+base = AutoModelForCausalLM.from_pretrained(MODEL_ID, dtype=torch.bfloat16).to(device)
+tuned = PeftModel.from_pretrained(base, "sft-out/adapter").eval()
+acc = lambda m: sum(predict(m, g["prompt"]).startswith(g["label"]) for g in gold) / len(gold)
+print("base:", acc(base), " tuned:", acc(tuned))
+
+# 6) ship --------------------------------------------------------------
+tuned.merge_and_unload().save_pretrained("sft-out/merged"); tok.save_pretrained("sft-out/merged")</code></pre>
+        <h2>Success criteria</h2>
+        <p>You've succeeded when, on your held-out gold set, the <strong>tuned model clearly beats the base</strong> and produces the format you want (here: just the label, no rambling). If you set a gate in advance (Track 1) — say "≥ 90% gold accuracy" — the run passes only when it clears it.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">If it falls short — where to look</p>
+          <p><strong>No lift over base</strong> → data problem: too few examples, wrong labels, or not representative (Tracks 1.7–1.8). <strong>Rambling / wrong format</strong> → check the chat template and loss mask (Tracks 1.3–1.4, 2.4). <strong>Eval loss rose</strong> → overfitting: fewer epochs or more data (Track 1.17). <strong>NaN / no learning</strong> → learning rate (Track 1.11). Every failure maps to a lesson.</p>
+        </div>
+
+        <h2>You can fine-tune a model</h2>
+        <p>That's the whole thing. You loaded a base model, taught it a task from your own data, proved the lift on a gold set, and shipped an artifact — entirely by hand, with no platform and nothing hidden. Everything BrewSLM does, you can now do yourself; you understand each step well enough to debug it.</p>
+        <p>So why use a platform at all? Because doing this <em>once</em> by hand is illuminating; doing it <em>fifty times</em> — with imports, gates, eval packs, deployment, and monitoring — is exactly the toil worth automating. <strong>Track 3</strong> runs this same pipeline through BrewSLM and shows what the platform buys you, now that you know precisely what it's doing underneath.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>end-to-end pipeline</dt><dd>The full run: data → model → tokenize → train → evaluate → ship, in one script.</dd>
+            <dt>success criteria</dt><dd>A clear bar — beat the base on the gold set and produce the right format.</dd>
+            <dt>quality gate</dt><dd>A pass threshold set in advance the run must clear (Track 1).</dd>
+            <dt>iteration</dt><dd>Mapping each failure mode back to the lesson that fixes it, then re-running.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What is the success criterion for this capstone?",
+    "options": [
+      "Lowest possible training loss",
+      "The tuned model clearly beats the base on the held-out gold set, in the right format",
+      "The most epochs",
+      "The largest adapter"
+    ],
+    "answer": 1,
+    "explanation": "Success = a real lift over baseline on the gold set, with correct formatting."
+  },
+  {
+    "q": "The tuned model shows no lift over the base. Where do you look first?",
+    "options": [
+      "The GPU driver",
+      "The data \u2014 too few/ wrong-label/ unrepresentative examples",
+      "The merge step",
+      "The safetensors format"
+    ],
+    "answer": 1,
+    "explanation": "No lift is almost always a data problem (Tracks 1.7\u20131.8)."
+  },
+  {
+    "q": "The model rambles instead of emitting just the label. Likely cause?",
+    "options": [
+      "Learning rate too low",
+      "Chat template / loss-mask issue",
+      "Too much gold data",
+      "Wrong export format"
+    ],
+    "answer": 1,
+    "explanation": "Formatting/masking problems (Tracks 1.3\u20131.4, 2.4) cause off-format, runaway output."
+  },
+  {
+    "q": "Why move on to a platform (Track 3) after doing this by hand?",
+    "options": [
+      "By-hand training doesn't work",
+      "Doing the loop many times \u2014 with imports, gates, eval, deployment \u2014 is toil worth automating",
+      "Platforms train better models inherently",
+      "To avoid learning the internals"
+    ],
+    "answer": 1,
+    "explanation": "You automate the repetitive operational toil; the core training is what you just did by hand."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="merge-and-infer.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Merge the adapter, run inference, ship an artifact</span></a>
+          <a href="../index.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next · Track 3 publishing soon</span><span class="lesson-nav__title">Track 3: With BrewSLM — back to the hub</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

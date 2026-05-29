@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A minimal LoRA fine-tune with the Trainer — BrewSLM Academy</title>
+    <meta name="description" content="Attach a LoRA adapter with peft, configure TrainingArguments with the hyperparameters from Track 1, and run the Hugging Face Trainer to fine-tune SmolLM2 — the whole training step in about 30 lines." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/minimal-lora-trainer.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="A minimal LoRA fine-tune with the Trainer — BrewSLM Academy" />
+    <meta property="og:description" content="Attach a LoRA adapter with peft, configure TrainingArguments with the hyperparameters from Track 1, and run the Hugging Face Trainer to fine-tune SmolLM2 — the whole training step in about 30 lines." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/minimal-lora-trainer.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="A minimal LoRA fine-tune with the Trainer — BrewSLM Academy" />
+    <meta name="twitter:description" content="Attach a LoRA adapter with peft, configure TrainingArguments with the hyperparameters from Track 1, and run the Hugging Face Trainer to fine-tune SmolLM2 — the whole training step in about 30 lines." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "A minimal LoRA fine-tune with the Trainer",
+        "description": "Attach a LoRA adapter with peft, configure TrainingArguments with the hyperparameters from Track 1, and run the Hugging Face Trainer to fine-tune SmolLM2 — the whole training step in about 30 lines.",
+        "url": "https://brewslm.com/academy/hands-on/minimal-lora-trainer.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["LoraConfig", "get_peft_model", "print_trainable_parameters", "TrainingArguments", "Trainer", "save_pretrained"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Hands-on", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "A minimal LoRA fine-tune with the Trainer", "item": "https://brewslm.com/academy/hands-on/minimal-lora-trainer.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "A minimal LoRA fine-tune with the Trainer"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What does get_peft_model(model, lora_config) do?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Wraps the base with LoRA adapters and freezes the base"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "With per_device_train_batch_size=8 and gradient_accumulation_steps=2, the effective batch is\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "16"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does Trainer.train() actually run?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The gradient-descent loop: forward, loss, backward, optimizer step"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "After training a LoRA model, model.save_pretrained writes\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Just the small LoRA adapter"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="hands-on/minimal-lora-trainer">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html" aria-current="page">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Hands-on</a></li><li>Minimal LoRA Trainer</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 5</span>
+          <h1>A minimal LoRA fine-tune with the Trainer</h1>
+          <p class="lesson-header__outcome">After this lesson you can wrap a model in LoRA, configure TrainingArguments, run the Trainer to fine-tune, and save the adapter — the core of a by-hand SFT run.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="tokenize-and-collate.html">Tokenize and collate: model-ready batches with a loss mask</a></span>
+          </div>
+        </header>
+
+        <p>Everything so far has been setup. This is the training itself — and it's shorter than you might expect, because the <code>Trainer</code> implements the loop from Track 1 (forward, loss, backward, optimizer step) for us. We add LoRA so we update a tiny adapter instead of all 135M parameters.</p>
+
+        <h2>Attach the LoRA adapter</h2>
+        <p>Recall Track 1's LoRA knobs: rank <code>r</code>, <code>alpha</code>, dropout, and which modules to adapt. We freeze the base and wrap it:</p>
+        <pre class="code-block"><code>from peft import LoraConfig, get_peft_model
+
+lora_config = LoraConfig(
+    r=16,
+    lora_alpha=32,
+    lora_dropout=0.05,
+    target_modules=["q_proj", "v_proj"],   # the attention query/value projections
+    task_type="CAUSAL_LM",
+)
+
+model = get_peft_model(model, lora_config)
+model.print_trainable_parameters()
+# e.g. trainable params: ~0.4M || all params: ~135M || trainable%: ~0.3</code></pre>
+        <p>That <code>print_trainable_parameters()</code> line is worth pausing on: you're training well under 1% of the model. This is exactly why LoRA fits on a small GPU (Track 1's memory lesson).</p>
+
+        <h2>Configure the run</h2>
+        <p>The hyperparameters are the ones you studied in Track 1 — learning rate, epochs, effective batch size (per-device batch × gradient accumulation), bf16, and how often to log/save.</p>
+        <pre class="code-block"><code>from transformers import TrainingArguments, Trainer
+
+args = TrainingArguments(
+    output_dir="sft-out",
+    per_device_train_batch_size=8,
+    gradient_accumulation_steps=2,        # effective batch = 16
+    learning_rate=2e-4,                   # LoRA tolerates a higher LR
+    num_train_epochs=3,
+    lr_scheduler_type="cosine",
+    warmup_ratio=0.03,
+    bf16=True,
+    logging_steps=5,
+    eval_strategy="epoch",                # older transformers: evaluation_strategy
+    save_strategy="epoch",
+    report_to=[],                         # no external loggers
+)</code></pre>
+        <h2>Train</h2>
+        <pre class="code-block"><code>trainer = Trainer(
+    model=model,
+    args=args,
+    train_dataset=train_tok,
+    eval_dataset=val_tok,
+    data_collator=collator,
+    processing_class=tok,                 # older transformers: tokenizer=tok
+)
+
+trainer.train()
+model.save_pretrained("sft-out/adapter")  # saves just the small LoRA adapter
+tok.save_pretrained("sft-out/adapter")</code></pre>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>The entire fine-tune is: <strong>wrap in LoRA → set TrainingArguments → Trainer.train()</strong>. The Trainer runs the gradient-descent loop you learned in Track 1; you supply the data, the collator, and the hyperparameters. <code>save_pretrained</code> writes only the adapter — a few megabytes, not a model copy.</p>
+        </div>
+
+        <h2>What just happened</h2>
+        <p>The Trainer iterated your training set for 3 epochs, computing cross-entropy on the unmasked completion tokens, backpropagating into the LoRA adapter, and stepping the optimizer with a cosine-decayed learning rate after a short warmup. At each epoch it ran a validation pass. The result is a small adapter that, applied to the frozen base, produces your task's behavior. Next we'll run it and read the logs to judge whether it went well.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>LoraConfig</dt><dd>peft config for LoRA: rank r, alpha, dropout, target_modules, task_type.</dd>
+            <dt>get_peft_model</dt><dd>Wraps a base model with LoRA adapters, freezing the base.</dd>
+            <dt>print_trainable_parameters</dt><dd>Reports how few parameters LoRA actually trains.</dd>
+            <dt>TrainingArguments</dt><dd>Holds the hyperparameters: LR, epochs, batch, precision, logging/saving.</dd>
+            <dt>Trainer</dt><dd>Runs the training loop (forward/loss/backward/step) for you.</dd>
+            <dt>save_pretrained</dt><dd>Writes the model — for a LoRA model, just the small adapter.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What does get_peft_model(model, lora_config) do?",
+    "options": [
+      "Trains the model",
+      "Wraps the base with LoRA adapters and freezes the base",
+      "Saves a checkpoint",
+      "Tokenizes the data"
+    ],
+    "answer": 1,
+    "explanation": "It attaches LoRA adapters and freezes the base, so only the adapter trains."
+  },
+  {
+    "q": "With per_device_train_batch_size=8 and gradient_accumulation_steps=2, the effective batch is\u2026",
+    "options": [
+      "8",
+      "2",
+      "16",
+      "4"
+    ],
+    "answer": 2,
+    "explanation": "Effective batch = per-device batch \u00d7 accumulation steps = 8 \u00d7 2 = 16."
+  },
+  {
+    "q": "What does Trainer.train() actually run?",
+    "options": [
+      "Only inference",
+      "The gradient-descent loop: forward, loss, backward, optimizer step",
+      "Tokenization",
+      "Adapter merging"
+    ],
+    "answer": 1,
+    "explanation": "The Trainer implements the Track 1 training loop over your dataset."
+  },
+  {
+    "q": "After training a LoRA model, model.save_pretrained writes\u2026",
+    "options": [
+      "A full copy of the 135M model",
+      "Just the small LoRA adapter",
+      "Only the tokenizer",
+      "Nothing"
+    ],
+    "answer": 1,
+    "explanation": "For a PEFT model it saves only the adapter \u2014 a few megabytes."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="tokenize-and-collate.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Tokenize and collate: model-ready batches with a loss mask</span></a>
+          <a href="run-and-read-logs.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Run it: read the logs, the loss, the checkpoints</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

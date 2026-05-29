@@ -38,7 +38,10 @@
           { "@type": "DefinedTerm", "name": "LoRA", "description": "Low-Rank Adaptation: training small added matrices instead of all parameters for cheap fine-tuning." },
           { "@type": "DefinedTerm", "name": "Embedding", "description": "A learned vector representing a token; similar tokens get similar vectors." },
           { "@type": "DefinedTerm", "name": "Attention", "description": "A learned mechanism for a token to pull information from other relevant tokens." },
-          { "@type": "DefinedTerm", "name": "Gold set", "description": "Curated, known-correct examples a model never trains on; the source of truth for quality." }
+          { "@type": "DefinedTerm", "name": "Gold set", "description": "Curated, known-correct examples a model never trains on; the source of truth for quality." },
+          { "@type": "DefinedTerm", "name": "Trainer", "description": "The Transformers class that runs the training loop (forward, loss, backward, optimizer step) for you." },
+          { "@type": "DefinedTerm", "name": "merge_and_unload", "description": "Folds a LoRA adapter into the base weights, returning a standalone model with no adapter overhead." },
+          { "@type": "DefinedTerm", "name": "safetensors", "description": "The safe, fast default weight format save_pretrained writes." }
         ]
       }
     </script>
@@ -169,6 +172,31 @@
           <dt id="scheduler">Scheduler / warmup</dt><dd>Warmup ramps the LR up over the first steps; the scheduler (e.g. cosine) then decays it toward zero. See <a class="inline-link" href="sft-fundamentals/learning-rate-and-schedules.html">Learning rate &amp; schedules</a>.</dd>
           <dt id="sequence-packing">Sequence packing</dt><dd>Concatenating short examples into one full-length sequence to avoid wasting compute on padding.</dd>
           <dt id="target-modules">Target modules</dt><dd>Which weight matrices get LoRA adapters (commonly the attention query/value projections).</dd>
+        </dl>
+
+        <h2>Track 2 — Hands-on</h2>
+        <dl>
+          <dt id="accelerate">accelerate</dt><dd>Hugging Face library that handles device placement and distributed details under the Trainer.</dd>
+          <dt id="attention-mask">attention_mask</dt><dd>A per-token 1/0 vector marking real tokens vs padding so the model ignores padded positions.</dd>
+          <dt id="automodel">AutoModelForCausalLM</dt><dd>The Transformers class that loads a decoder-only language model by id. See <a class="inline-link" href="hands-on/load-model-and-tokenizer.html">Load a base model</a>.</dd>
+          <dt id="autotokenizer">AutoTokenizer</dt><dd>Loads the matching tokenizer and chat template for a model id.</dd>
+          <dt id="datacollator">DataCollator</dt><dd>Pads a list of examples into a rectangular batch; <code>DataCollatorForSeq2Seq</code> pads labels with -100 so padding is ignored by the loss. See <a class="inline-link" href="hands-on/tokenize-and-collate.html">Tokenize &amp; collate</a>.</dd>
+          <dt id="dataset">datasets.Dataset</dt><dd>A fast, memory-mapped table with <code>.map()</code>/<code>.filter()</code>/split that the Trainer consumes.</dd>
+          <dt id="dtype">dtype (bf16)</dt><dd>The weight/compute precision passed to <code>from_pretrained</code> (older API: <code>torch_dtype</code>); bf16 roughly halves memory.</dd>
+          <dt id="from-pretrained">from_pretrained / save_pretrained</dt><dd>Download/instantiate a model or tokenizer, and write a self-contained copy back to disk.</dd>
+          <dt id="generate">generate()</dt><dd>Runs autoregressive decoding to produce output tokens; <code>do_sample=False</code> gives deterministic greedy decoding for evaluation.</dd>
+          <dt id="get-peft-model">get_peft_model</dt><dd>Wraps a base model with LoRA adapters and freezes the base so only the adapter trains.</dd>
+          <dt id="gguf">GGUF</dt><dd>The llama.cpp weight format for efficient CPU/edge inference; a separate conversion step from your merged model. See <a class="inline-link" href="hands-on/merge-and-infer.html">Merge &amp; infer</a>.</dd>
+          <dt id="greedy-decoding">Greedy decoding</dt><dd>Always taking the highest-probability next token (<code>do_sample=False</code>); deterministic, used for reproducible evaluation.</dd>
+          <dt id="ignore-index">Ignore index (-100)</dt><dd>The label value PyTorch's cross-entropy skips; how the loss mask and padding are excluded from the loss in code.</dd>
+          <dt id="input-ids-labels">input_ids / labels</dt><dd>The token IDs the model reads, and the targets it's scored against (a copy of input_ids with masked positions set to -100).</dd>
+          <dt id="merge-and-unload">merge_and_unload</dt><dd>Folds a LoRA adapter into the base weights, returning a standalone model with no adapter overhead.</dd>
+          <dt id="peftmodel">PeftModel.from_pretrained</dt><dd>Attaches a trained LoRA adapter onto a fresh base model for inference. See <a class="inline-link" href="hands-on/evaluate-by-hand.html">Evaluate by hand</a>.</dd>
+          <dt id="print-trainable">print_trainable_parameters</dt><dd>Reports how few parameters LoRA actually trains (typically well under 1%).</dd>
+          <dt id="safetensors">safetensors</dt><dd>The safe, fast default weight format <code>save_pretrained</code> writes.</dd>
+          <dt id="trainer">Trainer</dt><dd>The Transformers class that runs the training loop (forward, loss, backward, optimizer step) for you. See <a class="inline-link" href="hands-on/minimal-lora-trainer.html">A minimal LoRA fine-tune</a>.</dd>
+          <dt id="trainingarguments">TrainingArguments</dt><dd>Holds the run's hyperparameters: learning rate, epochs, batch size, precision, logging and saving cadence.</dd>
+          <dt id="venv">venv</dt><dd>An isolated Python environment so a project's packages don't collide with the system. See <a class="inline-link" href="hands-on/environment-setup.html">Set up the environment</a>.</dd>
         </dl>
       </section>
 

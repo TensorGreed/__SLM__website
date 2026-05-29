@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Load a base model and tokenizer — BrewSLM Academy</title>
+    <meta name="description" content="Load SmolLM2-135M and its tokenizer with Transformers, inspect the config and parameter count, set the pad token, and run a quick generation to confirm the base model works before any fine-tuning." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/load-model-and-tokenizer.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Load a base model and tokenizer — BrewSLM Academy" />
+    <meta property="og:description" content="Load SmolLM2-135M and its tokenizer with Transformers, inspect the config and parameter count, set the pad token, and run a quick generation to confirm the base model works before any fine-tuning." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/load-model-and-tokenizer.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Load a base model and tokenizer — BrewSLM Academy" />
+    <meta name="twitter:description" content="Load SmolLM2-135M and its tokenizer with Transformers, inspect the config and parameter count, set the pad token, and run a quick generation to confirm the base model works before any fine-tuning." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Load a base model and tokenizer",
+        "description": "Load SmolLM2-135M and its tokenizer with Transformers, inspect the config and parameter count, set the pad token, and run a quick generation to confirm the base model works before any fine-tuning.",
+        "url": "https://brewslm.com/academy/hands-on/load-model-and-tokenizer.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["AutoModelForCausalLM", "AutoTokenizer", "from_pretrained", "bf16 dtype", "pad token", "generate"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Hands-on", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Load a base model and tokenizer", "item": "https://brewslm.com/academy/hands-on/load-model-and-tokenizer.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Load a base model and tokenizer"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "Why load the model with dtype=torch.bfloat16?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "To halve memory with stable training"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why set tok.pad_token = tok.eos_token when pad_token is None?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Because batching needs a padding token"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why run a generation on the base model BEFORE fine-tuning?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "To establish a baseline to compare against later"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why use apply_chat_template with add_generation_prompt=True at inference?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "To format the input as the model expects and cue the assistant turn"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="hands-on/load-model-and-tokenizer">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html" aria-current="page">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Hands-on</a></li><li>Load model & tokenizer</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 2</span>
+          <h1>Load a base model and tokenizer</h1>
+          <p class="lesson-header__outcome">After this lesson you can load a base model and tokenizer, inspect what you loaded, set the pad token, and sanity-check the model with a quick generation.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="environment-setup.html">Set up the environment</a></span>
+          </div>
+        </header>
+
+        <p>Our running task for this track will be a simple one — sentiment classification — and our model will be <code>HuggingFaceTB/SmolLM2-135M-Instruct</code>: small enough to fine-tune on a single GPU in minutes, real enough to be useful. This lesson loads it and looks inside.</p>
+
+        <h2>Load the tokenizer and model</h2>
+        <pre class="code-block"><code>import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model_id = "HuggingFaceTB/SmolLM2-135M-Instruct"
+tok = AutoTokenizer.from_pretrained(model_id)
+model = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.bfloat16)
+# older transformers: from_pretrained(model_id, torch_dtype=torch.bfloat16)
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model = model.to(device)</code></pre>
+        <p><code>from_pretrained</code> downloads the weights (cached after the first run) and builds the model. We load in <strong>bf16</strong> to halve memory (Track 1's mixed-precision lesson) and move it onto the GPU.</p>
+
+        <h2>Inspect what you loaded</h2>
+        <pre class="code-block"><code>n_params = sum(p.numel() for p in model.parameters())
+print(f"parameters: {n_params/1e6:.1f}M")
+
+cfg = model.config
+print("layers:", cfg.num_hidden_layers)
+print("hidden size:", cfg.hidden_size)
+print("vocab size:", cfg.vocab_size)
+print("context length:", cfg.max_position_embeddings)</code></pre>
+        <p>You should see ~135M parameters and the architectural numbers from Track 0 made concrete: a stack of Transformer layers, a hidden size (the embedding width), the vocabulary size, and the context window. This is the function whose parameters we'll nudge.</p>
+
+        <h2>Set the pad token</h2>
+        <p>Batching needs a padding token (Track 1's tokenization lesson). Many base tokenizers don't define one, so set it to the end-of-sequence token:</p>
+        <pre class="code-block"><code>if tok.pad_token is None:
+    tok.pad_token = tok.eos_token
+    model.config.pad_token_id = tok.pad_token_id</code></pre>
+        <h2>Sanity-check with a quick generation</h2>
+        <p>Before fine-tuning, confirm the base model runs and see how it handles our task <em>untuned</em> — this is your baseline (Track 1's evaluation lesson).</p>
+        <pre class="code-block"><code>messages = [{"role": "user", "content": "Classify the sentiment as positive or negative: I loved this movie."}]
+text = tok.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+inputs = tok(text, return_tensors="pt").to(device)
+
+out = model.generate(**inputs, max_new_tokens=16, do_sample=False)
+print(tok.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True))</code></pre>
+        <p>Notice we use <code>apply_chat_template</code> with <code>add_generation_prompt=True</code> — exactly the chat-template discipline from Track 1. The untuned model may answer correctly, verbosely, or off-format; that's fine. The point of fine-tuning is to make it answer <em>reliably</em> and <em>concisely</em> in our format. Next, we build the data that will teach it to.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Loading is two objects: a <strong>tokenizer</strong> (text ↔ token IDs, plus the chat template) and a <strong>model</strong> (the parameters). Always load them from the same <code>model_id</code> so they match, and always sanity-check the base before training so you have a baseline.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>AutoModelForCausalLM</dt><dd>The class that loads a decoder-only language model by id.</dd>
+            <dt>AutoTokenizer</dt><dd>Loads the matching tokenizer (and its chat template) for a model id.</dd>
+            <dt>from_pretrained</dt><dd>Downloads/caches and instantiates a model or tokenizer.</dd>
+            <dt>dtype=bf16</dt><dd>Loads weights in 16-bit to halve memory (older API: torch_dtype).</dd>
+            <dt>pad_token</dt><dd>The padding token; set it to eos_token if undefined.</dd>
+            <dt>generate</dt><dd>Runs autoregressive decoding to produce output tokens.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "Why load the model with dtype=torch.bfloat16?",
+    "options": [
+      "To change the task",
+      "To halve memory with stable training",
+      "To enable the tokenizer",
+      "To skip the GPU"
+    ],
+    "answer": 1,
+    "explanation": "bf16 is mixed precision: roughly half the memory, numerically stable on modern GPUs."
+  },
+  {
+    "q": "Why set tok.pad_token = tok.eos_token when pad_token is None?",
+    "options": [
+      "To change the vocabulary",
+      "Because batching needs a padding token",
+      "To speed up generation",
+      "To merge LoRA"
+    ],
+    "answer": 1,
+    "explanation": "Rectangular batches need a pad token; reusing EOS is the common fix."
+  },
+  {
+    "q": "Why run a generation on the base model BEFORE fine-tuning?",
+    "options": [
+      "It is required by peft",
+      "To establish a baseline to compare against later",
+      "To download the weights",
+      "To set the learning rate"
+    ],
+    "answer": 1,
+    "explanation": "The untuned model's performance is your baseline (Track 1's evaluation lesson)."
+  },
+  {
+    "q": "Why use apply_chat_template with add_generation_prompt=True at inference?",
+    "options": [
+      "To train the model",
+      "To format the input as the model expects and cue the assistant turn",
+      "To merge the adapter",
+      "To pad the batch"
+    ],
+    "answer": 1,
+    "explanation": "Instruct models need their chat format; the generation prompt cues the assistant's turn."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="environment-setup.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Set up the environment</span></a>
+          <a href="build-a-dataset.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Build a tiny SFT dataset</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

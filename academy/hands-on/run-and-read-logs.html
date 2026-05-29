@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Run it: read the logs, the loss, the checkpoints — BrewSLM Academy</title>
+    <meta name="description" content="Run the fine-tune and interpret what the Trainer prints: the training loss trajectory, the per-epoch validation loss, and where checkpoints land. Apply Track 1's loss-curve reading to a real run." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/run-and-read-logs.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Run it: read the logs, the loss, the checkpoints — BrewSLM Academy" />
+    <meta property="og:description" content="Run the fine-tune and interpret what the Trainer prints: the training loss trajectory, the per-epoch validation loss, and where checkpoints land. Apply Track 1's loss-curve reading to a real run." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/run-and-read-logs.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Run it: read the logs, the loss, the checkpoints — BrewSLM Academy" />
+    <meta name="twitter:description" content="Run the fine-tune and interpret what the Trainer prints: the training loss trajectory, the per-epoch validation loss, and where checkpoints land. Apply Track 1's loss-curve reading to a real run." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Run it: read the logs, the loss, the checkpoints",
+        "description": "Run the fine-tune and interpret what the Trainer prints: the training loss trajectory, the per-epoch validation loss, and where checkpoints land. Apply Track 1's loss-curve reading to a real run.",
+        "url": "https://brewslm.com/academy/hands-on/run-and-read-logs.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT8M", "isAccessibleForFree": true,
+        "teaches": ["training logs", "logging_steps", "eval_loss", "checkpoints", "save_strategy", "overfitting signal"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Hands-on", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Run it: read the logs, the loss, the checkpoints", "item": "https://brewslm.com/academy/hands-on/run-and-read-logs.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Run it: read the logs, the loss, the checkpoints"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "Training loss keeps falling but eval_loss starts rising. This is\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Overfitting"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Loss prints as nan after a few steps. Most likely fix?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Lower the learning rate"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does load_best_model_at_end=True do?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Restores the best-scoring checkpoint at the end (automated early stopping)"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "A healthy loss curve proves the model is good at the task. True?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "False \u2014 the gold-set metric is the real test"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="hands-on/run-and-read-logs">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html" aria-current="page">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Hands-on</a></li><li>Run & read logs</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 6</span>
+          <h1>Run it: read the logs, the loss, the checkpoints</h1>
+          <p class="lesson-header__outcome">After this lesson you can run the training, read the Trainer's log output, recognize a healthy vs overfitting run, and find your saved checkpoints.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~8 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="minimal-lora-trainer.html">A minimal LoRA fine-tune with the Trainer</a></span>
+          </div>
+        </header>
+
+        <p>Run <code>trainer.train()</code> and the Trainer streams numbers at you. Knowing how to read them is the difference between "it ran" and "it worked." This lesson is about interpretation; you already wrote the code.</p>
+
+        <h2>Reading the training log</h2>
+        <p>With <code>logging_steps=5</code> you get a line every five steps. A healthy small run looks roughly like this — the training loss falling and beginning to flatten:</p>
+        <pre class="code-block"><code>{'loss': 2.41, 'learning_rate': 1.9e-04, 'epoch': 0.3}
+{'loss': 1.62, 'learning_rate': 1.6e-04, 'epoch': 0.9}
+{'loss': 1.04, 'learning_rate': 1.0e-04, 'epoch': 1.6}
+{'loss': 0.71, 'learning_rate': 4.2e-05, 'epoch': 2.3}
+{'loss': 0.58, 'learning_rate': 3.0e-06, 'epoch': 2.9}
+{'eval_loss': 0.62, 'epoch': 1.0}
+{'eval_loss': 0.49, 'epoch': 2.0}
+{'eval_loss': 0.47, 'epoch': 3.0}</code></pre>
+        <p>Two streams are interleaved: the per-step <code>loss</code> (training) and the per-epoch <code>eval_loss</code> (validation, because we set <code>eval_strategy="epoch"</code>). Read them with Track 1's loss-curve lesson in mind:</p>
+        <ul>
+          <li><strong>Healthy</strong>: training loss falls and flattens; <code>eval_loss</code> also falls and levels off near the training loss. (Above.)</li>
+          <li><strong>Overfitting</strong>: training loss keeps dropping but <code>eval_loss</code> bottoms out and then <em>rises</em>. Keep the checkpoint from the epoch with the lowest <code>eval_loss</code>, and consider fewer epochs or more data next time.</li>
+          <li><strong>Broken</strong>: loss is <code>nan</code> or wildly oscillating → learning rate too high. Loss barely moves → too low, or a data/masking bug.</li>
+        </ul>
+        <div class="callout callout--warning">
+          <p class="callout__label">Watch the gap</p>
+          <p>The relationship between <code>loss</code> and <code>eval_loss</code> is the diagnosis, not either number alone. A beautiful training loss with a rising eval loss is a model memorizing your tiny dataset.</p>
+        </div>
+
+        <h2>Where checkpoints land</h2>
+        <p>With <code>save_strategy="epoch"</code>, the Trainer writes a checkpoint after each epoch under your <code>output_dir</code>:</p>
+        <pre class="code-block"><code>sft-out/
+  checkpoint-XX/        # one per epoch: adapter + optimizer + trainer state
+  checkpoint-YY/
+  ...</code></pre>
+        <p>Each <code>checkpoint-*</code> folder is a resumable snapshot. To <strong>keep the best</strong> rather than the last, you can set <code>load_best_model_at_end=True</code> with <code>metric_for_best_model="eval_loss"</code> in <code>TrainingArguments</code>, and the Trainer will restore the best-scoring checkpoint at the end — the early-stopping idea from Track 1, automated.</p>
+
+        <h2>Did it work?</h2>
+        <p>A falling, flattening pair of curves is necessary but not sufficient. The loss is a proxy; the real question — "is it actually better at the task than the base model?" — is answered by evaluating on the gold set, which is the next lesson.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Logs tell you the run's <em>health</em> (is it learning, is it overfitting); the gold-set metric tells you the run's <em>worth</em>. You need both, and they answer different questions.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>training logs</dt><dd>Per-step output (loss, learning_rate, epoch) the Trainer prints.</dd>
+            <dt>logging_steps</dt><dd>How often training metrics are logged.</dd>
+            <dt>eval_loss</dt><dd>Validation loss reported per eval_strategy; the generalization signal.</dd>
+            <dt>checkpoint</dt><dd>A resumable snapshot saved per save_strategy under output_dir.</dd>
+            <dt>load_best_model_at_end</dt><dd>Restores the best-scoring checkpoint at the end (automated early stopping).</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "Training loss keeps falling but eval_loss starts rising. This is\u2026",
+    "options": [
+      "A healthy run",
+      "Overfitting",
+      "Underfitting",
+      "A learning-rate that's too low"
+    ],
+    "answer": 1,
+    "explanation": "Diverging train/eval losses = memorization; keep the lowest-eval_loss checkpoint."
+  },
+  {
+    "q": "Loss prints as nan after a few steps. Most likely fix?",
+    "options": [
+      "Train longer",
+      "Lower the learning rate",
+      "Add more data",
+      "Increase logging_steps"
+    ],
+    "answer": 1,
+    "explanation": "NaN/exploding loss is the classic too-high-learning-rate symptom."
+  },
+  {
+    "q": "What does load_best_model_at_end=True do?",
+    "options": [
+      "Saves disk",
+      "Restores the best-scoring checkpoint at the end (automated early stopping)",
+      "Merges the adapter",
+      "Disables validation"
+    ],
+    "answer": 1,
+    "explanation": "It keeps the best checkpoint by the chosen metric, not the final one."
+  },
+  {
+    "q": "A healthy loss curve proves the model is good at the task. True?",
+    "options": [
+      "True",
+      "False \u2014 the gold-set metric is the real test",
+      "Only for LoRA",
+      "Only on CPU"
+    ],
+    "answer": 1,
+    "explanation": "Loss is a proxy; task quality is judged on the gold set (next lesson)."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="minimal-lora-trainer.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">A minimal LoRA fine-tune with the Trainer</span></a>
+          <a href="evaluate-by-hand.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Evaluate by hand: run the gold set, compute the metric</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

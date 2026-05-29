@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tokenize and collate: model-ready batches with a loss mask — BrewSLM Academy</title>
+    <meta name="description" content="Turn (prompt, completion) pairs into input_ids and labels with the prompt masked to -100, using the chat template — then pad them into batches with DataCollatorForSeq2Seq. This is Track 1's loss mask, in code." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/tokenize-and-collate.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Tokenize and collate: model-ready batches with a loss mask — BrewSLM Academy" />
+    <meta property="og:description" content="Turn (prompt, completion) pairs into input_ids and labels with the prompt masked to -100, using the chat template — then pad them into batches with DataCollatorForSeq2Seq. This is Track 1's loss mask, in code." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/tokenize-and-collate.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Tokenize and collate: model-ready batches with a loss mask — BrewSLM Academy" />
+    <meta name="twitter:description" content="Turn (prompt, completion) pairs into input_ids and labels with the prompt masked to -100, using the chat template — then pad them into batches with DataCollatorForSeq2Seq. This is Track 1's loss mask, in code." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Tokenize and collate: model-ready batches with a loss mask",
+        "description": "Turn (prompt, completion) pairs into input_ids and labels with the prompt masked to -100, using the chat template — then pad them into batches with DataCollatorForSeq2Seq. This is Track 1's loss mask, in code.",
+        "url": "https://brewslm.com/academy/hands-on/tokenize-and-collate.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT11M", "isAccessibleForFree": true,
+        "teaches": ["apply_chat_template", "input_ids", "labels", "-100 ignore index", "attention_mask", "DataCollatorForSeq2Seq", "map"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Hands-on", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Tokenize and collate: model-ready batches with a loss mask", "item": "https://brewslm.com/academy/hands-on/tokenize-and-collate.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Tokenize and collate: model-ready batches with a loss mask"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What does setting a label position to -100 do?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Tells the cross-entropy loss to ignore that position"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why copy input_ids into labels and then overwrite the prompt span with -100?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "To compute loss only on the completion tokens"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does DataCollatorForSeq2Seq pad labels with?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "-100"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Before training, you should inspect a tokenized example to confirm\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "That completion tokens are unmasked and not truncated"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="hands-on/tokenize-and-collate">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html" aria-current="page">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Hands-on</a></li><li>Tokenize & collate</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 4</span>
+          <h1>Tokenize and collate: model-ready batches with a loss mask</h1>
+          <p class="lesson-header__outcome">After this lesson you can tokenize SFT examples into input_ids and labels, mask the prompt tokens with -100 so the loss is computed only on the completion, and collate them into padded batches.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~11 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="build-a-dataset.html">Build a tiny SFT dataset</a></span>
+          </div>
+        </header>
+
+        <p>This is the lesson where Track 1's theory becomes code. We'll convert each (prompt, completion) pair into two aligned token sequences — <code>input_ids</code> (what the model reads) and <code>labels</code> (what it's scored against) — with the prompt portion of the labels set to <strong>-100</strong>, the special value that tells the loss to ignore those positions. That is the loss mask, made real.</p>
+
+        <h2>Build input_ids and masked labels</h2>
+        <p>We render the full conversation (prompt + completion) for <code>input_ids</code>, and separately render the <em>prompt only</em> (with the generation prompt) to know how many leading tokens to mask.</p>
+        <pre class="code-block"><code>MAX_LEN = 256
+
+def tokenize(row):
+    full_msgs = [
+        {"role": "user", "content": row["prompt"]},
+        {"role": "assistant", "content": row["completion"]},
+    ]
+    prompt_msgs = [{"role": "user", "content": row["prompt"]}]
+
+    full = tok.apply_chat_template(full_msgs, tokenize=False)
+    prompt = tok.apply_chat_template(prompt_msgs, tokenize=False, add_generation_prompt=True)
+
+    input_ids = tok(full, truncation=True, max_length=MAX_LEN, add_special_tokens=False)["input_ids"]
+    prompt_ids = tok(prompt, add_special_tokens=False)["input_ids"]
+
+    labels = list(input_ids)
+    n_prompt = min(len(prompt_ids), len(labels))
+    for i in range(n_prompt):
+        labels[i] = -100                      # mask the prompt: no loss here
+
+    return {"input_ids": input_ids,
+            "attention_mask": [1] * len(input_ids),
+            "labels": labels}
+
+train_tok = train_ds.map(tokenize, remove_columns=train_ds.column_names)
+val_tok = val_ds.map(tokenize, remove_columns=val_ds.column_names)</code></pre>
+        <div class="callout callout--key">
+          <p class="callout__label">-100 is the loss mask</p>
+          <p>PyTorch's cross-entropy ignores any label position set to <code>-100</code>. By copying <code>input_ids</code> into <code>labels</code> and then overwriting the prompt positions with <code>-100</code>, we compute loss <em>only</em> on the completion — exactly the masking you learned in Track 1, now in three lines.</p>
+        </div>
+
+        <h2>Inspect one example</h2>
+        <p>Always look at a tokenized row before training. Confirm the completion tokens are the ones <em>not</em> masked.</p>
+        <pre class="code-block"><code>ex = train_tok[0]
+print("input_ids:", ex["input_ids"][:12], "...")
+print("labels   :", ex["labels"][:12], "...")     # leading entries should be -100
+n_supervised = sum(1 for x in ex["labels"] if x != -100)
+print("supervised (completion) tokens:", n_supervised)</code></pre>
+        <h2>Collate into padded batches</h2>
+        <p>Examples have different lengths; a batch must be rectangular. <code>DataCollatorForSeq2Seq</code> pads <code>input_ids</code> with the pad token, the <code>attention_mask</code> with 0, and — crucially — <code>labels</code> with <code>-100</code>, so padding never contributes to the loss either.</p>
+        <pre class="code-block"><code>from transformers import DataCollatorForSeq2Seq
+
+collator = DataCollatorForSeq2Seq(tok, model=model, padding=True)
+
+# peek at one batch
+import torch
+batch = collator([train_tok[0], train_tok[1]])
+print({k: tuple(v.shape) for k, v in batch.items()})</code></pre>
+        <p>You'll see <code>input_ids</code>, <code>attention_mask</code>, and <code>labels</code> all padded to the same length, ready for the model. Two safety checks before moving on: confirm completions aren't being truncated (raise <code>MAX_LEN</code> if your data is longer), and confirm the leading label positions are <code>-100</code>. With model-ready batches, we can finally train — by attaching LoRA and handing everything to the <code>Trainer</code>.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>input_ids</dt><dd>The token IDs the model reads, from the full prompt+completion.</dd>
+            <dt>labels</dt><dd>Targets for the loss; copy of input_ids with masked positions set to -100.</dd>
+            <dt>-100 (ignore index)</dt><dd>The label value PyTorch cross-entropy ignores — used to mask prompt and padding.</dd>
+            <dt>attention_mask</dt><dd>1 for real tokens, 0 for padding.</dd>
+            <dt>.map()</dt><dd>Applies the tokenize function across the whole Dataset.</dd>
+            <dt>DataCollatorForSeq2Seq</dt><dd>Pads input_ids, attention_mask, and labels (labels with -100) into rectangular batches.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What does setting a label position to -100 do?",
+    "options": [
+      "Pads the sequence",
+      "Tells the cross-entropy loss to ignore that position",
+      "Marks the EOS token",
+      "Doubles its weight"
+    ],
+    "answer": 1,
+    "explanation": "-100 is PyTorch's ignore index; those positions contribute no loss \u2014 the loss mask in code."
+  },
+  {
+    "q": "Why copy input_ids into labels and then overwrite the prompt span with -100?",
+    "options": [
+      "To pad the batch",
+      "To compute loss only on the completion tokens",
+      "To change the tokenizer",
+      "To merge LoRA"
+    ],
+    "answer": 1,
+    "explanation": "It implements completion-only supervision: the model learns to produce the answer, not echo the prompt."
+  },
+  {
+    "q": "What does DataCollatorForSeq2Seq pad labels with?",
+    "options": [
+      "0",
+      "The pad token id",
+      "-100",
+      "1"
+    ],
+    "answer": 2,
+    "explanation": "It pads labels with -100 so padded positions are ignored by the loss too."
+  },
+  {
+    "q": "Before training, you should inspect a tokenized example to confirm\u2026",
+    "options": [
+      "The GPU temperature",
+      "That completion tokens are unmasked and not truncated",
+      "The learning rate",
+      "The vocabulary size"
+    ],
+    "answer": 1,
+    "explanation": "Verifying the mask and that completions fit prevents the silent data bugs from Track 1."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="build-a-dataset.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Build a tiny SFT dataset</span></a>
+          <a href="minimal-lora-trainer.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">A minimal LoRA fine-tune with the Trainer</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

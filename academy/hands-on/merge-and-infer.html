@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Merge the adapter, run inference, ship an artifact — BrewSLM Academy</title>
+    <meta name="description" content="Merge the LoRA adapter into the base weights to produce a standalone model, save it as safetensors, reload it for plain inference, and understand your export options (including GGUF for edge deployment)." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/merge-and-infer.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Merge the adapter, run inference, ship an artifact — BrewSLM Academy" />
+    <meta property="og:description" content="Merge the LoRA adapter into the base weights to produce a standalone model, save it as safetensors, reload it for plain inference, and understand your export options (including GGUF for edge deployment)." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/merge-and-infer.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Merge the adapter, run inference, ship an artifact — BrewSLM Academy" />
+    <meta name="twitter:description" content="Merge the LoRA adapter into the base weights to produce a standalone model, save it as safetensors, reload it for plain inference, and understand your export options (including GGUF for edge deployment)." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Merge the adapter, run inference, ship an artifact",
+        "description": "Merge the LoRA adapter into the base weights to produce a standalone model, save it as safetensors, reload it for plain inference, and understand your export options (including GGUF for edge deployment).",
+        "url": "https://brewslm.com/academy/hands-on/merge-and-infer.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT8M", "isAccessibleForFree": true,
+        "teaches": ["merge_and_unload", "safetensors", "save_pretrained", "standalone model", "GGUF (export)"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Hands-on", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Merge the adapter, run inference, ship an artifact", "item": "https://brewslm.com/academy/hands-on/merge-and-infer.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Merge the adapter, run inference, ship an artifact"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What does merge_and_unload() return?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A plain standalone model with the adapter folded in"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "When should you KEEP the adapter separate instead of merging?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "When serving many tasks off one shared base (swap small adapters)"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What format does save_pretrained write weights in by default?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "safetensors"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "To run your model efficiently on a laptop CPU, you'd typically\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Convert the merged model to GGUF (llama.cpp) and quantize"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="hands-on/merge-and-infer">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html" aria-current="page">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Hands-on</a></li><li>Merge & infer</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 8</span>
+          <h1>Merge the adapter, run inference, ship an artifact</h1>
+          <p class="lesson-header__outcome">After this lesson you can merge a LoRA adapter into the base, save and reload a standalone fine-tuned model, run inference on it, and know what export formats exist for deployment.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~8 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="evaluate-by-hand.html">Evaluate by hand: run the gold set, compute the metric</a></span>
+          </div>
+        </header>
+
+        <p>You have a fine-tuned adapter that beats the baseline. To use it in production you have two choices, both covered in Track 1: keep the base + adapter separate (handy for serving many tasks off one base), or <strong>merge</strong> the adapter into the weights to get a single standalone model. This lesson does the merge and ships an artifact.</p>
+
+        <h2>Merge the adapter into the base</h2>
+        <p><code>merge_and_unload</code> folds the LoRA adapter's learned change directly into the base weights and returns an ordinary model with no adapter and no runtime overhead.</p>
+        <pre class="code-block"><code>import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import PeftModel
+
+model_id = "HuggingFaceTB/SmolLM2-135M-Instruct"
+tok = AutoTokenizer.from_pretrained("sft-out/adapter")
+base = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.bfloat16)
+tuned = PeftModel.from_pretrained(base, "sft-out/adapter")
+
+merged = tuned.merge_and_unload()      # a plain AutoModelForCausalLM, no PEFT wrapper</code></pre>
+        <h2>Save it as a standalone model</h2>
+        <p><code>save_pretrained</code> writes the weights in <strong>safetensors</strong> — the safe, fast default format — plus the config. Save the tokenizer alongside so the folder is self-contained.</p>
+        <pre class="code-block"><code>merged.save_pretrained("sft-out/merged")     # model.safetensors + config.json
+tok.save_pretrained("sft-out/merged")        # tokenizer files
+
+import os
+print(os.listdir("sft-out/merged"))</code></pre>
+        <h2>Reload and run — no peft needed</h2>
+        <p>The merged folder is a normal model. Loading it requires only transformers; there's no adapter to attach.</p>
+        <pre class="code-block"><code>m = AutoModelForCausalLM.from_pretrained("sft-out/merged", dtype=torch.bfloat16)
+t = AutoTokenizer.from_pretrained("sft-out/merged")
+
+msgs = [{"role": "user", "content": "Classify the sentiment as positive or negative: I would buy it again."}]
+text = t.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
+ids = t(text, return_tensors="pt")
+print(t.decode(m.generate(**ids, max_new_tokens=8, do_sample=False)[0][ids["input_ids"].shape[1]:],
+               skip_special_tokens=True).strip())</code></pre>
+        <div class="callout callout--key">
+          <p class="callout__label">Merge vs keep separate</p>
+          <p><strong>Merge</strong> when you'll deploy this one task — simplest to serve, zero adapter overhead. <strong>Keep the adapter separate</strong> when you serve many tasks off one shared base — swap a few-megabyte adapter instead of loading a whole model per task.</p>
+        </div>
+
+        <h2>Export formats for deployment</h2>
+        <p>The <code>safetensors</code> folder runs anywhere transformers (or vLLM) runs — great for a GPU server. For <strong>edge / CPU</strong> deployment you'll often convert to <strong>GGUF</strong> (the llama.cpp format) and quantize, so the model runs efficiently on a laptop or phone. Conversion is a separate step with llama.cpp's tooling; the key point is that your merged model is the starting artifact for any of these paths. (BrewSLM automates export to GGUF / ONNX / vLLM — Track 3.)</p>
+        <p>You've now done the entire by-hand pipeline: environment, model, data, tokenization, LoRA training, evaluation, and shipping. The final lesson stitches it into one script you can run start-to-finish.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>merge_and_unload</dt><dd>Folds the LoRA adapter into the base weights, returning a standalone model.</dd>
+            <dt>safetensors</dt><dd>The safe, fast default weight format save_pretrained writes.</dd>
+            <dt>save_pretrained / from_pretrained</dt><dd>Write / load a self-contained model + config (+ tokenizer).</dd>
+            <dt>standalone model</dt><dd>A merged model that needs no adapter at inference.</dd>
+            <dt>GGUF</dt><dd>The llama.cpp format for efficient CPU/edge inference (a separate conversion step).</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What does merge_and_unload() return?",
+    "options": [
+      "Just the adapter",
+      "A plain standalone model with the adapter folded in",
+      "The optimizer state",
+      "A tokenizer"
+    ],
+    "answer": 1,
+    "explanation": "It merges LoRA into the base weights and removes the PEFT wrapper."
+  },
+  {
+    "q": "When should you KEEP the adapter separate instead of merging?",
+    "options": [
+      "Never",
+      "When serving many tasks off one shared base (swap small adapters)",
+      "Only on CPU",
+      "When the model is large"
+    ],
+    "answer": 1,
+    "explanation": "Separate adapters let you switch tasks cheaply on a shared base."
+  },
+  {
+    "q": "What format does save_pretrained write weights in by default?",
+    "options": [
+      "GGUF",
+      "safetensors",
+      "CSV",
+      "ONNX"
+    ],
+    "answer": 1,
+    "explanation": "safetensors is the safe, fast default; GGUF is a separate conversion for edge."
+  },
+  {
+    "q": "To run your model efficiently on a laptop CPU, you'd typically\u2026",
+    "options": [
+      "Keep the LoRA adapter unmerged",
+      "Convert the merged model to GGUF (llama.cpp) and quantize",
+      "Train longer",
+      "Increase the context window"
+    ],
+    "answer": 1,
+    "explanation": "GGUF + quantization is the common path for CPU/edge inference."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="evaluate-by-hand.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Evaluate by hand: run the gold set, compute the metric</span></a>
+          <a href="capstone-end-to-end.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Capstone A: fine-tune SmolLM2 end-to-end, by hand</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Set up the environment — BrewSLM Academy</title>
+    <meta name="description" content="Track 2 fine-tunes a small model by hand in PyTorch and Transformers. This first lesson sets up a clean Python environment with torch, transformers, peft, trl, datasets and accelerate, and verifies your GPU is visible." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/environment-setup.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Set up the environment — BrewSLM Academy" />
+    <meta property="og:description" content="Track 2 fine-tunes a small model by hand in PyTorch and Transformers. This first lesson sets up a clean Python environment with torch, transformers, peft, trl, datasets and accelerate, and verifies your GPU is visible." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/environment-setup.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Set up the environment — BrewSLM Academy" />
+    <meta name="twitter:description" content="Track 2 fine-tunes a small model by hand in PyTorch and Transformers. This first lesson sets up a clean Python environment with torch, transformers, peft, trl, datasets and accelerate, and verifies your GPU is visible." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Set up the environment",
+        "description": "Track 2 fine-tunes a small model by hand in PyTorch and Transformers. This first lesson sets up a clean Python environment with torch, transformers, peft, trl, datasets and accelerate, and verifies your GPU is visible.",
+        "url": "https://brewslm.com/academy/hands-on/environment-setup.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT8M", "isAccessibleForFree": true,
+        "teaches": ["python venv", "pip install", "torch", "transformers", "peft", "trl", "accelerate", "CUDA availability"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Hands-on", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Set up the environment", "item": "https://brewslm.com/academy/hands-on/environment-setup.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Set up the environment"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "Why work inside a virtual environment (venv)?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "To isolate this project's packages from the rest of the system"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which library provides LoRA?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "peft"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "torch.cuda.is_available() returns False but you have a GPU. Likely cause?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "You installed a CPU-only torch build"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does the transformers library give you here?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Models, tokenizers, and the Trainer"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="hands-on/environment-setup">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html" aria-current="page">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Hands-on</a></li><li>Environment setup</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 1</span>
+          <h1>Set up the environment</h1>
+          <p class="lesson-header__outcome">After this lesson you have a working Python environment with the libraries we'll use for the rest of the track, and you've verified PyTorch can see your GPU.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~8 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="../sft-fundamentals/evaluation-fundamentals.html">Evaluation that matches the task</a></span>
+          </div>
+        </header>
+
+        <p>Tracks 0 and 1 built the understanding. Track 2 turns it into a working fine-tune you write yourself — no platform, nothing hidden. We'll use the standard open-source stack: PyTorch plus Hugging Face's libraries. This lesson gets that stack installed and verified so the next eight lessons just run.</p>
+
+        <h2>What you need</h2>
+        <ul>
+          <li><strong>Python 3.10+</strong> and <strong>pip</strong>.</li>
+          <li>A <strong>GPU</strong> for the training lessons (a single consumer card is plenty for SmolLM2-135M). You can read along on CPU; training will just be slow.</li>
+          <li>Disk space for the model (~0.3&nbsp;GB) and a cache directory.</li>
+        </ul>
+
+        <h2>Create an isolated environment</h2>
+        <p>Always work in a <strong>virtual environment (venv)</strong> so this project's packages don't collide with anything else on your machine.</p>
+        <pre class="code-block"><code># create and activate a venv
+python -m venv .venv
+source .venv/bin/activate         # Windows: .venv\Scripts\activate
+python -m pip install --upgrade pip</code></pre>
+        <h2>Install the libraries</h2>
+        <p>Each library has one job: <strong>torch</strong> is the tensor/autograd engine; <strong>transformers</strong> gives us models, tokenizers, and the <code>Trainer</code>; <strong>peft</strong> provides LoRA; <strong>trl</strong> adds SFT helpers; <strong>datasets</strong> handles data; <strong>accelerate</strong> manages device placement under the hood.</p>
+        <pre class="code-block"><code># install torch first, matching your CUDA (see pytorch.org for the exact command)
+pip install torch
+
+# then the Hugging Face stack
+pip install transformers peft trl datasets accelerate</code></pre>
+        <div class="callout callout--note">
+          <p class="callout__label">A note on versions</p>
+          <p>This track is written against recent releases (transformers 5.x, peft 0.18.x, trl 1.x). APIs drift between major versions — where a call has changed recently, the lessons flag it. If something errors on a name, check the library's changelog for a rename.</p>
+        </div>
+
+        <h2>Verify your setup</h2>
+        <p>Run this once. It confirms the imports work and tells you whether PyTorch can see a GPU.</p>
+        <pre class="code-block"><code>import torch, transformers, peft
+print("torch:", torch.__version__)
+print("transformers:", transformers.__version__)
+print("peft:", peft.__version__)
+print("CUDA available:", torch.cuda.is_available())
+if torch.cuda.is_available():
+    print("GPU:", torch.cuda.get_device_name(0))</code></pre>
+        <p>If <code>CUDA available</code> prints <code>True</code> and you see your GPU's name, you're ready. If it prints <code>False</code> but you have a GPU, your torch build is CPU-only — reinstall torch with the CUDA build from pytorch.org. With the environment working, the next lesson loads the model we'll fine-tune.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>The whole by-hand workflow is: <strong>torch</strong> (math) + <strong>transformers</strong> (model &amp; Trainer) + <strong>peft</strong> (LoRA) + <strong>datasets</strong> (data). Everything in this track is a few dozen lines on top of these.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>venv</dt><dd>An isolated Python environment so project packages don't collide with the system.</dd>
+            <dt>torch (PyTorch)</dt><dd>The tensor and autograd engine that runs the model and backprop.</dd>
+            <dt>transformers</dt><dd>Hugging Face library providing models, tokenizers, and the Trainer.</dd>
+            <dt>peft</dt><dd>Parameter-Efficient Fine-Tuning library; provides LoRA.</dd>
+            <dt>trl</dt><dd>Hugging Face library with SFT/preference training helpers.</dd>
+            <dt>accelerate</dt><dd>Handles device placement and distributed details under Trainer.</dd>
+            <dt>CUDA availability</dt><dd>Whether PyTorch can use the GPU (torch.cuda.is_available()).</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "Why work inside a virtual environment (venv)?",
+    "options": [
+      "It makes training faster",
+      "To isolate this project's packages from the rest of the system",
+      "It is required by CUDA",
+      "It reduces model size"
+    ],
+    "answer": 1,
+    "explanation": "A venv keeps project dependencies isolated and reproducible."
+  },
+  {
+    "q": "Which library provides LoRA?",
+    "options": [
+      "datasets",
+      "peft",
+      "accelerate",
+      "torch"
+    ],
+    "answer": 1,
+    "explanation": "PEFT (Parameter-Efficient Fine-Tuning) provides LoRA and related adapters."
+  },
+  {
+    "q": "torch.cuda.is_available() returns False but you have a GPU. Likely cause?",
+    "options": [
+      "transformers is too new",
+      "You installed a CPU-only torch build",
+      "peft is missing",
+      "The venv is corrupt"
+    ],
+    "answer": 1,
+    "explanation": "A CPU-only torch wheel won't see the GPU; install the CUDA build from pytorch.org."
+  },
+  {
+    "q": "What does the transformers library give you here?",
+    "options": [
+      "Only the tokenizer",
+      "Models, tokenizers, and the Trainer",
+      "The GPU driver",
+      "The dataset"
+    ],
+    "answer": 1,
+    "explanation": "transformers provides model classes, tokenizers, and the Trainer used to fine-tune."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="../sft-fundamentals/evaluation-fundamentals.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Evaluation that matches the task</span></a>
+          <a href="load-model-and-tokenizer.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Load a base model and tokenizer</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

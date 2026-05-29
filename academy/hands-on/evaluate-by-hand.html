@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evaluate by hand: run the gold set, compute the metric — BrewSLM Academy</title>
+    <meta name="description" content="Load the LoRA adapter onto the base model, run predictions over your held-out gold set, compute accuracy, and compare against the untuned base — turning Track 1's evaluation principles into a few lines of code." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/evaluate-by-hand.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Evaluate by hand: run the gold set, compute the metric — BrewSLM Academy" />
+    <meta property="og:description" content="Load the LoRA adapter onto the base model, run predictions over your held-out gold set, compute accuracy, and compare against the untuned base — turning Track 1's evaluation principles into a few lines of code." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/evaluate-by-hand.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Evaluate by hand: run the gold set, compute the metric — BrewSLM Academy" />
+    <meta name="twitter:description" content="Load the LoRA adapter onto the base model, run predictions over your held-out gold set, compute accuracy, and compare against the untuned base — turning Track 1's evaluation principles into a few lines of code." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Evaluate by hand: run the gold set, compute the metric",
+        "description": "Load the LoRA adapter onto the base model, run predictions over your held-out gold set, compute accuracy, and compare against the untuned base — turning Track 1's evaluation principles into a few lines of code.",
+        "url": "https://brewslm.com/academy/hands-on/evaluate-by-hand.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["PeftModel", "loading an adapter", "greedy decoding", "accuracy", "baseline comparison"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Hands-on", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Evaluate by hand: run the gold set, compute the metric", "item": "https://brewslm.com/academy/hands-on/evaluate-by-hand.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Evaluate by hand: run the gold set, compute the metric"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "How do you run a LoRA fine-tuned model for inference?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Load the base model and attach the adapter with PeftModel.from_pretrained"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why use do_sample=False (greedy) for evaluation?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Deterministic, reproducible results"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why compute accuracy on the BASE model too?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "To get the baseline so you can report the lift fine-tuning bought"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What should you do with the gold-set misses?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Use them to decide which training data to add or fix next"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="hands-on/evaluate-by-hand">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html" aria-current="page">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Hands-on</a></li><li>Evaluate by hand</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 7</span>
+          <h1>Evaluate by hand: run the gold set, compute the metric</h1>
+          <p class="lesson-header__outcome">After this lesson you can load your fine-tuned adapter, generate predictions on the gold set, compute a metric, and compare the fine-tuned model against the base baseline to prove the lift.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="run-and-read-logs.html">Run it: read the logs, the loss, the checkpoints</a></span>
+          </div>
+        </header>
+
+        <p>Training produced an adapter. Now we answer the only question that matters: <strong>is it better than the base model on our task?</strong> We'll load the adapter, run it over the gold set, compute accuracy, and — crucially — compare to the untuned baseline.</p>
+
+        <h2>Load the base + adapter</h2>
+        <p>LoRA keeps the base frozen, so inference is "base model + adapter." <code>PeftModel.from_pretrained</code> attaches your trained adapter to a fresh base:</p>
+        <pre class="code-block"><code>import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import PeftModel
+
+model_id = "HuggingFaceTB/SmolLM2-135M-Instruct"
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+tok = AutoTokenizer.from_pretrained("sft-out/adapter")
+base = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.bfloat16).to(device)
+tuned = PeftModel.from_pretrained(base, "sft-out/adapter").eval()</code></pre>
+        <h2>A prediction helper</h2>
+        <p>We use <strong>greedy decoding</strong> (<code>do_sample=False</code>) so results are deterministic and reproducible — exactly what Track 1 recommended for evaluation. The completion is short (a label), so a handful of new tokens is enough.</p>
+        <pre class="code-block"><code>@torch.no_grad()
+def predict(model, prompt):
+    msgs = [{"role": "user", "content": prompt}]
+    text = tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
+    ids = tok(text, return_tensors="pt").to(model.device)
+    out = model.generate(**ids, max_new_tokens=8, do_sample=False,
+                         pad_token_id=tok.pad_token_id)
+    return tok.decode(out[0][ids["input_ids"].shape[1]:], skip_special_tokens=True).strip().lower()</code></pre>
+        <h2>Score the gold set</h2>
+        <pre class="code-block"><code>gold = [
+    {"prompt": "Classify the sentiment as positive or negative: This made my whole week.", "label": "positive"},
+    {"prompt": "Classify the sentiment as positive or negative: Never buying from them again.", "label": "negative"},
+    # ... your held-out, hand-verified examples
+]
+
+def accuracy(model):
+    hits = sum(predict(model, ex["prompt"]).startswith(ex["label"]) for ex in gold)
+    return hits / len(gold)
+
+print("base  accuracy:", accuracy(base))    # the baseline
+print("tuned accuracy:", accuracy(tuned))   # after fine-tuning</code></pre>
+        <div class="callout callout--key">
+          <p class="callout__label">Always report the lift</p>
+          <p>A single accuracy number means little. The <strong>difference</strong> between the tuned model and the base — the lift — is what your fine-tune actually bought. If tuned ≈ base, fine-tuning didn't help; revisit the data (Track 1) before anything else.</p>
+        </div>
+
+        <h2>Read the failures, not just the score</h2>
+        <p>Honest evaluation (Track 1) means looking at <em>what</em> the model gets wrong, not just the headline number. Print the misses:</p>
+        <pre class="code-block"><code>for ex in gold:
+    pred = predict(tuned, ex["prompt"])
+    if not pred.startswith(ex["label"]):
+        print(f"WRONG  pred={pred!r}  gold={ex['label']!r}  :: {ex['prompt']}")</code></pre>
+        <p>Those misses are your to-do list: they tell you which kinds of examples to add or fix in the training data for the next iteration. That data-centric loop is the heart of getting good. Once you're satisfied with the lift, the last step is packaging the model for use — merging the adapter and shipping an artifact.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>PeftModel.from_pretrained</dt><dd>Attaches a trained LoRA adapter onto a fresh base model for inference.</dd>
+            <dt>greedy decoding</dt><dd>do_sample=False — deterministic generation, used for reproducible evaluation.</dd>
+            <dt>accuracy</dt><dd>Fraction of gold examples predicted correctly (a classification metric).</dd>
+            <dt>baseline comparison</dt><dd>Scoring the untuned base on the same gold set to measure the fine-tune's lift.</dd>
+            <dt>failure analysis</dt><dd>Reading the wrong predictions to decide what data to fix next.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "How do you run a LoRA fine-tuned model for inference?",
+    "options": [
+      "Load only the adapter",
+      "Load the base model and attach the adapter with PeftModel.from_pretrained",
+      "Retrain it",
+      "Load the optimizer state"
+    ],
+    "answer": 1,
+    "explanation": "LoRA keeps the base frozen; inference = base + adapter."
+  },
+  {
+    "q": "Why use do_sample=False (greedy) for evaluation?",
+    "options": [
+      "It's faster only",
+      "Deterministic, reproducible results",
+      "It changes the labels",
+      "It merges the adapter"
+    ],
+    "answer": 1,
+    "explanation": "Greedy decoding makes eval reproducible run-to-run (Track 1)."
+  },
+  {
+    "q": "Why compute accuracy on the BASE model too?",
+    "options": [
+      "To warm up the GPU",
+      "To get the baseline so you can report the lift fine-tuning bought",
+      "Because peft requires it",
+      "To pad batches"
+    ],
+    "answer": 1,
+    "explanation": "The lift over baseline is the meaningful result, not the tuned score alone."
+  },
+  {
+    "q": "What should you do with the gold-set misses?",
+    "options": [
+      "Ignore them",
+      "Use them to decide which training data to add or fix next",
+      "Add them to the gold set's labels",
+      "Delete the gold set"
+    ],
+    "answer": 1,
+    "explanation": "Failure analysis drives the data-centric iteration loop."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="run-and-read-logs.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Run it: read the logs, the loss, the checkpoints</span></a>
+          <a href="merge-and-infer.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Merge the adapter, run inference, ship an artifact</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

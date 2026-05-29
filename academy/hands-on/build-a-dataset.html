@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Build a tiny SFT dataset — BrewSLM Academy</title>
+    <meta name="description" content="Construct a small supervised fine-tuning dataset of (prompt, completion) pairs for sentiment classification, wrap it in a datasets.Dataset, check class balance, and split into train and validation — applying Track 1's data-quality lessons in code." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/build-a-dataset.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Build a tiny SFT dataset — BrewSLM Academy" />
+    <meta property="og:description" content="Construct a small supervised fine-tuning dataset of (prompt, completion) pairs for sentiment classification, wrap it in a datasets.Dataset, check class balance, and split into train and validation — applying Track 1's data-quality lessons in code." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/build-a-dataset.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Build a tiny SFT dataset — BrewSLM Academy" />
+    <meta name="twitter:description" content="Construct a small supervised fine-tuning dataset of (prompt, completion) pairs for sentiment classification, wrap it in a datasets.Dataset, check class balance, and split into train and validation — applying Track 1's data-quality lessons in code." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Build a tiny SFT dataset",
+        "description": "Construct a small supervised fine-tuning dataset of (prompt, completion) pairs for sentiment classification, wrap it in a datasets.Dataset, check class balance, and split into train and validation — applying Track 1's data-quality lessons in code.",
+        "url": "https://brewslm.com/academy/hands-on/build-a-dataset.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["datasets.Dataset", "prompt/completion pairs", "class balance", "train_test_split", "gold set"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Hands-on", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Build a tiny SFT dataset", "item": "https://brewslm.com/academy/hands-on/build-a-dataset.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Build a tiny SFT dataset"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "For a classification SFT example, the completion is\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The target label"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why keep the instruction wording identical across examples?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "So the model learns the task, not incidental wording"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does ds.train_test_split(test_size=0.2) give you?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A train portion and a held-out portion to watch overfitting"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "The gold set should be\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A small, verified set you never train on"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="hands-on/build-a-dataset">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html" aria-current="page">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Hands-on</a></li><li>Build a dataset</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 3</span>
+          <h1>Build a tiny SFT dataset</h1>
+          <p class="lesson-header__outcome">After this lesson you can build an SFT dataset as (prompt, completion) pairs, load it into a datasets.Dataset, check class balance, and make a train/validation split.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="load-model-and-tokenizer.html">Load a base model and tokenizer</a></span>
+          </div>
+        </header>
+
+        <p>The model is loaded; now it needs examples. We'll use a tiny, hand-built <strong>sentiment classification</strong> dataset so the whole pipeline is fast and inspectable. In a real project you'd have hundreds to thousands of rows; the mechanics are identical.</p>
+
+        <h2>The shape: (prompt, completion)</h2>
+        <p>From Track 1: an SFT example is a prompt paired with the target completion. For classification the completion is just the label. We keep the prompt instruction identical across examples so the model learns the <em>task</em>, not the wording.</p>
+        <pre class="code-block"><code>raw = [
+    {"prompt": "Classify the sentiment as positive or negative: I loved this movie.", "completion": "positive"},
+    {"prompt": "Classify the sentiment as positive or negative: A complete waste of time.", "completion": "negative"},
+    {"prompt": "Classify the sentiment as positive or negative: Best purchase I've made all year.", "completion": "positive"},
+    {"prompt": "Classify the sentiment as positive or negative: It broke after one use.", "completion": "negative"},
+    {"prompt": "Classify the sentiment as positive or negative: Absolutely delightful from start to finish.", "completion": "positive"},
+    {"prompt": "Classify the sentiment as positive or negative: I want a refund.", "completion": "negative"},
+    # ... in practice, hundreds more, covering the hard and edge cases
+]</code></pre>
+        <h2>Wrap it in a datasets.Dataset</h2>
+        <p>The <code>datasets</code> library gives us a fast, memory-mapped table with <code>.map()</code>, <code>.filter()</code>, and splitting — the standard container the <code>Trainer</code> expects.</p>
+        <pre class="code-block"><code>from datasets import Dataset
+
+ds = Dataset.from_list(raw)
+print(ds)
+print(ds[0])</code></pre>
+        <h2>Check class balance</h2>
+        <p>Track 1 warned that imbalance lets a model cheat. Check it in one line:</p>
+        <pre class="code-block"><code>from collections import Counter
+print(Counter(ds["completion"]))   # e.g. Counter({'positive': 3, 'negative': 3})</code></pre>
+        <div class="callout callout--note">
+          <p class="callout__label">Apply what you learned</p>
+          <p>Before training, also <strong>deduplicate</strong> (no identical prompts), confirm labels are correct, and make sure the examples resemble the inputs you'll really see. Garbage in, garbage out — the data lessons of Track 1 are where most of your quality comes from.</p>
+        </div>
+
+        <h2>Split into train and validation</h2>
+        <p>We hold out a slice to watch for overfitting during training (Track 1). <code>datasets</code> makes this one call:</p>
+        <pre class="code-block"><code>split = ds.train_test_split(test_size=0.2, seed=42)
+train_ds, val_ds = split["train"], split["test"]
+print(len(train_ds), "train /", len(val_ds), "val")</code></pre>
+        <p>Keep a separate, hand-checked <strong>gold set</strong> too (Track 1, Lesson 8) — a handful of examples you will <em>never</em> train on, used in Lesson 2.7 to judge whether fine-tuning actually helped. With data in hand, the next step is turning these strings into the token tensors the model consumes.</p>
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Data work is the real work. A <code>Dataset</code> of clean, balanced, representative (prompt, completion) pairs — plus an untouched gold set — is what makes the rest of the pipeline meaningful.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>datasets.Dataset</dt><dd>A fast, memory-mapped table with map/filter/split that the Trainer consumes.</dd>
+            <dt>from_list</dt><dd>Builds a Dataset from a list of dicts.</dd>
+            <dt>class balance</dt><dd>Keeping labels roughly even so accuracy reflects real skill.</dd>
+            <dt>train_test_split</dt><dd>Splits a Dataset into train and held-out portions.</dd>
+            <dt>gold set</dt><dd>A small, never-trained-on set with verified answers, used to judge quality.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "For a classification SFT example, the completion is\u2026",
+    "options": [
+      "The whole input repeated",
+      "The target label",
+      "A summary",
+      "The tokenizer"
+    ],
+    "answer": 1,
+    "explanation": "The completion is the target output \u2014 here, the class label."
+  },
+  {
+    "q": "Why keep the instruction wording identical across examples?",
+    "options": [
+      "To save tokens",
+      "So the model learns the task, not incidental wording",
+      "To balance classes",
+      "To merge LoRA"
+    ],
+    "answer": 1,
+    "explanation": "Consistent framing focuses learning on the task itself."
+  },
+  {
+    "q": "What does ds.train_test_split(test_size=0.2) give you?",
+    "options": [
+      "A merged model",
+      "A train portion and a held-out portion to watch overfitting",
+      "A tokenizer",
+      "A gold set"
+    ],
+    "answer": 1,
+    "explanation": "It produces train and held-out splits; the held-out slice monitors generalization."
+  },
+  {
+    "q": "The gold set should be\u2026",
+    "options": [
+      "The same as the training data",
+      "A small, verified set you never train on",
+      "Auto-generated each run",
+      "Larger than the train set"
+    ],
+    "answer": 1,
+    "explanation": "A gold set is curated, verified, and strictly held out from training."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="load-model-and-tokenizer.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Load a base model and tokenizer</span></a>
+          <a href="tokenize-and-collate.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Tokenize and collate: model-ready batches with a loss mask</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>
