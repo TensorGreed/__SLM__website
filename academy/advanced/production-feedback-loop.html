@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Production feedback loop: log → tag → augment → retrain — BrewSLM Academy</title>
+    <meta name="description" content="Lesson 4.9 detects drift; this lesson supplies the data that fixes it. The production feedback loop: log inputs and outputs at the endpoint, tag bad responses (manually, from drift signals, from user feedback), turn tags into training examples, and retrain on a sensible cadence." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/advanced/production-feedback-loop.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Production feedback loop — BrewSLM Academy" />
+    <meta property="og:description" content="Log → tag → augment → retrain: the data-collection half that drift detection triggers but doesn't itself supply." />
+    <meta property="og:url" content="https://brewslm.com/academy/advanced/production-feedback-loop.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Production feedback loop — BrewSLM Academy" />
+    <meta name="twitter:description" content="Log → tag → augment → retrain, with runnable code and the privacy + cost honest beat." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Production feedback loop",
+        "description": "The production data-collection loop that closes the cycle Lesson 4.9 opens. Log inputs/outputs at the endpoint (with PII redaction and a sampling budget), tag bad responses (manually, from drift signals, from user feedback), convert tags into SFT examples, and retrain on a measured cadence. Includes runnable code: a FastAPI logging wrapper, a Pydantic log schema, the tag → SFT example conversion, and a minimal retrain driver.",
+        "url": "https://brewslm.com/academy/advanced/production-feedback-loop.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Advanced", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["production logging", "request/response logging", "tagging bad responses", "retrain cadence", "PII redaction in logs", "sampling budget"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Advanced", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Production feedback loop", "item": "https://brewslm.com/academy/advanced/production-feedback-loop.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Production feedback loop" },
+        "hasPart": [
+          { "@type": "Question", "name": "Drift detection (Lesson 4.9) tells you what is wrong. What does the feedback loop add?", "acceptedAnswer": { "@type": "Answer", "text": "The data that fixes it. Drift surfaces a quality drop; the loop logs, tags, and converts production rows into training examples so the next retrain has something real to learn from." } },
+          { "@type": "Question", "name": "Why is sampling instead of logging-everything important?", "acceptedAnswer": { "@type": "Answer", "text": "Storage cost grows quickly with throughput, and most rows are redundant. A small reservoir + biased sampling of the rows you'll actually use (low-confidence, flagged, drifted) is cheaper and more useful than full logs." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="advanced/production-feedback-loop">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html" aria-current="page">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../advanced/index.html">Advanced</a></li><li>Production feedback loop</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 4 · Advanced · Lesson 11</span>
+          <h1>Production feedback loop: log → tag → augment → retrain</h1>
+          <p class="lesson-header__outcome">After this lesson you can wire request/response logging at your endpoint with PII redaction and a sampling budget, tag bad rows (manually, from drift signals, from user feedback), convert tags into SFT examples, and retrain on a measured cadence — closing the loop that Lesson 4.9's drift detection opens.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> advanced</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="observability-and-drift.html">Observability &amp; drift in production</a></span>
+          </div>
+        </header>
+
+        <p>Lesson 4.9 ended with a question: drift detection tells you <em>that</em> your live model has gotten worse — what do you do about it? You retrain. Retrain on what? That's the question this lesson answers. The "what" is production rows you collected, tagged, and curated. Without that data-collection loop, drift is a fire alarm with no water nearby.</p>
+
+        <h2>Drift detects; the loop supplies</h2>
+        <p>Lesson 4.9's drift check re-runs your gold set against the live endpoint on a schedule. When the gold set's pass rate drops, you know something is wrong. <strong>You don't know what.</strong> Your gold set was curated months ago; what shifted in production isn't in it. The feedback loop's job is to make sure that, when drift fires, you have <em>recent real inputs the model got wrong</em> ready to add to the next training round.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Two halves of one cycle</p>
+          <p><strong>Drift detection</strong> (Lesson 4.9) = the gold set, on a schedule, vs the live endpoint. Catches the problem. <strong>Feedback loop</strong> (this lesson) = continuous logging + tagging + conversion of production rows into training examples. Supplies the cure. You need both — drift without the loop is alarms without action; the loop without drift is data piling up with no signal that it's needed.</p>
+        </div>
+
+        <h2>Step 1: log requests and responses</h2>
+        <p>A thin middleware around your inference endpoint writes one record per request. Pydantic for the schema, async writes so the request path stays fast.</p>
+        <pre class="code-block"><code>from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel
+from fastapi import FastAPI, Request
+import json, secrets
+
+class LogEntry(BaseModel):
+    request_id: str
+    ts: datetime
+    model_version: str
+    prompt: str
+    response: str
+    latency_ms: int
+    user_id_hash: Optional[str] = None   # hashed, never raw
+    response_logprob: Optional[float] = None
+    tags: list[str] = []                  # filled in later by the tagger
+
+app = FastAPI()
+LOG_PATH = "data/inference.jsonl"
+
+def write_log(entry: LogEntry) -> None:
+    with open(LOG_PATH, "a") as f:
+        f.write(entry.model_dump_json() + "\n")
+
+@app.post("/chat")
+async def chat(req: Request):
+    body = await req.json()
+    prompt = body["prompt"]
+    t0 = datetime.utcnow()
+    response, logprob = generate(prompt)        # your model.generate(...) wrapper
+    latency = int((datetime.utcnow() - t0).total_seconds() * 1000)
+
+    entry = LogEntry(
+        request_id=secrets.token_hex(8),
+        ts=t0,
+        model_version="qwen-pii-v6",            # match what's deployed
+        prompt=redact_pii(prompt),              # see Step 2
+        response=response,
+        latency_ms=latency,
+        user_id_hash=hash_user(body.get("user_id")),
+        response_logprob=logprob,
+    )
+    write_log(entry)
+    return {"response": response, "request_id": entry.request_id}</code></pre>
+
+        <h2>Step 2: the privacy + cost honest beat</h2>
+        <p>Two things make naive "log everything" wrong in production:</p>
+        <ul>
+          <li><strong>Privacy.</strong> Inputs and outputs contain user data. Log raw strings and you've created a privacy liability. <strong>Redact PII at log time</strong>: emails, phone numbers, addresses, government IDs. Hash any user identifier before it touches disk.</li>
+          <li><strong>Cost.</strong> At 100 requests/second, raw logging is several GB/day of mostly-redundant text. Storage and search cost real money. <strong>Sample.</strong> Keep all the rows you'll actually use (low-confidence, flagged, post-drift); reservoir-sample the rest.</li>
+        </ul>
+        <pre class="code-block"><code>import re, hashlib, random
+
+_PII_PATTERNS = [
+    (re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+"), "[EMAIL]"),
+    (re.compile(r"\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b"), "[PHONE]"),
+    (re.compile(r"\b\d{3}-\d{2}-\d{4}\b"), "[SSN]"),
+]
+
+def redact_pii(text: str) -> str:
+    for pat, tag in _PII_PATTERNS:
+        text = pat.sub(tag, text)
+    return text
+
+def hash_user(uid: str | None) -> str | None:
+    if not uid: return None
+    return hashlib.sha256(uid.encode()).hexdigest()[:16]
+
+# Sampling budget: log 100% of low-confidence/flagged, ~5% of healthy responses.
+def should_log_full(entry: LogEntry) -> bool:
+    if entry.response_logprob is not None and entry.response_logprob &lt; -3.0:
+        return True                              # uncertain — always log
+    return random.random() &lt; 0.05                # 5% healthy sample</code></pre>
+
+        <h2>Step 3: tag bad responses</h2>
+        <p>Tags are how you turn a stream of logs into a queue of training examples. Three sources:</p>
+        <ol>
+          <li><strong>Manual</strong>: an operator reviews a queue of low-confidence rows + drift-period rows and tags them. Slow but high-quality.</li>
+          <li><strong>Auto-tag from drift</strong>: every row in the period preceding a <code>deployment_drift_detected</code> event (Lesson 4.9) gets a <code>"drift_window"</code> tag automatically — these are the production inputs your model started failing on.</li>
+          <li><strong>User feedback</strong>: thumbs-down, "regenerate," "report" buttons all map to a <code>"user_negative"</code> tag.</li>
+        </ol>
+        <p>Tags are <strong>opaque strings</strong> on the log entry. Anything you might later want to filter by becomes a tag.</p>
+        <pre class="code-block"><code># Auto-tag from drift event (run after drift_detected fires)
+import json
+from datetime import timedelta
+
+def tag_drift_window(drift_ts: datetime, window=timedelta(hours=12)) -> int:
+    start = drift_ts - window
+    out: list[dict] = []
+    with open(LOG_PATH) as f:
+        for line in f:
+            entry = json.loads(line)
+            if start &lt;= datetime.fromisoformat(entry["ts"]) &lt;= drift_ts:
+                if "drift_window" not in entry["tags"]:
+                    entry["tags"].append("drift_window")
+            out.append(entry)
+    with open(LOG_PATH, "w") as f:
+        for e in out: f.write(json.dumps(e) + "\n")
+    return sum(1 for e in out if "drift_window" in e["tags"])</code></pre>
+
+        <h2>Step 4: convert tags into training examples</h2>
+        <p>This is where the loop closes. Filtered + tagged log rows become SFT pairs.</p>
+        <pre class="code-block"><code>from datasets import Dataset
+
+def logs_to_sft(log_path: str, tags: set[str], gold_corrections: dict[str, str]) -> Dataset:
+    """Pull tagged rows, replace the bad response with the corrected one.
+
+    gold_corrections maps request_id -&gt; the corrected completion an operator wrote.
+    """
+    rows = []
+    with open(log_path) as f:
+        for line in f:
+            e = json.loads(line)
+            if not (set(e["tags"]) &amp; tags):  # only rows with at least one matching tag
+                continue
+            corrected = gold_corrections.get(e["request_id"])
+            if not corrected:
+                continue                             # untagged corrections are dropped
+            rows.append({
+                "messages": [
+                    {"role": "user",      "content": e["prompt"]},
+                    {"role": "assistant", "content": corrected},
+                ]
+            })
+    return Dataset.from_list(rows)</code></pre>
+        <p>The corrected completion comes from the operator review (Step 3, source 1) or from a re-run of a stronger model whose output was verified. Either way, every example carries a <em>correction the model should have produced</em>, not just a flag of "this was wrong."</p>
+
+        <h2>Step 5: retrain cadence</h2>
+        <p>How often is the harder question. Three honest patterns:</p>
+        <ul>
+          <li><strong>On drift signal.</strong> When <code>deployment_drift_detected</code> fires and you have at least N (say 100) tagged-and-corrected rows in the window, retrain. Skip retrain if you don't — collect more first; retraining on too little new data just trades one set of regressions for another (Lesson 1.21).</li>
+          <li><strong>Cadenced.</strong> Weekly or monthly, whether drift fired or not. Cheap if your training pipeline is automated (Track 3); useful for slow-moving distributions that drift would never trip.</li>
+          <li><strong>On capability gap.</strong> When a specific failure cluster (Track 3, Lesson 3.13) crosses a count threshold, retrain on that cluster. The targeted version of <code>augment_from_cluster</code> in production.</li>
+        </ul>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Don't ship a regression — re-run the eval suite</p>
+          <p>Every retrain has to clear the same eval-pack gates the previous deploy cleared (Track 3, Lesson 3.13's <code>required</code> gates). Otherwise you fix the new failures and reintroduce the old ones. The promotability decision is your safety net; treat it as such.</p>
+        </div>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Drift detection (Lesson 4.9) catches the problem; the feedback loop supplies the cure. <strong>Log with PII redaction and a sampling budget</strong>, <strong>tag bad rows</strong> (manual / drift / user), <strong>convert tagged rows to SFT examples</strong> using operator corrections, and <strong>retrain on a measured cadence</strong> — every retrain re-clearing the eval-pack gates the previous deploy cleared.</p>
+        </div>
+
+        <p>One more advanced technique remains: tool-use / function-calling fine-tuning, where the model's output isn't text but a structured call to an external tool.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Production logging</dt><dd>Recording request/response pairs at the inference endpoint into a queryable, append-only log (commonly JSONL).</dd>
+            <dt>PII redaction</dt><dd>Replacing personal identifiers in logged text with tokens like <code>[EMAIL]</code> before disk; hashing user ids.</dd>
+            <dt>Sampling budget</dt><dd>The rule that decides which rows get logged; full logging is too expensive at scale. Keep all interesting rows (low-confidence, flagged, drift-window), sample the rest.</dd>
+            <dt>Tag</dt><dd>An opaque string attached to a log entry that marks it as candidate training data (e.g. <code>drift_window</code>, <code>user_negative</code>, <code>operator_review</code>).</dd>
+            <dt>Operator correction</dt><dd>The corrected completion an operator (or stronger model) wrote for a tagged bad row; the source of the SFT example.</dd>
+            <dt>Retrain cadence</dt><dd>The trigger for when to retrain: on drift signal, on schedule, or on a failure-cluster count threshold.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "Drift detection tells you the model has gotten worse. The feedback loop adds…",
+   "options": ["A faster drift check", "The data that fixes it — logged, tagged, corrected rows ready for the next retrain", "More hyperparameters", "A different eval pack"],
+   "answer": 1,
+   "explanation": "Drift = alarm. Feedback loop = water. Without recent tagged corrections, retraining has nothing new to learn from."},
+  {"q": "Why redact PII at log time, not later?",
+   "options": ["Speed", "Once raw user data hits disk, you've created a privacy liability. Redact before it's written.", "It changes the loss", "It's required by Pydantic"],
+   "answer": 1,
+   "explanation": "Logging raw PII is the liability. Redact in-flight so the disk never sees the raw values."},
+  {"q": "Which tag would auto-fire on rows from the period preceding a drift event?",
+   "options": ["user_negative", "drift_window — the production inputs the model started failing on", "operator_review", "low_confidence"],
+   "answer": 1,
+   "explanation": "drift_window is the auto-tag attached to logs in the period before deployment_drift_detected fires — those are the inputs that revealed the drop."},
+  {"q": "You see drift but only 12 tagged-and-corrected rows. Best move?",
+   "options": ["Retrain immediately on the 12", "Collect more first; retraining on too little new data trades one set of regressions for another", "Disable drift detection", "Roll back to last version forever"],
+   "answer": 1,
+   "explanation": "Small new data + retrain = catastrophic forgetting (Lesson 1.21) on the old behaviours. Collect to a sensible floor first."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="observability-and-drift.html">Observability &amp; drift in production</a><span class="related-lessons__track">Advanced</span></li>
+            <li><a class="inline-link" href="../with-brewslm/eval-pack-and-failure-cluster-reference.html">Eval pack &amp; failure cluster reference</a><span class="related-lessons__track">With BrewSLM</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/catastrophic-forgetting.html">Catastrophic forgetting</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="capstone-graduating.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Capstone C: choosing the technique &amp; graduating</span></a>
+          <a href="tool-use-fine-tuning.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Tool-use / function-calling fine-tuning</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

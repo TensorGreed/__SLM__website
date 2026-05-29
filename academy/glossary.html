@@ -325,6 +325,19 @@
           <dt id="temperature">Temperature (T)</dt><dd>A divisor on logits before softmax; higher T softens the distribution to expose secondary probabilities for KD.</dd>
           <dt id="topk-logprobs">Top-k logprobs</dt><dd>The k most likely tokens and their log-probabilities per position; a compact offline capture of the teacher's distribution.</dd>
           <dt id="vllm">vLLM</dt><dd>A high-throughput inference server using paged attention to manage the KV cache.</dd>
+          <dt id="prod-logging">Production logging</dt><dd>Recording request/response pairs at the inference endpoint into an append-only log (commonly JSONL). See <a class="inline-link" href="advanced/production-feedback-loop.html">Production feedback loop</a>.</dd>
+          <dt id="pii-redaction-t4">PII redaction (logs)</dt><dd>Replacing personal identifiers in logged text with tokens like <code>[EMAIL]</code> before disk; hashing user ids.</dd>
+          <dt id="sampling-budget">Sampling budget</dt><dd>The rule deciding which inference rows get logged; full logging is too expensive at scale, so keep all interesting rows (low-confidence, flagged, drift-window) and sample the rest.</dd>
+          <dt id="log-tag">Log tag</dt><dd>Opaque string on a log row marking it as candidate training data (<code>drift_window</code>, <code>user_negative</code>, <code>operator_review</code>).</dd>
+          <dt id="operator-correction">Operator correction</dt><dd>The corrected completion an operator (or stronger model) wrote for a tagged bad row; source of the SFT example in the feedback loop.</dd>
+          <dt id="retrain-cadence">Retrain cadence</dt><dd>Trigger for retraining: on drift signal, on schedule, or on a failure-cluster count threshold.</dd>
+          <dt id="tool-call">Tool call</dt><dd>A structured JSON output naming a tool (function) from a fixed catalogue with validated arguments. See <a class="inline-link" href="advanced/tool-use-fine-tuning.html">Tool-use fine-tuning</a>.</dd>
+          <dt id="function-calling">Function calling</dt><dd>Synonym for tool-use; the vendor term (OpenAI etc.) for structured-JSON output mode.</dd>
+          <dt id="tool-schema">Tool schema</dt><dd>A description (name + argument schema) of a callable function the model can target; Pydantic models declare them cleanly.</dd>
+          <dt id="no-tool-path">No-tool path</dt><dd>Explicit assistant output (<code>{"tool":"no_tool","reason":"..."}</code>) for when no available tool fits; trained on negative examples.</dd>
+          <dt id="valid-tool-call-rate">Valid-tool-call rate</dt><dd>Fraction of outputs that parse as JSON, name a real tool, and have arguments matching that tool's schema.</dd>
+          <dt id="arg-match-acc">Argument-match accuracy</dt><dd>On valid parses, the fraction with arguments matching the gold for the same request.</dd>
+          <dt id="false-tool-call-rate">False-tool-call rate</dt><dd>Fraction of inputs where the gold is no_tool but the model called a real tool; the most damaging routing failure mode.</dd>
         </dl>
       </section>
 

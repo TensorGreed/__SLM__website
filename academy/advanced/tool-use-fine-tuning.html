@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tool-use / function-calling fine-tuning — BrewSLM Academy</title>
+    <meta name="description" content="Fine-tune an SLM to emit valid tool calls — JSON containing a tool name and arguments — for a defined tool set. Includes the data shape (tool schemas in the system message), training a router with SFTTrainer, the no-tool-needed negative path, and the honest two-number evaluation: valid-tool-call rate plus argument-match accuracy." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/advanced/tool-use-fine-tuning.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Tool-use / function-calling fine-tuning — BrewSLM Academy" />
+    <meta property="og:description" content="Train an SLM router for tool calls: data shape, no-tool negatives, valid-tool-call rate, argument-match accuracy." />
+    <meta property="og:url" content="https://brewslm.com/academy/advanced/tool-use-fine-tuning.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Tool-use / function-calling fine-tuning — BrewSLM Academy" />
+    <meta name="twitter:description" content="Tool schemas, no-tool path, valid-tool-call rate, argument-match accuracy — with runnable code." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Tool-use / function-calling fine-tuning",
+        "description": "Fine-tuning an SLM to emit structured tool calls (JSON with a tool name and validated arguments) for a fixed tool set. Covers the data shape (tool schemas in the system message, request in the user turn, structured JSON in the assistant turn), the no-tool-needed negative path, training with SFTTrainer + LoRA, parsing + validating outputs with Pydantic, and evaluating with two numbers: valid-tool-call rate and argument-match accuracy on the valid calls.",
+        "url": "https://brewslm.com/academy/advanced/tool-use-fine-tuning.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Advanced", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["tool-use fine-tuning", "function calling", "tool schemas", "no-tool path", "valid-tool-call rate", "argument-match accuracy"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Advanced", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Tool-use / function-calling fine-tuning", "item": "https://brewslm.com/academy/advanced/tool-use-fine-tuning.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Tool-use / function-calling fine-tuning" },
+        "hasPart": [
+          { "@type": "Question", "name": "What two numbers report a tool-call model honestly?", "acceptedAnswer": { "@type": "Answer", "text": "Valid-tool-call rate (output parses and is a real tool from the schema) and argument-match accuracy on the valid calls." } },
+          { "@type": "Question", "name": "Why include no-tool negatives in the training data?", "acceptedAnswer": { "@type": "Answer", "text": "A model that calls a tool every time was never taught not to. Negative examples teach the no-tool / clarify-first path." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="advanced/tool-use-fine-tuning">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html" aria-current="page">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../advanced/index.html">Advanced</a></li><li>Tool-use / function-calling fine-tuning</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 4 · Advanced · Lesson 12</span>
+          <h1>Tool-use / function-calling fine-tuning</h1>
+          <p class="lesson-header__outcome">After this lesson you can train a small LM to emit valid tool calls for a defined tool set, handle the "no tool needed" path, and evaluate the result with the two-number report: valid-tool-call rate plus argument-match accuracy.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> advanced</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="../hands-on/structured-outputs-with-pydantic.html">Structured outputs with pydantic</a></span>
+          </div>
+        </header>
+
+        <p>Tool-use — also called function calling — is one of the SLM use cases where small fine-tuned models punch hardest. The task is narrow ("given a request and a tool catalogue, pick the right tool and fill in its arguments"), the output is structured JSON, and a fine-tuned 1B model often beats a much bigger general model. This lesson is how to train one.</p>
+
+        <h2>Why tool-use suits an SLM</h2>
+        <p>Three properties of tool routing fit small models well:</p>
+        <ul>
+          <li><strong>Narrow output space.</strong> The model picks a tool from a fixed catalogue and emits arguments matching that tool's schema. A general 70B model knows the world; this task only needs the tool catalogue.</li>
+          <li><strong>Strict format.</strong> Output must parse as JSON and validate against a schema (Lesson 2.13's territory). Fine-tuning specifically for the format closes the gap quickly.</li>
+          <li><strong>Latency-critical.</strong> Tool calls run inside agent loops; every call's latency multiplies. A small router fine-tune at 200 ms beats a frontier model at 2 s, every step, forever.</li>
+        </ul>
+
+        <h2>The data shape</h2>
+        <p>Three roles, one assistant output:</p>
+        <ul>
+          <li><strong>System</strong>: the tool catalogue — names, descriptions, JSON schemas of arguments.</li>
+          <li><strong>User</strong>: the natural-language request.</li>
+          <li><strong>Assistant</strong>: a JSON object — either a tool call (<code>{"tool": "...", "arguments": {...}}</code>) or the explicit no-tool path (<code>{"tool": "no_tool", "reason": "..."}</code>).</li>
+        </ul>
+        <pre class="code-block"><code>{
+  "messages": [
+    {
+      "role": "system",
+      "content": (
+        "You route customer-support requests to tools. Available tools:\n"
+        "- track_order(order_id: str): get the status of an order.\n"
+        "- request_refund(order_id: str, reason: str): file a refund.\n"
+        "- escalate(reason: str): hand off to a human agent.\n"
+        "If no tool fits, respond with {\"tool\":\"no_tool\", \"reason\":\"...\"}."
+      )
+    },
+    {"role": "user",      "content": "Where's my order ORD-1234?"},
+    {"role": "assistant", "content": '{"tool":"track_order","arguments":{"order_id":"ORD-1234"}}'}
+  ]
+}</code></pre>
+
+        <h2>Define the schemas with Pydantic</h2>
+        <p>Same pattern as Lesson 2.13. One model per tool, plus the dispatcher wrapper.</p>
+        <pre class="code-block"><code>from pydantic import BaseModel, Field, ValidationError
+from typing import Literal, Union
+import json
+
+class TrackOrder(BaseModel):
+    tool: Literal["track_order"]
+    arguments: dict = Field(...)
+    class Args(BaseModel):
+        order_id: str
+
+class RequestRefund(BaseModel):
+    tool: Literal["request_refund"]
+    arguments: dict
+    class Args(BaseModel):
+        order_id: str
+        reason: str
+
+class Escalate(BaseModel):
+    tool: Literal["escalate"]
+    arguments: dict
+    class Args(BaseModel):
+        reason: str
+
+class NoTool(BaseModel):
+    tool: Literal["no_tool"]
+    reason: str
+
+ToolCall = Union[TrackOrder, RequestRefund, Escalate, NoTool]
+
+# Argument validation by tool — applied after Pydantic parses the outer object.
+_ARG_MODELS = {
+    "track_order":    TrackOrder.Args,
+    "request_refund": RequestRefund.Args,
+    "escalate":       Escalate.Args,
+}
+
+def parse_tool_call(text: str) -&gt; ToolCall | None:
+    try:
+        data = json.loads(text)
+        tool = data.get("tool")
+        if tool == "no_tool":
+            return NoTool(**data)
+        cls = {"track_order": TrackOrder, "request_refund": RequestRefund,
+               "escalate":    Escalate}.get(tool)
+        if cls is None:
+            return None
+        obj = cls(**data)
+        _ARG_MODELS[tool](**obj.arguments)        # validate arguments shape
+        return obj
+    except (json.JSONDecodeError, ValidationError, TypeError):
+        return None</code></pre>
+
+        <h2>The no-tool path is training data, not an exception</h2>
+        <p>The single most common tool-router failure is <strong>calling a tool every time</strong>. If your training data only contains positive examples ("user asked X, model called Y"), the model learns that every input produces a tool call. Reality has plenty of inputs where the right answer is "I need more information" or "this isn't a request I can fulfil." Include those, labelled with <code>no_tool</code>.</p>
+        <pre class="code-block"><code># Negative examples — vary the no-tool reason
+{
+  "messages": [
+    {"role": "system",    "content": &lt;tool catalogue&gt;},
+    {"role": "user",      "content": "Hi!"},                          # ambient chat
+    {"role": "assistant", "content": '{"tool":"no_tool","reason":"greeting, no action needed"}'}
+  ]
+},
+{
+  "messages": [
+    {"role": "system",    "content": &lt;tool catalogue&gt;},
+    {"role": "user",      "content": "What's your refund policy?"},   # info request, not action
+    {"role": "assistant", "content": '{"tool":"no_tool","reason":"answer directly; no tool fits"}'}
+  ]
+},
+{
+  "messages": [
+    {"role": "system",    "content": &lt;tool catalogue&gt;},
+    {"role": "user",      "content": "I want a refund."},             # underspecified
+    {"role": "assistant", "content": '{"tool":"no_tool","reason":"need order_id and reason before request_refund"}'}
+  ]
+}</code></pre>
+        <p>A useful ratio is roughly <strong>10–20% no-tool examples</strong> in the training set. Less and the bias toward "always call something" wins; more and the model starts hedging on real tool calls.</p>
+
+        <h2>Train: same SFTTrainer pattern</h2>
+        <p>The training loop is Lesson 2.10 with this data shape. Greedy decoding at inference (Lesson 1.19) — variety isn't a virtue in a router.</p>
+        <pre class="code-block"><code>from datasets import Dataset
+from trl import SFTConfig, SFTTrainer
+from peft import LoraConfig
+
+ds = Dataset.from_list(raw_routing_data)          # ~80% positives, ~20% no_tool
+
+lora = LoraConfig(
+    r=16, lora_alpha=32, lora_dropout=0.05,
+    target_modules=["q_proj", "v_proj"],
+    task_type="CAUSAL_LM",
+)
+
+trainer = SFTTrainer(
+    model=model,
+    args=SFTConfig(
+        output_dir="tool-router",
+        per_device_train_batch_size=8,
+        gradient_accumulation_steps=2,
+        learning_rate=2e-4,
+        num_train_epochs=3,
+        lr_scheduler_type="cosine",
+        warmup_ratio=0.03,
+        bf16=True,
+        logging_steps=5,
+        save_strategy="epoch",
+        max_seq_length=1024,
+        completion_only_loss=True,
+        report_to=[],
+    ),
+    train_dataset=ds,
+    processing_class=tok,
+    peft_config=lora,
+)
+trainer.train()
+trainer.save_model("tool-router/adapter")</code></pre>
+
+        <h2>Evaluate: the two-number report (tool-flavoured)</h2>
+        <p>Same discipline as Lesson 2.13's structured-output eval, retargeted. The two numbers that matter:</p>
+        <ol>
+          <li><strong>Valid-tool-call rate</strong> — fraction of model outputs that parse as JSON, name a tool from the catalogue (including <code>no_tool</code>), and have arguments matching that tool's schema.</li>
+          <li><strong>Argument-match accuracy</strong> on valid calls — fraction of valid calls where the arguments match the gold for the same request.</li>
+        </ol>
+        <pre class="code-block"><code>def eval_router(model, tok, gold: list[dict]) -&gt; dict:
+    """gold rows: {"prompt": "...", "target": {"tool": "...", "arguments": {...}}}"""
+    valid_calls = 0
+    arg_matches = 0
+    tool_matches = 0
+    no_tool_calls_wrongly_made = 0       # false-positive routing
+    for ex in gold:
+        text = predict(model, tok, ex["prompt"])
+        parsed = parse_tool_call(text)
+        if parsed is None:
+            continue                      # invalid output
+        valid_calls += 1
+        target = ex["target"]
+        if parsed.tool == target["tool"]:
+            tool_matches += 1
+            if parsed.tool != "no_tool" and parsed.arguments == target["arguments"]:
+                arg_matches += 1
+        elif target["tool"] == "no_tool":
+            no_tool_calls_wrongly_made += 1
+
+    n = len(gold)
+    return {
+        "valid_tool_call_rate":     valid_calls / n,
+        "tool_name_accuracy":       tool_matches / n,
+        "argument_match_accuracy":  arg_matches / max(1, valid_calls),
+        "false_tool_call_rate":     no_tool_calls_wrongly_made / n,
+    }</code></pre>
+        <p>Report all four. The first two tell you whether the router routes; the third tells you whether the arguments are right; the fourth tells you whether the no-tool path is working.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest beat — the right kind of failure</p>
+          <p>A router that fails by emitting <strong>invalid JSON</strong> is a bug your client (the agent loop) can detect and retry. A router that fails by emitting <strong>valid JSON for the wrong tool with plausible arguments</strong> is a silent corruption that calls real systems with real consequences. <strong>Prefer parse failures to wrong calls.</strong> If you have to trade, train and decode toward the more conservative behaviour: tight temperature, low <code>repetition_penalty</code>, and explicit no_tool examples for ambiguous prompts.</p>
+        </div>
+
+        <h2>Inference — parse, validate, call</h2>
+        <pre class="code-block"><code>def route(model, tok, user_request: str, system_prompt: str) -&gt; ToolCall | None:
+    msgs = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user",   "content": user_request},
+    ]
+    text = generate(model, tok, msgs, max_new_tokens=128, do_sample=False)
+    return parse_tool_call(text)
+
+call = route(model, tok, "Where's my order ORD-1234?", SYSTEM_PROMPT)
+if call is None:
+    log_invalid_output()                              # bug / training gap
+    return ask_user_to_rephrase()
+if isinstance(call, NoTool):
+    return answer_directly(call.reason)
+# At this point call is validated; dispatch to the real tool.
+result = TOOLS[call.tool](**call.arguments)</code></pre>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Tool-use fine-tuning is a structured-output SFT with three deliberate features: <strong>tool schemas in the system message</strong>, <strong>explicit <code>no_tool</code> negatives</strong> (10–20% of the training set), and a <strong>two-number eval</strong> (valid-tool-call rate + argument-match accuracy on the valid calls). A small router fine-tune beats a much bigger general model on latency and cost, every call, forever — provided you teach the no-tool path.</p>
+        </div>
+
+        <p>That ends the v2 expansion of Track 4. You can now build a production-grade SLM workflow end-to-end: from picking a base, through SFT and the by-hand pipeline, through the platform, into distillation, preference tuning, quantization, multi-task, serving, observability with a feedback loop, and tool-use routing. Pick a project and ship it.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Tool call</dt><dd>A structured JSON output naming a tool (function) from a fixed catalogue and supplying validated arguments for it.</dd>
+            <dt>Function calling</dt><dd>Synonym for tool-use; the term used by OpenAI and other vendors for their JSON-output mode.</dd>
+            <dt>Tool schema</dt><dd>A description (name + argument schema) of a callable function the model can target; Pydantic models are a clean way to declare them.</dd>
+            <dt>No-tool path</dt><dd>An explicit assistant output (<code>{"tool":"no_tool","reason":"..."}</code>) that says "no available tool fits"; trained on negative examples in the SFT data.</dd>
+            <dt>Valid-tool-call rate</dt><dd>Fraction of outputs that parse as JSON, name a real tool, and have arguments matching that tool's schema.</dd>
+            <dt>Argument-match accuracy</dt><dd>On the parses that succeed, the fraction with arguments matching the gold; the second of the two-number report.</dd>
+            <dt>False-tool-call rate</dt><dd>Fraction of inputs where the gold says no_tool but the model called a real tool; the most damaging routing failure mode.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "Why include no-tool negatives in the training data?",
+   "options": ["They make the dataset larger", "A model trained only on positives learns to call a tool every time; negatives teach the no-tool path", "It's required by Pydantic", "It enables QLoRA"],
+   "answer": 1,
+   "explanation": "A router with no negative examples becomes a router that routes everything. 10–20% no-tool examples teach the explicit 'no tool fits' answer."},
+  {"q": "Which decoding setting is right for a tool router at inference?",
+   "options": ["High temperature for creativity", "Greedy / temperature ~0 — deterministic; variety isn't a virtue here", "Top-p 0.95", "Random sampling"],
+   "answer": 1,
+   "explanation": "A router that varies its output across runs on the same input is broken. Greedy decoding is the default for structured output."},
+  {"q": "Which failure mode is the most dangerous for tool-use in production?",
+   "options": ["Invalid JSON — the client retries", "Valid JSON for the wrong tool with plausible arguments — silently calls real systems with wrong inputs", "Output too short", "Output too long"],
+   "answer": 1,
+   "explanation": "Parse failures are visible bugs. Plausible-but-wrong tool calls run real code with wrong inputs and may corrupt state."},
+  {"q": "Which two numbers report a tool-call model honestly?",
+   "options": ["Accuracy + perplexity", "Valid-tool-call rate + argument-match accuracy on valid calls", "Loss + epoch", "BLEU + ROUGE"],
+   "answer": 1,
+   "explanation": "Same shape as Lesson 2.13's structured-output report: did the output parse and validate, and were the arguments right?"}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="../hands-on/structured-outputs-with-pydantic.html">Structured outputs with pydantic</a><span class="related-lessons__track">Hands-on</span></li>
+            <li><a class="inline-link" href="../hands-on/project-gallery.html">Project gallery: 6 SLM use cases</a><span class="related-lessons__track">Hands-on</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/decoding-controls.html">Decoding controls</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="production-feedback-loop.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Production feedback loop</span></a>
+          <a href="../certificate.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next · Graduate</span><span class="lesson-nav__title">Claim your completion certificate</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>
