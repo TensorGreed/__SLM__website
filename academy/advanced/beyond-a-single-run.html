@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Beyond a single SFT run: the advanced toolkit — BrewSLM Academy</title>
+    <meta name="description" content="You can fine-tune a model and ship it. This final track covers the techniques for when one LoRA SFT run isn't enough — distillation to shrink a model, preference tuning to align it, quantization to compress it, multi-task and curriculum to broaden it, and serving plus observability to run it in production." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/advanced/beyond-a-single-run.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Beyond a single SFT run: the advanced toolkit — BrewSLM Academy" />
+    <meta property="og:description" content="You can fine-tune a model and ship it. This final track covers the techniques for when one LoRA SFT run isn't enough — distillation to shrink a model, preference tuning to align it, quantization to compress it, multi-task and curriculum to broaden it, and serving plus observability to run it in production." />
+    <meta property="og:url" content="https://brewslm.com/academy/advanced/beyond-a-single-run.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Beyond a single SFT run: the advanced toolkit — BrewSLM Academy" />
+    <meta name="twitter:description" content="You can fine-tune a model and ship it. This final track covers the techniques for when one LoRA SFT run isn't enough — distillation to shrink a model, preference tuning to align it, quantization to compress it, multi-task and curriculum to broaden it, and serving plus observability to run it in production." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Beyond a single SFT run: the advanced toolkit",
+        "description": "You can fine-tune a model and ship it. This final track covers the techniques for when one LoRA SFT run isn't enough — distillation to shrink a model, preference tuning to align it, quantization to compress it, multi-task and curriculum to broaden it, and serving plus observability to run it in production.",
+        "url": "https://brewslm.com/academy/advanced/beyond-a-single-run.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Advanced", "timeRequired": "PT8M", "isAccessibleForFree": true,
+        "teaches": ["when to go beyond SFT", "distillation", "preference tuning", "quantization", "multi-task", "serving"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Advanced", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Beyond a single SFT run: the advanced toolkit", "item": "https://brewslm.com/academy/advanced/beyond-a-single-run.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Beyond a single SFT run: the advanced toolkit"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "Which technique targets 'smaller and cheaper at near-equal quality'?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Distillation"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "You need the model to prefer a tone/style, not just be correct. Which technique?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Preference tuning (DPO/ORPO)"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Are these advanced techniques mutually exclusive?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No \u2014 production SLMs often compose several"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What's the right starting point for choosing a technique?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The constraint you're solving for (size, alignment, cost, breadth, reliability)"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="advanced/beyond-a-single-run">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html" aria-current="page">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Advanced</a></li><li>Beyond a single run</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 4 · Advanced · Lesson 1</span>
+          <h1>Beyond a single SFT run: the advanced toolkit</h1>
+          <p class="lesson-header__outcome">After this lesson you can name the advanced techniques in this track and, given a goal — smaller, more aligned, cheaper to serve, broader, or more reliable in production — say which technique addresses it.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> advanced</span>
+            <span><strong>Read time:</strong> ~8 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="../with-brewslm/export-deploy-coach.html">Capstone B: export, deploy & Coach Mode</a></span>
+          </div>
+        </header>
+
+        <p>By the end of Track 3 you could take a task from raw data to a deployed endpoint — by hand and through the platform. That is the 80%. This track is the other 20%: the techniques you reach for when a single supervised fine-tune doesn't meet a harder constraint.</p>
+
+        <h2>What 'advanced' actually means</h2>
+        <p>Every technique here exists to satisfy a constraint SFT alone can't:</p>
+        <ul>
+          <li><strong>Smaller / cheaper, same quality</strong> → <strong>distillation</strong> (lessons 4.2–4.4): train a small student to mimic a big teacher.</li>
+          <li><strong>Aligned to preferences, not just correct</strong> → <strong>preference tuning</strong> (4.5): DPO / ORPO on (chosen, rejected) pairs.</li>
+          <li><strong>Fits a device / serves cheaply</strong> → <strong>quantization &amp; compression</strong> (4.6): 4-bit weights, GGUF / ONNX.</li>
+          <li><strong>One model, many tasks</strong> → <strong>multi-task &amp; curriculum</strong> (4.7): balancing and ordering training signals.</li>
+          <li><strong>Fast, reliable in production</strong> → <strong>serving &amp; observability</strong> (4.8–4.9): throughput, latency, drift.</li>
+        </ul>
+        <p>Lesson 4.10 ties them together into a decision guide and graduates the course.</p>
+        <pre class="code-block"><code>CONSTRAINT                          TECHNIQUE                  LESSONS
+---------------------------------   ------------------------   -------
+smaller / cheaper, ~same quality    distillation               4.2-4.4
+aligned to preferences / tone       DPO / ORPO                 4.5
+fits a device / cheap to serve      quantization               4.6, 4.8
+one model, several related tasks    multi-task + curriculum    4.7
+fast &amp; reliable in production       serving + observability    4.8-4.9</code></pre>
+        <div class="callout callout--note">
+          <p class="callout__label">These compose</p>
+          <p>They're not alternatives — a production SLM often uses several: distill a frontier model into a small student, preference-tune it for tone, quantize it to 4-bit for the edge, and watch it for drift. The skill is knowing which constraint you're solving for.</p>
+        </div>
+
+        <h2>The prerequisite is everything before this</h2>
+        <p>Each technique here assumes the fundamentals: you know what a loss is and how gradient descent uses it (Track 0), how SFT and the loss mask work (Track 1), how to run training and read its curves (Track 2), and how the platform's stages, gates, and events fit together (Track 3). Advanced methods are recombinations of those primitives, not new magic — distillation is a different loss, preference tuning is a different objective, quantization is a different number format.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Advanced ≠ harder for its own sake. Each technique targets one constraint a plain SFT can't meet — <strong>size, alignment, cost, breadth, or reliability</strong>. Start from the constraint, pick the technique. The rest of this track is one technique per constraint.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>distillation</dt><dd>Training a small student model to mimic a larger teacher, to shrink at near-equal quality.</dd>
+            <dt>preference tuning</dt><dd>Aligning a model to preferred over dispreferred outputs (DPO / ORPO).</dd>
+            <dt>quantization</dt><dd>Storing weights in fewer bits to shrink and speed up a model.</dd>
+            <dt>multi-task training</dt><dd>Training one model on several tasks at once.</dd>
+            <dt>curriculum</dt><dd>Ordering training data from easier to harder to improve learning.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "Which technique targets 'smaller and cheaper at near-equal quality'?",
+    "options": [
+      "Preference tuning",
+      "Distillation",
+      "Multi-task training",
+      "Curriculum"
+    ],
+    "answer": 1,
+    "explanation": "Distillation trains a small student to mimic a large teacher."
+  },
+  {
+    "q": "You need the model to prefer a tone/style, not just be correct. Which technique?",
+    "options": [
+      "Quantization",
+      "Preference tuning (DPO/ORPO)",
+      "Distillation",
+      "Serving"
+    ],
+    "answer": 1,
+    "explanation": "Preference tuning aligns to chosen-over-rejected outputs."
+  },
+  {
+    "q": "Are these advanced techniques mutually exclusive?",
+    "options": [
+      "Yes, pick one",
+      "No \u2014 production SLMs often compose several",
+      "Only on GPUs",
+      "Only with RAG"
+    ],
+    "answer": 1,
+    "explanation": "They compose; e.g. distill, then preference-tune, then quantize."
+  },
+  {
+    "q": "What's the right starting point for choosing a technique?",
+    "options": [
+      "The biggest model",
+      "The constraint you're solving for (size, alignment, cost, breadth, reliability)",
+      "The newest paper",
+      "The export format"
+    ],
+    "answer": 1,
+    "explanation": "Start from the constraint, then pick the matching technique."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="../with-brewslm/export-deploy-coach.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Capstone B: export, deploy & Coach Mode</span></a>
+          <a href="distillation-teacher-capture.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Knowledge distillation I: the teacher and capturing its logits</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Multi-task training and curriculum — BrewSLM Academy</title>
+    <meta name="description" content="One model can learn several tasks at once, and the order and balance of training data matters. This lesson covers multi-task training and task interference, data balancing, and curriculum learning — ordering examples from easier to harder — plus how to A/B a curriculum on the platform." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/advanced/multi-task-and-curriculum.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Multi-task training and curriculum — BrewSLM Academy" />
+    <meta property="og:description" content="One model can learn several tasks at once, and the order and balance of training data matters. This lesson covers multi-task training and task interference, data balancing, and curriculum learning — ordering examples from easier to harder — plus how to A/B a curriculum on the platform." />
+    <meta property="og:url" content="https://brewslm.com/academy/advanced/multi-task-and-curriculum.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Multi-task training and curriculum — BrewSLM Academy" />
+    <meta name="twitter:description" content="One model can learn several tasks at once, and the order and balance of training data matters. This lesson covers multi-task training and task interference, data balancing, and curriculum learning — ordering examples from easier to harder — plus how to A/B a curriculum on the platform." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Multi-task training and curriculum",
+        "description": "One model can learn several tasks at once, and the order and balance of training data matters. This lesson covers multi-task training and task interference, data balancing, and curriculum learning — ordering examples from easier to harder — plus how to A/B a curriculum on the platform.",
+        "url": "https://brewslm.com/academy/advanced/multi-task-and-curriculum.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Advanced", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["multi-task training", "task interference", "data balancing", "curriculum learning", "curriculum A/B"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Advanced", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Multi-task training and curriculum", "item": "https://brewslm.com/academy/advanced/multi-task-and-curriculum.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Multi-task training and curriculum"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What is task interference?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Negative transfer \u2014 tasks degrading each other when jointly trained"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Task A has 50k rows, task B has 500. Naive mixing causes\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The model to barely learn task B \u2014 fix with balancing"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Curriculum learning typically orders examples\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Easy to hard"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How should you decide whether a curriculum helped?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A/B it: train with vs without, compare on a fixed gold set"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="advanced/multi-task-and-curriculum">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html" aria-current="page">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Advanced</a></li><li>Multi-task & curriculum</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 4 · Advanced · Lesson 7</span>
+          <h1>Multi-task training and curriculum</h1>
+          <p class="lesson-header__outcome">After this lesson you can explain when multi-task training helps versus causes interference, how to balance tasks, what curriculum learning is, and how to test whether an ordering actually helped.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> advanced</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="quantization-and-compression.html">Quantization & compression: Q4_K_M, AWQ, GPTQ, GGUF, ONNX</a></span>
+          </div>
+        </header>
+
+        <p>So far, one model, one task. But you might want a single small model that classifies <em>and</em> extracts <em>and</em> summarizes — fewer models to serve, shared understanding across tasks. That's <strong>multi-task training</strong>, and it introduces two new levers: balance and order.</p>
+
+        <h2>Multi-task: one model, several skills</h2>
+        <p>You train on a mix of tasks at once, each example tagged (often via the prompt/instruction) with what it's asking for. The upside is <strong>positive transfer</strong> — skills that share structure reinforce each other (sentiment and topic classification both teach the model to read reviews). The risk is <strong>task interference</strong> (negative transfer): unrelated or imbalanced tasks fight for capacity and all get worse.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Watch for interference</p>
+          <p>Multi-task isn't free. If adding task B drops task A's eval score, you have interference — too little shared structure, or B is drowning out A. The fix is usually balance (below) or, sometimes, just training separate models.</p>
+        </div>
+
+        <h2>Balancing the mix</h2>
+        <p>If task A has 50,000 rows and task B has 500, naive mixing means the model barely sees B. <strong>Balancing</strong> — up-weighting or up-sampling the smaller task, or capping the larger — keeps each task influential. This is the class-balance lesson from Track 1, lifted from classes to whole tasks.</p>
+
+        <h2>Curriculum: order matters</h2>
+        <p><strong>Curriculum learning</strong> orders the training data, typically <strong>easy → hard</strong>, like a course syllabus. The intuition: early easy examples establish stable, general features; harder examples then refine them. It can speed convergence and improve the final model, especially when difficulty varies a lot across your data.</p>
+        <ul>
+          <li><strong>Easy-to-hard</strong> — short/clear examples first, long/ambiguous later.</li>
+          <li><strong>Coarse-to-fine</strong> — general examples first, edge cases later.</li>
+          <li><strong>Skill stacking</strong> — prerequisite sub-skills before composite ones.</li>
+        </ul>
+
+        <h2>Don't guess — A/B it</h2>
+        <p>Curriculum effects are real but not guaranteed; an ordering that helps one dataset does nothing for another. So treat it as a hypothesis and test it. BrewSLM has a curriculum A/B harness for exactly this — train with and without the ordering, evaluate both on the same gold set, and keep the winner:</p>
+        <pre class="code-block"><code>$ python -m scripts.curriculum_ab --project 1
+# trains baseline (shuffled) vs curriculum (easy-&gt;hard) on the same data,
+# evaluates both on the gold set, and reports the metric delta</code></pre>
+        <div class="callout callout--note">
+          <p class="callout__label">From Track 3</p>
+          <p>This is the same A/B discipline as the auto-RAG comparison: never adopt a technique on faith — run it against the alternative on a fixed gold set and let the delta decide. Curriculum and multi-task are hypotheses you test, not defaults you assume.</p>
+        </div>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p><strong>Multi-task</strong> trains one model on several tasks — positive transfer if they share structure, <strong>interference</strong> if they don't; fix with <strong>balancing</strong>. <strong>Curriculum</strong> orders data easy→hard. Both are hypotheses: <strong>A/B them on a fixed gold set</strong> and keep the winner.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>multi-task training</dt><dd>Training one model on several tasks at once, tagged per example.</dd>
+            <dt>positive transfer</dt><dd>When tasks sharing structure improve each other during joint training.</dd>
+            <dt>task interference</dt><dd>Negative transfer — unrelated or imbalanced tasks degrading each other.</dd>
+            <dt>balancing</dt><dd>Up-/down-weighting tasks so a large one doesn't drown a small one.</dd>
+            <dt>curriculum learning</dt><dd>Ordering training data (often easy→hard) to improve convergence and final quality.</dd>
+            <dt>curriculum A/B</dt><dd>Training with vs without an ordering and comparing on a fixed gold set to decide.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What is task interference?",
+    "options": [
+      "Faster training",
+      "Negative transfer \u2014 tasks degrading each other when jointly trained",
+      "A quantization error",
+      "A tokenizer mismatch"
+    ],
+    "answer": 1,
+    "explanation": "Unrelated/imbalanced tasks fight for capacity and all get worse."
+  },
+  {
+    "q": "Task A has 50k rows, task B has 500. Naive mixing causes\u2026",
+    "options": [
+      "Perfect balance",
+      "The model to barely learn task B \u2014 fix with balancing",
+      "Faster convergence",
+      "An OOM"
+    ],
+    "answer": 1,
+    "explanation": "Imbalance starves the small task; up-weight or up-sample it."
+  },
+  {
+    "q": "Curriculum learning typically orders examples\u2026",
+    "options": [
+      "Hard to easy",
+      "Easy to hard",
+      "Randomly always",
+      "By length only"
+    ],
+    "answer": 1,
+    "explanation": "Easy\u2192hard establishes general features before refining on hard cases."
+  },
+  {
+    "q": "How should you decide whether a curriculum helped?",
+    "options": [
+      "Assume it always helps",
+      "A/B it: train with vs without, compare on a fixed gold set",
+      "Check the file size",
+      "Read the loss once"
+    ],
+    "answer": 1,
+    "explanation": "Curriculum effects vary by dataset; test against the alternative."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="quantization-and-compression.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Quantization & compression: Q4_K_M, AWQ, GPTQ, GGUF, ONNX</span></a>
+          <a href="serving-and-inference.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Serving and inference optimization</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Preference tuning: DPO and ORPO — BrewSLM Academy</title>
+    <meta name="description" content="SFT teaches a model to produce correct outputs; preference tuning teaches it to prefer better outputs over worse ones. This lesson covers preference data of (chosen, rejected) pairs, the intuition behind DPO, how ORPO folds preference into a single stage, and when to reach for them over SFT." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/advanced/preference-tuning-dpo-orpo.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Preference tuning: DPO and ORPO — BrewSLM Academy" />
+    <meta property="og:description" content="SFT teaches a model to produce correct outputs; preference tuning teaches it to prefer better outputs over worse ones. This lesson covers preference data of (chosen, rejected) pairs, the intuition behind DPO, how ORPO folds preference into a single stage, and when to reach for them over SFT." />
+    <meta property="og:url" content="https://brewslm.com/academy/advanced/preference-tuning-dpo-orpo.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Preference tuning: DPO and ORPO — BrewSLM Academy" />
+    <meta name="twitter:description" content="SFT teaches a model to produce correct outputs; preference tuning teaches it to prefer better outputs over worse ones. This lesson covers preference data of (chosen, rejected) pairs, the intuition behind DPO, how ORPO folds preference into a single stage, and when to reach for them over SFT." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Preference tuning: DPO and ORPO",
+        "description": "SFT teaches a model to produce correct outputs; preference tuning teaches it to prefer better outputs over worse ones. This lesson covers preference data of (chosen, rejected) pairs, the intuition behind DPO, how ORPO folds preference into a single stage, and when to reach for them over SFT.",
+        "url": "https://brewslm.com/academy/advanced/preference-tuning-dpo-orpo.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Advanced", "timeRequired": "PT11M", "isAccessibleForFree": true,
+        "teaches": ["preference data", "chosen/rejected pairs", "DPO", "ORPO", "reference model", "when to use preference tuning"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Advanced", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Preference tuning: DPO and ORPO", "item": "https://brewslm.com/academy/advanced/preference-tuning-dpo-orpo.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Preference tuning: DPO and ORPO"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What does preference data consist of?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "(prompt, chosen, rejected) \u2014 two responses with one preferred"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does DPO differ from classic RLHF?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It optimizes preferences directly, without training a separate reward model"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does ORPO fold together?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "SFT and preference optimization into a single stage (no separate reference model)"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "When should you prefer SFT over DPO/ORPO?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "When there's a single correct answer (classification, extraction, format)"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="advanced/preference-tuning-dpo-orpo">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html" aria-current="page">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Advanced</a></li><li>Preference tuning</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 4 · Advanced · Lesson 5</span>
+          <h1>Preference tuning: DPO and ORPO</h1>
+          <p class="lesson-header__outcome">After this lesson you can explain what preference data looks like, the intuition behind DPO's chosen-over-rejected objective, how ORPO combines SFT and preference in one stage, and when preference tuning helps over plain SFT.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> advanced</span>
+            <span><strong>Read time:</strong> ~11 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="distillation-quality-retained.html">Knowledge distillation III: did it work? Quality retained</a></span>
+          </div>
+        </header>
+
+        <p>SFT optimizes for one right answer per prompt. But many qualities you want — helpfulness, tone, safety, conciseness — aren't a single correct string; they're a <em>preference</em> between candidate responses. <strong>Preference tuning</strong> optimizes that directly.</p>
+
+        <h2>Preference data: chosen vs rejected</h2>
+        <p>Instead of (prompt → completion), preference data is (prompt → <strong>chosen</strong>, <strong>rejected</strong>): two responses to the same prompt, with a human (or a judge) saying which is better.</p>
+        <pre class="code-block"><code>{ "prompt":   "Explain why the sky is blue to a five-year-old.",
+  "chosen":   "The sky looks blue because sunlight is made of colors, and the air...",
+  "rejected": "Rayleigh scattering causes shorter wavelengths to scatter more..." }</code></pre>
+        <p>Neither response is "wrong" — but for the audience, one is clearly better. SFT can't express that; preference tuning is built for it.</p>
+
+        <h2>DPO: optimize the preference directly</h2>
+        <p>Classic RLHF trained a separate reward model and then optimized against it with reinforcement learning — powerful but fiddly (Track 1's objectives lesson). <strong>Direct Preference Optimization (DPO)</strong> skips the reward model: it derives a loss directly from the (chosen, rejected) pairs that <strong>increases the model's relative likelihood of the chosen response over the rejected one</strong>. It uses a frozen copy of the starting model — the <strong>reference model</strong> — as an anchor, so the policy improves preferences without drifting arbitrarily far from where it started.</p>
+        <pre class="code-block"><code>recipe:
+  method: dpo            # routes to the AlignmentHandler
+  beta: 0.1             # how hard to push toward chosen vs stay near the reference
+  data: preference       # rows of {prompt, chosen, rejected}</code></pre>
+        <p>The <code>beta</code> knob controls how aggressively DPO moves toward the preferred responses versus staying close to the reference model — too high and the model overfits the preferences and degrades; too low and it barely moves.</p>
+
+        <h2>ORPO: preference in a single stage</h2>
+        <p>The usual pipeline is two stages: SFT first, then DPO. <strong>ORPO (Odds Ratio Preference Optimization)</strong> folds them into one — it adds a preference term to the SFT loss, so a single training run both teaches the task and aligns to preferences, <em>without a separate reference model or a separate SFT stage</em>. Simpler pipeline, one pass over the data.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">On the platform</p>
+          <p>Both route through the <strong>AlignmentHandler</strong> (Track 3's dispatcher) and score with an alignment metric like preference margin. And preflight will block a DPO run if the preference-training dependency is missing — a typed blocker, not a mid-run crash.</p>
+        </div>
+
+        <h2>When to reach for preference tuning</h2>
+        <ul>
+          <li><strong>Use SFT</strong> when there's a correct answer (classification, extraction, format).</li>
+          <li><strong>Add DPO/ORPO</strong> when "better" is a judgment: tone, helpfulness, refusing badly, verbosity, style.</li>
+          <li><strong>Prefer ORPO</strong> for a simpler one-stage pipeline; <strong>DPO</strong> when you already have a solid SFT checkpoint to align.</li>
+        </ul>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Preference tuning optimizes <strong>chosen over rejected</strong>, not a single right answer. <strong>DPO</strong> does this directly (no reward model) against a frozen <strong>reference</strong>, with <code>beta</code> controlling how far it moves; <strong>ORPO</strong> folds preference into the SFT loss for a one-stage run. Reach for them when 'better' is a judgment, not a label.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>preference data</dt><dd>(prompt, chosen, rejected) triples: two responses with one marked better.</dd>
+            <dt>DPO</dt><dd>Direct Preference Optimization — derives a loss from preference pairs directly, no separate reward model.</dd>
+            <dt>reference model</dt><dd>A frozen copy of the starting model DPO anchors to, so the policy doesn't drift arbitrarily.</dd>
+            <dt>beta</dt><dd>DPO's knob for how aggressively to move toward chosen responses vs stay near the reference.</dd>
+            <dt>ORPO</dt><dd>Odds Ratio Preference Optimization — adds a preference term to the SFT loss for single-stage alignment, no reference model.</dd>
+            <dt>AlignmentHandler</dt><dd>The BrewSLM task handler that runs preference objectives and scores alignment metrics.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What does preference data consist of?",
+    "options": [
+      "A single completion per prompt",
+      "(prompt, chosen, rejected) \u2014 two responses with one preferred",
+      "Only labels",
+      "Token logprobs"
+    ],
+    "answer": 1,
+    "explanation": "Preference tuning learns from chosen-over-rejected pairs."
+  },
+  {
+    "q": "How does DPO differ from classic RLHF?",
+    "options": [
+      "It needs a bigger model",
+      "It optimizes preferences directly, without training a separate reward model",
+      "It uses no data",
+      "It only does classification"
+    ],
+    "answer": 1,
+    "explanation": "DPO derives the loss from pairs directly, skipping the reward model + RL."
+  },
+  {
+    "q": "What does ORPO fold together?",
+    "options": [
+      "Two models",
+      "SFT and preference optimization into a single stage (no separate reference model)",
+      "Quantization and export",
+      "Two tokenizers"
+    ],
+    "answer": 1,
+    "explanation": "ORPO adds a preference term to the SFT loss for one-stage alignment."
+  },
+  {
+    "q": "When should you prefer SFT over DPO/ORPO?",
+    "options": [
+      "Never",
+      "When there's a single correct answer (classification, extraction, format)",
+      "Only on GPUs",
+      "When the model is large"
+    ],
+    "answer": 1,
+    "explanation": "Preference tuning is for judgment qualities; SFT is for correct answers."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="distillation-quality-retained.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Knowledge distillation III: did it work? Quality retained</span></a>
+          <a href="quantization-and-compression.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Quantization & compression: Q4_K_M, AWQ, GPTQ, GGUF, ONNX</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

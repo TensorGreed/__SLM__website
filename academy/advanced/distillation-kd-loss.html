@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Knowledge distillation II: the KD loss — BrewSLM Academy</title>
+    <meta name="description" content="The distillation objective blends two losses: hard-label cross-entropy and a temperature-softened KL divergence to the teacher, as alpha·CE + (1−alpha)·T²·KL. This lesson explains temperature, what each term contributes, and shows the loss in code." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/advanced/distillation-kd-loss.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Knowledge distillation II: the KD loss — BrewSLM Academy" />
+    <meta property="og:description" content="The distillation objective blends two losses: hard-label cross-entropy and a temperature-softened KL divergence to the teacher, as alpha·CE + (1−alpha)·T²·KL. This lesson explains temperature, what each term contributes, and shows the loss in code." />
+    <meta property="og:url" content="https://brewslm.com/academy/advanced/distillation-kd-loss.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Knowledge distillation II: the KD loss — BrewSLM Academy" />
+    <meta name="twitter:description" content="The distillation objective blends two losses: hard-label cross-entropy and a temperature-softened KL divergence to the teacher, as alpha·CE + (1−alpha)·T²·KL. This lesson explains temperature, what each term contributes, and shows the loss in code." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Knowledge distillation II: the KD loss",
+        "description": "The distillation objective blends two losses: hard-label cross-entropy and a temperature-softened KL divergence to the teacher, as alpha·CE + (1−alpha)·T²·KL. This lesson explains temperature, what each term contributes, and shows the loss in code.",
+        "url": "https://brewslm.com/academy/advanced/distillation-kd-loss.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Advanced", "timeRequired": "PT11M", "isAccessibleForFree": true,
+        "teaches": ["KD loss", "cross-entropy term", "KL divergence", "temperature", "alpha tradeoff", "T-squared factor"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Advanced", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Knowledge distillation II: the KD loss", "item": "https://brewslm.com/academy/advanced/distillation-kd-loss.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Knowledge distillation II: the KD loss"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What are the two terms of the KD loss?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Hard-label cross-entropy and a KL divergence to the teacher"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does raising the temperature T do?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Softens it so secondary token probabilities become visible"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why multiply the KL term by T\u00b2?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "To offset the ~1/T\u00b2 gradient shrink from softening, keeping the term's magnitude stable"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "alpha is set near 1.0. The student mostly learns from\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The gold labels (closer to plain SFT)"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="advanced/distillation-kd-loss">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html" aria-current="page">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Advanced</a></li><li>Distillation II: the KD loss</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 4 · Advanced · Lesson 3</span>
+          <h1>Knowledge distillation II: the KD loss</h1>
+          <p class="lesson-header__outcome">After this lesson you can read and reason about the KD loss alpha·CE + (1−alpha)·T²·KL — what temperature does, why the T² factor is there, and how alpha trades off the gold label against the teacher.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> advanced</span>
+            <span><strong>Read time:</strong> ~11 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="distillation-teacher-capture.html">Knowledge distillation I: the teacher and capturing its logits</a></span>
+          </div>
+        </header>
+
+        <p>You have the teacher's soft targets saved. The student learns from them through a loss with two parts: the ordinary supervised loss against the gold label, and a divergence from the teacher's distribution. BrewSLM's loss is exactly:</p>
+        <pre class="code-block"><code>loss = alpha * CE(student, gold_label)  +  (1 - alpha) * T^2 * KL(student_T || teacher_T)</code></pre>
+        <h2>Term one: cross-entropy on the hard label</h2>
+        <p>This is the SFT loss you already know (Track 1's cross-entropy lesson): the student is penalized for not putting probability on the correct gold token. It keeps the student anchored to the truth, even if the teacher is occasionally wrong.</p>
+
+        <h2>Term two: KL divergence to the teacher</h2>
+        <p><strong>KL divergence</strong> measures how far the student's distribution is from the teacher's. Minimizing it pulls the student's whole output distribution toward the teacher's — transferring the dark knowledge. We compute it on <strong>temperature-softened</strong> distributions.</p>
+
+        <h2>Temperature: softening the distribution</h2>
+        <p>Dividing logits by a <strong>temperature</strong> T before softmax flattens the distribution. At T=1 you get the normal probabilities; at T=2–4 the differences shrink, so small probabilities on the runner-up tokens become visible — and those secondary probabilities are precisely the relational signal you want to transfer. A peaky 99/1 distribution teaches almost nothing about the runner-up; softened to 80/20 it does.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Why the T² factor?</p>
+          <p>Softening by T shrinks the gradients of the KL term by roughly 1/T². Multiplying the KL term by <code>T²</code> rescales them back, so the soft-target loss keeps a consistent magnitude as you change temperature — and stays balanced against the CE term.</p>
+        </div>
+
+        <h2>Alpha: how much teacher vs how much truth</h2>
+        <p><code>alpha</code> in [0,1] balances the two terms. <strong>alpha → 1</strong> leans on the gold labels (closer to plain SFT); <strong>alpha → 0</strong> leans on the teacher's soft targets. A middle value (e.g. 0.5) is a common start: learn from the teacher's nuance while staying pinned to the ground truth.</p>
+
+        <h2>In code</h2>
+        <pre class="code-block"><code>import torch.nn.functional as F
+
+def kd_loss(student_logits, teacher_logits, labels, alpha=0.5, T=2.0):
+    # term 1: hard-label cross-entropy (the SFT loss, prompt masked with -100)
+    ce = F.cross_entropy(
+        student_logits.view(-1, student_logits.size(-1)),
+        labels.view(-1), ignore_index=-100)
+
+    # term 2: KL to the temperature-softened teacher distribution
+    s_log = F.log_softmax(student_logits / T, dim=-1)
+    t_prob = F.softmax(teacher_logits / T, dim=-1)
+    kl = F.kl_div(s_log, t_prob, reduction="batchmean") * (T * T)
+
+    return alpha * ce + (1.0 - alpha) * kl</code></pre>
+        <p>In BrewSLM this lives in a pure <code>kd_loss</code> function used by the offline <code>kd_trainer</code>, selected by setting <code>training_mode="distillation"</code> and a <code>recipe.kd.*</code> recipe. The trainer reads <code>teacher_capture.jsonl</code> (the top-k logprobs from lesson 4.2) as the teacher term. Otherwise it's the same training loop you already know — only the loss changed. The last distillation lesson asks the real question: how much of the teacher's quality did the student actually keep?</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>The KD loss is <strong>alpha·CE + (1−alpha)·T²·KL</strong>: cross-entropy anchors the student to the gold label; temperature-softened KL transfers the teacher's distribution; <strong>T²</strong> keeps the soft term's magnitude stable; <strong>alpha</strong> dials teacher-vs-truth. Same loop, richer loss.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>KD loss</dt><dd>alpha·CE + (1−alpha)·T²·KL — the blend of hard-label cross-entropy and teacher KL.</dd>
+            <dt>KL divergence</dt><dd>A measure of how far the student's distribution is from the teacher's; minimized to transfer knowledge.</dd>
+            <dt>temperature (T)</dt><dd>A divisor on logits before softmax; higher T softens the distribution to expose secondary probabilities.</dd>
+            <dt>T² factor</dt><dd>Rescales the KL term to offset the 1/T² gradient shrink from softening, keeping the term balanced.</dd>
+            <dt>alpha</dt><dd>The [0,1] weight trading the gold-label CE term against the teacher KL term.</dd>
+            <dt>kd_trainer</dt><dd>BrewSLM's offline distillation trainer that applies kd_loss against the captured teacher logprobs.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What are the two terms of the KD loss?",
+    "options": [
+      "Two cross-entropies",
+      "Hard-label cross-entropy and a KL divergence to the teacher",
+      "KL and BLEU",
+      "Accuracy and F1"
+    ],
+    "answer": 1,
+    "explanation": "alpha\u00b7CE (gold label) + (1\u2212alpha)\u00b7T\u00b2\u00b7KL (teacher distribution)."
+  },
+  {
+    "q": "What does raising the temperature T do?",
+    "options": [
+      "Sharpens the distribution",
+      "Softens it so secondary token probabilities become visible",
+      "Removes the CE term",
+      "Changes the tokenizer"
+    ],
+    "answer": 1,
+    "explanation": "Dividing logits by T flattens the distribution, exposing relational signal."
+  },
+  {
+    "q": "Why multiply the KL term by T\u00b2?",
+    "options": [
+      "To make it bigger arbitrarily",
+      "To offset the ~1/T\u00b2 gradient shrink from softening, keeping the term's magnitude stable",
+      "To convert to probabilities",
+      "To mask the prompt"
+    ],
+    "answer": 1,
+    "explanation": "T\u00b2 rescales the softened gradients back to a consistent scale."
+  },
+  {
+    "q": "alpha is set near 1.0. The student mostly learns from\u2026",
+    "options": [
+      "The teacher's soft targets",
+      "The gold labels (closer to plain SFT)",
+      "The temperature",
+      "The tokenizer"
+    ],
+    "answer": 1,
+    "explanation": "alpha\u21921 weights the CE/gold-label term; alpha\u21920 weights the teacher."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="distillation-teacher-capture.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Knowledge distillation I: the teacher and capturing its logits</span></a>
+          <a href="distillation-quality-retained.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Knowledge distillation III: did it work? Quality retained</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

@@ -76,6 +76,15 @@
       }
       return this._save(parsed);
     },
+    getName: function () {
+      var n = this.get().name;
+      return typeof n === "string" ? n : "";
+    },
+    setName: function (value) {
+      var state = this.get();
+      state.name = String(value || "").slice(0, 80);
+      return this._save(state);
+    },
   };
   window.AcademyProgress = AcademyProgress;
 
@@ -236,6 +245,91 @@
   }
 
   /* ── hub progress dashboard ──────────────────────────────────────── */
+  /* ── completion certificate ──────────────────────────────────────── */
+  function initCertificate() {
+    var root = document.querySelector("[data-certificate]");
+    if (!root) return;
+
+    // manifest of all lessons (denominator), embedded in the page
+    var manifest = [];
+    var mEl = root.querySelector('script[type="application/json"][data-academy-manifest]');
+    if (mEl) { try { manifest = JSON.parse(mEl.textContent) || []; } catch (e) { manifest = []; } }
+
+    var total = manifest.length;
+    var done = manifest.filter(function (m) { return AcademyProgress.isComplete(m.id); });
+    var doneCount = done.length;
+    var earned = total > 0 && doneCount === total;
+
+    // progress numbers
+    var pctEl = root.querySelector("[data-cert-pct]");
+    if (pctEl) pctEl.textContent = (total ? Math.round((doneCount / total) * 100) : 0) + "%";
+    var countEl = root.querySelector("[data-cert-count]");
+    if (countEl) countEl.textContent = doneCount + " of " + total;
+    var fill = root.querySelector("[data-cert-fill]");
+    if (fill) fill.style.width = (total ? Math.round((doneCount / total) * 100) : 0) + "%";
+
+    var earnedBox = root.querySelector("[data-cert-earned]");
+    var lockedBox = root.querySelector("[data-cert-locked]");
+
+    if (earned) {
+      if (earnedBox) earnedBox.classList.remove("is-hidden");
+      if (lockedBox) lockedBox.classList.add("is-hidden");
+
+      // name binding
+      var nameInput = root.querySelector("[data-cert-name]");
+      var nameOut = root.querySelector("[data-cert-name-out]");
+      function paintName() {
+        var n = (nameInput && nameInput.value.trim()) || AcademyProgress.getName() || "Anonymous learner";
+        if (nameOut) nameOut.textContent = n;
+      }
+      if (nameInput) {
+        nameInput.value = AcademyProgress.getName();
+        nameInput.addEventListener("input", function () {
+          AcademyProgress.setName(nameInput.value.trim());
+          paintName();
+        });
+      }
+      paintName();
+
+      // completion date — latest lesson timestamp, else today
+      var latest = 0;
+      var lessons = AcademyProgress.get().lessons || {};
+      Object.keys(lessons).forEach(function (k) {
+        var ts = lessons[k] && lessons[k].ts;
+        if (typeof ts === "number" && ts > latest) latest = ts;
+      });
+      var dateEl = root.querySelector("[data-cert-date]");
+      if (dateEl) {
+        var d = latest ? new Date(latest) : new Date();
+        dateEl.textContent = d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+      }
+
+      var printBtn = root.querySelector("[data-cert-print]");
+      if (printBtn) printBtn.addEventListener("click", function () { window.print(); });
+    } else {
+      if (earnedBox) earnedBox.classList.add("is-hidden");
+      if (lockedBox) lockedBox.classList.remove("is-hidden");
+
+      // list what's left, grouped by track
+      var remaining = manifest.filter(function (m) { return !AcademyProgress.isComplete(m.id); });
+      var listEl = root.querySelector("[data-cert-remaining]");
+      if (listEl) {
+        listEl.innerHTML = "";
+        remaining.forEach(function (m) {
+          var li = document.createElement("li");
+          var a = document.createElement("a");
+          a.className = "inline-link";
+          a.href = m.url;
+          a.textContent = (m.track ? m.track + " · " : "") + m.title;
+          li.appendChild(a);
+          listEl.appendChild(li);
+        });
+      }
+      var remCount = root.querySelector("[data-cert-remaining-count]");
+      if (remCount) remCount.textContent = remaining.length;
+    }
+  }
+
   function initHub() {
     var hub = document.querySelector("[data-academy-hub]");
     if (!hub) return;
@@ -323,5 +417,6 @@
     initToc();
     initQuizzes();
     initHub();
+    initCertificate();
   });
 })();

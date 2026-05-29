@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Knowledge distillation III: did it work? Quality retained — BrewSLM Academy</title>
+    <meta name="description" content="The point of distillation is a small model that keeps most of the teacher's quality. BrewSLM reports quality_retained = student_score / teacher_score on the same eval, so you can judge the size-for-quality trade and decide whether the distilled student is worth shipping." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/advanced/distillation-quality-retained.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Knowledge distillation III: did it work? Quality retained — BrewSLM Academy" />
+    <meta property="og:description" content="The point of distillation is a small model that keeps most of the teacher's quality. BrewSLM reports quality_retained = student_score / teacher_score on the same eval, so you can judge the size-for-quality trade and decide whether the distilled student is worth shipping." />
+    <meta property="og:url" content="https://brewslm.com/academy/advanced/distillation-quality-retained.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Knowledge distillation III: did it work? Quality retained — BrewSLM Academy" />
+    <meta name="twitter:description" content="The point of distillation is a small model that keeps most of the teacher's quality. BrewSLM reports quality_retained = student_score / teacher_score on the same eval, so you can judge the size-for-quality trade and decide whether the distilled student is worth shipping." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Knowledge distillation III: did it work? Quality retained",
+        "description": "The point of distillation is a small model that keeps most of the teacher's quality. BrewSLM reports quality_retained = student_score / teacher_score on the same eval, so you can judge the size-for-quality trade and decide whether the distilled student is worth shipping.",
+        "url": "https://brewslm.com/academy/advanced/distillation-quality-retained.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Advanced", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["quality retained", "student/teacher comparison", "size-quality tradeoff", "when distillation is worth it"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Advanced", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Knowledge distillation III: did it work? Quality retained", "item": "https://brewslm.com/academy/advanced/distillation-quality-retained.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Knowledge distillation III: did it work? Quality retained"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "How is quality_retained computed?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "student_score / teacher_score on the same eval"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "quality_retained = 0.97 at 2% of the size means\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The student kept ~97% of the teacher's quality while being far smaller"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "When does distillation earn its extra complexity?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Only when the distilled student beats a plain-SFT student of the same size"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What threshold of quality_retained is 'enough'?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It depends on the constraint that drove you to distill (latency, cost, quality-criticality)"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="advanced/distillation-quality-retained">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html" aria-current="page">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Advanced</a></li><li>Distillation III: quality retained</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 4 · Advanced · Lesson 4</span>
+          <h1>Knowledge distillation III: did it work? Quality retained</h1>
+          <p class="lesson-header__outcome">After this lesson you can interpret the quality-retained ratio, weigh it against the student's size and speed advantage, and decide whether a distilled model is worth shipping over the teacher or a plain SFT student.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> advanced</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="distillation-kd-loss.html">Knowledge distillation II: the KD loss</a></span>
+          </div>
+        </header>
+
+        <p>Distillation only matters if the student actually inherits the teacher's skill. So the evaluation isn't "is the student good?" in isolation — it's "how much of the teacher did the student keep, and is that enough given how much smaller it is?"</p>
+
+        <h2>The quality-retained ratio</h2>
+        <p>BrewSLM's student–teacher comparison runs the <em>same</em> evaluation on both models and reports:</p>
+        <pre class="code-block"><code>quality_retained = student_score / teacher_score
+
+# example, on the same gold set:
+#   teacher (7B)   accuracy = 0.94
+#   student (135M) accuracy = 0.91
+#   quality_retained = 0.91 / 0.94 = 0.97   →  97% of the teacher, at ~2% of the size</code></pre>
+        <p>A ratio near 1.0 means the student kept almost all of the teacher's quality. The decision is then simple economics: 97% of the quality at a fraction of the size, memory, and latency is usually an easy yes.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">From Track 3</p>
+          <p>This is the delta-from-baseline idea again, but the baseline is the <em>teacher</em>. Where Track 2/3 asked "did fine-tuning beat the base model?", distillation asks "did the student keep up with the teacher?" Same discipline: always measure against the thing you're trying to match.</p>
+        </div>
+
+        <h2>What counts as 'enough'?</h2>
+        <p>There's no universal threshold — it depends on the constraint that sent you to distillation:</p>
+        <ul>
+          <li><strong>Tight latency / edge device</strong>: you might accept 0.90 retained for a 50× smaller model that runs on a phone.</li>
+          <li><strong>Quality-critical</strong>: you might need 0.98+ before replacing the teacher, and otherwise keep the teacher for the hard cases.</li>
+          <li><strong>Cost at scale</strong>: even 0.95 retained can save enormous serving cost across millions of calls.</li>
+        </ul>
+
+        <h2>Distill, or just SFT the small model?</h2>
+        <p>The honest comparison is three-way: the teacher, a plain-SFT student, and a distilled student. Distillation earns its complexity only if the <strong>distilled student beats the plain-SFT student of the same size</strong>. If SFT alone gets you the same quality, you don't need the teacher. The comparison surface makes that explicit so you don't add machinery for nothing.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest metrics</p>
+          <p>Report the ratio that the eval actually produced, including where the student falls short of the teacher. A distilled model that retains 0.85 on the cases you care about is a 0.85 model — round it up and you'll be surprised in production.</p>
+        </div>
+
+        <p>That completes distillation: capture the teacher (4.2), train with the KD loss (4.3), and measure quality retained (4.4). Next we change the objective entirely — aligning a model to human preferences.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p><strong>quality_retained = student / teacher</strong> on the same eval is the verdict on a distillation. Near-1.0 at a fraction of the size is the win. Judge 'enough' by your constraint, and only prefer distillation over plain SFT when the distilled student actually beats the same-size SFT student.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>quality retained</dt><dd>student_score / teacher_score on the same evaluation — the fraction of the teacher's quality the student kept.</dd>
+            <dt>student–teacher comparison</dt><dd>Running the same eval on both models to compute quality retained.</dd>
+            <dt>size-quality tradeoff</dt><dd>Weighing the student's smaller size / lower latency against any quality lost.</dd>
+            <dt>distill-vs-SFT check</dt><dd>Confirming the distilled student beats a plain-SFT student of the same size before accepting the extra complexity.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "How is quality_retained computed?",
+    "options": [
+      "teacher / student",
+      "student_score / teacher_score on the same eval",
+      "student accuracy alone",
+      "1 minus the loss"
+    ],
+    "answer": 1,
+    "explanation": "It's the ratio of student to teacher score on the same evaluation."
+  },
+  {
+    "q": "quality_retained = 0.97 at 2% of the size means\u2026",
+    "options": [
+      "The student failed",
+      "The student kept ~97% of the teacher's quality while being far smaller",
+      "The teacher is bad",
+      "Distillation didn't run"
+    ],
+    "answer": 1,
+    "explanation": "Near-1.0 retention at a fraction of the size is the goal of distillation."
+  },
+  {
+    "q": "When does distillation earn its extra complexity?",
+    "options": [
+      "Always",
+      "Only when the distilled student beats a plain-SFT student of the same size",
+      "When the teacher is small",
+      "When alpha is 1"
+    ],
+    "answer": 1,
+    "explanation": "If SFT alone matches it, you don't need the teacher."
+  },
+  {
+    "q": "What threshold of quality_retained is 'enough'?",
+    "options": [
+      "Always 0.99",
+      "It depends on the constraint that drove you to distill (latency, cost, quality-criticality)",
+      "Exactly 0.90",
+      "There is no way to tell"
+    ],
+    "answer": 1,
+    "explanation": "The acceptable ratio depends on why you distilled in the first place."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="distillation-kd-loss.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Knowledge distillation II: the KD loss</span></a>
+          <a href="preference-tuning-dpo-orpo.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Preference tuning: DPO and ORPO</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

@@ -45,7 +45,11 @@
           { "@type": "DefinedTerm", "name": "RunEvent", "description": "An audit row a BrewSLM stage emits (reason code + severity) feeding the observability timeline and failure clusters." },
           { "@type": "DefinedTerm", "name": "Recipe", "description": "Declarative BrewSLM training config: base model, method, LoRA knobs, optimizer/schedule, batch, precision." },
           { "@type": "DefinedTerm", "name": "Eval pack", "description": "A declared set of metrics and promotion gates; the gates decide whether a trained model is promotable." },
-          { "@type": "DefinedTerm", "name": "Reroute-to-RAG", "description": "Cloning a project into a retrieval-first sibling that uses the base model plus retrieval, no LoRA." }
+          { "@type": "DefinedTerm", "name": "Reroute-to-RAG", "description": "Cloning a project into a retrieval-first sibling that uses the base model plus retrieval, no LoRA." },
+          { "@type": "DefinedTerm", "name": "Knowledge distillation", "description": "Training a small student model to reproduce a larger teacher model's outputs, to shrink at near-equal quality." },
+          { "@type": "DefinedTerm", "name": "KD loss", "description": "alpha-weighted cross-entropy blended with a temperature-softened KL divergence to the teacher: alpha*CE + (1-alpha)*T^2*KL." },
+          { "@type": "DefinedTerm", "name": "DPO", "description": "Direct Preference Optimization: learns from chosen-vs-rejected pairs directly, without a separate reward model." },
+          { "@type": "DefinedTerm", "name": "Quantization", "description": "Storing model weights in fewer bits (e.g. 4-bit Q4_K_M, AWQ, GPTQ) to shrink and speed up inference." }
         ]
       }
     </script>
@@ -226,6 +230,35 @@
           <dt id="runevent">RunEvent</dt><dd>An audit row a stage emits via <code>emit_event()</code> (reason code + severity) that feeds the observability timeline, failure clusters, and audit explorer. See <a class="inline-link" href="with-brewslm/from-script-to-platform.html">The lifecycle</a>.</dd>
           <dt id="source-locator">Source locator</dt><dd>A string naming where rows live for ingest: <code>hf:id:split</code>, <code>jsonl:/path</code>, <code>kaggle:...</code>.</dd>
           <dt id="task-handler">Task handler / dispatcher</dt><dd>A general, task-shape-named component (Classification, QA, StructuredExtraction, RAG, Alignment, Seq2Seq, …) that owns tokenization, masking, and <code>score()</code>; the dispatcher routes the manifest's task_profile to it.</dd>
+        </dl>
+
+        <h2>Track 4 — Advanced</h2>
+        <dl>
+          <dt id="alpha-kd">alpha (KD)</dt><dd>The [0,1] weight in the KD loss trading the gold-label cross-entropy term against the teacher KL term.</dd>
+          <dt id="awq">AWQ</dt><dd>Activation-aware Weight Quantization; protects activation-critical weights, GPU-oriented. See <a class="inline-link" href="advanced/quantization-and-compression.html">Quantization &amp; compression</a>.</dd>
+          <dt id="continuous-batching">Continuous batching</dt><dd>Swapping finished requests out and new ones in each generation step to keep the GPU saturated.</dd>
+          <dt id="curriculum">Curriculum learning</dt><dd>Ordering training data (often easy→hard) to improve convergence and final quality. See <a class="inline-link" href="advanced/multi-task-and-curriculum.html">Multi-task &amp; curriculum</a>.</dd>
+          <dt id="dark-knowledge">Dark knowledge</dt><dd>The relational signal in a soft distribution (which wrong answers are plausible) that one-hot labels discard.</dd>
+          <dt id="distillation">Distillation (KD)</dt><dd>Training a small student to reproduce a larger teacher's outputs, to shrink at near-equal quality. See <a class="inline-link" href="advanced/distillation-teacher-capture.html">Distillation I</a>.</dd>
+          <dt id="dpo">DPO</dt><dd>Direct Preference Optimization — learns from (chosen, rejected) pairs directly, no separate reward model. See <a class="inline-link" href="advanced/preference-tuning-dpo-orpo.html">Preference tuning</a>.</dd>
+          <dt id="drift">Drift / drift detection</dt><dd>Production quality decay as inputs change over time; detected by re-running the gold set against the live endpoint on a schedule. See <a class="inline-link" href="advanced/observability-and-drift.html">Observability &amp; drift</a>.</dd>
+          <dt id="gptq">GPTQ</dt><dd>One-shot, layer-wise post-training quantization that minimizes introduced error; GPU-oriented.</dd>
+          <dt id="kd-loss">KD loss</dt><dd><code>alpha·CE + (1−alpha)·T²·KL</code> — hard-label cross-entropy blended with a temperature-softened KL to the teacher. See <a class="inline-link" href="advanced/distillation-kd-loss.html">The KD loss</a>.</dd>
+          <dt id="kl-divergence">KL divergence</dt><dd>A measure of how far the student's distribution is from the teacher's; minimized to transfer knowledge.</dd>
+          <dt id="kv-cache">KV cache</dt><dd>Stored attention keys/values for prior tokens so each generation step only computes the new token's. See <a class="inline-link" href="advanced/serving-and-inference.html">Serving &amp; inference</a>.</dd>
+          <dt id="latency-throughput">Latency vs throughput</dt><dd>Per-request speed vs total tokens/second; larger batches favor throughput over latency.</dd>
+          <dt id="multi-task">Multi-task training</dt><dd>Training one model on several tasks at once; positive transfer if they share structure, interference if not.</dd>
+          <dt id="orpo">ORPO</dt><dd>Odds Ratio Preference Optimization — adds a preference term to the SFT loss for single-stage alignment, no reference model.</dd>
+          <dt id="post-training-quant">Post-training quantization</dt><dd>Quantizing a finished model by conversion, with no retraining.</dd>
+          <dt id="q4km">Q4_K_M</dt><dd>A 4-bit mixed-precision k-quant (llama.cpp / GGUF); the common CPU/edge sweet spot.</dd>
+          <dt id="quality-retained">Quality retained</dt><dd><code>student_score / teacher_score</code> on the same eval — the fraction of the teacher's quality a distilled student kept. See <a class="inline-link" href="advanced/distillation-quality-retained.html">Quality retained</a>.</dd>
+          <dt id="reference-model">Reference model</dt><dd>A frozen copy of the starting model that DPO anchors to, so the policy doesn't drift arbitrarily.</dd>
+          <dt id="soft-targets">Soft targets</dt><dd>A teacher's full probability distribution over tokens — a richer training signal than a hard label.</dd>
+          <dt id="task-interference">Task interference</dt><dd>Negative transfer — unrelated or imbalanced tasks degrading each other in multi-task training.</dd>
+          <dt id="teacher-student">Teacher / student</dt><dd>The large source model and the small model trained to mimic it in distillation.</dd>
+          <dt id="temperature">Temperature (T)</dt><dd>A divisor on logits before softmax; higher T softens the distribution to expose secondary probabilities for KD.</dd>
+          <dt id="topk-logprobs">Top-k logprobs</dt><dd>The k most likely tokens and their log-probabilities per position; a compact offline capture of the teacher's distribution.</dd>
+          <dt id="vllm">vLLM</dt><dd>A high-throughput inference server using paged attention to manage the KV cache.</dd>
         </dl>
       </section>
 

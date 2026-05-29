@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quantization & compression: Q4_K_M, AWQ, GPTQ, GGUF, ONNX — BrewSLM Academy</title>
+    <meta name="description" content="Quantization stores weights in fewer bits to shrink a model and speed up inference. This lesson covers post-training quantization, the common methods (Q4_K_M k-quants, AWQ, GPTQ), the container formats (GGUF, ONNX, safetensors), the quality-size-speed trade, and how BrewSLM's export tracks the variants." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/advanced/quantization-and-compression.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Quantization & compression: Q4_K_M, AWQ, GPTQ, GGUF, ONNX — BrewSLM Academy" />
+    <meta property="og:description" content="Quantization stores weights in fewer bits to shrink a model and speed up inference. This lesson covers post-training quantization, the common methods (Q4_K_M k-quants, AWQ, GPTQ), the container formats (GGUF, ONNX, safetensors), the quality-size-speed trade, and how BrewSLM's export tracks the variants." />
+    <meta property="og:url" content="https://brewslm.com/academy/advanced/quantization-and-compression.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Quantization & compression: Q4_K_M, AWQ, GPTQ, GGUF, ONNX — BrewSLM Academy" />
+    <meta name="twitter:description" content="Quantization stores weights in fewer bits to shrink a model and speed up inference. This lesson covers post-training quantization, the common methods (Q4_K_M k-quants, AWQ, GPTQ), the container formats (GGUF, ONNX, safetensors), the quality-size-speed trade, and how BrewSLM's export tracks the variants." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Quantization & compression: Q4_K_M, AWQ, GPTQ, GGUF, ONNX",
+        "description": "Quantization stores weights in fewer bits to shrink a model and speed up inference. This lesson covers post-training quantization, the common methods (Q4_K_M k-quants, AWQ, GPTQ), the container formats (GGUF, ONNX, safetensors), the quality-size-speed trade, and how BrewSLM's export tracks the variants.",
+        "url": "https://brewslm.com/academy/advanced/quantization-and-compression.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Advanced", "timeRequired": "PT11M", "isAccessibleForFree": true,
+        "teaches": ["quantization", "post-training quantization", "Q4_K_M k-quants", "AWQ", "GPTQ", "GGUF", "ONNX", "quality-size-speed tradeoff"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Advanced", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Quantization & compression: Q4_K_M, AWQ, GPTQ, GGUF, ONNX", "item": "https://brewslm.com/academy/advanced/quantization-and-compression.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Quantization & compression: Q4_K_M, AWQ, GPTQ, GGUF, ONNX"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What does quantization trade?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A small quality cost for much smaller size and often faster inference"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Q4_K_M is a quantization ___, and GGUF is a ___.",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "method / container format"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "For CPU/edge deployment, the common choice is\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "GGUF + Q4_K_M"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What must you do after quantizing?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Re-run your gold set \u2014 quantization can change outputs"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="advanced/quantization-and-compression">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html" aria-current="page">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Advanced</a></li><li>Quantization & compression</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 4 · Advanced · Lesson 6</span>
+          <h1>Quantization & compression: Q4_K_M, AWQ, GPTQ, GGUF, ONNX</h1>
+          <p class="lesson-header__outcome">After this lesson you can explain what quantization trades away, distinguish the common methods (Q4_K_M, AWQ, GPTQ) and formats (GGUF, ONNX, safetensors), and pick a quantization target for a deployment constraint.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> advanced</span>
+            <span><strong>Read time:</strong> ~11 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="preference-tuning-dpo-orpo.html">Preference tuning: DPO and ORPO</a></span>
+          </div>
+        </header>
+
+        <p>A model's weights are numbers. Storing each in 16 bits (bf16) is the training default; storing them in 4 bits makes the model ~4× smaller and often faster, for a small quality cost. That's <strong>quantization</strong>, and it's how a model that needed a server ends up running on a laptop.</p>
+
+        <h2>Post-training quantization</h2>
+        <p>You already met QLoRA (Track 1) — training <em>on</em> a quantized base. Here we quantize <strong>after</strong> training: take the finished model and convert its weights to a lower-bit format. No retraining, just a conversion. The art is doing it without wrecking quality — naive rounding loses too much, so the methods below are smarter about <em>which</em> values get how many bits.</p>
+
+        <h2>The methods</h2>
+        <ul>
+          <li><strong>Q4_K_M</strong> — a 4-bit "k-quant" from the llama.cpp family. The <code>K</code> means mixed precision within the model (more bits for the sensitive layers); <code>M</code> is the medium-size variant. The default sweet spot for CPU/edge: ~4× smaller, small quality loss.</li>
+          <li><strong>AWQ</strong> (Activation-aware Weight Quantization) — protects the weights that matter most to activations; strong for GPU inference.</li>
+          <li><strong>GPTQ</strong> — a one-shot, layer-by-layer quantization that minimizes the error introduced; also GPU-oriented.</li>
+        </ul>
+
+        <h2>The formats (the container, not the method)</h2>
+        <p>Don't confuse the quantization <em>method</em> with the file <em>format</em>:</p>
+        <ul>
+          <li><strong>GGUF</strong> — the llama.cpp format; the home of Q4_K_M and friends; great for CPU/edge.</li>
+          <li><strong>safetensors / HF</strong> — full- or half-precision weights for the Transformers/vLLM stack on GPU.</li>
+          <li><strong>ONNX</strong> — a cross-runtime graph format for portable inference across engines and hardware.</li>
+        </ul>
+
+        <h2>On the platform</h2>
+        <p>This is Track 3's Export stage (10), with quantization as a first-class choice. The export emits the artifact plus a smoke-check trace, and the variant is tracked so the Compression page knows what exists:</p>
+        <pre class="code-block"><code>export → format: gguf,  quant: Q4_K_M        # CPU / edge
+       → format: safetensors                  # full precision, GPU
+       → format: onnx                          # cross-runtime
+# tracked variants: Q4_K_M | AWQ | GPTQ   (the Compression page lists them)
+# RunEvent: export (info) — or export_quantization_failed on the named failure</code></pre>
+        <div class="callout callout--warning">
+          <p class="callout__label">Always re-evaluate after quantizing</p>
+          <p>Quantization changes the model's numbers, so it can change its outputs. Re-run your gold set on the quantized artifact — a 4-bit model that's 0.5% worse may be a great trade, but you only know if you measure. The export's smoke check is a floor, not a substitute for your eval.</p>
+        </div>
+
+        <h2>Picking a target</h2>
+        <ul>
+          <li><strong>Laptop / phone / CPU</strong> → GGUF + Q4_K_M.</li>
+          <li><strong>GPU server, throughput-first</strong> → AWQ or GPTQ in the vLLM stack.</li>
+          <li><strong>Portability across runtimes</strong> → ONNX.</li>
+          <li><strong>Quality-critical, room to spare</strong> → keep safetensors at bf16.</li>
+        </ul>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Quantization shrinks a trained model by storing weights in fewer bits. <strong>Method</strong> (Q4_K_M / AWQ / GPTQ) ≠ <strong>format</strong> (GGUF / ONNX / safetensors). Pick by deployment target, and <strong>always re-evaluate</strong> — the size win is only real if quality holds.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>quantization</dt><dd>Storing model weights in fewer bits (e.g. 4) to shrink and speed up inference.</dd>
+            <dt>post-training quantization</dt><dd>Quantizing a finished model by conversion, with no retraining.</dd>
+            <dt>Q4_K_M</dt><dd>A 4-bit mixed-precision k-quant (llama.cpp/GGUF); the common CPU/edge sweet spot.</dd>
+            <dt>AWQ</dt><dd>Activation-aware Weight Quantization; protects activation-critical weights, GPU-oriented.</dd>
+            <dt>GPTQ</dt><dd>One-shot, layer-wise quantization minimizing introduced error; GPU-oriented.</dd>
+            <dt>GGUF / ONNX</dt><dd>Container formats — GGUF for llama.cpp/edge, ONNX for cross-runtime portability.</dd>
+            <dt>Compression page</dt><dd>The BrewSLM surface tracking which quantized variants of a model exist.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What does quantization trade?",
+    "options": [
+      "Speed for accuracy always",
+      "A small quality cost for much smaller size and often faster inference",
+      "Tokenizer for vocabulary",
+      "Data for labels"
+    ],
+    "answer": 1,
+    "explanation": "Fewer bits = smaller/faster, usually for a small, measurable quality cost."
+  },
+  {
+    "q": "Q4_K_M is a quantization ___, and GGUF is a ___.",
+    "options": [
+      "format / method",
+      "method / container format",
+      "loss / optimizer",
+      "model / tokenizer"
+    ],
+    "answer": 1,
+    "explanation": "Q4_K_M is a 4-bit method; GGUF is the file/container format it lives in."
+  },
+  {
+    "q": "For CPU/edge deployment, the common choice is\u2026",
+    "options": [
+      "safetensors bf16",
+      "GGUF + Q4_K_M",
+      "ONNX only",
+      "Full precision HF"
+    ],
+    "answer": 1,
+    "explanation": "GGUF with a 4-bit k-quant like Q4_K_M targets CPU/edge."
+  },
+  {
+    "q": "What must you do after quantizing?",
+    "options": [
+      "Nothing",
+      "Re-run your gold set \u2014 quantization can change outputs",
+      "Retrain from scratch",
+      "Change the tokenizer"
+    ],
+    "answer": 1,
+    "explanation": "Always re-evaluate; the size win is only real if quality holds."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="preference-tuning-dpo-orpo.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Preference tuning: DPO and ORPO</span></a>
+          <a href="multi-task-and-curriculum.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Multi-task training and curriculum</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

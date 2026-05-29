@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Observability and drift in production — BrewSLM Academy</title>
+    <meta name="description" content="Shipping a model isn't the end — production quality decays as the world changes. This lesson covers the RunEvent audit spine, scheduled drift checks that re-run the gold set against the live endpoint, the support bundle, and how to decide when to retrain." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/advanced/observability-and-drift.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Observability and drift in production — BrewSLM Academy" />
+    <meta property="og:description" content="Shipping a model isn't the end — production quality decays as the world changes. This lesson covers the RunEvent audit spine, scheduled drift checks that re-run the gold set against the live endpoint, the support bundle, and how to decide when to retrain." />
+    <meta property="og:url" content="https://brewslm.com/academy/advanced/observability-and-drift.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Observability and drift in production — BrewSLM Academy" />
+    <meta name="twitter:description" content="Shipping a model isn't the end — production quality decays as the world changes. This lesson covers the RunEvent audit spine, scheduled drift checks that re-run the gold set against the live endpoint, the support bundle, and how to decide when to retrain." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Observability and drift in production",
+        "description": "Shipping a model isn't the end — production quality decays as the world changes. This lesson covers the RunEvent audit spine, scheduled drift checks that re-run the gold set against the live endpoint, the support bundle, and how to decide when to retrain.",
+        "url": "https://brewslm.com/academy/advanced/observability-and-drift.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Advanced", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["observability", "RunEvent spine", "drift detection", "support bundle", "when to retrain"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Advanced", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Observability and drift in production", "item": "https://brewslm.com/academy/advanced/observability-and-drift.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Observability and drift in production"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "Why is RunEvent emission best-effort (wrapped in try/except)?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "So a bug in observability can never break the data or training path"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is drift?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Production quality decay as input distributions change over time"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does BrewSLM detect drift?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "By re-running the gold set against the live endpoint on a schedule"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Drift is detected. The right response is usually\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Gather recent inputs, re-prepare, retrain, and re-evaluate against the same gates"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="advanced/observability-and-drift">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html" aria-current="page">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Advanced</a></li><li>Observability & drift</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 4 · Advanced · Lesson 9</span>
+          <h1>Observability and drift in production</h1>
+          <p class="lesson-header__outcome">After this lesson you can explain how the RunEvent spine makes a pipeline observable, what drift detection does, and how to decide when a production model needs retraining.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> advanced</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="serving-and-inference.html">Serving and inference optimization</a></span>
+          </div>
+        </header>
+
+        <p>A deployed model meets inputs you never trained on, and the world it learned keeps moving. <strong>Observability</strong> is how you notice when it stops being good — before your users do.</p>
+
+        <h2>The RunEvent spine, recapped</h2>
+        <p>From Track 3: every stage emits a <code>RunEvent</code> via <code>emit_event()</code> — a reason code from a lint-gated taxonomy plus a severity (info / warning / error / critical). One stream feeds every observability surface: the timeline, the failure-cluster view, the audit explorer, and the support bundle. The emission is best-effort (wrapped in try/except at each call site), so a bug in observability can never break the actual data or training path. That single design choice is what makes the whole pipeline debuggable after the fact.</p>
+
+        <h2>Drift: quality decays quietly</h2>
+        <p>A model that scored 0.93 at launch can be 0.80 six months later without anyone touching it — because the <em>inputs</em> drifted. New slang, new product names, a new kind of customer. This is <strong>drift</strong>, and it's invisible unless you measure for it.</p>
+
+        <h2>Drift detection: re-run the gold set on the live endpoint</h2>
+        <p>BrewSLM's deploy stage (Track 3) includes a scheduled <strong>drift check</strong>: it periodically re-runs your gold set against the <em>live</em> endpoint and compares to the launch baseline. A significant drop emits <code>deployment_drift_detected</code> — the same gold set you built in Track 1, now a production sensor.</p>
+        <pre class="code-block"><code># scheduled drift check (deploy stage)
+re-run gold set vs live endpoint
+  launch:  accuracy 0.93
+  today:   accuracy 0.86   → drift!  emit deployment_drift_detected
+# also: deployment_smoke_failed (promote-time), deployment_promote_blocked</code></pre>
+        <div class="callout callout--note">
+          <p class="callout__label">Your gold set keeps working</p>
+          <p>The gold set you curated for evaluation doesn't retire at launch — it becomes the regression sensor that watches the live model forever. That's a big payoff for the work you put into it in Track 1.</p>
+        </div>
+
+        <h2>When to retrain</h2>
+        <p>Drift detection tells you <em>that</em> quality dropped; deciding what to do is judgment:</p>
+        <ul>
+          <li><strong>Drift detected</strong> → gather recent real inputs, add them (via the review queue), re-prepare, re-train, re-evaluate against the same gates. The Track 3 loop, triggered by a signal instead of a hunch.</li>
+          <li><strong>New failure clusters</strong> in production logs → a targeted data fix (augment_from_cluster), not a full retrain.</li>
+          <li><strong>Stable</strong> → leave it alone. Retraining a healthy model just risks regressions.</li>
+        </ul>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>The <strong>RunEvent spine</strong> makes every stage observable; best-effort emission means observability never breaks the data path. <strong>Drift detection</strong> re-runs your gold set against the live endpoint on a schedule, turning it into a production sensor — and a drop is the signal to gather fresh data and retrain through the same gates.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>observability</dt><dd>The ability to see what the pipeline did and how the live model is performing.</dd>
+            <dt>RunEvent spine</dt><dd>The one event stream every stage emits to, feeding all monitoring surfaces; best-effort so it can't break the data path.</dd>
+            <dt>drift</dt><dd>Production quality decay caused by input distributions changing over time.</dd>
+            <dt>drift detection</dt><dd>A scheduled re-run of the gold set against the live endpoint to catch quality drops.</dd>
+            <dt>support bundle</dt><dd>A consumer of the RunEvent stream packaging the events/state needed to debug an issue.</dd>
+            <dt>retrain trigger</dt><dd>Using a drift signal or new failure clusters to decide when to gather data and retrain.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "Why is RunEvent emission best-effort (wrapped in try/except)?",
+    "options": [
+      "To save tokens",
+      "So a bug in observability can never break the data or training path",
+      "To speed up training",
+      "To skip evaluation"
+    ],
+    "answer": 1,
+    "explanation": "Observability must never compromise the actual work it observes."
+  },
+  {
+    "q": "What is drift?",
+    "options": [
+      "A training bug",
+      "Production quality decay as input distributions change over time",
+      "A quantization format",
+      "A tokenizer error"
+    ],
+    "answer": 1,
+    "explanation": "The world moves; inputs change; a static model silently gets worse."
+  },
+  {
+    "q": "How does BrewSLM detect drift?",
+    "options": [
+      "By watching GPU temperature",
+      "By re-running the gold set against the live endpoint on a schedule",
+      "By counting tokens",
+      "By re-exporting"
+    ],
+    "answer": 1,
+    "explanation": "The gold set becomes a scheduled production regression sensor."
+  },
+  {
+    "q": "Drift is detected. The right response is usually\u2026",
+    "options": [
+      "Ignore it",
+      "Gather recent inputs, re-prepare, retrain, and re-evaluate against the same gates",
+      "Delete the deployment",
+      "Increase the temperature"
+    ],
+    "answer": 1,
+    "explanation": "A drift signal triggers the Track 3 data-and-retrain loop."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="serving-and-inference.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Serving and inference optimization</span></a>
+          <a href="capstone-graduating.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Capstone C: choosing the right technique, and graduating</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

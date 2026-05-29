@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Serving and inference optimization — BrewSLM Academy</title>
+    <meta name="description" content="Training is half the job; serving the model fast and cheaply is the other half. This lesson covers the inference server (vLLM), the KV cache, continuous batching, the latency-versus-throughput trade, and how quantized serving lowers cost." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/advanced/serving-and-inference.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Serving and inference optimization — BrewSLM Academy" />
+    <meta property="og:description" content="Training is half the job; serving the model fast and cheaply is the other half. This lesson covers the inference server (vLLM), the KV cache, continuous batching, the latency-versus-throughput trade, and how quantized serving lowers cost." />
+    <meta property="og:url" content="https://brewslm.com/academy/advanced/serving-and-inference.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Serving and inference optimization — BrewSLM Academy" />
+    <meta name="twitter:description" content="Training is half the job; serving the model fast and cheaply is the other half. This lesson covers the inference server (vLLM), the KV cache, continuous batching, the latency-versus-throughput trade, and how quantized serving lowers cost." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Serving and inference optimization",
+        "description": "Training is half the job; serving the model fast and cheaply is the other half. This lesson covers the inference server (vLLM), the KV cache, continuous batching, the latency-versus-throughput trade, and how quantized serving lowers cost.",
+        "url": "https://brewslm.com/academy/advanced/serving-and-inference.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Advanced", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["inference server", "vLLM", "KV cache", "continuous batching", "latency vs throughput", "quantized serving"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Advanced", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Serving and inference optimization", "item": "https://brewslm.com/academy/advanced/serving-and-inference.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Serving and inference optimization"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What does the KV cache avoid?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Recomputing attention keys/values for the whole prefix at every step"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does continuous batching achieve?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Keeping the GPU saturated by swapping finished/new requests each step"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Bigger batches generally\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Raise throughput (cheaper) but can raise per-request latency"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does quantization help serving beyond disk size?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Less memory means a bigger KV cache / larger batches fit, raising throughput"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="advanced/serving-and-inference">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html" aria-current="page">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Advanced</a></li><li>Serving & inference</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 4 · Advanced · Lesson 8</span>
+          <h1>Serving and inference optimization</h1>
+          <p class="lesson-header__outcome">After this lesson you can explain what an inference server does, why the KV cache and continuous batching matter, the latency-vs-throughput trade-off, and how serving choices connect to the quantization you learned in 4.6.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> advanced</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="multi-task-and-curriculum.html">Multi-task training and curriculum</a></span>
+          </div>
+        </header>
+
+        <p>You exported and deployed a model in Track 3. This lesson is what's happening inside that endpoint — and the knobs that decide whether it costs you a little or a lot to run.</p>
+
+        <h2>What an inference server does</h2>
+        <p>A naive loop calls <code>model.generate()</code> for one request at a time — fine for a demo, terrible for production. An <strong>inference server</strong> like <strong>vLLM</strong> sits in front of the model and turns it into an efficient, concurrent service: it batches requests, manages memory, and streams tokens back. BrewSLM's deploy targets a vLLM endpoint (among others).</p>
+
+        <h2>The KV cache: don't recompute the past</h2>
+        <p>Generation is autoregressive (Track 0): each new token attends to all previous tokens. Recomputing the attention keys and values for the whole prefix at every step would be quadratic waste. The <strong>KV cache</strong> stores those keys and values so each step only computes the <em>new</em> token's — the single biggest reason generation is tractable. Its cost is memory: the cache grows with sequence length and batch size, and managing it well (vLLM's paged attention) is most of what a serving engine does.</p>
+
+        <h2>Continuous batching: keep the GPU full</h2>
+        <p>Requests arrive at different times and finish at different lengths. Static batching waits for a whole batch, then runs it to completion — leaving the GPU idle as fast requests wait for slow ones. <strong>Continuous batching</strong> swaps finished sequences out and new ones in every step, keeping the GPU saturated. This is the main reason a good server delivers many times the throughput of a loop.</p>
+
+        <h2>Latency vs throughput: the core trade</h2>
+        <ul>
+          <li><strong>Latency</strong> — time to first/!last token for one request. What an interactive user feels.</li>
+          <li><strong>Throughput</strong> — total tokens/second across all requests. What sets your cost per million tokens.</li>
+        </ul>
+        <p>They pull against each other: bigger batches raise throughput (cheaper) but can raise per-request latency. Tune to the use case — a chat UI optimizes latency; a nightly batch job optimizes throughput.</p>
+        <pre class="code-block"><code># same model, two serving goals
+chat UI (interactive)  -&gt;  small batches, low latency      (fast first token)
+batch job (offline)    -&gt;  large batches, high throughput  (cheap per token)
+
+# quantized weights (AWQ / GPTQ) use less memory
+#   -&gt; a bigger KV cache + larger batches fit -&gt; more throughput</code></pre>
+        <div class="callout callout--note">
+          <p class="callout__label">From 4.6</p>
+          <p>Quantized serving compounds these wins: a 4-bit model (AWQ/GPTQ on GPU) uses less memory, which means a <em>bigger KV cache and larger batches</em> fit — so quantization buys throughput, not just disk size. Serving and compression are one decision.</p>
+        </div>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>A serving engine like vLLM turns a model into a cheap, concurrent service via the <strong>KV cache</strong> (don't recompute the prefix) and <strong>continuous batching</strong> (keep the GPU full). Tune the <strong>latency-vs-throughput</strong> trade to the use case, and remember quantization buys serving headroom, not just disk.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>inference server</dt><dd>A service (e.g. vLLM) that batches, schedules, and streams generation efficiently.</dd>
+            <dt>vLLM</dt><dd>A high-throughput inference engine using paged attention for KV-cache management.</dd>
+            <dt>KV cache</dt><dd>Stored attention keys/values for prior tokens so each step only computes the new token's.</dd>
+            <dt>continuous batching</dt><dd>Swapping finished requests out and new ones in each step to keep the GPU saturated.</dd>
+            <dt>latency vs throughput</dt><dd>Per-request speed vs total tokens/second; bigger batches favor throughput over latency.</dd>
+            <dt>quantized serving</dt><dd>Serving a low-bit model so more KV cache / larger batches fit, raising throughput.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What does the KV cache avoid?",
+    "options": [
+      "Tokenization",
+      "Recomputing attention keys/values for the whole prefix at every step",
+      "Loading the model",
+      "The loss"
+    ],
+    "answer": 1,
+    "explanation": "It stores prior keys/values so each step only computes the new token's."
+  },
+  {
+    "q": "What does continuous batching achieve?",
+    "options": [
+      "Smaller models",
+      "Keeping the GPU saturated by swapping finished/new requests each step",
+      "Lower accuracy",
+      "Bigger files"
+    ],
+    "answer": 1,
+    "explanation": "It avoids idling the GPU while fast requests wait for slow ones."
+  },
+  {
+    "q": "Bigger batches generally\u2026",
+    "options": [
+      "Lower throughput",
+      "Raise throughput (cheaper) but can raise per-request latency",
+      "Always lower latency",
+      "Change the tokenizer"
+    ],
+    "answer": 1,
+    "explanation": "Throughput and latency trade off; tune to the use case."
+  },
+  {
+    "q": "How does quantization help serving beyond disk size?",
+    "options": [
+      "It doesn't",
+      "Less memory means a bigger KV cache / larger batches fit, raising throughput",
+      "It removes the KV cache",
+      "It increases latency"
+    ],
+    "answer": 1,
+    "explanation": "Lower memory use buys serving headroom, hence throughput."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="multi-task-and-curriculum.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Multi-task training and curriculum</span></a>
+          <a href="observability-and-drift.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Observability and drift in production</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

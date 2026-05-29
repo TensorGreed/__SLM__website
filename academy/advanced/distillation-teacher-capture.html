@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Knowledge distillation I: the teacher and capturing its logits — BrewSLM Academy</title>
+    <meta name="description" content="Knowledge distillation trains a small student to mimic a larger teacher. This lesson covers why distillation works, the offline workflow BrewSLM uses, the same-tokenizer assumption, and how the teacher's top-k logprobs are captured to teacher_capture.jsonl so the expensive teacher runs only once." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/advanced/distillation-teacher-capture.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Knowledge distillation I: the teacher and capturing its logits — BrewSLM Academy" />
+    <meta property="og:description" content="Knowledge distillation trains a small student to mimic a larger teacher. This lesson covers why distillation works, the offline workflow BrewSLM uses, the same-tokenizer assumption, and how the teacher's top-k logprobs are captured to teacher_capture.jsonl so the expensive teacher runs only once." />
+    <meta property="og:url" content="https://brewslm.com/academy/advanced/distillation-teacher-capture.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Knowledge distillation I: the teacher and capturing its logits — BrewSLM Academy" />
+    <meta name="twitter:description" content="Knowledge distillation trains a small student to mimic a larger teacher. This lesson covers why distillation works, the offline workflow BrewSLM uses, the same-tokenizer assumption, and how the teacher's top-k logprobs are captured to teacher_capture.jsonl so the expensive teacher runs only once." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Knowledge distillation I: the teacher and capturing its logits",
+        "description": "Knowledge distillation trains a small student to mimic a larger teacher. This lesson covers why distillation works, the offline workflow BrewSLM uses, the same-tokenizer assumption, and how the teacher's top-k logprobs are captured to teacher_capture.jsonl so the expensive teacher runs only once.",
+        "url": "https://brewslm.com/academy/advanced/distillation-teacher-capture.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Advanced", "timeRequired": "PT11M", "isAccessibleForFree": true,
+        "teaches": ["knowledge distillation", "teacher and student", "soft targets", "top-k logprobs", "offline capture", "same-tokenizer assumption"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Advanced", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Knowledge distillation I: the teacher and capturing its logits", "item": "https://brewslm.com/academy/advanced/distillation-teacher-capture.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Knowledge distillation I: the teacher and capturing its logits"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "Why are soft targets richer than hard labels?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "They encode the teacher's uncertainty and how classes relate"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does BrewSLM capture distillation offline?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "So the expensive teacher runs once, then the student trains against the saved file repeatedly"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why store only top-k logprobs instead of the full distribution?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Almost all probability mass is on a few tokens, so top-k captures the signal at a fraction of the size"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why must teacher and student share a tokenizer in this offline KD?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "So captured token ids refer to the same tokens for both models"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="advanced/distillation-teacher-capture">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html">With BrewSLM</a>
+        <a href="../index.html" aria-current="page">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">Advanced</a></li><li>Distillation I: teacher capture</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 4 · Advanced · Lesson 2</span>
+          <h1>Knowledge distillation I: the teacher and capturing its logits</h1>
+          <p class="lesson-header__outcome">After this lesson you can explain why a teacher's soft probabilities carry more signal than hard labels, why BrewSLM captures distillation offline as top-k logprobs, and the same-tokenizer constraint that makes it work.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> advanced</span>
+            <span><strong>Read time:</strong> ~11 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="beyond-a-single-run.html">Beyond a single SFT run: the advanced toolkit</a></span>
+          </div>
+        </header>
+
+        <p>You can train a 135M model to do a task. But what if a 7B model does it noticeably better, and you still need the small one's speed and cost? <strong>Knowledge distillation</strong> closes that gap: the big <em>teacher</em> trains the small <em>student</em> to imitate it, transferring more than a label file ever could.</p>
+
+        <h2>Why mimic, instead of just using more labels?</h2>
+        <p>A hard label says "this review is positive" — one bit. The teacher's full output is a <strong>probability distribution</strong> over the vocabulary: "92% positive, 7% neutral, 1% negative." That distribution encodes the teacher's <em>uncertainty and its sense of how classes relate</em> — the "dark knowledge" a one-hot label throws away. Training the student to match the distribution (its <strong>soft targets</strong>) transfers far more signal per example than the label alone.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">From Track 1</p>
+          <p>Recall that the model's final layer produces <strong>logits</strong>, and softmax turns them into probabilities. Distillation supervises the student on the teacher's softmaxed logits, not just the gold token — the same machinery, a richer target.</p>
+        </div>
+
+        <h2>Offline distillation: run the teacher once</h2>
+        <p>The teacher is big and slow. Running it on every training step (online distillation) is expensive. BrewSLM does <strong>offline</strong> distillation: run the teacher across your dataset <em>once</em>, save what it produced, then train the student against that saved file as many times as you like. The capture step is a background Job:</p>
+        <pre class="code-block"><code>POST /api/projects/&lt;id&gt;/distillation/capture     → starts a background Job
+# writes one row per example to:
+#   data/projects/&lt;id&gt;/distillation/teacher_capture.jsonl</code></pre>
+        <h2>Capture top-k logprobs, not the whole vocabulary</h2>
+        <p>Saving the teacher's full distribution would mean a probability for every one of ~50,000 vocabulary tokens, per position — enormous. Almost all of that mass sits on a handful of tokens, so the capture keeps only the <strong>top-k</strong> per position: the k most likely token ids and their log-probabilities.</p>
+        <pre class="code-block"><code>{ "input_ids":      [1, 4521, 318, ...],
+  "topk_ids":       [[2762, 318, 257], ...],   # k most likely tokens / position
+  "topk_logprobs":  [[-0.08, -2.9, -4.1], ...] # teacher log-probs for those k
+}</code></pre>
+        <p>Top-k captures the meaningful part of the distribution at a fraction of the size, and the student is trained to match the teacher on those k tokens.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">The same-tokenizer assumption</p>
+          <p>Offline KD here assumes <strong>teacher and student share a tokenizer</strong>. The captured <code>topk_ids</code> are positions in a vocabulary; if the student's vocabulary differs, those ids mean different tokens and the soft targets are gibberish. Pick a teacher and student from the same family (same tokenizer) — e.g. a larger and a smaller model of one series.</p>
+        </div>
+
+        <p>With the teacher's knowledge frozen into <code>teacher_capture.jsonl</code>, the student never needs the teacher again. The next lesson is the loss that actually transfers that knowledge — the KD objective.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Distillation trains a small student on the teacher's <strong>soft targets</strong> — the full probability distribution, which carries 'dark knowledge' hard labels lack. BrewSLM captures it <strong>offline as top-k logprobs</strong> so the costly teacher runs once, under a <strong>same-tokenizer</strong> assumption so the token ids line up.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>knowledge distillation</dt><dd>Training a small student model to reproduce a larger teacher model's outputs.</dd>
+            <dt>teacher / student</dt><dd>The large source model and the small model being trained to mimic it.</dd>
+            <dt>soft targets</dt><dd>The teacher's full probability distribution over tokens — a richer signal than a hard label.</dd>
+            <dt>dark knowledge</dt><dd>The relational information in a soft distribution (which wrong answers are plausible) that one-hot labels discard.</dd>
+            <dt>top-k logprobs</dt><dd>The k most likely tokens and their log-probabilities per position; a compact capture of the teacher's distribution.</dd>
+            <dt>offline distillation</dt><dd>Running the teacher once to a capture file, then training the student against it repeatedly.</dd>
+            <dt>same-tokenizer assumption</dt><dd>Teacher and student must share a vocabulary so captured token ids mean the same thing.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "Why are soft targets richer than hard labels?",
+    "options": [
+      "They are smaller",
+      "They encode the teacher's uncertainty and how classes relate",
+      "They train faster",
+      "They need no tokenizer"
+    ],
+    "answer": 1,
+    "explanation": "The full distribution carries 'dark knowledge' a one-hot label discards."
+  },
+  {
+    "q": "Why does BrewSLM capture distillation offline?",
+    "options": [
+      "The student is large",
+      "So the expensive teacher runs once, then the student trains against the saved file repeatedly",
+      "To skip the loss",
+      "Because online is impossible"
+    ],
+    "answer": 1,
+    "explanation": "Offline capture amortizes the costly teacher over many student runs."
+  },
+  {
+    "q": "Why store only top-k logprobs instead of the full distribution?",
+    "options": [
+      "Top-k is more accurate",
+      "Almost all probability mass is on a few tokens, so top-k captures the signal at a fraction of the size",
+      "It changes the tokenizer",
+      "It avoids the KD loss"
+    ],
+    "answer": 1,
+    "explanation": "The distribution is peaked; top-k keeps the meaningful part compactly."
+  },
+  {
+    "q": "Why must teacher and student share a tokenizer in this offline KD?",
+    "options": [
+      "For speed",
+      "So captured token ids refer to the same tokens for both models",
+      "To enable quantization",
+      "To reduce the learning rate"
+    ],
+    "answer": 1,
+    "explanation": "Different vocabularies make the captured ids meaningless to the student."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="beyond-a-single-run.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Beyond a single SFT run: the advanced toolkit</span></a>
+          <a href="distillation-kd-loss.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Knowledge distillation II: the KD loss</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>
