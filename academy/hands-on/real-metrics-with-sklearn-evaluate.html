@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Real metrics with sklearn &amp; HF evaluate — BrewSLM Academy</title>
+    <meta name="description" content="Lesson 2.7's hand-rolled accuracy is fine for teaching, wrong for shipping. This lesson graduates it: per-class precision/recall/F1 with sklearn's classification_report, the confusion matrix, macro vs micro F1, and Hugging Face evaluate for shared standards." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/real-metrics-with-sklearn-evaluate.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Real metrics with sklearn &amp; HF evaluate — BrewSLM Academy" />
+    <meta property="og:description" content="Graduate from hand-rolled accuracy to per-class precision/recall/F1, confusion matrix, macro vs micro F1, and HF evaluate." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/real-metrics-with-sklearn-evaluate.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Real metrics with sklearn &amp; HF evaluate — BrewSLM Academy" />
+    <meta name="twitter:description" content="Per-class F1, confusion matrix, macro vs micro — honest reporting in code." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Real metrics with sklearn & HF evaluate",
+        "description": "Replace Lesson 2.7's hand-rolled accuracy with sklearn's classification_report (per-class precision/recall/F1) and confusion_matrix, understand macro vs micro F1 on imbalanced data, and use Hugging Face evaluate for shared metric standards. Includes failure-by-class analysis you can act on.",
+        "url": "https://brewslm.com/academy/hands-on/real-metrics-with-sklearn-evaluate.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["sklearn classification_report", "confusion matrix", "macro vs micro F1", "per-class precision/recall", "HF evaluate library", "failure analysis by class"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Hands-on", "item": "https://brewslm.com/academy/hands-on/" },
+        { "@type": "ListItem", "position": 4, "name": "Real metrics with sklearn & HF evaluate", "item": "https://brewslm.com/academy/hands-on/real-metrics-with-sklearn-evaluate.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Real metrics with sklearn & HF evaluate" },
+        "hasPart": [
+          { "@type": "Question", "name": "On imbalanced data, why does accuracy mislead?", "acceptedAnswer": { "@type": "Answer", "text": "A model that always predicts the majority class hits high accuracy without learning anything; per-class precision/recall and macro-F1 expose this." } },
+          { "@type": "Question", "name": "What's the difference between macro and micro F1?", "acceptedAnswer": { "@type": "Answer", "text": "Micro-F1 weights by sample count (favours the majority class); macro-F1 averages per-class scores equally (penalises poor performance on minority classes)." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="hands-on/real-metrics-with-sklearn-evaluate">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html" aria-current="page">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../hands-on/index.html">Hands-on</a></li><li>Real metrics with sklearn &amp; HF evaluate</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 12</span>
+          <h1>Real metrics with sklearn &amp; HF evaluate</h1>
+          <p class="lesson-header__outcome">After this lesson you can replace Lesson 2.7's hand-rolled accuracy with per-class precision, recall, and F1 using sklearn's <code>classification_report</code>, read a confusion matrix, distinguish macro vs micro F1 on imbalanced data, and use HF <code>evaluate</code> for the shared standards everyone reports.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="evaluate-by-hand.html">Evaluate by hand: run the gold set, compute the metric</a></span>
+          </div>
+        </header>
+
+        <p>Lesson 2.7 hand-rolled accuracy: count the rights, divide by the total, print one number. That was useful for teaching what an eval <em>is</em>, but in any real project you'll be asked harder questions — "is it confusing positives for neutrals?", "how well does it do on the minority class?", "what does your F1 actually measure?" Those need real metrics. We have two clean tools: <strong>sklearn</strong> for the standard classification metrics, and <strong>HF evaluate</strong> for the shared-standard interface used in papers and leaderboards.</p>
+
+        <h2>Why accuracy alone misleads</h2>
+        <p>Suppose your gold set is 90% positive, 10% negative — typical for a slightly skewed real-world dataset. A model that <strong>always</strong> predicts "positive" achieves 90% accuracy without learning anything. The hand-rolled metric from Lesson 2.7 would call that run a strong success. Per-class precision and recall would immediately show the negative class was never recovered. The first lesson of real evaluation is: <strong>report per-class</strong>.</p>
+
+        <h2>sklearn's classification_report — the workhorse</h2>
+        <p>One call gives you per-class precision, recall, F1, support, plus macro and weighted averages. It's the right default for any classification eval.</p>
+        <pre class="code-block"><code>from sklearn.metrics import classification_report
+
+# From Lesson 2.7's predict()
+y_true = [g["label"]                       for g in gold]
+y_pred = [predict(tuned, g["prompt"])      for g in gold]
+
+print(classification_report(y_true, y_pred, digits=3))
+#               precision    recall  f1-score   support
+#     negative      0.857     0.857     0.857        14
+#      neutral      0.500     0.333     0.400         6
+#     positive      0.943     0.971     0.957        70
+#
+#     accuracy                          0.911        90
+#    macro avg      0.767     0.720     0.738        90
+# weighted avg      0.901     0.911     0.905        90</code></pre>
+        <p>This single report contains the whole story. Accuracy 91% looks fine until you see the neutral class is at 40% F1 — that's where the model is weak, and that's where your next data round should focus.</p>
+
+        <h2>The confusion matrix — where the misses go</h2>
+        <p>Failure analysis (Lesson 2.7) gets concrete with a confusion matrix: rows are the true labels, columns are the predicted labels, and the diagonal is correct. Off-diagonal cells tell you which classes the model confuses for which.</p>
+        <pre class="code-block"><code>from sklearn.metrics import confusion_matrix
+import pandas as pd
+
+labels = ["negative", "neutral", "positive"]
+cm = confusion_matrix(y_true, y_pred, labels=labels)
+print(pd.DataFrame(cm, index=labels, columns=labels))
+#           negative  neutral  positive
+# negative        12        1         1
+# neutral          1        2         3
+# positive         1        1        68</code></pre>
+        <p>Read the row for <code>neutral</code>: of 6 true neutrals, 3 were predicted positive. That's a directional mistake — the model is collapsing the middle class toward positive. The fix isn't more epochs; it's harder neutral examples in the next training round (Lesson 1.7's hard-negative / ambiguous-case section, made specific).</p>
+
+        <h2>Macro vs micro F1: pick the one that doesn't lie</h2>
+        <p>Two ways to average per-class F1 into one number, and the choice matters on imbalanced data:</p>
+        <ul>
+          <li><strong>Macro F1</strong> = mean of per-class F1s, classes weighted equally. Penalises poor performance on minority classes. <strong>This is the one to report on imbalanced data.</strong></li>
+          <li><strong>Weighted (or micro) F1</strong> = weighted by class support. Dominated by the majority class. Useful when class frequencies in your eval reflect production reality.</li>
+        </ul>
+        <p>For the report above: macro-F1 = 0.738, weighted F1 = 0.905. The "model is great" story tells the weighted; the "neutral class needs work" story tells the macro. Both are true; pick the one that matches the decision you're making.</p>
+
+        <h2>HF evaluate — shared standards across the ecosystem</h2>
+        <p>Hugging Face's <code>evaluate</code> library exposes the same metrics through one interface, with the canonical implementations used in papers and leaderboards. Worth using when you want your numbers to be directly comparable to published ones.</p>
+        <pre class="code-block"><code>import evaluate
+
+# label name → index so the model's text outputs match what evaluate expects
+labels = ["negative", "neutral", "positive"]
+to_idx = {l: i for i, l in enumerate(labels)}
+y_true_idx = [to_idx[y] for y in y_true]
+y_pred_idx = [to_idx.get(y, -1) for y in y_pred]   # -1 for off-vocab outputs
+
+f1 = evaluate.load("f1")
+print("macro f1   :", f1.compute(predictions=y_pred_idx, references=y_true_idx, average="macro")["f1"])
+print("weighted f1:", f1.compute(predictions=y_pred_idx, references=y_true_idx, average="weighted")["f1"])
+
+acc = evaluate.load("accuracy")
+print("accuracy   :", acc.compute(predictions=y_pred_idx, references=y_true_idx)["accuracy"])</code></pre>
+        <p><code>evaluate</code> shines for non-classification tasks too: <code>rouge</code>, <code>bleu</code>, <code>squad</code>, <code>wer</code>, <code>seqeval</code> (for span extraction) — same API, same install. For pure-classification work, sklearn is fine and arguably nicer to read.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest beat — report the numbers that don't flatter you</p>
+          <p>For the eval above, "91% accuracy" is technically true and sounds great. "Neutral F1 = 0.40" is also true and is what an engineer who has to use this model needs to know. <strong>Report both — and lead with the per-class breakdown when classes are imbalanced.</strong> The single-number temptation is real; resist it. The same loop that makes the metric reflect reality is the loop that makes the next training round work.</p>
+        </div>
+
+        <h2>Acting on what classification_report tells you</h2>
+        <p>The report is the input to the next data iteration:</p>
+        <ul>
+          <li><strong>Low recall on a class</strong> → you're missing real instances. Add more examples of that class to training; in the confusion matrix, look at where they're being misclassified to.</li>
+          <li><strong>Low precision on a class</strong> → you're false-positiving onto it. Add hard negatives (Lesson 1.7) that resemble it but aren't.</li>
+          <li><strong>One class with much lower support</strong> → consider class weighting in the loss, or upsampling that class in training.</li>
+        </ul>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p><strong>One <code>classification_report</code> + one <code>confusion_matrix</code> tells you almost everything you need.</strong> Per-class precision / recall / F1, the macro-vs-weighted average, where the misses go. On imbalanced data, lead with macro-F1 and the per-class table; on balanced data, accuracy and weighted-F1 are fine. The metric you report shapes the data iteration that follows — choose so it points at the gap, not away from it.</p>
+        </div>
+
+        <p>Real metrics close one half of the eval gap. The other half — when your model's outputs aren't a label but a JSON object — is the next lesson: structured-output evaluation with Pydantic.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>classification_report</dt><dd>sklearn function returning per-class precision/recall/F1/support plus macro/weighted averages — the workhorse classification eval.</dd>
+            <dt>Confusion matrix</dt><dd>True-vs-predicted matrix; off-diagonal cells show which classes are confused for which, directional.</dd>
+            <dt>Macro F1</dt><dd>Mean of per-class F1s with equal weight; penalises minority-class failures. The honest default on imbalanced data.</dd>
+            <dt>Weighted / micro F1</dt><dd>F1 averaged by class support; dominated by the majority class. Useful when eval frequencies match production.</dd>
+            <dt>HF evaluate</dt><dd>Hugging Face library exposing standard metrics (F1, accuracy, ROUGE, BLEU, WER, SQuAD) through one interface; aligns with the shared standards used in papers.</dd>
+            <dt>Support</dt><dd>The number of true examples of a given class in the eval set; small support → noisier per-class metrics.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "Your gold set is 90% positive, 10% negative. A model always predicts positive. Accuracy?",
+   "options": ["10%", "50%", "90%", "0%"],
+   "answer": 2,
+   "explanation": "A trivial majority-class predictor hits the majority's share — 90% — without learning. Per-class precision/recall would expose it instantly."},
+  {"q": "Which average should you lead with on imbalanced data?",
+   "options": ["Accuracy", "Macro F1 — equal weight per class, penalises minority-class failure", "Weighted F1 — favours the majority class", "Recall only"],
+   "answer": 1,
+   "explanation": "Macro F1 treats classes equally; on imbalanced data it tells you whether the minority class is being served."},
+  {"q": "What does an off-diagonal cell in a confusion matrix tell you?",
+   "options": ["Total accuracy", "Which class was mistaken for which — directional", "The learning rate", "The class balance"],
+   "answer": 1,
+   "explanation": "Rows are true labels, columns are predictions; off-diagonal cells show the systematic confusions you can act on."},
+  {"q": "When is HF evaluate especially useful over hand-rolling with sklearn?",
+   "options": ["Always", "Never — sklearn is enough", "When you want shared standards used in papers / leaderboards, or when you need non-classification metrics (BLEU, ROUGE, WER, seqeval)", "Only on GPUs"],
+   "answer": 2,
+   "explanation": "For pure classification sklearn is great; HF evaluate's value is canonical implementations and the wider metric set (text generation, span extraction, ASR, etc.)."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="evaluate-by-hand.html">Evaluate by hand</a><span class="related-lessons__track">Hands-on</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/evaluation-fundamentals.html">Evaluation that matches the task</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../with-brewslm/eval-packs-and-failure-clusters.html">Eval packs, gates &amp; failure clusters</a><span class="related-lessons__track">With BrewSLM</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="qlora-hands-on.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">QLoRA hands-on with bitsandbytes</span></a>
+          <a href="structured-outputs-with-pydantic.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Structured outputs with pydantic</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

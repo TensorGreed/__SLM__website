@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SFT with TRL's SFTTrainer (the 20-line version) — BrewSLM Academy</title>
+    <meta name="description" content="TRL's SFTTrainer is the SFT loop you wrote by hand in Lesson 2.5, wrapped behind a clean API. It applies the chat template, builds the loss mask, attaches LoRA, and trains — in about 20 lines. This lesson shows the same fine-tune again, the short way, and explains what it hides." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/sft-with-trl-trainer.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="SFT with TRL's SFTTrainer — BrewSLM Academy" />
+    <meta property="og:description" content="The same LoRA fine-tune from Lesson 2.5, in 20 lines with TRL's SFTTrainer. What it does for you (chat template, loss mask, PEFT) and what's worth knowing it hides." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/sft-with-trl-trainer.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="SFT with TRL's SFTTrainer — BrewSLM Academy" />
+    <meta name="twitter:description" content="The 20-line SFT loop with TRL." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "SFT with TRL's SFTTrainer (the 20-line version)",
+        "description": "TRL's SFTTrainer wraps the SFT loop from Lesson 2.5 behind a clean API: it applies the chat template, builds the loss mask via completion_only_loss, accepts a PEFT config to attach LoRA, and trains. The same fine-tune in about 20 lines, with a note on what's worth knowing it hides.",
+        "url": "https://brewslm.com/academy/hands-on/sft-with-trl-trainer.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["TRL", "SFTTrainer", "SFTConfig", "completion_only_loss", "peft_config", "chat-template auto-application"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Hands-on", "item": "https://brewslm.com/academy/hands-on/" },
+        { "@type": "ListItem", "position": 4, "name": "SFT with TRL's SFTTrainer", "item": "https://brewslm.com/academy/hands-on/sft-with-trl-trainer.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "SFT with TRL's SFTTrainer" },
+        "hasPart": [
+          { "@type": "Question", "name": "What does SFTTrainer's completion_only_loss=True do?", "acceptedAnswer": { "@type": "Answer", "text": "It builds the loss mask for you: only assistant-turn tokens are supervised, prompt and system tokens are set to -100 and ignored by cross-entropy." } },
+          { "@type": "Question", "name": "When should you reach for raw Trainer instead of SFTTrainer?", "acceptedAnswer": { "@type": "Answer", "text": "When you need a loss/data-collator combination SFTTrainer doesn't support (custom masking, non-chat data shapes, distillation/KL losses)." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="hands-on/sft-with-trl-trainer">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html" aria-current="page">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../hands-on/index.html">Hands-on</a></li><li>SFT with TRL's SFTTrainer</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 10</span>
+          <h1>SFT with TRL's SFTTrainer (the 20-line version)</h1>
+          <p class="lesson-header__outcome">After this lesson you can run the same LoRA fine-tune from Lesson 2.5 with TRL's <code>SFTTrainer</code> in about 20 lines, and you know what the wrapper does for you (chat-template, loss mask, PEFT) and what it hides.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="minimal-lora-trainer.html">A minimal LoRA fine-tune with the Trainer</a></span>
+          </div>
+        </header>
+
+        <p>In Lesson 2.5 you built a LoRA fine-tune from raw <code>Trainer</code>, with a manual tokenize function, a hand-built loss mask, and an explicit <code>DataCollatorForSeq2Seq</code>. That was deliberate — you should know what's happening when you click Train. But for a normal SFT run, the standard tool is TRL's <code>SFTTrainer</code>, which wraps that whole loop. Same training, same outputs, dramatically less code.</p>
+
+        <h2>Why SFTTrainer exists</h2>
+        <p>Look at what Lesson 2.5 made you write by hand: apply the chat template; tokenize each example; build <code>input_ids</code>, <code>attention_mask</code>, and <code>labels</code> with the prompt masked to -100; choose a collator; pass a <code>peft_config</code> through a <code>get_peft_model</code> call. None of that is task-specific. <strong>SFTTrainer absorbs all of it</strong> and lets you describe what you have (a dataset of chat messages) and what you want (a LoRA fine-tune), in a handful of lines.</p>
+
+        <h2>Same data, same model, same LoRA</h2>
+        <p>We reuse the same model, tokenizer, and LoRA config from 2.2 / 2.5. The only thing that changes is the dataset shape: SFTTrainer prefers <strong>chat messages format</strong> (Lesson 1.20) — a list of <code>{role, content}</code> dicts per row.</p>
+        <pre class="code-block"><code>import torch
+from datasets import Dataset
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import LoraConfig
+from trl import SFTConfig, SFTTrainer
+
+MODEL_ID = "HuggingFaceTB/SmolLM2-135M-Instruct"
+tok = AutoTokenizer.from_pretrained(MODEL_ID)
+if tok.pad_token is None: tok.pad_token = tok.eos_token
+model = AutoModelForCausalLM.from_pretrained(MODEL_ID, dtype=torch.bfloat16)
+
+# data — chat messages per row
+raw = [
+    {"prompt": "Classify the sentiment as positive or negative: I loved it.",      "completion": "positive"},
+    {"prompt": "Classify the sentiment as positive or negative: Broken on arrival.", "completion": "negative"},
+    # ...
+]
+def to_chat(row):
+    return {"messages": [
+        {"role": "user",      "content": row["prompt"]},
+        {"role": "assistant", "content": row["completion"]},
+    ]}
+ds = Dataset.from_list(raw).map(to_chat, remove_columns=["prompt", "completion"])
+
+# LoRA — same config as Lesson 2.5
+lora = LoraConfig(
+    r=16, lora_alpha=32, lora_dropout=0.05,
+    target_modules=["q_proj", "v_proj"], task_type="CAUSAL_LM",
+)</code></pre>
+
+        <h2>The 20-line version</h2>
+        <p>This is the SFT loop you wrote by hand, in twenty lines. Everything from Lesson 2.5 is in here — just expressed declaratively.</p>
+        <pre class="code-block"><code>trainer = SFTTrainer(
+    model=model,
+    args=SFTConfig(
+        output_dir="sft-out",
+        per_device_train_batch_size=8,
+        gradient_accumulation_steps=2,        # effective batch 16
+        learning_rate=2e-4,
+        num_train_epochs=3,
+        lr_scheduler_type="cosine",
+        warmup_ratio=0.03,
+        bf16=True,
+        logging_steps=5,
+        save_strategy="epoch",
+        max_seq_length=256,
+        completion_only_loss=True,            # build the loss mask for us
+        report_to=[],
+    ),
+    train_dataset=ds,
+    processing_class=tok,                     # SFTTrainer applies the chat template
+    peft_config=lora,                         # attach LoRA — no get_peft_model() call needed
+)
+trainer.train()
+trainer.save_model("sft-out/adapter")</code></pre>
+
+        <h2>What SFTTrainer does for you</h2>
+        <ul>
+          <li><strong>Chat template application.</strong> Given <code>messages</code>, it calls <code>tok.apply_chat_template</code> on every row — you don't render special tokens by hand.</li>
+          <li><strong>Loss mask.</strong> <code>completion_only_loss=True</code> sets non-assistant tokens to -100, so cross-entropy is computed only on the assistant turn. Same effect as Lesson 2.4's manual masking, with one knob.</li>
+          <li><strong>PEFT integration.</strong> Passing <code>peft_config</code> wraps the model in LoRA internally; no separate <code>get_peft_model</code> call.</li>
+          <li><strong>Padding + collation.</strong> A sensible default collator handles padding and labels-as-input-ids without you choosing one.</li>
+          <li><strong>Optional sequence packing.</strong> Set <code>packing=True</code> in <code>SFTConfig</code> and short examples are concatenated to fill <code>max_seq_length</code>, saving compute on padding (Lesson 1.12 territory).</li>
+        </ul>
+
+        <div class="callout callout--note">
+          <p class="callout__label">From Track 1 + Lesson 2.5</p>
+          <p>Everything you learned about loss masks (Lesson 1.3), chat templates (Lesson 1.4), and the training loop (Lessons 1.9, 2.5) is still happening — just inside the wrapper. The reason we did the hand-built version first was so when the wrapper does something surprising, you know where to look.</p>
+        </div>
+
+        <h2>When raw Trainer beats SFTTrainer</h2>
+        <p>SFTTrainer is the right tool ~90% of the time. The cases where you go back to raw <code>Trainer</code>:</p>
+        <ul>
+          <li><strong>Custom loss.</strong> Distillation (Track 4, Lesson 4.3) needs an <code>α·CE + (1−α)·T²·KL</code> loss against captured teacher logprobs — SFTTrainer doesn't support it; the <code>kd_trainer</code> in Track 4 wraps raw <code>Trainer</code>.</li>
+          <li><strong>Non-chat data shapes.</strong> If your task is a pure classifier head with no chat wrapping, the SFT framing is wrong; use raw <code>Trainer</code> with your own preprocessing.</li>
+          <li><strong>Custom masking.</strong> Loss only on specific tokens, or a curriculum that masks different things in different phases — you want raw <code>Trainer</code>.</li>
+          <li><strong>Debugging exactly what gets masked.</strong> When something's not learning and you suspect the mask, going back to the manual version (Lesson 2.4) gives you full visibility.</li>
+        </ul>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest beat — the wrapper has assumptions</p>
+          <p><code>completion_only_loss</code> depends on your model's chat template having a clean assistant-turn boundary that <code>apply_chat_template</code> emits consistently. On most instruct models this is fine; on a few obscure or custom-chat-template models it isn't, and the mask silently includes prompt tokens or excludes some assistant tokens. The check: train a few steps, dump one batch's <code>labels</code>, and confirm the non-(-100) positions are exactly the assistant tokens. Same check we did in Lesson 2.4 — still cheap, still worth it.</p>
+        </div>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p><strong>SFTTrainer is the SFT loop you wrote by hand, packaged.</strong> Chat template, loss mask, LoRA wiring, padding — all handled when you declare the dataset shape and the training config. Reach for raw <code>Trainer</code> only when you need a loss or a mask SFTTrainer doesn't model; for ordinary fine-tunes, the 20-line version is the right default.</p>
+        </div>
+
+        <p>The next lesson keeps the SFTTrainer pattern and adds memory: QLoRA via bitsandbytes lets you fine-tune a much larger model in the same VRAM you've been using.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>TRL</dt><dd>Hugging Face's preference- and SFT-training library. Provides <code>SFTTrainer</code>, <code>DPOTrainer</code>, <code>ORPOTrainer</code>.</dd>
+            <dt>SFTTrainer</dt><dd>A wrapper around HF <code>Trainer</code> that handles chat-template, loss mask, padding, and PEFT for SFT.</dd>
+            <dt>SFTConfig</dt><dd>SFTTrainer's training-args object; superset of <code>TrainingArguments</code> with SFT-specific fields (<code>max_seq_length</code>, <code>completion_only_loss</code>, <code>packing</code>).</dd>
+            <dt>completion_only_loss</dt><dd>SFTConfig field; when <code>True</code>, builds the loss mask so cross-entropy ignores everything except assistant tokens.</dd>
+            <dt>peft_config</dt><dd>SFTTrainer argument; pass a <code>LoraConfig</code> and SFTTrainer attaches LoRA internally (no <code>get_peft_model</code>).</dd>
+            <dt>packing</dt><dd>SFTConfig field; when <code>True</code>, concatenates short examples to <code>max_seq_length</code> to save compute on padding.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "Which steps from Lesson 2.5 does SFTTrainer absorb?",
+   "options": ["Loading the model", "Applying the chat template, building the loss mask, and attaching LoRA", "Choosing the learning rate", "Saving the adapter"],
+   "answer": 1,
+   "explanation": "The wrapper handles chat-template application, loss-mask construction (via completion_only_loss), padding/collation, and PEFT integration. You still pick the hyperparameters and call save_model."},
+  {"q": "What does completion_only_loss=True do?",
+   "options": ["Halves the training time", "Builds the loss mask so non-assistant tokens are set to -100 and ignored by cross-entropy", "Disables LoRA", "Turns the model into a classifier"],
+   "answer": 1,
+   "explanation": "It's the manual masking from Lesson 2.4, done by the trainer. Train assistant tokens; ignore the rest."},
+  {"q": "When is raw Trainer the right tool over SFTTrainer?",
+   "options": ["Always", "When you need a loss SFTTrainer doesn't support — e.g., the KD loss (α·CE + (1−α)·T²·KL) in Track 4", "When the dataset is small", "Only with full fine-tuning"],
+   "answer": 1,
+   "explanation": "Distillation, custom masking, or non-chat shapes are the canonical reasons. For ordinary chat-SFT, SFTTrainer is the right default."},
+  {"q": "What's the cheap check that completion_only_loss masked things correctly?",
+   "options": ["Train for 10 epochs and see if loss falls", "Dump one batch's labels and confirm only assistant tokens are non-(-100)", "Compare two random seeds", "Check the file size"],
+   "answer": 1,
+   "explanation": "Same as Lesson 2.4: look at one batch's labels. If the mask is wrong, the model is training on the wrong tokens and you'll waste a run."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="minimal-lora-trainer.html">A minimal LoRA fine-tune with the Trainer</a><span class="related-lessons__track">Hands-on</span></li>
+            <li><a class="inline-link" href="tokenize-and-collate.html">Tokenize &amp; collate</a><span class="related-lessons__track">Hands-on</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/dataset-formats-in-the-wild.html">Dataset formats in the wild</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="capstone-end-to-end.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Capstone A: fine-tune end-to-end by hand</span></a>
+          <a href="qlora-hands-on.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">QLoRA hands-on with bitsandbytes</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

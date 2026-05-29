@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Structured outputs with pydantic: valid-JSON rate &amp; per-field — BrewSLM Academy</title>
+    <meta name="description" content="JSON-emitting SLMs are a top use case. This lesson uses Pydantic to validate fine-tuned outputs against a schema, compute the valid-JSON rate, and measure per-field accuracy on the parses that succeed — the honest two-number report for a structured-output model." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/structured-outputs-with-pydantic.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Structured outputs with pydantic — BrewSLM Academy" />
+    <meta property="og:description" content="Validate JSON outputs with a Pydantic schema. Compute the valid-JSON rate and per-field accuracy on the valid ones — the honest two-number report." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/structured-outputs-with-pydantic.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Structured outputs with pydantic — BrewSLM Academy" />
+    <meta name="twitter:description" content="Validate JSON outputs with Pydantic; report valid-JSON rate + per-field accuracy." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Structured outputs with pydantic: valid-JSON rate and per-field accuracy",
+        "description": "JSON-emitting SLMs are a top use case. This lesson uses Pydantic to validate model outputs against a schema, computes the valid-JSON rate, and measures per-field accuracy on the parses that succeed — the honest two-number report for a structured-output model. Also covers the parse_obj-on-failure repair pattern and when to redo training versus refining decoding.",
+        "url": "https://brewslm.com/academy/hands-on/structured-outputs-with-pydantic.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["pydantic", "JSON schema validation", "valid-JSON rate", "per-field accuracy", "structured-output evaluation"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Hands-on", "item": "https://brewslm.com/academy/hands-on/" },
+        { "@type": "ListItem", "position": 4, "name": "Structured outputs with pydantic", "item": "https://brewslm.com/academy/hands-on/structured-outputs-with-pydantic.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Structured outputs with pydantic" },
+        "hasPart": [
+          { "@type": "Question", "name": "What two numbers report a structured-output model honestly?", "acceptedAnswer": { "@type": "Answer", "text": "Valid-JSON rate (how often parses succeed) and per-field accuracy on the parses that do succeed. Either alone is misleading." } },
+          { "@type": "Question", "name": "Why use Pydantic over a plain json.loads?", "acceptedAnswer": { "@type": "Answer", "text": "Pydantic validates types and required fields too — 'parseable JSON' isn't the same as 'matches the schema'." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="hands-on/structured-outputs-with-pydantic">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html" aria-current="page">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../hands-on/index.html">Hands-on</a></li><li>Structured outputs with pydantic</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 13</span>
+          <h1>Structured outputs with pydantic</h1>
+          <p class="lesson-header__outcome">After this lesson you can validate a fine-tuned model's JSON outputs against a Pydantic schema, compute the valid-JSON rate, measure per-field accuracy on the parses that succeed, and report both — the honest two-number summary for any structured-output model.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="real-metrics-with-sklearn-evaluate.html">Real metrics with sklearn &amp; HF evaluate</a></span>
+          </div>
+        </header>
+
+        <p>A huge fraction of useful SLM work emits JSON: extracting fields from an invoice, classifying intent <em>with</em> a confidence and a routed tool, parsing structured details from free text. For those models the question "is the output right?" splits into two: <strong>did it parse?</strong> and <strong>do the fields match?</strong> A model with 95% parse rate and 60% field accuracy on what does parse is, in production, broken — and reporting only one of those two numbers hides that.</p>
+
+        <h2>Why "valid JSON" alone isn't enough</h2>
+        <p>Three things can go wrong with a structured output:</p>
+        <ul>
+          <li>The string isn't valid JSON (missing comma, trailing text, hallucinated commentary).</li>
+          <li>The JSON is valid but the schema is wrong (missing required fields, wrong types).</li>
+          <li>The schema is right but the values are wrong (parses fine, but the <code>invoice_number</code> is hallucinated).</li>
+        </ul>
+        <p>You need a validator that catches the first two and a comparison that scores the third. Pydantic gives you the first; you build the second.</p>
+
+        <h2>Define the schema with Pydantic</h2>
+        <p>A Pydantic model describes the shape: field names, types, required vs optional, nested structures. Validation is one call.</p>
+        <pre class="code-block"><code>from pydantic import BaseModel, ValidationError
+from typing import List, Optional
+
+class LineItem(BaseModel):
+    description: str
+    amount: float
+
+class Invoice(BaseModel):
+    invoice_number: str
+    date: str
+    total: float
+    line_items: List[LineItem] = []
+    customer: Optional[str] = None</code></pre>
+        <p>Required fields have no default. Optional fields have a default (often <code>None</code>). Types are checked at parse time. Nested types compose.</p>
+
+        <h2>Parse with validation</h2>
+        <p>Wrap parsing in a single function that returns the validated object or <code>None</code> if anything went wrong. The two failure modes (bad JSON, bad schema) are distinct exceptions; record which it was.</p>
+        <pre class="code-block"><code>import json
+from dataclasses import dataclass
+
+@dataclass
+class ParseResult:
+    obj: Optional[Invoice]
+    failure: Optional[str]    # "json", "schema", or None on success
+
+def parse(text: str) -> ParseResult:
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        return ParseResult(None, "json")
+    try:
+        return ParseResult(Invoice(**data), None)
+    except ValidationError:
+        return ParseResult(None, "schema")</code></pre>
+        <p>Tracking which failure happened tells you where to focus. Lots of "json" failures = a decoding / format problem (Lesson 1.19). Lots of "schema" failures = a training problem (the model has learned a slightly different shape).</p>
+
+        <h2>Compute the valid-JSON rate + failure breakdown</h2>
+        <pre class="code-block"><code># Run the model on the gold set (predict() from Lesson 2.7)
+results = [parse(predict(tuned, ex["prompt"])) for ex in gold]
+
+valid = [r for r in results if r.obj is not None]
+n_json_fail   = sum(1 for r in results if r.failure == "json")
+n_schema_fail = sum(1 for r in results if r.failure == "schema")
+
+print(f"valid-JSON rate    : {len(valid)/len(results):.0%}")
+print(f"json failures      : {n_json_fail}  ({n_json_fail/len(results):.0%})")
+print(f"schema failures    : {n_schema_fail}  ({n_schema_fail/len(results):.0%})")</code></pre>
+
+        <h2>Per-field accuracy on the parses that succeed</h2>
+        <p>Of the rows that <em>did</em> parse, how often does each field match the truth? This is where you discover that "valid JSON" can hide a model that just makes up plausible numbers.</p>
+        <pre class="code-block"><code>from collections import Counter
+
+# gold entries have a "target" dict that matches the Invoice schema
+hits = Counter()
+totals = Counter()
+
+for ex, r in zip(gold, results):
+    if r.obj is None:
+        continue
+    truth = Invoice(**ex["target"])
+    for field in Invoice.model_fields:
+        totals[field] += 1
+        if getattr(r.obj, field) == getattr(truth, field):
+            hits[field] += 1
+
+print(f"\nper-field accuracy (over {len(valid)} valid parses):")
+for field in Invoice.model_fields:
+    if totals[field]:
+        print(f"  {field:18s} {hits[field]/totals[field]:.0%}")</code></pre>
+        <p>Sample output:</p>
+        <pre class="code-block"><code>valid-JSON rate    : 95%
+json failures      : 3  (3%)
+schema failures    : 2  (2%)
+
+per-field accuracy (over 95 valid parses):
+  invoice_number     91%
+  date               88%
+  total              61%
+  line_items        100%
+  customer           96%</code></pre>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest beat — the two-number report</p>
+          <p>The honest summary of this run is <strong>"95% valid-JSON, with 61% accuracy on <code>total</code> among valid parses."</strong> Not "95% accurate." Anyone who reads the headline "95% valid-JSON" and assumes the values are right will deploy a model that hallucinates totals 39% of the time. <strong>Always report the valid-JSON rate <em>and</em> per-field accuracy, side by side.</strong> If you only have room for one number, it's macro per-field accuracy across the full gold set (counting failed parses as zero) — that single number can't lie in either direction.</p>
+        </div>
+
+        <h2>Repairing failures vs retraining</h2>
+        <p>When the model's outputs have JSON failures, before retraining check the cheap things:</p>
+        <ul>
+          <li><strong>Decoding</strong> (Lesson 1.19): lower temperature, set a stop token, cap <code>max_new_tokens</code>. A model emitting prose <em>after</em> the JSON is often a stop-token / max-tokens issue.</li>
+          <li><strong>Trailing commas / partial JSON</strong>: a small "repair on parse fail" step (regex strip prose, try parse again) can rescue 50% of <code>json</code> failures cheaply.</li>
+          <li><strong>Schema drift</strong>: if many parses succeed but a specific field is consistently wrong, it's a training-data problem. Audit the training examples for that field.</li>
+        </ul>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>For structured-output models, <strong>report two numbers</strong>: the valid-JSON rate (did the parse succeed?) and per-field accuracy on the parses that did. One alone is misleading. Use Pydantic for type-checked, schema-validated parsing; track <code>json</code> vs <code>schema</code> failure modes separately so you know whether to fix decoding or data.</p>
+        </div>
+
+        <p>You now have an honest evaluation for both classification (Lesson 2.12) and structured-output (this lesson) models. Next: multi-turn chat fine-tuning, where the loss mask needs to cover every assistant turn, not just one.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Pydantic</dt><dd>Python library for type-validated data models; <code>BaseModel</code> + type hints become a schema and a parser in one.</dd>
+            <dt>Valid-JSON rate</dt><dd>Fraction of model outputs that both parse as JSON and match the schema; the first half of the structured-output report.</dd>
+            <dt>Schema validation</dt><dd>Checking that parsed JSON has the required fields with the expected types; distinct from "parseable JSON."</dd>
+            <dt>Per-field accuracy</dt><dd>Fraction of times each schema field has the correct value, measured on the parses that succeeded.</dd>
+            <dt>JSON vs schema failure</dt><dd>Two distinct failure modes — the string isn't valid JSON, or it parses but doesn't match the schema; track them separately to know what to fix.</dd>
+            <dt>Repair on parse fail</dt><dd>Cheap regex-strip-and-retry step that rescues a meaningful fraction of JSON failures without retraining.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "Your structured-output model reports 95% valid-JSON rate. Is that enough to ship?",
+   "options": ["Yes — high parse rate means the model works", "No — you also need per-field accuracy on the parses that succeeded; valid JSON can still have hallucinated values", "Only if you use a different parser", "Yes, if accuracy is above 90%"],
+   "answer": 1,
+   "explanation": "A model with 95% valid-JSON and 60% accuracy on a critical field is broken in production. Both numbers, always."},
+  {"q": "Why use Pydantic over a plain json.loads?",
+   "options": ["It's faster", "It validates types and required fields — 'parses' isn't the same as 'matches the schema'", "It's required by HF", "It writes the model for you"],
+   "answer": 1,
+   "explanation": "Pydantic catches schema-but-not-JSON-format issues. Plain json.loads succeeds on {\"total\": \"not a number\"}; Pydantic flags the type mismatch."},
+  {"q": "Lots of 'json' failures (not parseable). The cheapest first check is…",
+   "options": ["Add more training data", "Increase epochs", "Decoding — check stop tokens, max_new_tokens, and try a small repair step before retraining", "Switch to QLoRA"],
+   "answer": 2,
+   "explanation": "JSON parse failures are often decoding artefacts (prose after the JSON, missing stop) — fix in five minutes, retrain only if those don't help (Lesson 1.19 honest beat)."},
+  {"q": "If you can report only ONE number for a structured-output model, what is it?",
+   "options": ["Valid-JSON rate", "Macro per-field accuracy across the full gold set, counting failed parses as zero — it can't be inflated by either side", "Mean field length", "Average JSON nesting depth"],
+   "answer": 1,
+   "explanation": "That single number incorporates both parse failures (zero credit) and per-field correctness on parses; it can't tell either flattering lie."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="real-metrics-with-sklearn-evaluate.html">Real metrics with sklearn &amp; HF evaluate</a><span class="related-lessons__track">Hands-on</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/task-shapes.html">Task shapes</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/decoding-controls.html">Decoding controls</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="real-metrics-with-sklearn-evaluate.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Real metrics with sklearn &amp; HF evaluate</span></a>
+          <a href="multi-turn-chat-sft.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Multi-turn chat SFT</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

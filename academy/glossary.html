@@ -235,6 +235,29 @@
           <dt id="trainer">Trainer</dt><dd>The Transformers class that runs the training loop (forward, loss, backward, optimizer step) for you. See <a class="inline-link" href="hands-on/minimal-lora-trainer.html">A minimal LoRA fine-tune</a>.</dd>
           <dt id="trainingarguments">TrainingArguments</dt><dd>Holds the run's hyperparameters: learning rate, epochs, batch size, precision, logging and saving cadence.</dd>
           <dt id="venv">venv</dt><dd>An isolated Python environment so a project's packages don't collide with the system. See <a class="inline-link" href="hands-on/environment-setup.html">Set up the environment</a>.</dd>
+          <dt id="trl">TRL</dt><dd>Hugging Face's SFT- and preference-training library. Provides <code>SFTTrainer</code>, <code>DPOTrainer</code>, <code>ORPOTrainer</code>. See <a class="inline-link" href="hands-on/sft-with-trl-trainer.html">SFT with TRL's SFTTrainer</a>.</dd>
+          <dt id="sfttrainer">SFTTrainer</dt><dd>TRL wrapper around HF <code>Trainer</code> that handles chat-template, loss mask, padding, and PEFT for SFT. The 20-line version of Lesson 2.5.</dd>
+          <dt id="sftconfig">SFTConfig</dt><dd>SFTTrainer's args object; superset of <code>TrainingArguments</code> with SFT-specific fields like <code>max_seq_length</code>, <code>completion_only_loss</code>, <code>packing</code>.</dd>
+          <dt id="completion-only-loss">completion_only_loss</dt><dd>SFTConfig field; when <code>True</code>, builds the loss mask so cross-entropy ignores everything except assistant tokens.</dd>
+          <dt id="peft-config">peft_config</dt><dd>SFTTrainer argument; pass a <code>LoraConfig</code> and SFTTrainer attaches LoRA internally — no <code>get_peft_model</code> call needed.</dd>
+          <dt id="packing-t2">packing (SFT)</dt><dd>SFTConfig field; concatenates short examples to <code>max_seq_length</code> to save compute on padding.</dd>
+          <dt id="bnb-t2">bitsandbytes</dt><dd>Library providing 4-bit/8-bit quantization kernels that HF Transformers loads via <code>BitsAndBytesConfig</code>. See <a class="inline-link" href="hands-on/qlora-hands-on.html">QLoRA hands-on</a>.</dd>
+          <dt id="bnb-config">BitsAndBytesConfig</dt><dd>HF config object that tells <code>from_pretrained</code> to load weights in 4-bit (or 8-bit), with NF4 / double-quant / compute-dtype settings.</dd>
+          <dt id="nf4">NF4 (4-bit Normal Float)</dt><dd>The QLoRA-default 4-bit quantization format, tuned for trained-Transformer weight distributions.</dd>
+          <dt id="double-quant">Double quantization</dt><dd>Quantizing the quantization constants themselves to save additional memory in QLoRA.</dd>
+          <dt id="prep-kbit">prepare_model_for_kbit_training</dt><dd>peft helper that enables gradient checkpointing and stable-dtype casts on a quantized base before LoRA is attached. Forgetting it is the most common "my QLoRA isn't training" bug.</dd>
+          <dt id="cls-report">classification_report</dt><dd>sklearn function returning per-class precision/recall/F1/support plus macro/weighted averages. The default classification eval.</dd>
+          <dt id="cm-t2">Confusion matrix</dt><dd>True-vs-predicted matrix; off-diagonal cells show which classes get confused for which.</dd>
+          <dt id="macro-f1">Macro F1</dt><dd>Mean of per-class F1s with equal weight per class; the honest default on imbalanced data.</dd>
+          <dt id="weighted-f1">Weighted / micro F1</dt><dd>F1 averaged by class support; dominated by the majority class.</dd>
+          <dt id="hf-evaluate">HF evaluate</dt><dd>Hugging Face library exposing standard metrics (F1, accuracy, ROUGE, BLEU, WER, seqeval) through one interface; aligns with shared standards used in papers.</dd>
+          <dt id="pydantic-t2">Pydantic</dt><dd>Python library for type-validated data models; <code>BaseModel</code> + type hints become a schema and a parser in one. See <a class="inline-link" href="hands-on/structured-outputs-with-pydantic.html">Structured outputs with pydantic</a>.</dd>
+          <dt id="valid-json-rate">Valid-JSON rate</dt><dd>Fraction of model outputs that both parse as JSON and match the Pydantic schema; the first half of the structured-output honest report.</dd>
+          <dt id="per-field-acc">Per-field accuracy</dt><dd>Fraction of times each schema field has the correct value, measured on the parses that succeeded; the second half of the structured-output honest report.</dd>
+          <dt id="multi-turn-sft">Multi-turn SFT</dt><dd>Fine-tuning on multi-turn conversations with the loss mask applied to every assistant turn, not just the last. See <a class="inline-link" href="hands-on/multi-turn-chat-sft.html">Multi-turn chat SFT</a>.</dd>
+          <dt id="role-bleed">Role bleed</dt><dd>Loss mask leaking into user turns so the model is supervised on user-voice text; causes the model to mimic the user in its replies.</dd>
+          <dt id="seqeval">seqeval</dt><dd>Standard span-extraction metric library (HF <code>evaluate</code> exposes it); produces entity-level precision/recall/F1.</dd>
+          <dt id="faithfulness-t2">Faithfulness</dt><dd>Whether a generated answer is grounded in supplied context (e.g. RAG passages) rather than hallucinated.</dd>
         </dl>
 
         <h2>Track 3 — With BrewSLM</h2>

@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QLoRA hands-on with bitsandbytes — BrewSLM Academy</title>
+    <meta name="description" content="QLoRA loads the base model in 4-bit via bitsandbytes and trains a LoRA adapter on top, cutting memory ~4× and letting you fine-tune a model several times larger in the same GPU. This lesson is the runnable version of Lesson 1.14 — BitsAndBytesConfig, prepare_model_for_kbit_training, LoraConfig, and SFTTrainer." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/qlora-hands-on.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="QLoRA hands-on with bitsandbytes — BrewSLM Academy" />
+    <meta property="og:description" content="4-bit base loaded via bitsandbytes, LoRA on top, SFTTrainer. The runnable version of Lesson 1.14 — fit a much larger model in the same memory." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/qlora-hands-on.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="QLoRA hands-on with bitsandbytes — BrewSLM Academy" />
+    <meta name="twitter:description" content="4-bit base + LoRA on top: fit a larger model in the same GPU." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "QLoRA hands-on with bitsandbytes",
+        "description": "QLoRA = a 4-bit quantized frozen base + a LoRA adapter trained on top. This lesson shows the runnable version: BitsAndBytesConfig with NF4 + double-quant + bf16 compute, prepare_model_for_kbit_training, LoraConfig with a wider target_modules list, SFTTrainer with peft_config. Includes the memory math for stepping from a 135M model to a ~1B model in the same VRAM and the honest quality re-eval.",
+        "url": "https://brewslm.com/academy/hands-on/qlora-hands-on.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["QLoRA", "bitsandbytes", "BitsAndBytesConfig", "NF4 quantization", "double quantization", "prepare_model_for_kbit_training", "memory math for quantized fine-tuning"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Hands-on", "item": "https://brewslm.com/academy/hands-on/" },
+        { "@type": "ListItem", "position": 4, "name": "QLoRA hands-on with bitsandbytes", "item": "https://brewslm.com/academy/hands-on/qlora-hands-on.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "QLoRA hands-on with bitsandbytes" },
+        "hasPart": [
+          { "@type": "Question", "name": "What does QLoRA actually train?", "acceptedAnswer": { "@type": "Answer", "text": "The LoRA adapter only — the base is frozen and quantized to 4-bit, so it doesn't take gradient memory at all." } },
+          { "@type": "Question", "name": "Why call prepare_model_for_kbit_training?", "acceptedAnswer": { "@type": "Answer", "text": "It sets up gradient checkpointing, casts norm layers to a stable dtype, and makes the model compatible with adapter training on a quantized base." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="hands-on/qlora-hands-on">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html" aria-current="page">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../hands-on/index.html">Hands-on</a></li><li>QLoRA hands-on</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 11</span>
+          <h1>QLoRA hands-on with bitsandbytes</h1>
+          <p class="lesson-header__outcome">After this lesson you can load a base model in 4-bit with bitsandbytes, attach a LoRA adapter, and fine-tune a model several times larger than what 2.5 used — in the same VRAM — using a small modification to the SFTTrainer pipeline.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="sft-with-trl-trainer.html">SFT with TRL's SFTTrainer</a></span>
+          </div>
+        </header>
+
+        <p>Lesson 1.14 introduced QLoRA conceptually: train a LoRA adapter on top of a base model that's been quantized to 4 bits, cutting the base's memory ~4× while preserving the adapter's training dynamics. This lesson is the code. We'll step from SmolLM2-135M to a model in the 1–1.5B range and fit it in the VRAM the small model was using.</p>
+
+        <h2>The setup: bitsandbytes</h2>
+        <p>QLoRA needs one extra library beyond Lesson 2.10's stack: <strong>bitsandbytes</strong>, which provides the 4-bit quantization kernels Transformers loads through <code>BitsAndBytesConfig</code>.</p>
+        <pre class="code-block"><code>pip install bitsandbytes</code></pre>
+
+        <h2>Configure 4-bit loading</h2>
+        <p>Three knobs matter: the quantization scheme (<strong>NF4</strong> — 4-bit Normal Float, the QLoRA default), <strong>double quantization</strong> (quantize the quantization constants too, saving a bit more), and the <strong>compute dtype</strong> (the dtype for the activations and gradients on top of the quantized weights — bf16 on modern GPUs).</p>
+        <pre class="code-block"><code>import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+
+MODEL_ID = "Qwen/Qwen2.5-1.5B-Instruct"      # ~1.5B params, Apache-2 license
+
+bnb = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",                # the QLoRA default
+    bnb_4bit_compute_dtype=torch.bfloat16,    # activations + grads in bf16
+    bnb_4bit_use_double_quant=True,           # quantize the quant constants
+)
+
+tok = AutoTokenizer.from_pretrained(MODEL_ID)
+if tok.pad_token is None: tok.pad_token = tok.eos_token
+
+model = AutoModelForCausalLM.from_pretrained(
+    MODEL_ID,
+    quantization_config=bnb,
+    device_map="auto",                        # let accelerate place the layers
+)</code></pre>
+
+        <h2>Prepare the model for adapter training</h2>
+        <p>One required call: <code>prepare_model_for_kbit_training</code> from peft. It sets up gradient checkpointing (Lesson 1.15), casts the LayerNorm and embedding layers to a numerically stable dtype, and disables certain optimizer states the quantized base can't carry. Forgetting this is the most common QLoRA-doesn't-train bug.</p>
+        <pre class="code-block"><code>from peft import LoraConfig, prepare_model_for_kbit_training
+
+model = prepare_model_for_kbit_training(model)
+
+# Wider target_modules — common QLoRA recipe touches all attention + MLP projections
+lora = LoraConfig(
+    r=16, lora_alpha=32, lora_dropout=0.05,
+    target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
+                    "gate_proj", "up_proj", "down_proj"],
+    task_type="CAUSAL_LM",
+)</code></pre>
+
+        <h2>Train it — same SFTTrainer as Lesson 2.10</h2>
+        <p>From here on it's the SFT pipeline you know. The only thing the trainer sees that's different is that the base is 4-bit and the adapter sits on top.</p>
+        <pre class="code-block"><code>from trl import SFTConfig, SFTTrainer
+# `ds` from Lesson 2.10's to_chat helper
+
+trainer = SFTTrainer(
+    model=model,
+    args=SFTConfig(
+        output_dir="qlora-out",
+        per_device_train_batch_size=4,
+        gradient_accumulation_steps=4,        # effective batch 16
+        learning_rate=2e-4,
+        num_train_epochs=3,
+        lr_scheduler_type="cosine",
+        warmup_ratio=0.03,
+        bf16=True,
+        logging_steps=5,
+        save_strategy="epoch",
+        max_seq_length=512,
+        completion_only_loss=True,
+        report_to=[],
+    ),
+    train_dataset=ds,
+    processing_class=tok,
+    peft_config=lora,
+)
+trainer.train()
+trainer.save_model("qlora-out/adapter")</code></pre>
+
+        <h2>Why this fits — the memory math made concrete</h2>
+        <p>From Lesson 1.15: the dominant memory cost during training is gradients + optimizer states on the trainable parameters, plus the model weights themselves. QLoRA changes both halves:</p>
+        <ul>
+          <li>The <strong>1.5B base in 4-bit</strong> takes <code>1.5e9 × 0.5 bytes ≈ 0.75 GB</code>. Compare to bf16 (3 GB) or fp32 (6 GB).</li>
+          <li>The <strong>base is frozen</strong> — no gradient memory, no optimizer state for it.</li>
+          <li>The <strong>LoRA adapter</strong> trains; for the wider <code>target_modules</code> above on a 1.5B model, that's a few million parameters with bf16 gradients + AdamW state — maybe ~80 MB.</li>
+          <li><strong>Activations + KV cache</strong> at sequence length 512, batch 4 — a few GB.</li>
+        </ul>
+        <p>Total: comfortably under 12 GB. A model that would have needed ~24 GB to LoRA-fine-tune at full precision fits in the budget of a consumer GPU.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest beat — 4-bit isn't free</p>
+          <p>QLoRA usually loses ~1–2 points on whatever metric you're tracking compared to LoRA on a full-precision base of the same size. Sometimes more on the hardest examples. <strong>Re-evaluate after a QLoRA run</strong> — don't assume the metric you measured on the bf16 base will hold. The right framing: QLoRA lets you fine-tune a <em>larger</em> model in the same VRAM; the trade isn't "free 4×" but "smaller-precision 1.5B vs full-precision 350M, whichever wins on your eval."</p>
+        </div>
+
+        <h2>Inference notes</h2>
+        <p>For inference you have two choices, mirroring Lesson 2.8:</p>
+        <ul>
+          <li><strong>Load 4-bit at inference too</strong> — keep the quantization config, load the base in 4-bit, attach the adapter with <code>PeftModel.from_pretrained</code>. Same memory budget as training.</li>
+          <li><strong>Merge and dequantize</strong> — for production serving, merge the adapter into a bf16 (or full-precision) base; you lose the memory win, but adapter merging into a quantized base isn't supported cleanly. The honest path for serving is to keep base + adapter separate or to convert the merged model to GGUF/AWQ for deployment (Track 4.6).</li>
+        </ul>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>QLoRA is <strong>SFTTrainer with two changes</strong>: load the base via <code>BitsAndBytesConfig</code> (NF4 + double quant + bf16 compute), and call <code>prepare_model_for_kbit_training</code> before attaching LoRA. That's it. The win is fitting a model 4–10× larger in the same VRAM. The cost is a small re-evaluable quality drop.</p>
+        </div>
+
+        <p>You can now train at scales the small model can't reach. Next: graduate Lesson 2.7's hand-rolled accuracy into real, per-class metrics with sklearn and HF <code>evaluate</code>.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>QLoRA</dt><dd>A 4-bit quantized frozen base with a LoRA adapter trained on top; cuts memory ~4× vs bf16 LoRA on the same model.</dd>
+            <dt>bitsandbytes</dt><dd>Library providing 4-bit/8-bit quantization kernels HF Transformers loads via <code>BitsAndBytesConfig</code>.</dd>
+            <dt>BitsAndBytesConfig</dt><dd>HF config object that tells <code>from_pretrained</code> to load weights quantized.</dd>
+            <dt>NF4 (4-bit Normal Float)</dt><dd>The QLoRA default quantization format; tuned for the weight distribution of trained Transformers.</dd>
+            <dt>Double quantization</dt><dd>Quantizing the quantization constants themselves to save a bit more memory.</dd>
+            <dt>prepare_model_for_kbit_training</dt><dd>peft helper that enables gradient checkpointing and stable-dtype casts before LoRA is attached to a quantized base.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "What does QLoRA actually train?",
+   "options": ["The whole quantized base", "The LoRA adapter only — the base is frozen and quantized to 4-bit", "A separate small model", "Nothing — it's inference-only"],
+   "answer": 1,
+   "explanation": "The base is 4-bit and frozen (no gradients, no optimizer state). The adapter trains on top in higher precision."},
+  {"q": "Why call prepare_model_for_kbit_training before LoRA?",
+   "options": ["It improves accuracy", "It enables gradient checkpointing, casts norm layers to a stable dtype, and makes adapter training on the quantized base work", "It downloads bitsandbytes", "It saves a checkpoint"],
+   "answer": 1,
+   "explanation": "Forgetting this call is the most common 'my QLoRA isn't training' bug."},
+  {"q": "What dtype goes in bnb_4bit_compute_dtype?",
+   "options": ["int4", "fp32 only", "bf16 (or fp16) — the dtype for the activations and gradients on top of the 4-bit weights", "uint8"],
+   "answer": 2,
+   "explanation": "The weights are 4-bit but operations happen in a higher-precision compute dtype; bf16 is the standard on modern GPUs."},
+  {"q": "After a QLoRA run, you should…",
+   "options": ["Skip evaluation — quantization is lossless", "Re-evaluate against the same gold set; 4-bit usually loses ~1–2 points vs full-precision LoRA of the same model", "Halve the learning rate", "Always merge the adapter"],
+   "answer": 1,
+   "explanation": "QLoRA's win is fitting a larger model; the trade-off is a small, re-evaluable quality drop. Measure it."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="../sft-fundamentals/lora-knobs.html">LoRA knobs: rank, alpha, QLoRA</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/gpu-memory-math.html">GPU memory math</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../advanced/quantization-and-compression.html">Quantization &amp; compression</a><span class="related-lessons__track">Advanced</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="sft-with-trl-trainer.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">SFT with TRL's SFTTrainer</span></a>
+          <a href="real-metrics-with-sklearn-evaluate.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Real metrics with sklearn &amp; HF evaluate</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Multi-turn chat SFT: loss masks on every assistant turn — BrewSLM Academy</title>
+    <meta name="description" content="Single-turn SFT masks one prompt and supervises one assistant reply. Multi-turn SFT masks every user turn and every system message, and supervises every assistant turn. This lesson shows the runnable version with SFTTrainer + chat-messages data." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/multi-turn-chat-sft.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Multi-turn chat SFT — BrewSLM Academy" />
+    <meta property="og:description" content="Train on multi-turn conversations with the loss applied to every assistant turn, not just the last. SFTTrainer + chat-messages data, with the pitfalls." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/multi-turn-chat-sft.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Multi-turn chat SFT — BrewSLM Academy" />
+    <meta name="twitter:description" content="Loss on every assistant turn, not just the last." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Multi-turn chat SFT",
+        "description": "Multi-turn SFT applies the loss mask to every assistant turn while masking every user turn and system message. This lesson shows the runnable version with SFTTrainer + chat-messages data, the mask-verification check, and the honest framing of what multi-turn training does and doesn't teach.",
+        "url": "https://brewslm.com/academy/hands-on/multi-turn-chat-sft.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["multi-turn chat fine-tuning", "per-turn loss mask", "chat-messages dataset", "context-window pressure", "role bleed"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Hands-on", "item": "https://brewslm.com/academy/hands-on/" },
+        { "@type": "ListItem", "position": 4, "name": "Multi-turn chat SFT", "item": "https://brewslm.com/academy/hands-on/multi-turn-chat-sft.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Multi-turn chat SFT" },
+        "hasPart": [
+          { "@type": "Question", "name": "In multi-turn SFT, which positions get loss?", "acceptedAnswer": { "@type": "Answer", "text": "Every assistant turn's tokens — not just the last. User turns, system messages, and chat-template special tokens are masked to -100." } },
+          { "@type": "Question", "name": "Does training on multi-turn data make the model 'better at long conversations'?", "acceptedAnswer": { "@type": "Answer", "text": "Not directly — it makes the model better at YOUR turn structure on conversations like the ones in your data. Long-range coherence is mostly a base-model property." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="hands-on/multi-turn-chat-sft">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html" aria-current="page">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../hands-on/index.html">Hands-on</a></li><li>Multi-turn chat SFT</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 14</span>
+          <h1>Multi-turn chat SFT</h1>
+          <p class="lesson-header__outcome">After this lesson you can fine-tune on multi-turn conversations with the loss mask applied to every assistant turn (not just the last), verify the mask, and frame honestly what multi-turn training does and doesn't change about the model's long-conversation behaviour.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="sft-with-trl-trainer.html">SFT with TRL's SFTTrainer</a></span>
+          </div>
+        </header>
+
+        <p>Everything in Track 2 so far has trained on single-turn pairs: one user prompt, one assistant reply. Real chat data isn't shaped like that. A support conversation has a system message, several user turns, and several assistant turns — and you want the model to learn how to handle <em>every</em> assistant turn in context, not just the last. Multi-turn SFT is exactly the same training loop with a different loss mask: every assistant turn is supervised, every user / system span is masked.</p>
+
+        <h2>The data shape: chat-messages, but longer</h2>
+        <p>From Lesson 1.20: chat-messages format is a list of <code>{role, content}</code> dicts. The only difference here is more entries.</p>
+        <pre class="code-block"><code>raw = [
+  {"messages": [
+    {"role": "system",    "content": "You are a polite support agent. Be concise."},
+    {"role": "user",      "content": "I want a refund."},
+    {"role": "assistant", "content": "I can help — what's the order number?"},
+    {"role": "user",      "content": "It's ORD-1234."},
+    {"role": "assistant", "content": "Thanks. I see the order. Refund will process in 3-5 days."}
+  ]},
+  # ... more conversations
+]
+ds = Dataset.from_list(raw)</code></pre>
+        <p>Two messages per conversation become four, six, ten. Sequence lengths grow; you'll usually want a larger <code>max_seq_length</code> than the single-turn lessons used.</p>
+
+        <h2>Loss on every assistant turn</h2>
+        <p>With <code>completion_only_loss=True</code>, SFTTrainer's chat-template-aware preprocessing masks <strong>every</strong> non-assistant token: system message, user turns, all the chat-template special tokens, and pad tokens. What remains unmasked is each assistant turn's content — including the assistant's <em>earlier</em> replies in the same conversation, not just the final one. This is the right default for chat fine-tuning: the model learns how to handle every turn position it'll see in production.</p>
+        <pre class="code-block"><code>from trl import SFTConfig, SFTTrainer
+from peft import LoraConfig
+
+lora = LoraConfig(
+    r=16, lora_alpha=32, lora_dropout=0.05,
+    target_modules=["q_proj", "v_proj"], task_type="CAUSAL_LM",
+)
+
+trainer = SFTTrainer(
+    model=model,
+    args=SFTConfig(
+        output_dir="multi-turn-out",
+        per_device_train_batch_size=4,            # smaller batch — longer sequences
+        gradient_accumulation_steps=4,            # effective batch 16
+        learning_rate=2e-4,
+        num_train_epochs=3,
+        lr_scheduler_type="cosine",
+        warmup_ratio=0.03,
+        bf16=True,
+        logging_steps=5,
+        save_strategy="epoch",
+        max_seq_length=2048,                      # multi-turn conversations need it
+        completion_only_loss=True,                # mask all non-assistant tokens
+        report_to=[],
+    ),
+    train_dataset=ds,
+    processing_class=tok,
+    peft_config=lora,
+)
+trainer.train()</code></pre>
+
+        <h2>Verify the mask — the cheap check that catches the loud bug</h2>
+        <p>Same check from Lesson 2.4 / 2.10, now more important: pull a batch, decode the unmasked positions, confirm they correspond to assistant turns only.</p>
+        <pre class="code-block"><code># after building the trainer, before .train()
+batch = next(iter(trainer.get_train_dataloader()))
+ids    = batch["input_ids"][0].tolist()
+labels = batch["labels"][0].tolist()
+
+# the tokens the model is supervised on
+unmasked = [i for i, l in zip(ids, labels) if l != -100]
+print(tok.decode(unmasked))
+# Should be the concatenation of every assistant turn's content.
+# If you see "user:" or system text in there, the mask is wrong.</code></pre>
+
+        <h2>Pitfalls specific to multi-turn</h2>
+        <ul>
+          <li><strong>Context-window pressure.</strong> Multi-turn conversations are long. If your <code>max_seq_length</code> is too small, examples get truncated and the last assistant turn (which often carries the resolution) is what gets cut off. Set <code>max_seq_length</code> from the actual length distribution in your training data, not a guess.</li>
+          <li><strong>Role bleed.</strong> If the chat template doesn't have crisp role markers (or your data is missing the explicit <code>role</code> field), the loss mask can leak into user turns and the model starts mimicking the user voice in its replies. The mask-verification check above catches this immediately.</li>
+          <li><strong>Sample composition.</strong> Five turns of "OK", "OK", "OK", "OK", "Done." is technically multi-turn data and teaches the model nothing useful. Curate for conversations where each turn carries real signal.</li>
+        </ul>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest beat — what multi-turn training doesn't do</p>
+          <p>Training on multi-turn data does <strong>not</strong> make the model "better at long conversations" in some general sense. It makes the model better at <em>your</em> turn structure on conversations resembling the ones in your data. Long-range coherence (remembering what was said 20 turns ago, keeping a stable persona over time) is mostly a property of the base model and its context window — fine-tuning on a few hundred multi-turn examples won't move it. If long-conversation behaviour is your goal, also evaluate broadly on out-of-domain conversations (Lesson 1.21's broad eval); the gains and the regressions both live there.</p>
+        </div>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Multi-turn SFT is single-turn SFT with a richer mask: <strong>every</strong> assistant turn is supervised, <strong>every</strong> user / system span is -100. SFTTrainer + <code>completion_only_loss=True</code> handles it for you on chat-messages data; the only changes from single-turn are a larger <code>max_seq_length</code> and a smaller batch. The mask-verification check is still the cheapest catch for the loudest bug.</p>
+        </div>
+
+        <p>You can now train on every shape of SFT data you'll meet. The last Track 2 lesson is the project gallery: six different SLM tasks, each expressed as a recipe you can pick up and run with the techniques you've learned.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Multi-turn SFT</dt><dd>Fine-tuning on conversations with multiple turns, supervising every assistant turn.</dd>
+            <dt>Per-turn loss mask</dt><dd>Loss applied to every assistant token in the conversation; user / system / chat-template tokens set to -100.</dd>
+            <dt>Mask verification</dt><dd>Decoding the unmasked positions of a training batch to confirm they correspond to assistant turns only; cheapest catch for a silent mask bug.</dd>
+            <dt>Role bleed</dt><dd>Mask leaking into user turns so the model is supervised on (and starts mimicking) user-voice text.</dd>
+            <dt>Context-window pressure</dt><dd>Long multi-turn conversations approaching <code>max_seq_length</code>; truncation cuts the final assistant turn first, eating the resolution.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "In multi-turn SFT with completion_only_loss=True, which positions get loss?",
+   "options": ["Only the last assistant turn", "Every assistant turn — earlier and later", "User turns", "All tokens equally"],
+   "answer": 1,
+   "explanation": "Every assistant turn's tokens are supervised; everything else (system, user, special tokens, pad) is masked to -100."},
+  {"q": "Your multi-turn fine-tune produces replies that sound like the user, not the assistant. Likely cause?",
+   "options": ["Learning rate too low", "Role bleed — the mask is leaking into user turns; verify with the dump-the-labels check", "Wrong tokenizer", "Too many epochs"],
+   "answer": 1,
+   "explanation": "Role bleed shows up exactly that way. Decode the unmasked positions of one batch; if you see user-voice text, that's the bug."},
+  {"q": "Does training on multi-turn data make the model 'better at long conversations'?",
+   "options": ["Yes, automatically", "Not directly — it makes the model better at your turn structure on conversations like yours; long-range coherence is mostly a base-model property", "Only with a larger learning rate", "Only with full fine-tuning"],
+   "answer": 1,
+   "explanation": "Don't oversell multi-turn training. Long-conversation coherence comes from the base; SFT teaches the shape of your turns."},
+  {"q": "Why does multi-turn SFT usually need a larger max_seq_length than single-turn?",
+   "options": ["The model has more parameters", "Conversations are longer; if max_seq_length truncates, the FINAL assistant turn (the resolution) is often what gets cut", "Tokenizers change", "It saves memory"],
+   "answer": 1,
+   "explanation": "Set max_seq_length from the actual length distribution; truncating the resolution turn is a silent way to break a multi-turn fine-tune."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="sft-with-trl-trainer.html">SFT with TRL's SFTTrainer</a><span class="related-lessons__track">Hands-on</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/chat-templates.html">Chat templates &amp; special tokens</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/dataset-formats-in-the-wild.html">Dataset formats in the wild</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="structured-outputs-with-pydantic.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Structured outputs with pydantic</span></a>
+          <a href="project-gallery.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Project gallery: 6 SLM use cases</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

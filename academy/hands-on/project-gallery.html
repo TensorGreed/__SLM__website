@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project gallery: 6 SLM use cases as recipes — BrewSLM Academy</title>
+    <meta name="description" content="The same hands-on pipeline (load model, build dataset, SFT loop, eval, ship) applies to wildly different SLM use cases. This gallery shows six — sentiment, intent, JSON extractor, PII detector, FAQ assistant, tool-call generator — each as a recipe: dataset shape, the right loss mask, the scoring mode, and the one twist that matters." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/project-gallery.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Project gallery: 6 SLM use cases as recipes — BrewSLM Academy" />
+    <meta property="og:description" content="Six concrete SLM projects, each as a recipe: dataset shape, scoring mode, the twist that matters. Pick one and ship it." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/project-gallery.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Project gallery: 6 SLM use cases — BrewSLM Academy" />
+    <meta name="twitter:description" content="Six projects, six recipes: sentiment, intent, JSON extractor, PII detector, FAQ, tool-call generator." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Project gallery: 6 SLM use cases as recipes",
+        "description": "Six concrete SLM projects expressed as recipes: sentiment classifier, intent classifier, JSON extractor, PII detector, FAQ assistant with RAG, and tool-call generator. Each includes the dataset shape, the scoring mode, the right metric, and the one twist that distinguishes it. Closes Track 2.",
+        "url": "https://brewslm.com/academy/hands-on/project-gallery.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["SLM use cases", "task shape mapping", "scoring mode selection", "project framing"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Hands-on", "item": "https://brewslm.com/academy/hands-on/" },
+        { "@type": "ListItem", "position": 4, "name": "Project gallery", "item": "https://brewslm.com/academy/hands-on/project-gallery.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Project gallery" },
+        "hasPart": [
+          { "@type": "Question", "name": "For a multi-class intent classifier with class imbalance, which metric should you lead with?", "acceptedAnswer": { "@type": "Answer", "text": "Macro F1 — equal weight per class, so a heavily imbalanced eval doesn't flatter the model on the majority class." } },
+          { "@type": "Question", "name": "For an FAQ assistant where the answer must come from a knowledge base, the right architecture is…", "acceptedAnswer": { "@type": "Answer", "text": "Retrieval + a small fine-tuned model (RAG + SFT). Fine-tuning teaches behaviour (concise, polite, refuses out-of-scope); retrieval supplies the facts." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="hands-on/project-gallery">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html" aria-current="page">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../hands-on/index.html">Hands-on</a></li><li>Project gallery</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 15</span>
+          <h1>Project gallery: 6 SLM use cases as recipes</h1>
+          <p class="lesson-header__outcome">After this lesson you can pick a concrete SLM project from six common shapes — classification, structured extraction, generation with knowledge, tool-call generation — express it as a recipe using the patterns from Track 2, and ship it. Closes Track 2.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> the rest of Track 2</span>
+          </div>
+        </header>
+
+        <p>You've done sentiment classification end-to-end (Capstone A). The same pipeline — load model, build dataset, SFT loop with mask, evaluate against a baseline, ship — applies to a wide range of practical SLM tasks. The differences are surprisingly small: the dataset shape, the scoring mode, the right metric, and one twist per task. This lesson is six projects with those differences made explicit, so you can pick one and start.</p>
+
+        <h2>Project 1 — Sentiment classifier (done)</h2>
+        <p>You already shipped this in Capstone A. For reference:</p>
+        <ul>
+          <li><strong>Data shape:</strong> <code>{prompt, completion}</code> with the completion being a class label.</li>
+          <li><strong>SFT loop:</strong> Lesson 2.10's SFTTrainer + LoRA.</li>
+          <li><strong>Eval:</strong> macro-F1 + per-class report (Lesson 2.12); confusion matrix to see which classes confuse.</li>
+          <li><strong>Twist:</strong> class balance — the trivial-majority-class trap.</li>
+        </ul>
+
+        <h2>Project 2 — Intent classifier (multi-class, real imbalance)</h2>
+        <p>A router for a chatbot: 10–30 intents, often with one or two intents being far more common than the others (e.g. "track_order" outnumbers "talk_to_human" 20:1).</p>
+        <ul>
+          <li><strong>Data shape:</strong> same as sentiment (<code>{prompt, completion=intent_name}</code>) but with more classes.</li>
+          <li><strong>SFT loop:</strong> identical to Project 1.</li>
+          <li><strong>Eval:</strong> macro-F1 is the headline (Lesson 2.12). Per-class report; pay attention to recall on the rare intents — that's what an imbalanced classifier silently breaks.</li>
+          <li><strong>Twist — handling the imbalance:</strong>
+            <ol>
+              <li>Upsample the minority intents in training (or downsample the majority).</li>
+              <li>Add specifically the <em>hard</em> rare cases (Lesson 1.7) — variations of the user phrasing for each minority intent.</li>
+              <li>Set a confidence threshold below which the router routes to "talk_to_human" — a refusal as a routing destination.</li>
+            </ol>
+          </li>
+        </ul>
+
+        <h2>Project 3 — JSON extractor with Pydantic validation</h2>
+        <p>Pull structured fields out of free text — invoices, support tickets, transcripts. The dominant practical use of SLMs in many companies.</p>
+        <ul>
+          <li><strong>Data shape:</strong> <code>{prompt: "Extract ...: &lt;text&gt;", completion: &lt;JSON object string&gt;}</code>.</li>
+          <li><strong>SFT loop:</strong> Lesson 2.10. Low temperature at inference (Lesson 1.19).</li>
+          <li><strong>Eval:</strong> Lesson 2.13's two-number report: valid-JSON rate + per-field accuracy on the parses that succeed.</li>
+          <li><strong>Twist — schema enforcement:</strong>
+            <ol>
+              <li>Pydantic schema (Lesson 2.13) — the validator <em>and</em> the documentation of what the model should emit.</li>
+              <li>Optional: constrained decoding (e.g. outlines, jsonformer) at inference, which forces valid JSON at the cost of some quality.</li>
+            </ol>
+          </li>
+        </ul>
+
+        <h2>Project 4 — PII detector (span extraction)</h2>
+        <p>Find personal information in a string: names, emails, phone numbers, addresses. Differs from classification: there can be zero or many spans per input.</p>
+        <ul>
+          <li><strong>Data shape:</strong> <code>{text, spans: [{start, end, label}, ...]}</code> (Lesson 1.20's extraction format).</li>
+          <li><strong>SFT loop:</strong> reframe as JSON extraction — the assistant's reply is the JSON array of spans. Same SFTTrainer pipeline.</li>
+          <li><strong>Eval:</strong> entity-level F1 with HF <code>evaluate</code>'s <code>seqeval</code>, plus per-type precision/recall (a model that gets phone numbers right and emails wrong is a different model from one that gets both at 80%).</li>
+          <li><strong>Twist — false negatives are the costly direction:</strong> for safety-sensitive PII work, <strong>recall is the metric to defend</strong>. Missing a phone number is far worse than over-flagging some innocent strings. Tune the threshold or the data accordingly (more hard negatives that aren't PII; more positives covering rare formats).</li>
+        </ul>
+
+        <h2>Project 5 — FAQ assistant (RAG + small fine-tune)</h2>
+        <p>"Given our docs, answer customer support questions." The first instinct is "fine-tune on the FAQ." Wrong — fine-tuning teaches <em>behaviour</em>, not <em>facts</em> (Foundations 0.7). A small fine-tune for tone + format, plus retrieval for the facts, is the right architecture.</p>
+        <ul>
+          <li><strong>Data shape:</strong> <code>{prompt: question + retrieved_passages, completion: grounded_answer}</code>. The completion only references the supplied passages.</li>
+          <li><strong>SFT loop:</strong> Lesson 2.10. Multi-turn (Lesson 2.14) when the assistant should ask clarifying questions before answering.</li>
+          <li><strong>Eval:</strong> faithfulness ("does the answer use only the passages?") + refusal accuracy ("does it refuse when the docs don't cover the question?") + format. <a class="inline-link" href="../with-brewslm/eval-packs-and-failure-clusters.html">BrewSLM's eval pack</a> handles this taxonomy.</li>
+          <li><strong>Twist — refusals are training data:</strong> include explicit examples where the right answer is "I don't have that information." Lesson 1.7's refusal data, made concrete.</li>
+        </ul>
+
+        <h2>Project 6 — Tool-call generator (structured function calls)</h2>
+        <p>Given a user request and a list of available tools (functions with JSON schemas), the model emits a JSON object describing which tool to call and what arguments to pass. The agent / function-calling backbone.</p>
+        <ul>
+          <li><strong>Data shape:</strong> system message lists the available tools (with their schemas); user message is the request; assistant emits <code>{"tool": "name", "arguments": {...}}</code> or a refusal.</li>
+          <li><strong>SFT loop:</strong> Lesson 2.10 + Lesson 2.14 (multi-turn, because tool calls often chain).</li>
+          <li><strong>Eval:</strong> tool-call accuracy (right tool name) + argument-set match (the arguments match the gold) + valid-call rate (the JSON parses and is a real tool). Lesson 2.13's two-number report, tool-flavoured.</li>
+          <li><strong>Twist — calling no tool is also a valid output:</strong> include negative examples where the right thing is "no tool needed, answer directly" or "request needs clarification." A model that calls a tool every time is broken.</li>
+        </ul>
+
+        <h2>Pattern-spotting across the six</h2>
+        <p>Now the common skeleton is clear:</p>
+        <ol>
+          <li>Pick the <strong>task shape</strong> (Lesson 1.5): single-label classification, multi-label, span extraction, structured generation, grounded generation, tool-call.</li>
+          <li>Pick the <strong>data format</strong> matching that shape (Lesson 1.20).</li>
+          <li>Run the <strong>SFT loop</strong> (Lesson 2.10) on a small base (or QLoRA on a bigger one, Lesson 2.11).</li>
+          <li>Pick the <strong>eval</strong> matching the task: sklearn classification report for labels (Lesson 2.12), Pydantic + per-field for JSON (Lesson 2.13), <code>seqeval</code> for spans, faithfulness + refusal for grounded generation.</li>
+          <li>Iterate on <strong>data</strong> — hard negatives, ambiguous cases, refusals, OOD (Lesson 1.7's extended taxonomy).</li>
+        </ol>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest beat — pick one, ship one</p>
+          <p>The single biggest mistake at this stage is picking three projects "to compare" and shipping none. <strong>Pick one</strong>, ship it end-to-end (data → train → eval → deploy), measure the lift against a base, then pick the next. The skills transfer; what doesn't transfer is the experience of getting all the way through a pipeline including the boring parts. Ship one before you scope two.</p>
+        </div>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>The Track 2 pipeline applies to every common SLM use case with small, predictable changes — <strong>data shape</strong>, <strong>scoring mode</strong>, <strong>the one twist</strong>. Pick a project, write the recipe in the shape above, and use the rest of the track as the implementation. The next track shows how to run the same recipes through BrewSLM, where data import, eval packs, and deployment are platform surfaces.</p>
+        </div>
+
+        <p>That ends Track 2 — Hands-on. You can now fine-tune small language models from scratch in Python: load, build, mask, train, evaluate (honestly), and ship. Track 3 takes the same pipeline and runs it through BrewSLM, showing what the platform automates and what's worth the trade.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Task shape</dt><dd>The structural form of a task — single-label, multi-label, span extraction, structured generation, grounded generation, tool-call — that determines data format and scoring.</dd>
+            <dt>Scoring mode</dt><dd>The kind of metric matching the task shape (classification → F1; extraction → seqeval; structured → valid-rate + per-field; grounded → faithfulness).</dd>
+            <dt>Recipe</dt><dd>The minimum description of how to fine-tune for a task: data shape + LoRA knobs + scoring mode + the twist.</dd>
+            <dt>Faithfulness</dt><dd>Whether a generated answer is grounded in the supplied context (the RAG passages) rather than hallucinated.</dd>
+            <dt>Refusal accuracy</dt><dd>Whether the model correctly declines on out-of-scope / under-documented questions instead of fabricating an answer.</dd>
+            <dt>seqeval</dt><dd>The standard span-extraction metric library (HF <code>evaluate</code> exposes it); produces entity-level precision/recall/F1.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "For a multi-class intent classifier with class imbalance, which metric should you lead with?",
+   "options": ["Accuracy", "Macro F1 — equal weight per class, so the model can't hide poor minority-intent recall behind a strong majority", "Weighted F1", "Recall on the largest class"],
+   "answer": 1,
+   "explanation": "Imbalanced multi-class needs macro F1 to expose minority-class weakness."},
+  {"q": "An FAQ assistant must answer from a knowledge base only. The right architecture is…",
+   "options": ["Fine-tune a model to memorise the FAQ", "RAG + a small fine-tune (retrieval supplies the facts; SFT teaches tone, format, and refusals)", "A bigger base model", "Train on the whole web"],
+   "answer": 1,
+   "explanation": "Fine-tuning teaches behaviour, not facts (Foundations 0.7). RAG + SFT is the canonical split."},
+  {"q": "For a PII detector, which direction of error is more costly?",
+   "options": ["False positives — flagging non-PII as PII", "False negatives — missing real PII; defend recall accordingly", "Both equal", "Depends on the tokenizer"],
+   "answer": 1,
+   "explanation": "Missing a phone number is far worse than over-flagging an innocent string. Tune the threshold or add data to favour recall."},
+  {"q": "Your tool-call generator calls a tool on every input. The fix is…",
+   "options": ["More epochs", "Add negative examples — inputs where the right answer is 'no tool needed' or 'ask for clarification'", "A larger model", "Lower learning rate"],
+   "answer": 1,
+   "explanation": "A model that always calls a tool was never taught not to. Negative examples teach the no-tool path."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="../sft-fundamentals/task-shapes.html">Task shapes</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../with-brewslm/from-script-to-platform.html">From script to platform: the lifecycle</a><span class="related-lessons__track">With BrewSLM</span></li>
+            <li><a class="inline-link" href="../with-brewslm/auto-rag-and-reroute.html">When not to fine-tune: auto-RAG &amp; reroute</a><span class="related-lessons__track">With BrewSLM</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="multi-turn-chat-sft.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Multi-turn chat SFT</span></a>
+          <a href="../with-brewslm/from-script-to-platform.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">From script to platform (Track 3)</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>
