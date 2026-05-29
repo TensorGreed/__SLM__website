@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SFT fundamentals — BrewSLM Academy (Track 1)</title>
+    <meta name="description" content="The concepts behind supervised fine-tuning: the loss mask, chat templates, task shapes, tokenization, data quality, the training loop, cross-entropy, LoRA, GPU memory, and evaluation — eighteen lessons, still mostly code-free." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="SFT fundamentals — BrewSLM Academy" />
+    <meta property="og:description" content="The concepts behind supervised fine-tuning: the loss mask, chat templates, task shapes, tokenization, data quality, the training loop, cross-entropy, LoRA, GPU memory, and evaluation — eighteen lessons, still mostly code-free." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="SFT fundamentals — BrewSLM Academy" />
+    <meta name="twitter:description" content="The concepts behind supervised fine-tuning: the loss mask, chat templates, task shapes, tokenization, data quality, the training loop, cross-entropy, LoRA, GPU memory, and evaluation — eighteen lessons, still mostly code-free." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Course",
+  "name": "BrewSLM Academy \u2014 SFT fundamentals",
+  "description": "The concepts behind supervised fine-tuning: the loss mask, chat templates, task shapes, tokenization, data quality, the training loop, cross-entropy, LoRA, GPU memory, and evaluation \u2014 eighteen lessons, still mostly code-free.",
+  "url": "https://brewslm.com/academy/sft-fundamentals/",
+  "inLanguage": "en",
+  "isAccessibleForFree": true,
+  "provider": {
+    "@type": "Organization",
+    "name": "TensorGreed",
+    "url": "https://github.com/TensorGreed"
+  },
+  "isPartOf": {
+    "@type": "Course",
+    "name": "BrewSLM Academy",
+    "url": "https://brewslm.com/academy/"
+  },
+  "numberOfCredits": 18,
+  "hasPart": [
+    {
+      "@type": "LearningResource",
+      "position": 1,
+      "name": "What is Supervised Fine-Tuning?",
+      "url": "https://brewslm.com/academy/sft-fundamentals/what-is-sft.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 2,
+      "name": "Choosing the training objective: SFT, DPO, ORPO, RLHF",
+      "url": "https://brewslm.com/academy/sft-fundamentals/choosing-the-objective.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 3,
+      "name": "Anatomy of an SFT example: prompt, completion, and the loss mask",
+      "url": "https://brewslm.com/academy/sft-fundamentals/anatomy-of-an-sft-example.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 4,
+      "name": "Chat templates & special tokens",
+      "url": "https://brewslm.com/academy/sft-fundamentals/chat-templates.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 5,
+      "name": "Task shapes: classification, QA, extraction, summarization, chat",
+      "url": "https://brewslm.com/academy/sft-fundamentals/task-shapes.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 6,
+      "name": "Tokenization in practice: padding, truncation, packing",
+      "url": "https://brewslm.com/academy/sft-fundamentals/tokenization-deep-dive.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 7,
+      "name": "Data quality I: dedup, balance, leakage, and splits",
+      "url": "https://brewslm.com/academy/sft-fundamentals/data-quality-splits.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 8,
+      "name": "Data quality II: gold sets",
+      "url": "https://brewslm.com/academy/sft-fundamentals/gold-sets.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 9,
+      "name": "The training loop, step by step",
+      "url": "https://brewslm.com/academy/sft-fundamentals/the-training-loop.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 10,
+      "name": "Cross-entropy loss for token prediction",
+      "url": "https://brewslm.com/academy/sft-fundamentals/cross-entropy-loss.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 11,
+      "name": "Learning rate, schedules, warmup, epochs vs steps",
+      "url": "https://brewslm.com/academy/sft-fundamentals/learning-rate-and-schedules.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 12,
+      "name": "Batch size, gradient accumulation, and the effective batch",
+      "url": "https://brewslm.com/academy/sft-fundamentals/batch-size-and-accumulation.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 13,
+      "name": "Full fine-tuning vs LoRA",
+      "url": "https://brewslm.com/academy/sft-fundamentals/full-finetuning-vs-lora.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 14,
+      "name": "LoRA knobs: rank, alpha, dropout, target modules, QLoRA",
+      "url": "https://brewslm.com/academy/sft-fundamentals/lora-knobs.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 15,
+      "name": "GPU memory math",
+      "url": "https://brewslm.com/academy/sft-fundamentals/gpu-memory-math.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 16,
+      "name": "OOM and how to survive it",
+      "url": "https://brewslm.com/academy/sft-fundamentals/surviving-oom.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 17,
+      "name": "Overfitting, underfitting, and reading a loss curve",
+      "url": "https://brewslm.com/academy/sft-fundamentals/overfitting-and-loss-curves.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 18,
+      "name": "Evaluation that matches the task",
+      "url": "https://brewslm.com/academy/sft-fundamentals/evaluation-fundamentals.html"
+    }
+  ]
+}
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://brewslm.com/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Academy",
+      "item": "https://brewslm.com/academy/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "SFT fundamentals",
+      "item": "https://brewslm.com/academy/sft-fundamentals/"
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li>SFT fundamentals</li></ol>
+    </nav>
+
+    <main class="track-index">
+      <header class="track-index__head">
+        <span class="lesson-header__badge">Track 1 · SFT fundamentals</span>
+        <h1>SFT fundamentals</h1>
+        <p class="track-index__intro">The concepts behind supervised fine-tuning: the loss mask, chat templates, task shapes, tokenization, data quality, the training loop, cross-entropy, LoRA, GPU memory, and evaluation — eighteen lessons, still mostly code-free.</p>
+        <div class="track-index__actions">
+          <a class="btn btn-solid" href="what-is-sft.html">Start the track →</a>
+          <a class="btn btn-outline" href="../index.html">All tracks</a>
+          <a class="btn btn-ghost" href="../glossary.html">Glossary</a>
+        </div>
+      </header>
+
+      <ol class="track-index-lessons">
+          <li>
+            <a class="track-index-lessons__title" href="what-is-sft.html">1. What is Supervised Fine-Tuning?</a>
+            <p class="track-index-lessons__desc">Supervised Fine-Tuning continues training a pretrained model on labeled input-output examples so it reliably produces the outputs you want. This lesson defines SFT precisely, says what it is good at, and — just as important — when not to use it.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="choosing-the-objective.html">2. Choosing the training objective: SFT, DPO, ORPO, RLHF</a>
+            <p class="track-index-lessons__desc">Beyond SFT there are preference-based objectives (DPO, ORPO, RLHF) and continued pretraining. This lesson explains what each optimizes, when comparative &#x27;A is better than B&#x27; data beats single-target data, and how to choose.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="anatomy-of-an-sft-example.html">3. Anatomy of an SFT example: prompt, completion, and the loss mask</a>
+            <p class="track-index-lessons__desc">An SFT example is a prompt plus a target completion, concatenated into one token sequence. The loss mask makes the model learn to produce the answer rather than echo the question. This lesson dissects both and the mistakes that break them.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="chat-templates.html">4. Chat templates &amp; special tokens</a>
+            <p class="track-index-lessons__desc">Instruct models expect a precise format with role markers and special tokens. Using the wrong chat template silently wrecks quality. This lesson explains chat templates, apply_chat_template, the generation prompt, and why training and inference must match.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="task-shapes.html">5. Task shapes: classification, QA, extraction, summarization, chat</a>
+            <p class="track-index-lessons__desc">A task shape dictates your data format, loss, and evaluation metric. This lesson surveys the common SFT shapes — classification, QA, extraction/NER, summarization, chat — and why the metric must match the shape.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="tokenization-deep-dive.html">6. Tokenization in practice: padding, truncation, packing</a>
+            <p class="track-index-lessons__desc">Training adds practical tokenization concerns beyond the basics: padding and attention masks, truncation and max_seq_length, sequence packing, and padding side. This lesson covers each and the data bug that truncation can silently introduce.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="data-quality-splits.html">7. Data quality I: dedup, balance, leakage, and splits</a>
+            <p class="track-index-lessons__desc">Most of a fine-tune&#x27;s quality comes from data, not hyperparameters. This lesson covers deduplication, class balance, the train/validation/test split, and the silent killer — data leakage between train and test.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="gold-sets.html">8. Data quality II: gold sets</a>
+            <p class="track-index-lessons__desc">A gold set is a small, curated, never-trained-on set of examples with known-correct answers — your single source of truth for whether a model is good enough. This lesson explains how to build one and why it anchors every decision.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="the-training-loop.html">9. The training loop, step by step</a>
+            <p class="track-index-lessons__desc">An SFT training loop is the gradient-descent loop applied to batches of tokenized examples: forward pass, compute loss on the completion, backward pass, optimizer step, repeat — with checkpoints and validation along the way. This lesson walks the whole loop.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="cross-entropy-loss.html">10. Cross-entropy loss for token prediction</a>
+            <p class="track-index-lessons__desc">Cross-entropy is the loss behind next-token training: it is small when the model gave high probability to the correct next token and large when it didn&#x27;t. This lesson builds the intuition and connects it to perplexity.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="learning-rate-and-schedules.html">11. Learning rate, schedules, warmup, epochs vs steps</a>
+            <p class="track-index-lessons__desc">The learning rate is the most important knob in fine-tuning. This lesson covers sensible LR ranges, warmup, decay schedules (cosine), and the difference between epochs and steps — plus how to read when the LR is wrong.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="batch-size-and-accumulation.html">12. Batch size, gradient accumulation, and the effective batch</a>
+            <p class="track-index-lessons__desc">Batch size affects gradient stability and memory. Gradient accumulation lets a small GPU simulate a large batch. This lesson explains the effective batch size and how it interacts with the learning rate.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="full-finetuning-vs-lora.html">13. Full fine-tuning vs LoRA</a>
+            <p class="track-index-lessons__desc">Full fine-tuning updates every parameter; LoRA freezes the model and trains tiny added matrices instead. This lesson explains how LoRA works, why it slashes memory and storage, and the trade-offs versus full fine-tuning.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="lora-knobs.html">14. LoRA knobs: rank, alpha, dropout, target modules, QLoRA</a>
+            <p class="track-index-lessons__desc">LoRA exposes a few settings: rank r, alpha, dropout, and which modules to adapt — plus QLoRA for quantized bases. This lesson explains what each knob does and sensible defaults.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="gpu-memory-math.html">15. GPU memory math</a>
+            <p class="track-index-lessons__desc">Knowing what consumes GPU memory — weights, gradients, optimizer state, and activations — lets you predict whether a run fits and why LoRA and mixed precision help. This lesson builds a back-of-envelope memory model.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="surviving-oom.html">16. OOM and how to survive it</a>
+            <p class="track-index-lessons__desc">CUDA out-of-memory is the most common fine-tuning failure. This lesson is a practical field guide: the levers (batch size, sequence length, gradient checkpointing, LoRA/QLoRA, precision) ordered by impact and cost.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="overfitting-and-loss-curves.html">17. Overfitting, underfitting, and reading a loss curve</a>
+            <p class="track-index-lessons__desc">A loss curve tells you whether a run is healthy, underfitting, or overfitting. This lesson teaches you to read training vs validation curves, recognize the diverging-validation signature of overfitting, and respond.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="evaluation-fundamentals.html">18. Evaluation that matches the task</a>
+            <p class="track-index-lessons__desc">Evaluation turns &#x27;seems better&#x27; into a defensible number. This lesson covers choosing a metric that fits the task shape, computing it on the gold set, baselines and gates, and reporting honestly — including where the model loses.</p>
+          </li>
+      </ol>
+    </main>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

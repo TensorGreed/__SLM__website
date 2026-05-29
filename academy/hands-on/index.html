@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hands-on — BrewSLM Academy (Track 2)</title>
+    <meta name="description" content="Fine-tune a small model by hand in PyTorch and Transformers — environment, data, a LoRA Trainer loop, evaluation, and shipping — with runnable code at every step." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Hands-on — BrewSLM Academy" />
+    <meta property="og:description" content="Fine-tune a small model by hand in PyTorch and Transformers — environment, data, a LoRA Trainer loop, evaluation, and shipping — with runnable code at every step." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Hands-on — BrewSLM Academy" />
+    <meta name="twitter:description" content="Fine-tune a small model by hand in PyTorch and Transformers — environment, data, a LoRA Trainer loop, evaluation, and shipping — with runnable code at every step." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Course",
+  "name": "BrewSLM Academy \u2014 Hands-on",
+  "description": "Fine-tune a small model by hand in PyTorch and Transformers \u2014 environment, data, a LoRA Trainer loop, evaluation, and shipping \u2014 with runnable code at every step.",
+  "url": "https://brewslm.com/academy/hands-on/",
+  "inLanguage": "en",
+  "isAccessibleForFree": true,
+  "provider": {
+    "@type": "Organization",
+    "name": "TensorGreed",
+    "url": "https://github.com/TensorGreed"
+  },
+  "isPartOf": {
+    "@type": "Course",
+    "name": "BrewSLM Academy",
+    "url": "https://brewslm.com/academy/"
+  },
+  "numberOfCredits": 9,
+  "hasPart": [
+    {
+      "@type": "LearningResource",
+      "position": 1,
+      "name": "Set up the environment",
+      "url": "https://brewslm.com/academy/hands-on/environment-setup.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 2,
+      "name": "Load a base model and tokenizer",
+      "url": "https://brewslm.com/academy/hands-on/load-model-and-tokenizer.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 3,
+      "name": "Build a tiny SFT dataset",
+      "url": "https://brewslm.com/academy/hands-on/build-a-dataset.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 4,
+      "name": "Tokenize and collate: model-ready batches with a loss mask",
+      "url": "https://brewslm.com/academy/hands-on/tokenize-and-collate.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 5,
+      "name": "A minimal LoRA fine-tune with the Trainer",
+      "url": "https://brewslm.com/academy/hands-on/minimal-lora-trainer.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 6,
+      "name": "Run it: read the logs, the loss, the checkpoints",
+      "url": "https://brewslm.com/academy/hands-on/run-and-read-logs.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 7,
+      "name": "Evaluate by hand: run the gold set, compute the metric",
+      "url": "https://brewslm.com/academy/hands-on/evaluate-by-hand.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 8,
+      "name": "Merge the adapter, run inference, ship an artifact",
+      "url": "https://brewslm.com/academy/hands-on/merge-and-infer.html"
+    },
+    {
+      "@type": "LearningResource",
+      "position": 9,
+      "name": "Capstone A: fine-tune SmolLM2 end-to-end, by hand",
+      "url": "https://brewslm.com/academy/hands-on/capstone-end-to-end.html"
+    }
+  ]
+}
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://brewslm.com/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Academy",
+      "item": "https://brewslm.com/academy/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Hands-on",
+      "item": "https://brewslm.com/academy/hands-on/"
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html" aria-current="page">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li>Hands-on</li></ol>
+    </nav>
+
+    <main class="track-index">
+      <header class="track-index__head">
+        <span class="lesson-header__badge">Track 2 · Hands-on</span>
+        <h1>Hands-on</h1>
+        <p class="track-index__intro">Fine-tune a small model by hand in PyTorch and Transformers — environment, data, a LoRA Trainer loop, evaluation, and shipping — with runnable code at every step.</p>
+        <div class="track-index__actions">
+          <a class="btn btn-solid" href="environment-setup.html">Start the track →</a>
+          <a class="btn btn-outline" href="../index.html">All tracks</a>
+          <a class="btn btn-ghost" href="../glossary.html">Glossary</a>
+        </div>
+      </header>
+
+      <ol class="track-index-lessons">
+          <li>
+            <a class="track-index-lessons__title" href="environment-setup.html">1. Set up the environment</a>
+            <p class="track-index-lessons__desc">Track 2 fine-tunes a small model by hand in PyTorch and Transformers. This first lesson sets up a clean Python environment with torch, transformers, peft, trl, datasets and accelerate, and verifies your GPU is visible.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="load-model-and-tokenizer.html">2. Load a base model and tokenizer</a>
+            <p class="track-index-lessons__desc">Load SmolLM2-135M and its tokenizer with Transformers, inspect the config and parameter count, set the pad token, and run a quick generation to confirm the base model works before any fine-tuning.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="build-a-dataset.html">3. Build a tiny SFT dataset</a>
+            <p class="track-index-lessons__desc">Construct a small supervised fine-tuning dataset of (prompt, completion) pairs for sentiment classification, wrap it in a datasets.Dataset, check class balance, and split into train and validation — applying Track 1&#x27;s data-quality lessons in code.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="tokenize-and-collate.html">4. Tokenize and collate: model-ready batches with a loss mask</a>
+            <p class="track-index-lessons__desc">Turn (prompt, completion) pairs into input_ids and labels with the prompt masked to -100, using the chat template — then pad them into batches with DataCollatorForSeq2Seq. This is Track 1&#x27;s loss mask, in code.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="minimal-lora-trainer.html">5. A minimal LoRA fine-tune with the Trainer</a>
+            <p class="track-index-lessons__desc">Attach a LoRA adapter with peft, configure TrainingArguments with the hyperparameters from Track 1, and run the Hugging Face Trainer to fine-tune SmolLM2 — the whole training step in about 30 lines.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="run-and-read-logs.html">6. Run it: read the logs, the loss, the checkpoints</a>
+            <p class="track-index-lessons__desc">Run the fine-tune and interpret what the Trainer prints: the training loss trajectory, the per-epoch validation loss, and where checkpoints land. Apply Track 1&#x27;s loss-curve reading to a real run.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="evaluate-by-hand.html">7. Evaluate by hand: run the gold set, compute the metric</a>
+            <p class="track-index-lessons__desc">Load the LoRA adapter onto the base model, run predictions over your held-out gold set, compute accuracy, and compare against the untuned base — turning Track 1&#x27;s evaluation principles into a few lines of code.</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="merge-and-infer.html">8. Merge the adapter, run inference, ship an artifact</a>
+            <p class="track-index-lessons__desc">Merge the LoRA adapter into the base weights to produce a standalone model, save it as safetensors, reload it for plain inference, and understand your export options (including GGUF for edge deployment).</p>
+          </li>
+          <li>
+            <a class="track-index-lessons__title" href="capstone-end-to-end.html">9. Capstone A: fine-tune SmolLM2 end-to-end, by hand</a>
+            <p class="track-index-lessons__desc">The full by-hand pipeline in one runnable script: load SmolLM2, build and tokenize data with a loss mask, train a LoRA adapter, evaluate against the base on a gold set, and merge to a shippable model — with success criteria and what to do if it falls short.</p>
+          </li>
+      </ol>
+    </main>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>
