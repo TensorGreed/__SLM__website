@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Train: jobs, the bell, and the delta-from-baseline curve — BrewSLM Academy</title>
+    <meta name="description" content="Stage 08 runs your recipe as a watched background Job: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into a live curve plotted as delta from baseline, and named RunEvents capture completion or failure modes like training_oom and training_cancelled." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/with-brewslm/training-jobs-and-monitoring.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Train: jobs, the bell, and the delta-from-baseline curve — BrewSLM Academy" />
+    <meta property="og:description" content="Stage 08 runs your recipe as a watched background Job: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into a live curve plotted as delta from baseline, and named RunEvents capture completion or failure modes like training_oom and training_cancelled." />
+    <meta property="og:url" content="https://brewslm.com/academy/with-brewslm/training-jobs-and-monitoring.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Train: jobs, the bell, and the delta-from-baseline curve — BrewSLM Academy" />
+    <meta name="twitter:description" content="Stage 08 runs your recipe as a watched background Job: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into a live curve plotted as delta from baseline, and named RunEvents capture completion or failure modes like training_oom and training_cancelled." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Train: jobs, the bell, and the delta-from-baseline curve",
+        "description": "Stage 08 runs your recipe as a watched background Job: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into a live curve plotted as delta from baseline, and named RunEvents capture completion or failure modes like training_oom and training_cancelled.",
+        "url": "https://brewslm.com/academy/with-brewslm/training-jobs-and-monitoring.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["training Job", "NotificationBell", "delta-from-baseline curve", "training RunEvents"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "With BrewSLM", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Train: jobs, the bell, and the delta-from-baseline curve", "item": "https://brewslm.com/academy/with-brewslm/training-jobs-and-monitoring.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Train: jobs, the bell, and the delta-from-baseline curve"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "How does BrewSLM run a training job so the request doesn't block?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "As a background Job tracked by the notification bell"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does the delta-from-baseline curve make explicit?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Whether and by how much you're beating the untuned base model"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "A run exhausts GPU memory. Which RunEvent fires?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "training_oom"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why hold a strong reference to the running task?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "So the garbage collector can't silently kill it mid-run"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="with-brewslm/training-jobs-and-monitoring">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html" aria-current="page">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">With BrewSLM</a></li><li>Training jobs</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 3 · With BrewSLM · Lesson 7</span>
+          <h1>Train: jobs, the bell, and the delta-from-baseline curve</h1>
+          <p class="lesson-header__outcome">After this lesson you can launch training as a background Job, monitor it via the notification bell and the live loss curve, read the delta-from-baseline view, and recognize the named training failure events.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="preflight-and-trainability.html">Preflight and the trainability forecast</a></span>
+          </div>
+        </header>
+
+        <p>This is the stage you know best — it's <code>trainer.train()</code> from lesson 2.5. The difference is everything <em>around</em> the loop: it runs as a tracked Job, streams progress to a bell, and plots its loss against your baseline.</p>
+
+        <h2>Launch — one click or one call</h2>
+        <p>From the Training Config page you launch with the chosen recipe; or scripted:</p>
+        <pre class="code-block"><code>$ curl -X POST localhost:8000/api/projects/1/training/run \
+    -H 'Content-Type: application/json' \
+    -d '{"autopilot": true, "one_click": true}'</code></pre>
+        <p>Training takes the prepared manifest + chosen recipe + checkpoint cadence, and produces checkpoints, per-step loss / eval traces, and a final adapter weights blob — the same outputs your Trainer wrote to <code>sft-out/</code>, now first-class records on the experiment.</p>
+
+        <h2>It runs as a background Job</h2>
+        <p>Long-running work in BrewSLM is a <strong>Job</strong> persisted to a table. The top-bar <strong>notification bell</strong> polls <code>/api/jobs/active</code> every ~4 seconds and surfaces progress and outcome, so you don't sit watching a terminal. A watcher Job mirrors the experiment's progress into the bell, and the Job framework holds a strong reference to the running task so it can't be silently garbage-collected mid-run.</p>
+
+        <h2>The delta-from-baseline curve</h2>
+        <p>In Track 2 you read raw loss numbers scrolling past. BrewSLM plots the live loss curve as a <strong>delta from baseline</strong> — the untuned base model's loss on the same data is the zero line, and your run is drawn relative to it. That reframes the question from "is 0.58 good?" (which you can't judge in isolation) to "am I beating the baseline, and by how much?" — exactly the comparison Track 1's evaluation lesson insisted on, now live during training.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">From Track 2</p>
+          <p>Everything you learned about reading curves (lesson 2.6) applies here — falling-and-flattening is healthy, a rising eval trace is overfitting. The delta-from-baseline view just makes "better than doing nothing" the explicit y-axis.</p>
+        </div>
+
+        <h2>Completion and failure are events</h2>
+        <p>When the run finishes it emits <code>training</code> / info with a payload of <code>experiment_id</code>, <code>backend</code>, and <code>final_train_loss</code>. When it fails, it emits a <em>named</em> event so you know exactly what happened:</p>
+        <pre class="code-block"><code>training            (info)     # completed: experiment_id, backend, final_train_loss
+training_oom                   # ran out of GPU memory
+training_runtime_error         # crashed mid-run
+training_timeout               # exceeded the time budget
+training_cancelled             # you cancelled it</code></pre>
+        <p>Those map directly onto the failure modes you learned to diagnose by hand — but now they're typed, logged, and visible in the failure-cluster surface rather than buried in a stack trace. With a trained adapter and its traces recorded, the next stage asks the real question: is it good enough to ship? That's evaluation.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Stage 08 is your training loop, <strong>watched</strong>: a background Job with bell progress, a live <strong>delta-from-baseline</strong> curve that makes 'beating the base' the y-axis, and named RunEvents for completion and every failure mode.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>training Job</dt><dd>The background, persisted task that runs stage 08; tracked so it can't be GC'd mid-run.</dd>
+            <dt>NotificationBell</dt><dd>Top-bar surface polling /api/jobs/active (~every 4s) for progress and outcome.</dd>
+            <dt>delta-from-baseline curve</dt><dd>The live loss plotted relative to the untuned base model's loss as the zero line.</dd>
+            <dt>training RunEvents</dt><dd>Named events: training (info) on completion; training_oom / _runtime_error / _timeout / _cancelled on failure.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "How does BrewSLM run a training job so the request doesn't block?",
+    "options": [
+      "Synchronously",
+      "As a background Job tracked by the notification bell",
+      "On the client",
+      "It doesn't train"
+    ],
+    "answer": 1,
+    "explanation": "Training is a background Job; the bell polls /api/jobs/active for progress."
+  },
+  {
+    "q": "What does the delta-from-baseline curve make explicit?",
+    "options": [
+      "The GPU temperature",
+      "Whether and by how much you're beating the untuned base model",
+      "The export format",
+      "The token count"
+    ],
+    "answer": 1,
+    "explanation": "Baseline loss is the zero line; the curve shows lift over doing nothing."
+  },
+  {
+    "q": "A run exhausts GPU memory. Which RunEvent fires?",
+    "options": [
+      "training_timeout",
+      "training_oom",
+      "training_cancelled",
+      "export_run_failed"
+    ],
+    "answer": 1,
+    "explanation": "training_oom is the named out-of-memory event."
+  },
+  {
+    "q": "Why hold a strong reference to the running task?",
+    "options": [
+      "To speed it up",
+      "So the garbage collector can't silently kill it mid-run",
+      "To save memory",
+      "To skip preflight"
+    ],
+    "answer": 1,
+    "explanation": "The Job framework keeps a strong ref to prevent silent GC of the task."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="preflight-and-trainability.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Preflight and the trainability forecast</span></a>
+          <a href="eval-packs-and-failure-clusters.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Evaluate: eval packs, gates, failure clusters & remediation</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

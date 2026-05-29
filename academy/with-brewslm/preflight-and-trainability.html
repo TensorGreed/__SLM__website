@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Preflight and the trainability forecast — BrewSLM Academy</title>
+    <meta name="description" content="Stage 07 runs before you spend a GPU-hour: dependency, memory-fit, capability, and gate-policy checks that return pass/fail, a blocker list, and a generated train plan — the platform answer to Track 2's environment setup and the OOM you'd otherwise hit at step one." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/with-brewslm/preflight-and-trainability.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Preflight and the trainability forecast — BrewSLM Academy" />
+    <meta property="og:description" content="Stage 07 runs before you spend a GPU-hour: dependency, memory-fit, capability, and gate-policy checks that return pass/fail, a blocker list, and a generated train plan — the platform answer to Track 2's environment setup and the OOM you'd otherwise hit at step one." />
+    <meta property="og:url" content="https://brewslm.com/academy/with-brewslm/preflight-and-trainability.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Preflight and the trainability forecast — BrewSLM Academy" />
+    <meta name="twitter:description" content="Stage 07 runs before you spend a GPU-hour: dependency, memory-fit, capability, and gate-policy checks that return pass/fail, a blocker list, and a generated train plan — the platform answer to Track 2's environment setup and the OOM you'd otherwise hit at step one." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Preflight and the trainability forecast",
+        "description": "Stage 07 runs before you spend a GPU-hour: dependency, memory-fit, capability, and gate-policy checks that return pass/fail, a blocker list, and a generated train plan — the platform answer to Track 2's environment setup and the OOM you'd otherwise hit at step one.",
+        "url": "https://brewslm.com/academy/with-brewslm/preflight-and-trainability.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["Preflight", "trainability forecast", "memory-fit check", "strict vs fail-open", "train plan"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "With BrewSLM", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Preflight and the trainability forecast", "item": "https://brewslm.com/academy/with-brewslm/preflight-and-trainability.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Preflight and the trainability forecast"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "When does preflight run relative to training?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Before training starts"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which preflight check is the Track 1 GPU memory math, automated?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Memory-fit"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "In strict mode, a blocker\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Prevents the run from dispatching until cleared"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why is a preflight blocker cheaper than discovering the problem during training?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It catches the issue in seconds before spending a GPU-hour"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="with-brewslm/preflight-and-trainability">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html" aria-current="page">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">With BrewSLM</a></li><li>Preflight & trainability</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 3 · With BrewSLM · Lesson 6</span>
+          <h1>Preflight and the trainability forecast</h1>
+          <p class="lesson-header__outcome">After this lesson you can explain what preflight checks, the difference between strict and fail-open modes, and how the trainability forecast catches memory and dependency problems before training starts instead of after it crashes.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="recipes-and-handlers.html">Recipes and task handlers: the training config without the code</a></span>
+          </div>
+        </header>
+
+        <p>In Track 2, two whole lessons existed because of things that bite at runtime: getting the environment right (2.1) and surviving OOM (Track 1.16, and the memory math of 1.15). You found those problems by hitting them. BrewSLM's <strong>preflight</strong> stage finds them <em>before</em> the run starts.</p>
+
+        <h2>What preflight checks</h2>
+        <p>Preflight takes the prepared manifest, the base model, the runtime profile, and the hardware, and runs four families of checks:</p>
+        <ul>
+          <li><strong>Dependency</strong> — are the required runtimes/libraries present for this recipe and handler? (The DPO objective needs a preference-training dependency; a missing one is a blocker, not a mid-run crash.)</li>
+          <li><strong>Memory-fit</strong> — will this model + batch + sequence length + precision actually fit in the available VRAM? This is the GPU memory math from Track 1.15, computed for you.</li>
+          <li><strong>Capability</strong> — can the chosen backend/handler do what the task needs?</li>
+          <li><strong>Gate-policy</strong> — are the promotion gates well-formed and satisfiable?</li>
+        </ul>
+        <p>Its output is a <strong>pass/fail verdict, a blocker list, and a generated train plan</strong> — the concrete, runnable plan assembled from your recipe + manifest.</p>
+        <pre class="code-block"><code>$ preflight: project 1, recipe lora-r16, base SmolLM2-135M-Instruct
+
+memory-fit ........ PASS   (est 3.1 GB / 24 GB available)
+dependency ........ PASS
+capability ........ PASS
+gate-policy ....... PASS
+verdict: GO  →  train plan generated (lora r=16, 3 epochs, eff. batch 16)
+
+# a failing preflight instead surfaces the blockers:
+#   memory-fit ..... BLOCK  (est 27 GB &gt; 24 GB) → lower batch or add grad-accum
+#   dependency ..... BLOCK  (DPO objective needs the preference-training extra)</code></pre>
+        <h2>This is the trainability forecast</h2>
+        <p>Surfaced in the UI, preflight is the <strong>trainability forecast</strong>: a green light to launch, or a specific list of what to fix first. Instead of "start training, wait, watch it OOM at step 1, lower the batch, repeat," you get the verdict in seconds. It's the Track 1 memory lesson and the Track 2 environment lesson, turned into a gate.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">From Track 2</p>
+          <p>Remember manually estimating whether a run would fit, then adding gradient accumulation or checkpointing when it didn't? Preflight's memory-fit check does that estimate and tells you up front — and a blocker here is far cheaper than an OOM an hour into training.</p>
+        </div>
+
+        <h2>Strict vs fail-open</h2>
+        <p>Two modes govern what a blocker does. <strong>Strict mode blocks</strong>: the run won't dispatch until blockers are cleared — right for production and for not wasting a long GPU booking. <strong>Fail-open mode emits warnings</strong> and lets you proceed anyway — useful when you know better than the check. When a blocker is fatal under strict mode, it surfaces as a <code>training</code> / <code>training_dispatch_error</code> RunEvent, so even a refusal to launch is in the audit trail.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Preflight is the forecast you never ran by hand: dependency, memory-fit, capability, and gate checks that return a verdict + blocker list + train plan <em>before</em> spending compute. Strict mode blocks; fail-open warns. Catch the OOM on paper, not at step one.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Preflight</dt><dd>Stage 07: pre-run checks returning pass/fail, a blocker list, and a generated train plan.</dd>
+            <dt>trainability forecast</dt><dd>The UI surfacing of preflight — a go/no-go verdict with the specific things to fix.</dd>
+            <dt>memory-fit check</dt><dd>Computes whether model + batch + seq length + precision fit in VRAM (the Track 1 memory math).</dd>
+            <dt>strict vs fail-open</dt><dd>Strict blocks on any blocker; fail-open emits warnings and proceeds.</dd>
+            <dt>train plan</dt><dd>The concrete runnable plan preflight generates from the recipe + manifest.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "When does preflight run relative to training?",
+    "options": [
+      "After training",
+      "Before training starts",
+      "Only on failure",
+      "During export"
+    ],
+    "answer": 1,
+    "explanation": "Preflight is stage 07 \u2014 it gates the launch before compute is spent."
+  },
+  {
+    "q": "Which preflight check is the Track 1 GPU memory math, automated?",
+    "options": [
+      "Dependency",
+      "Memory-fit",
+      "Gate-policy",
+      "Capability"
+    ],
+    "answer": 1,
+    "explanation": "Memory-fit estimates whether the run fits in VRAM up front."
+  },
+  {
+    "q": "In strict mode, a blocker\u2026",
+    "options": [
+      "Is ignored",
+      "Prevents the run from dispatching until cleared",
+      "Only warns",
+      "Merges the adapter"
+    ],
+    "answer": 1,
+    "explanation": "Strict blocks; fail-open would only warn."
+  },
+  {
+    "q": "Why is a preflight blocker cheaper than discovering the problem during training?",
+    "options": [
+      "It uses a bigger GPU",
+      "It catches the issue in seconds before spending a GPU-hour",
+      "It skips evaluation",
+      "It exports faster"
+    ],
+    "answer": 1,
+    "explanation": "Forecasting failure on paper beats crashing an hour into a run."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="recipes-and-handlers.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Recipes and task handlers: the training config without the code</span></a>
+          <a href="training-jobs-and-monitoring.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Train: jobs, the bell, and the delta-from-baseline curve</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

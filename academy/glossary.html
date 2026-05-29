@@ -41,7 +41,11 @@
           { "@type": "DefinedTerm", "name": "Gold set", "description": "Curated, known-correct examples a model never trains on; the source of truth for quality." },
           { "@type": "DefinedTerm", "name": "Trainer", "description": "The Transformers class that runs the training loop (forward, loss, backward, optimizer step) for you." },
           { "@type": "DefinedTerm", "name": "merge_and_unload", "description": "Folds a LoRA adapter into the base weights, returning a standalone model with no adapter overhead." },
-          { "@type": "DefinedTerm", "name": "safetensors", "description": "The safe, fast default weight format save_pretrained writes." }
+          { "@type": "DefinedTerm", "name": "safetensors", "description": "The safe, fast default weight format save_pretrained writes." },
+          { "@type": "DefinedTerm", "name": "RunEvent", "description": "An audit row a BrewSLM stage emits (reason code + severity) feeding the observability timeline and failure clusters." },
+          { "@type": "DefinedTerm", "name": "Recipe", "description": "Declarative BrewSLM training config: base model, method, LoRA knobs, optimizer/schedule, batch, precision." },
+          { "@type": "DefinedTerm", "name": "Eval pack", "description": "A declared set of metrics and promotion gates; the gates decide whether a trained model is promotable." },
+          { "@type": "DefinedTerm", "name": "Reroute-to-RAG", "description": "Cloning a project into a retrieval-first sibling that uses the base model plus retrieval, no LoRA." }
         ]
       }
     </script>
@@ -197,6 +201,31 @@
           <dt id="trainer">Trainer</dt><dd>The Transformers class that runs the training loop (forward, loss, backward, optimizer step) for you. See <a class="inline-link" href="hands-on/minimal-lora-trainer.html">A minimal LoRA fine-tune</a>.</dd>
           <dt id="trainingarguments">TrainingArguments</dt><dd>Holds the run's hyperparameters: learning rate, epochs, batch size, precision, logging and saving cadence.</dd>
           <dt id="venv">venv</dt><dd>An isolated Python environment so a project's packages don't collide with the system. See <a class="inline-link" href="hands-on/environment-setup.html">Set up the environment</a>.</dd>
+        </dl>
+
+        <h2>Track 3 — With BrewSLM</h2>
+        <dl>
+          <dt id="auto-rag">Auto-RAG</dt><dd>Builds a BM25 index at training completion and prepends top-K retrieved passages to the prompt at inference. See <a class="inline-link" href="with-brewslm/auto-rag-and-reroute.html">Auto-RAG &amp; reroute</a>.</dd>
+          <dt id="bm25">BM25</dt><dd>Keyword (lexical) retrieval — fast, dependency-light; the retrieval baseline auto-RAG uses.</dd>
+          <dt id="coach-mode">Coach Mode</dt><dd>The surface that emits stage suggestions (data / cleaning / gold_set / training / eval) and actions (run_playbook, navigate, augment_from_cluster) across the lifecycle.</dd>
+          <dt id="decision-engine">Decision engine (post-eval)</dt><dd>Reads eval results + failure clusters and recommends the next move — including retrieval over more fine-tuning when failures are knowledge-bound.</dd>
+          <dt id="deployment-version">DeploymentVersion</dt><dd>A versioned deployment with promote / reject / rollback / drift-check actions.</dd>
+          <dt id="drift-check">Drift check</dt><dd>A scheduled re-run of the gold set against the live endpoint to catch production regressions. See <a class="inline-link" href="with-brewslm/export-deploy-coach.html">Export, deploy &amp; Coach Mode</a>.</dd>
+          <dt id="eval-pack">Eval pack</dt><dd>The declared set of metrics and promotion gates evaluated against the held-out eval set; the gates decide promotability. See <a class="inline-link" href="with-brewslm/eval-packs-and-failure-clusters.html">Eval packs &amp; failure clusters</a>.</dd>
+          <dt id="failure-cluster">Failure cluster</dt><dd>A bucket of evaluation misses that share a pattern, surfaced instead of a flat list so the data gap is obvious.</dd>
+          <dt id="introspect">Introspect</dt><dd>Sampling ~20 rows to propose a task mapping (ranked ShapeHypothesis + a ProposedMapping); never auto-picks below 0.80 confidence.</dd>
+          <dt id="lifecycle">Lifecycle (11 stages)</dt><dd>Ingest → Introspect → Map (dry-run / commit) → Clean → Prepare → Preflight → Train → Evaluate → Export → Deploy; each has a contract and emits a RunEvent.</dd>
+          <dt id="manifest-t3">Manifest</dt><dd><code>prepared/manifest.json</code> — the source of truth for downstream stages: counts, schema, task_profile, scoring_mode, paths, hashes. See <a class="inline-link" href="with-brewslm/clean-prepare-manifest.html">Clean &amp; prepare</a>.</dd>
+          <dt id="job">Job / Notification bell</dt><dd>Long-running work runs as a persisted background Job; the top-bar bell polls <code>/api/jobs/active</code> for progress and outcome. See <a class="inline-link" href="with-brewslm/training-jobs-and-monitoring.html">Training jobs</a>.</dd>
+          <dt id="preflight">Preflight</dt><dd>Pre-run dependency, memory-fit, capability, and gate-policy checks returning pass/fail + blockers + a train plan; surfaced as the trainability forecast.</dd>
+          <dt id="promotability">Promotability gate</dt><dd>A pass threshold in the eval pack a model must clear to be shippable (the platform form of the <a class="inline-link" href="#quality-gate">quality gate</a>).</dd>
+          <dt id="recipe">Recipe</dt><dd>Declarative training config — base model, method, LoRA knobs, optimizer/schedule, batch, precision, checkpoint cadence (your TrainingArguments + LoraConfig as reusable config). See <a class="inline-link" href="with-brewslm/recipes-and-handlers.html">Recipes &amp; handlers</a>.</dd>
+          <dt id="reroute-to-rag">Reroute-to-RAG</dt><dd>Clones a project into a retrieval-first sibling (<code>rag_first=True</code>) that uses the base model plus retrieval — no LoRA adapter.</dd>
+          <dt id="rejectedrow">RejectedRow / reason code</dt><dd>An input row that failed mapping, tagged with a stable reason code so rejections are grouped and selectable, never silently dropped.</dd>
+          <dt id="remediation">Remediation plan</dt><dd>The recommended fix for a failure cluster — often <code>augment_from_cluster</code>: add similar rows, review, re-prepare, re-train.</dd>
+          <dt id="runevent">RunEvent</dt><dd>An audit row a stage emits via <code>emit_event()</code> (reason code + severity) that feeds the observability timeline, failure clusters, and audit explorer. See <a class="inline-link" href="with-brewslm/from-script-to-platform.html">The lifecycle</a>.</dd>
+          <dt id="source-locator">Source locator</dt><dd>A string naming where rows live for ingest: <code>hf:id:split</code>, <code>jsonl:/path</code>, <code>kaggle:...</code>.</dd>
+          <dt id="task-handler">Task handler / dispatcher</dt><dd>A general, task-shape-named component (Classification, QA, StructuredExtraction, RAG, Alignment, Seq2Seq, …) that owns tokenization, masking, and <code>score()</code>; the dispatcher routes the manifest's task_profile to it.</dd>
         </dl>
       </section>
 

@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evaluate: eval packs, gates, failure clusters & remediation — BrewSLM Academy</title>
+    <meta name="description" content="Stage 09 scores the trained model with an eval pack whose declared gates decide promotability, produces task-aware metrics from the handler's score(), groups the misses into failure clusters, and proposes remediation — the platform form of Track 2's evaluate-by-hand and Track 1's quality gate." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/with-brewslm/eval-packs-and-failure-clusters.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Evaluate: eval packs, gates, failure clusters & remediation — BrewSLM Academy" />
+    <meta property="og:description" content="Stage 09 scores the trained model with an eval pack whose declared gates decide promotability, produces task-aware metrics from the handler's score(), groups the misses into failure clusters, and proposes remediation — the platform form of Track 2's evaluate-by-hand and Track 1's quality gate." />
+    <meta property="og:url" content="https://brewslm.com/academy/with-brewslm/eval-packs-and-failure-clusters.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Evaluate: eval packs, gates, failure clusters & remediation — BrewSLM Academy" />
+    <meta name="twitter:description" content="Stage 09 scores the trained model with an eval pack whose declared gates decide promotability, produces task-aware metrics from the handler's score(), groups the misses into failure clusters, and proposes remediation — the platform form of Track 2's evaluate-by-hand and Track 1's quality gate." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Evaluate: eval packs, gates, failure clusters & remediation",
+        "description": "Stage 09 scores the trained model with an eval pack whose declared gates decide promotability, produces task-aware metrics from the handler's score(), groups the misses into failure clusters, and proposes remediation — the platform form of Track 2's evaluate-by-hand and Track 1's quality gate.",
+        "url": "https://brewslm.com/academy/with-brewslm/eval-packs-and-failure-clusters.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT11M", "isAccessibleForFree": true,
+        "teaches": ["eval pack", "promotability gate", "task-aware metrics", "failure cluster", "remediation plan"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "With BrewSLM", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Evaluate: eval packs, gates, failure clusters & remediation", "item": "https://brewslm.com/academy/with-brewslm/eval-packs-and-failure-clusters.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Evaluate: eval packs, gates, failure clusters & remediation"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What decides whether a model is promotable?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The gates declared in the eval pack"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Where does the shape of the metrics come from?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The handler's score() for that task shape"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is a failure cluster?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A group of eval misses sharing a pattern"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "A cluster's remediation is usually\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Augment from the cluster, review, re-prepare, re-train"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="with-brewslm/eval-packs-and-failure-clusters">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html" aria-current="page">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">With BrewSLM</a></li><li>Eval packs & clusters</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 3 · With BrewSLM · Lesson 8</span>
+          <h1>Evaluate: eval packs, gates, failure clusters & remediation</h1>
+          <p class="lesson-header__outcome">After this lesson you can read an eval pack's gates as the quality bar from Track 1, interpret task-aware metrics, and use failure clusters and remediation plans to decide what data to fix — the scaled-up version of your by-hand failure analysis.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~11 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="training-jobs-and-monitoring.html">Train: jobs, the bell, and the delta-from-baseline curve</a></span>
+          </div>
+        </header>
+
+        <p>In lesson 2.7 you ran a gold set by hand, computed accuracy, compared to the base, and read the misses to decide what data to fix. Stage 09 is that whole loop as a platform surface — with the quality gate from Track 1 made enforceable.</p>
+
+        <h2>The eval pack and its gates</h2>
+        <p>Evaluate takes the trained model, the held-out eval set (the manifest's <code>eval.jsonl</code>), and an <strong>eval pack</strong>. The eval pack declares the metrics to compute and the <strong>gates</strong> that decide <em>promotability</em> — the pass thresholds a model must clear to be shippable. This is precisely the Track 1 quality gate, now a declared object the platform enforces rather than a number you remember to check.</p>
+        <pre class="code-block"><code>eval_pack:
+  metrics: [accuracy, macro_f1]
+  gates:
+    - metric: accuracy   min: 0.90      # must clear to promote
+    - metric: macro_f1   min: 0.85
+  compare_to: baseline                  # report lift over the base model</code></pre>
+        <h2>Task-aware metrics</h2>
+        <p>You computed accuracy because yours was a classification task. BrewSLM computes whatever the <strong>handler's <code>score()</code></strong> defines for the task shape — so the metric fits the task automatically:</p>
+        <pre class="code-block"><code>classification   →  per-class precision / recall / F1, accuracy
+extraction       →  span-set / field-match scores
+RAG              →  faithfulness
+alignment        →  preference margin
+seq2seq          →  BLEU / ROUGE
+transcription    →  WER</code></pre>
+        <p>The result is a pass rate plus task-aware metrics, emitted as an <code>eval</code> RunEvent parented to the experiment (<code>exp-&lt;id&gt;</code>), with named failures like <code>eval_dataset_missing</code> or <code>eval_judge_unavailable</code>.</p>
+
+        <h2>Failure clusters — your misses, grouped</h2>
+        <p>Reading individual wrong predictions (what you did by hand) doesn't scale to thousands of eval rows. BrewSLM groups the failures into <strong>failure clusters</strong>: buckets of misses that share a pattern — a confused class pair, a particular input phrasing, an edge case the data underrepresents. Instead of skimming a list, you see "37 failures: negative reviews containing the word 'but'."</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">From Track 2</p>
+          <p>Your failure-analysis loop ("which misses tell me what data to add?") is exactly this — clusters just do the grouping so the signal is obvious. Each cluster is a concrete instruction for the next data iteration.</p>
+        </div>
+
+        <h2>Remediation — close the loop</h2>
+        <p>Each cluster comes with a <strong>remediation plan</strong>: the recommended fix, often "augment from this cluster" — generate or import more rows like the ones failing, route them through the review queue (lesson 3.3), re-prepare, and re-train. This is the Coach-Mode <code>augment_from_cluster</code> action, and it's the data-centric iteration of Track 1 turned into a button. If the model <em>cleared the gates</em>, it's promotable. If it didn't — and especially if more data won't fix it — the platform's next move is to ask whether fine-tuning is even the right tool, which is the next lesson.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>An <strong>eval pack</strong> turns the Track 1 quality gate into an enforceable promotability check; <strong>task-aware metrics</strong> fit the task automatically; <strong>failure clusters + remediation</strong> turn your by-hand 'read the misses' loop into grouped, actionable next steps.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>eval pack</dt><dd>The declared set of metrics and promotion gates evaluated against the held-out eval set.</dd>
+            <dt>promotability gate</dt><dd>A pass threshold in the eval pack a model must clear to be shippable (the Track 1 quality gate).</dd>
+            <dt>task-aware metrics</dt><dd>Metrics defined by the handler's score() to fit the task shape (F1, span-set, faithfulness, WER, …).</dd>
+            <dt>failure cluster</dt><dd>A bucket of eval misses sharing a pattern, surfaced instead of a flat list.</dd>
+            <dt>remediation plan</dt><dd>The recommended fix for a cluster — often augment_from_cluster to add similar rows and re-train.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What decides whether a model is promotable?",
+    "options": [
+      "The training loss",
+      "The gates declared in the eval pack",
+      "The export format",
+      "The notification bell"
+    ],
+    "answer": 1,
+    "explanation": "Eval-pack gates are the enforceable form of Track 1's quality gate."
+  },
+  {
+    "q": "Where does the shape of the metrics come from?",
+    "options": [
+      "The recipe",
+      "The handler's score() for that task shape",
+      "The source locator",
+      "The GPU"
+    ],
+    "answer": 1,
+    "explanation": "Task-aware metrics are defined by the handler, so they fit the task."
+  },
+  {
+    "q": "What is a failure cluster?",
+    "options": [
+      "A GPU error",
+      "A group of eval misses sharing a pattern",
+      "A checkpoint",
+      "A deployment version"
+    ],
+    "answer": 1,
+    "explanation": "Clusters group the misses so the data gap is obvious and actionable."
+  },
+  {
+    "q": "A cluster's remediation is usually\u2026",
+    "options": [
+      "Delete the model",
+      "Augment from the cluster, review, re-prepare, re-train",
+      "Increase the learning rate",
+      "Export to GGUF"
+    ],
+    "answer": 1,
+    "explanation": "augment_from_cluster closes the data-centric loop from Track 1."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="training-jobs-and-monitoring.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Train: jobs, the bell, and the delta-from-baseline curve</span></a>
+          <a href="auto-rag-and-reroute.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">When fine-tuning isn't the answer: auto-RAG & reroute-to-RAG</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

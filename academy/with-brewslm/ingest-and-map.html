@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ingest & map your data with per-row accountability — BrewSLM Academy</title>
+    <meta name="description" content="Stages 01–04 of the BrewSLM lifecycle: ingest from a source locator, introspect the data's shape into a ranked mapping proposal, dry-run the mapping to preview accepted and rejected rows, and commit — replacing the hand-built dataset list from Track 2 with an auditable import." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/with-brewslm/ingest-and-map.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Ingest & map your data with per-row accountability — BrewSLM Academy" />
+    <meta property="og:description" content="Stages 01–04 of the BrewSLM lifecycle: ingest from a source locator, introspect the data's shape into a ranked mapping proposal, dry-run the mapping to preview accepted and rejected rows, and commit — replacing the hand-built dataset list from Track 2 with an auditable import." />
+    <meta property="og:url" content="https://brewslm.com/academy/with-brewslm/ingest-and-map.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Ingest & map your data with per-row accountability — BrewSLM Academy" />
+    <meta name="twitter:description" content="Stages 01–04 of the BrewSLM lifecycle: ingest from a source locator, introspect the data's shape into a ranked mapping proposal, dry-run the mapping to preview accepted and rejected rows, and commit — replacing the hand-built dataset list from Track 2 with an auditable import." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Ingest & map your data with per-row accountability",
+        "description": "Stages 01–04 of the BrewSLM lifecycle: ingest from a source locator, introspect the data's shape into a ranked mapping proposal, dry-run the mapping to preview accepted and rejected rows, and commit — replacing the hand-built dataset list from Track 2 with an auditable import.",
+        "url": "https://brewslm.com/academy/with-brewslm/ingest-and-map.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["source locator", "Introspect", "ProposedMapping", "Map dry-run", "RejectedRow", "dataset_import RunEvent"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "With BrewSLM", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Ingest & map your data with per-row accountability", "item": "https://brewslm.com/academy/with-brewslm/ingest-and-map.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Ingest & map your data with per-row accountability"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What does a source locator like hf:imdb:train specify?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Where the rows live and which split"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "The introspector's confidence is below 0.80. What happens?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It requires an explicit --force to proceed"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "In a Map dry-run, every input row becomes\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Either a TransformedRow or a RejectedRow with a reason code"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why are unparseable rows surfaced as sentinel rows?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "So nothing is silently dropped \u2014 you always know what didn't parse"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="with-brewslm/ingest-and-map">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html" aria-current="page">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">With BrewSLM</a></li><li>Ingest & map</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 3 · With BrewSLM · Lesson 2</span>
+          <h1>Ingest & map your data with per-row accountability</h1>
+          <p class="lesson-header__outcome">After this lesson you can ingest a dataset from a locator, accept or override the introspector's proposed mapping, read the per-row rejection breakdown in a dry-run, and commit the import.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="from-script-to-platform.html">From script to platform: the BrewSLM lifecycle</a></span>
+          </div>
+        </header>
+
+        <p>In Track 2 you wrote your dataset as a Python list of dicts. That's perfect for learning and hopeless at scale: no provenance, no rejection accounting, no reuse. BrewSLM's stages 01–04 turn "get data in" into an auditable, per-row-accountable import.</p>
+
+        <h2>01 Ingest — source locators</h2>
+        <p>You don't write a loader; you name a source. A <strong>locator</strong> says where the rows live:</p>
+        <pre class="code-block"><code>hf:imdb:train            # a Hugging Face dataset + split
+jsonl:/path/to/data.jsonl
+kaggle:competition:slug</code></pre>
+        <p>Source connectors implement <code>load()</code> + <code>describe()</code>, and — importantly — unparseable rows surface as <strong>sentinel rows</strong>, not silent drops. You always know what didn't parse.</p>
+
+        <h2>02 Introspect — guess the shape, never silently</h2>
+        <p>The introspector samples ~20 rows and proposes how to map them to a task: a ranked list of <code>ShapeHypothesis</code> objects and a top <code>ProposedMapping</code> with a confidence and a rationale. This is the platform doing what you did in your head when you decided "prompt goes here, label goes there." Its contract: it <strong>never auto-picks silently</strong> — below 0.80 confidence it requires an explicit <code>--force</code>.</p>
+
+        <h2>03 Map (dry-run) — preview before you commit</h2>
+        <p>Before writing anything, a dry-run shows a sample of accepted rows and a <strong>full rejection breakdown grouped by reason</strong>. Every input row becomes either a <code>TransformedRow</code> or a <code>RejectedRow</code> with a stable reason code — the per-row accountability your list of dicts never had.</p>
+        <pre class="code-block"><code>$ python -m app.cli.dataset_import run \
+    --locator hf:imdb:train --project 1 --auto --limit 5000 --dry-run
+
+accepted: 4,812
+rejected:   188
+  empty_text ............ 121
+  label_out_of_vocab ....  54
+  duplicate .............  13</code></pre>
+        <div class="callout callout--note">
+          <p class="callout__label">A pattern you'll see everywhere</p>
+          <p>Rejected rows are never all-or-nothing. They're grouped by reason and individually selectable, so you can bulk-drop the genuine junk and rescue the rows that were rejected for a fixable reason. This is the platform version of the data hygiene you learned in Track 1.</p>
+        </div>
+
+        <h2>04 Map (commit) — write it down, emit the event</h2>
+        <p>After you confirm, the mapped rows are appended to the project's dataset, and the stage emits its RunEvent — the first durable trace in your audit spine:</p>
+        <pre class="code-block"><code>RunEvent: ingestion / dataset_import_run   (severity: info)
+  payload: { source, mapper, accepted: 4812, rejected: 188,
+             written_path, config_id }
+  on error → dataset_import_failed</code></pre>
+        <p>One nuance worth knowing: bulk-dropping in the UI affects only the <em>sample</em> rendered to you; the true accepted/rejected counts are preserved in the audit row, so the numbers never lie. With data ingested and mapped, the next lesson covers the platform's answer to "in practice, hundreds more rows" — generating synthetic data and reviewing it.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Importing data isn't one step — it's <strong>ingest → introspect → dry-run → commit</strong>, and every row is accounted for. You trade a hand-written list for provenance, a confidence-scored mapping, and a rejection breakdown you can act on.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>source locator</dt><dd>A string naming where rows live (hf:id:split, jsonl:/path, kaggle:...).</dd>
+            <dt>Introspect</dt><dd>Sampling rows to propose a task mapping; never auto-picks below 0.80 confidence.</dd>
+            <dt>ProposedMapping</dt><dd>The top mapping proposal with a confidence and rationale.</dd>
+            <dt>Map (dry-run)</dt><dd>A preview of accepted rows plus a full rejection breakdown, before writing.</dd>
+            <dt>RejectedRow</dt><dd>An input row that failed mapping, tagged with a stable reason code.</dd>
+            <dt>dataset_import RunEvent</dt><dd>The audit event emitted on commit, carrying accepted/rejected counts and the written path.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What does a source locator like hf:imdb:train specify?",
+    "options": [
+      "The learning rate",
+      "Where the rows live and which split",
+      "The eval pack",
+      "The export format"
+    ],
+    "answer": 1,
+    "explanation": "A locator names the source and split; connectors load() it."
+  },
+  {
+    "q": "The introspector's confidence is below 0.80. What happens?",
+    "options": [
+      "It picks silently",
+      "It requires an explicit --force to proceed",
+      "It deletes the data",
+      "It trains anyway"
+    ],
+    "answer": 1,
+    "explanation": "The contract is: never auto-pick silently; low confidence needs --force."
+  },
+  {
+    "q": "In a Map dry-run, every input row becomes\u2026",
+    "options": [
+      "A token",
+      "Either a TransformedRow or a RejectedRow with a reason code",
+      "A checkpoint",
+      "A RunEvent"
+    ],
+    "answer": 1,
+    "explanation": "Per-row accountability: accepted (TransformedRow) or rejected (with reason)."
+  },
+  {
+    "q": "Why are unparseable rows surfaced as sentinel rows?",
+    "options": [
+      "To train on them",
+      "So nothing is silently dropped \u2014 you always know what didn't parse",
+      "To speed up ingest",
+      "To merge adapters"
+    ],
+    "answer": 1,
+    "explanation": "Sentinel rows preserve visibility; no silent drops."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="from-script-to-platform.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">From script to platform: the BrewSLM lifecycle</span></a>
+          <a href="synthetic-data-and-review.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Synthetic data and the review queue</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

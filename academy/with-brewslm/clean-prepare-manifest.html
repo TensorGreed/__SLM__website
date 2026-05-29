@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Clean and prepare: the manifest is the source of truth — BrewSLM Academy</title>
+    <meta name="description" content="Stages 05–06: optional cleaning (PII findings, quality scores, chunks) and Prepare, which builds prepared/manifest.json plus train and eval splits carrying the task_profile and scoring_mode — replacing the by-hand tokenize/collate/split with a single declarative artifact everything downstream reads from." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/with-brewslm/clean-prepare-manifest.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Clean and prepare: the manifest is the source of truth — BrewSLM Academy" />
+    <meta property="og:description" content="Stages 05–06: optional cleaning (PII findings, quality scores, chunks) and Prepare, which builds prepared/manifest.json plus train and eval splits carrying the task_profile and scoring_mode — replacing the by-hand tokenize/collate/split with a single declarative artifact everything downstream reads from." />
+    <meta property="og:url" content="https://brewslm.com/academy/with-brewslm/clean-prepare-manifest.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Clean and prepare: the manifest is the source of truth — BrewSLM Academy" />
+    <meta name="twitter:description" content="Stages 05–06: optional cleaning (PII findings, quality scores, chunks) and Prepare, which builds prepared/manifest.json plus train and eval splits carrying the task_profile and scoring_mode — replacing the by-hand tokenize/collate/split with a single declarative artifact everything downstream reads from." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Clean and prepare: the manifest is the source of truth",
+        "description": "Stages 05–06: optional cleaning (PII findings, quality scores, chunks) and Prepare, which builds prepared/manifest.json plus train and eval splits carrying the task_profile and scoring_mode — replacing the by-hand tokenize/collate/split with a single declarative artifact everything downstream reads from.",
+        "url": "https://brewslm.com/academy/with-brewslm/clean-prepare-manifest.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["Clean stage", "manifest", "train/eval split", "task_profile", "scoring_mode"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "With BrewSLM", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Clean and prepare: the manifest is the source of truth", "item": "https://brewslm.com/academy/with-brewslm/clean-prepare-manifest.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Clean and prepare: the manifest is the source of truth"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What is the manifest the source of truth for?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Every downstream stage \u2014 train, evaluate, export all read it"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Your by-hand tokenization and loss mask moved where in BrewSLM?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Into the task handler at train time, driven by the manifest's task_profile"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does Prepare produce?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "manifest.json plus train.jsonl and eval.jsonl"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why is a BrewSLM run more reproducible than your script?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The manifest pins exact rows, schema, scoring mode, and hashes"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="with-brewslm/clean-prepare-manifest">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html" aria-current="page">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">With BrewSLM</a></li><li>Clean & prepare</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 3 · With BrewSLM · Lesson 4</span>
+          <h1>Clean and prepare: the manifest is the source of truth</h1>
+          <p class="lesson-header__outcome">After this lesson you can run the optional clean stage, understand what Prepare produces, and explain why the manifest — not raw files — is the single source of truth for training and evaluation.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="synthetic-data-and-review.html">Synthetic data and the review queue</a></span>
+          </div>
+        </header>
+
+        <p>In Track 2 you tokenized examples, built the loss mask, and split train/val by hand. BrewSLM folds all of that into two stages whose output is one authoritative artifact: the <strong>manifest</strong>.</p>
+
+        <h2>05 Clean (optional)</h2>
+        <p>If your rows are raw documents rather than tidy pairs, the clean stage processes them: it emits cleaned text, chunk JSONL, and per-document metadata — <strong>PII findings, a quality score, and a text hash</strong>. It runs as a background task with <code>task_id</code> polling so a big cleaning pass never blocks past the proxy timeout, and it has explicit failure modes: <code>cleaning_pii_block</code> and <code>cleaning_outlier_threshold_exceeded</code>. For already-clean classification pairs like our sentiment data, you can skip it.</p>
+
+        <h2>06 Prepare — build the manifest</h2>
+        <p>Prepare takes your synthetic + cleaned rows and the project's dataset-adapter preset and produces:</p>
+        <pre class="code-block"><code>prepared/
+  manifest.json     # the source of truth: counts, schema, task_profile,
+                    # output_schema.scoring_mode, paths, hashes
+  train.jsonl       # the training split
+  eval.jsonl        # the held-out evaluation split</code></pre>
+        <p>That <code>train.jsonl</code> / <code>eval.jsonl</code> split is the platform doing your <code>train_test_split</code> from Track 2 — and the held-out <code>eval.jsonl</code> is what the eval pack will score against later.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">From Track 2: where did tokenization and the loss mask go?</p>
+          <p>They didn't disappear — they moved into the <strong>task handler</strong> at train time. The manifest records the <code>task_profile</code> and <code>scoring_mode</code>; the handler for that task knows how to apply the chat template, build <code>input_ids</code>/<code>labels</code>, and mask the prompt — exactly the mechanics you wrote in lesson 2.4. You declared the <em>what</em>; the handler does the <em>how</em>.</p>
+        </div>
+
+        <h2>The manifest is the contract</h2>
+        <p>The single most important rule downstream: <strong>nothing reads from disk paths directly — everything reads the manifest.</strong> Train, Evaluate, and Export all consume <code>manifest.json</code>. That's why a BrewSLM run is reproducible in a way your script wasn't: the manifest pins exactly which rows, which schema, which scoring mode, and which hashes went into the run. Change the data and you get a new manifest, not a silently different result from the same code.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Prepare turns reviewed rows into a <strong>manifest</strong> plus train/eval splits. The manifest carries the task profile and scoring mode and is the source of truth for every later stage — so the tokenization and masking you did by hand become a declaration the handler executes, reproducibly.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Clean stage</dt><dd>Optional processing of raw documents into cleaned text + chunks + PII/quality metadata.</dd>
+            <dt>manifest</dt><dd>prepared/manifest.json — the authoritative record of rows, schema, task_profile, scoring_mode, paths, and hashes.</dd>
+            <dt>train/eval split</dt><dd>train.jsonl and eval.jsonl produced by Prepare; the platform's train_test_split.</dd>
+            <dt>task_profile</dt><dd>The declared task type recorded in the manifest, used to pick the handler.</dd>
+            <dt>scoring_mode</dt><dd>How outputs are scored, recorded in the manifest's output_schema.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What is the manifest the source of truth for?",
+    "options": [
+      "Only training",
+      "Every downstream stage \u2014 train, evaluate, export all read it",
+      "The GPU driver",
+      "The tokenizer vocabulary"
+    ],
+    "answer": 1,
+    "explanation": "Nothing reads disk paths directly; the manifest is the contract."
+  },
+  {
+    "q": "Your by-hand tokenization and loss mask moved where in BrewSLM?",
+    "options": [
+      "The export stage",
+      "Into the task handler at train time, driven by the manifest's task_profile",
+      "The clean stage",
+      "They were removed"
+    ],
+    "answer": 1,
+    "explanation": "You declare task_profile/scoring_mode; the handler applies template/labels/mask."
+  },
+  {
+    "q": "What does Prepare produce?",
+    "options": [
+      "A deployed endpoint",
+      "manifest.json plus train.jsonl and eval.jsonl",
+      "A GGUF file",
+      "A RunEvent only"
+    ],
+    "answer": 1,
+    "explanation": "Prepare builds the manifest and the train/eval splits."
+  },
+  {
+    "q": "Why is a BrewSLM run more reproducible than your script?",
+    "options": [
+      "It uses a bigger model",
+      "The manifest pins exact rows, schema, scoring mode, and hashes",
+      "It runs on more GPUs",
+      "It skips evaluation"
+    ],
+    "answer": 1,
+    "explanation": "The manifest freezes everything that went into the run."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="synthetic-data-and-review.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Synthetic data and the review queue</span></a>
+          <a href="recipes-and-handlers.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Recipes and task handlers: the training config without the code</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

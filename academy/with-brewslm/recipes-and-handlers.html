@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recipes and task handlers: the training config without the code — BrewSLM Academy</title>
+    <meta name="description" content="A recipe captures everything you set in TrainingArguments and LoraConfig — base model, LoRA knobs, learning rate, schedule, precision — as declarative config, while the task-handler dispatcher routes the manifest's task profile to the right handler that knows how to tokenize, mask, and score it." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/with-brewslm/recipes-and-handlers.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Recipes and task handlers: the training config without the code — BrewSLM Academy" />
+    <meta property="og:description" content="A recipe captures everything you set in TrainingArguments and LoraConfig — base model, LoRA knobs, learning rate, schedule, precision — as declarative config, while the task-handler dispatcher routes the manifest's task profile to the right handler that knows how to tokenize, mask, and score it." />
+    <meta property="og:url" content="https://brewslm.com/academy/with-brewslm/recipes-and-handlers.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Recipes and task handlers: the training config without the code — BrewSLM Academy" />
+    <meta name="twitter:description" content="A recipe captures everything you set in TrainingArguments and LoraConfig — base model, LoRA knobs, learning rate, schedule, precision — as declarative config, while the task-handler dispatcher routes the manifest's task profile to the right handler that knows how to tokenize, mask, and score it." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Recipes and task handlers: the training config without the code",
+        "description": "A recipe captures everything you set in TrainingArguments and LoraConfig — base model, LoRA knobs, learning rate, schedule, precision — as declarative config, while the task-handler dispatcher routes the manifest's task profile to the right handler that knows how to tokenize, mask, and score it.",
+        "url": "https://brewslm.com/academy/with-brewslm/recipes-and-handlers.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["recipe", "LoRA knobs as config", "task-handler dispatcher", "general-purpose handlers"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "With BrewSLM", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Recipes and task handlers: the training config without the code", "item": "https://brewslm.com/academy/with-brewslm/recipes-and-handlers.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Recipes and task handlers: the training config without the code"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "A recipe is the declarative form of which Track 2 code?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "TrainingArguments + LoraConfig"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What picks the task handler for a run?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The manifest's task_profile, via the dispatcher"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why are handlers named after task shapes (Classification, QA) not domains (Invoice, PII)?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "So one general handler serves many domains via a scoring mode"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does the task handler own that your script wrote by hand?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Tokenization, label masking, and score()"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="with-brewslm/recipes-and-handlers">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html" aria-current="page">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">With BrewSLM</a></li><li>Recipes & handlers</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 3 · With BrewSLM · Lesson 5</span>
+          <h1>Recipes and task handlers: the training config without the code</h1>
+          <p class="lesson-header__outcome">After this lesson you can read a recipe as the declarative form of your Track 2 TrainingArguments + LoraConfig, and explain how the task-handler dispatcher picks the handler that applies the right tokenization and scoring.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="clean-prepare-manifest.html">Clean and prepare: the manifest is the source of truth</a></span>
+          </div>
+        </header>
+
+        <p>In lesson 2.5 you wrote a <code>LoraConfig</code> and a <code>TrainingArguments</code> in Python. A BrewSLM <strong>recipe</strong> is exactly that information as declarative config — the same knobs you learned, without the boilerplate.</p>
+
+        <h2>A recipe is your TrainingArguments, declared</h2>
+        <pre class="code-block"><code>recipe:
+  base_model: HuggingFaceTB/SmolLM2-135M-Instruct
+  method: lora                 # vs full fine-tune
+  lora: { r: 16, alpha: 32, dropout: 0.05, target_modules: [q_proj, v_proj] }
+  optim:
+    learning_rate: 2.0e-4
+    scheduler: cosine
+    warmup_ratio: 0.03
+    epochs: 3
+  batch: { per_device: 8, grad_accum: 2 }   # effective batch 16
+  precision: bf16
+  checkpoint_cadence: epoch</code></pre>
+        <p>Every field here is a concept you already own from Track 1 and built in Track 2: rank and alpha, target modules, the cosine schedule with warmup, effective batch size, bf16. The recipe just makes them a named, versioned, reusable object instead of inline arguments — so you can apply the same recipe across projects, or A/B two recipes on the same data.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">From Track 2</p>
+          <p>Recipe ↔ <code>TrainingArguments</code> + <code>LoraConfig</code>. <code>checkpoint_cadence</code> ↔ <code>save_strategy</code>. There's nothing in a recipe you didn't already set by hand — which is the whole point of having done it by hand first.</p>
+        </div>
+
+        <h2>The task-handler dispatcher</h2>
+        <p>Here's where the platform does more than your script did. The manifest's <code>task_profile</code> routes to a <strong>task handler</strong> — and the handler owns the task-specific mechanics (how to apply the chat template, build labels and the loss mask, and how to <code>score()</code> the output). The dispatcher routes to one of a general set:</p>
+        <pre class="code-block"><code>ClassificationHandler        QAHandler
+StructuredExtractionHandler  (span_set or field_match)
+RAGHandler                   AlignmentHandler
+Seq2SeqHandler               VisionLanguageHandler
+AudioTranscriptHandler       SafetyHandler</code></pre>
+        <p>Our sentiment task routes to the <code>ClassificationHandler</code>. Notice the design: handlers are named after <strong>task shapes</strong> (classification, extraction, alignment), never after one narrow domain. A new use case is "which existing shape is this, and what scoring mode?" — not "write a new handler." That generality is why the same eleven stages serve wildly different projects.</p>
+
+        <h2>You choose the recipe; the handler does the rest</h2>
+        <p>So the division of labor is: <strong>the recipe</strong> carries the hyperparameters you tuned by hand, and <strong>the handler</strong> carries the tokenization, masking, and scoring you wrote by hand — selected automatically from the manifest. You pick a recipe (or accept the autopilot default) and the platform assembles a runnable train plan. Before it spends a GPU-hour on that plan, though, it runs preflight — the next lesson.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>A <strong>recipe</strong> is your TrainingArguments + LoraConfig as reusable config; a <strong>task handler</strong> is your tokenize/mask/score code, picked by task shape. Together they reproduce your by-hand training step — declaratively, and general across task types.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>recipe</dt><dd>Declarative training config: base model, method, LoRA knobs, optimizer/schedule, batch, precision, checkpoint cadence.</dd>
+            <dt>task-handler dispatcher</dt><dd>Routes the manifest's task_profile to the handler that owns that task's tokenization, masking, and scoring.</dd>
+            <dt>task handler</dt><dd>A general, task-shape-named component (Classification, QA, StructuredExtraction, RAG, …) implementing score().</dd>
+            <dt>checkpoint cadence</dt><dd>How often checkpoints are written during training (the recipe's save_strategy).</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "A recipe is the declarative form of which Track 2 code?",
+    "options": [
+      "The dataset list",
+      "TrainingArguments + LoraConfig",
+      "The predict() helper",
+      "merge_and_unload"
+    ],
+    "answer": 1,
+    "explanation": "A recipe captures the same hyperparameters you set by hand."
+  },
+  {
+    "q": "What picks the task handler for a run?",
+    "options": [
+      "The export format",
+      "The manifest's task_profile, via the dispatcher",
+      "The learning rate",
+      "The notification bell"
+    ],
+    "answer": 1,
+    "explanation": "task_profile routes through the dispatcher to a handler."
+  },
+  {
+    "q": "Why are handlers named after task shapes (Classification, QA) not domains (Invoice, PII)?",
+    "options": [
+      "Branding",
+      "So one general handler serves many domains via a scoring mode",
+      "To save memory",
+      "To require less data"
+    ],
+    "answer": 1,
+    "explanation": "Task-shape generality keeps the platform broadly applicable."
+  },
+  {
+    "q": "What does the task handler own that your script wrote by hand?",
+    "options": [
+      "The GPU driver",
+      "Tokenization, label masking, and score()",
+      "The source locator",
+      "The deployment endpoint"
+    ],
+    "answer": 1,
+    "explanation": "The handler carries the tokenize/mask/score mechanics, picked by shape."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="clean-prepare-manifest.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Clean and prepare: the manifest is the source of truth</span></a>
+          <a href="preflight-and-trainability.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Preflight and the trainability forecast</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

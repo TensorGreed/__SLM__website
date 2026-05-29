@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Capstone B: export, deploy & Coach Mode end-to-end — BrewSLM Academy</title>
+    <meta name="description" content="Stages 10–11 close the lifecycle: export to GGUF, safetensors, HF, or vLLM with quantization variants, then deploy a versioned endpoint with smoke checks and scheduled drift detection — while Coach Mode threads the whole flow. The capstone re-runs the Track 2 sentiment task through BrewSLM and compares." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/with-brewslm/export-deploy-coach.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Capstone B: export, deploy & Coach Mode end-to-end — BrewSLM Academy" />
+    <meta property="og:description" content="Stages 10–11 close the lifecycle: export to GGUF, safetensors, HF, or vLLM with quantization variants, then deploy a versioned endpoint with smoke checks and scheduled drift detection — while Coach Mode threads the whole flow. The capstone re-runs the Track 2 sentiment task through BrewSLM and compares." />
+    <meta property="og:url" content="https://brewslm.com/academy/with-brewslm/export-deploy-coach.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Capstone B: export, deploy & Coach Mode end-to-end — BrewSLM Academy" />
+    <meta name="twitter:description" content="Stages 10–11 close the lifecycle: export to GGUF, safetensors, HF, or vLLM with quantization variants, then deploy a versioned endpoint with smoke checks and scheduled drift detection — while Coach Mode threads the whole flow. The capstone re-runs the Track 2 sentiment task through BrewSLM and compares." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Capstone B: export, deploy & Coach Mode end-to-end",
+        "description": "Stages 10–11 close the lifecycle: export to GGUF, safetensors, HF, or vLLM with quantization variants, then deploy a versioned endpoint with smoke checks and scheduled drift detection — while Coach Mode threads the whole flow. The capstone re-runs the Track 2 sentiment task through BrewSLM and compares.",
+        "url": "https://brewslm.com/academy/with-brewslm/export-deploy-coach.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT11M", "isAccessibleForFree": true,
+        "teaches": ["Export formats", "quantization variants", "DeploymentVersion", "drift check", "Coach Mode", "capstone"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "With BrewSLM", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Capstone B: export, deploy & Coach Mode end-to-end", "item": "https://brewslm.com/academy/with-brewslm/export-deploy-coach.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "Capstone B: export, deploy & Coach Mode end-to-end"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "Which export format + quant would you pick for CPU/edge?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "GGUF + Q4_K_M"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does the scheduled drift check do?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Re-runs the gold set against the live endpoint to catch regressions"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is Coach Mode?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The surface emitting stage suggestions and actions across the lifecycle"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Having done Track 2 by hand, what does Track 3 show the platform adds?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Accountability, reproducibility, gates, monitoring, and scale over the same pipeline"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="with-brewslm/export-deploy-coach">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html" aria-current="page">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">With BrewSLM</a></li><li>Capstone B: export & deploy</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 3 · With BrewSLM · Lesson 10</span>
+          <h1>Capstone B: export, deploy & Coach Mode end-to-end</h1>
+          <p class="lesson-header__outcome">After this capstone you can export a model to a deployment format, deploy a versioned endpoint with smoke and drift checks, and describe how Coach Mode guides the full lifecycle — then compare a platform run to your by-hand Track 2 run.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~11 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="auto-rag-and-reroute.html">When fine-tuning isn't the answer: auto-RAG & reroute-to-RAG</a></span>
+          </div>
+        </header>
+
+        <p>You merged and saved a model by hand in lesson 2.8 and noted that BrewSLM automates export to GGUF / ONNX / vLLM. Here's that stage — plus deployment and the assistant that's been implied behind every recommendation in this track.</p>
+
+        <h2>10 Export — the merged artifact, productized</h2>
+        <p>Export takes the trained model and a target format and produces an <strong>artifact bundle</strong> with weights, tokenizer, manifest, and a smoke-check trace. This is your <code>merge_and_unload</code> + <code>save_pretrained</code> from Track 2, with more targets and quantization tracked:</p>
+        <pre class="code-block"><code>formats:        GGUF | safetensors | HF | vLLM-compat
+quantization:   Q4_K_M | AWQ | GPTQ        # tracked so the Compression page
+                                           # knows which variants exist
+RunEvent: export (info)   payload: { format, output_path, file_size_bytes }
+  on failure → export_run_failed | export_artifact_missing | export_quantization_failed</code></pre>
+        <p>The format you pick follows Track 2's logic: <code>safetensors</code>/<code>vLLM</code> for a GPU server, <code>GGUF</code> + a quant like <code>Q4_K_M</code> for CPU/edge.</p>
+
+        <h2>11 Deploy (optional) — a versioned, watched endpoint</h2>
+        <p>Deploy takes an export and a target (a vLLM endpoint, a local runner, a cloud burst) and produces a <strong>DeploymentVersion</strong> with promote / reject / rollback / drift-check actions. Two safety mechanisms matter:</p>
+        <ul>
+          <li><strong>Smoke check at promote time</strong> — a quick sanity pass before traffic hits the version.</li>
+          <li><strong>Drift check on a schedule</strong> — it <em>re-runs your gold set against the live endpoint</em> periodically, so quality regressions in production are caught, not discovered by users. Your Track 1 gold set keeps working long after training.</li>
+        </ul>
+        <p>Failures are named events too: <code>deployment_smoke_failed</code>, <code>deployment_drift_detected</code>, <code>deployment_promote_blocked</code>.</p>
+
+        <h2>Coach Mode — the through-line</h2>
+        <p>Throughout this track, each "what next?" had an answer: review these pending rows, your gate isn't met, augment from this cluster, consider RAG. <strong>Coach Mode</strong> is the surface that emits those stage suggestions (<code>data</code> / <code>cleaning</code> / <code>gold_set</code> / <code>training</code> / <code>eval</code>) and offers actions — <code>run_playbook</code>, <code>navigate</code>, <code>augment_from_cluster</code> — so you're never staring at a project wondering what to do. It's the eleven-stage lifecycle, narrated.</p>
+
+        <h2>Capstone B — run it through the platform</h2>
+        <p>Take the same sentiment task you fine-tuned by hand and run it through BrewSLM end-to-end:</p>
+        <pre class="code-block"><code>1. Create a project on SmolLM2-135M-Instruct.
+2. Ingest your data (or hf:imdb) → introspect → dry-run → commit.
+3. Top up with a synthetic playbook; clear the review queue.
+4. Prepare → confirm the manifest's task_profile = classification.
+5. Pick a LoRA recipe (r=16, lr=2e-4, 3 epochs, bf16).
+6. Preflight → clear any blockers (the trainability forecast).
+7. Train → watch the delta-from-baseline curve in the bell.
+8. Evaluate with an eval pack (gate: accuracy &gt;= 0.90) → read clusters.
+9. If knowledge-bound failures dominate → try auto-RAG / reroute.
+10. Export (GGUF Q4_K_M) → deploy → confirm the smoke check passes.</code></pre>
+        <div class="callout callout--key">
+          <p class="callout__label">What the platform bought you</p>
+          <p>Same pipeline, same model, same data as your by-hand run — but now with per-row import accountability, a reviewed synthetic top-up, a reproducible manifest, a preflight forecast, a watched training Job, enforceable gates, clustered failures with remediation, a retrieval escape hatch, and a versioned endpoint with drift detection. You did it once by hand to understand it; the platform does it repeatably, auditably, and at scale.</p>
+        </div>
+
+        <p>That completes the BrewSLM lifecycle, end to end. You can now do this work by hand <em>and</em> drive the platform with full understanding of what each surface is doing underneath. Track 4 goes deeper — the advanced topics (distillation, preference tuning, quantization, multi-task) that build on this foundation.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Export formats</dt><dd>GGUF / safetensors / HF / vLLM-compat — the target the artifact bundle is built for.</dd>
+            <dt>quantization variants</dt><dd>Q4_K_M / AWQ / GPTQ — compressed variants tracked so the Compression page knows what's available.</dd>
+            <dt>DeploymentVersion</dt><dd>A versioned deployment with promote / reject / rollback / drift-check actions.</dd>
+            <dt>drift check</dt><dd>A scheduled re-run of the gold set against the live endpoint to catch production regressions.</dd>
+            <dt>Coach Mode</dt><dd>The surface that emits stage suggestions and actions (run_playbook, navigate, augment_from_cluster) across the lifecycle.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "Which export format + quant would you pick for CPU/edge?",
+    "options": [
+      "safetensors",
+      "vLLM-compat",
+      "GGUF + Q4_K_M",
+      "HF full precision"
+    ],
+    "answer": 2,
+    "explanation": "GGUF with a quant like Q4_K_M is the CPU/edge path (Track 2.8)."
+  },
+  {
+    "q": "What does the scheduled drift check do?",
+    "options": [
+      "Retrains the model",
+      "Re-runs the gold set against the live endpoint to catch regressions",
+      "Exports a new format",
+      "Deletes old versions"
+    ],
+    "answer": 1,
+    "explanation": "Drift detection keeps the gold set working against production."
+  },
+  {
+    "q": "What is Coach Mode?",
+    "options": [
+      "A training algorithm",
+      "The surface emitting stage suggestions and actions across the lifecycle",
+      "An export format",
+      "A GPU scheduler"
+    ],
+    "answer": 1,
+    "explanation": "Coach Mode narrates the lifecycle with suggestions and actionable buttons."
+  },
+  {
+    "q": "Having done Track 2 by hand, what does Track 3 show the platform adds?",
+    "options": [
+      "A better model architecture",
+      "Accountability, reproducibility, gates, monitoring, and scale over the same pipeline",
+      "Faster math",
+      "A different objective"
+    ],
+    "answer": 1,
+    "explanation": "Same pipeline; the platform adds the operational rigor around it."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="auto-rag-and-reroute.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">When fine-tuning isn't the answer: auto-RAG & reroute-to-RAG</span></a>
+          <a href="../index.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next · Track 4 publishing soon</span><span class="lesson-nav__title">Track 4: Advanced — back to the hub</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

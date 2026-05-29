@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>From script to platform: the BrewSLM lifecycle — BrewSLM Academy</title>
+    <meta name="description" content="You fine-tuned a model by hand in Track 2. This track re-runs that exact pipeline through BrewSLM, mapping each by-hand step to a platform surface. It opens with the eleven-stage lifecycle and why every stage emits a RunEvent." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/with-brewslm/from-script-to-platform.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="From script to platform: the BrewSLM lifecycle — BrewSLM Academy" />
+    <meta property="og:description" content="You fine-tuned a model by hand in Track 2. This track re-runs that exact pipeline through BrewSLM, mapping each by-hand step to a platform surface. It opens with the eleven-stage lifecycle and why every stage emits a RunEvent." />
+    <meta property="og:url" content="https://brewslm.com/academy/with-brewslm/from-script-to-platform.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="From script to platform: the BrewSLM lifecycle — BrewSLM Academy" />
+    <meta name="twitter:description" content="You fine-tuned a model by hand in Track 2. This track re-runs that exact pipeline through BrewSLM, mapping each by-hand step to a platform surface. It opens with the eleven-stage lifecycle and why every stage emits a RunEvent." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "From script to platform: the BrewSLM lifecycle",
+        "description": "You fine-tuned a model by hand in Track 2. This track re-runs that exact pipeline through BrewSLM, mapping each by-hand step to a platform surface. It opens with the eleven-stage lifecycle and why every stage emits a RunEvent.",
+        "url": "https://brewslm.com/academy/with-brewslm/from-script-to-platform.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["BrewSLM lifecycle", "RunEvent", "project", "why use a platform"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "With BrewSLM", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "From script to platform: the BrewSLM lifecycle", "item": "https://brewslm.com/academy/with-brewslm/from-script-to-platform.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "From script to platform: the BrewSLM lifecycle"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "What is the main thing BrewSLM adds over your by-hand script?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Explicit stage contracts and an auditable RunEvent for each stage"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which by-hand step maps to the Train stage (08)?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "the LoRA Trainer loop (minimal-lora-trainer)"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What feeds the observability timeline and failure-cluster surface?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The RunEvent stream emitted by each stage"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which stages did your Track 2 script NOT have?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Introspect, Preflight, and Clean"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="with-brewslm/from-script-to-platform">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html" aria-current="page">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">With BrewSLM</a></li><li>From script to platform</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 3 · With BrewSLM · Lesson 1</span>
+          <h1>From script to platform: the BrewSLM lifecycle</h1>
+          <p class="lesson-header__outcome">After this lesson you can map your by-hand script onto BrewSLM's eleven-stage lifecycle and explain what the platform adds: per-row accountability, gates, and an auditable RunEvent for every stage.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="../hands-on/capstone-end-to-end.html">Capstone A: fine-tune end-to-end by hand</a></span>
+          </div>
+        </header>
+
+        <p>In the Track 2 capstone you wrote a single script: load a model, build and tokenize data, train a LoRA adapter, evaluate against a baseline, and ship. That script <em>works</em> — and now you understand every line of it. Track 3 takes that same pipeline and runs it through BrewSLM, so you can see exactly which platform surface stands in for each thing you did by hand, and what it buys you when you do this not once but fifty times.</p>
+
+        <h2>The eleven-stage lifecycle</h2>
+        <p>Your script had a handful of phases. BrewSLM names eleven explicit stages, each with declared <strong>inputs, outputs, a contract, and a RunEvent it emits</strong> — no mystery boxes:</p>
+        <pre class="code-block"><code>01 Ingest        →  pull rows from a source
+02 Introspect    →  guess the data's shape
+03 Map (dry-run) →  preview the mapping + rejections
+04 Map (commit)  →  write mapped rows
+05 Clean         →  (optional) PII, quality, chunks
+06 Prepare       →  build the manifest + train/eval splits
+07 Preflight     →  will this run? memory, deps, gates
+08 Train         →  recipe + checkpoints + loss/eval traces
+09 Evaluate      →  eval pack + gates decide promotability
+10 Export        →  GGUF / safetensors / HF / vLLM
+11 Deploy        →  (optional) versioned endpoint + drift checks</code></pre>
+        <div class="callout callout--note">
+          <p class="callout__label">From Track 2</p>
+          <p>Your script maps almost one-to-one: build-a-dataset → <strong>Ingest/Map</strong> (01–04); tokenize/collate + split → <strong>Prepare</strong> (06); the LoRA Trainer loop → <strong>Train</strong> (08); evaluate-by-hand → <strong>Evaluate</strong> (09); merge-and-ship → <strong>Export/Deploy</strong> (10–11). The new stages — Introspect, Preflight, Clean — are the safety rails you didn't write.</p>
+        </div>
+
+        <h2>Every stage emits a RunEvent</h2>
+        <p>The single most important difference from a script is the <strong>audit spine</strong>. Each stage writes one or more <code>RunEvent</code> rows via <code>emit_event()</code>, with a reason code from a lint-gated taxonomy and a severity (info / warning / error / critical). One stream feeds the observability timeline, the failure-cluster surface, the support bundle, and the audit explorer. When your by-hand script failed, you read a stack trace; when a BrewSLM stage fails, it emits a named event like <code>training_oom</code> that every downstream view picks up automatically.</p>
+
+        <h2>It starts with a project</h2>
+        <p>Everything in BrewSLM hangs off a <strong>project</strong>: a base model, its data, its recipes, its experiments, its deployments, and its event history. Where your script kept state in local files and variables, the project is the durable container that makes the pipeline resumable, auditable, and shareable. Create one, point it at a base model, and you're at stage 01.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>BrewSLM isn't doing anything you didn't do by hand — it's doing the <em>same</em> pipeline with explicit contracts and an audit trail. You learned the internals first precisely so the platform is transparent, not magic. The rest of this track walks the eleven stages in order.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>BrewSLM lifecycle</dt><dd>The eleven explicit stages from Ingest to Deploy, each with inputs, outputs, a contract, and a RunEvent.</dd>
+            <dt>RunEvent</dt><dd>An audit row emitted by a stage (reason code + severity) that feeds every observability surface.</dd>
+            <dt>project</dt><dd>The durable container for a base model, its data, recipes, experiments, deployments, and event history.</dd>
+            <dt>contract</dt><dd>The declared guarantee of a stage — what it promises about its inputs and outputs.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What is the main thing BrewSLM adds over your by-hand script?",
+    "options": [
+      "A different training algorithm",
+      "Explicit stage contracts and an auditable RunEvent for each stage",
+      "A larger model",
+      "Faster GPUs"
+    ],
+    "answer": 1,
+    "explanation": "The pipeline is the same; the platform adds contracts and an audit spine."
+  },
+  {
+    "q": "Which by-hand step maps to the Train stage (08)?",
+    "options": [
+      "build-a-dataset",
+      "the LoRA Trainer loop (minimal-lora-trainer)",
+      "merge-and-infer",
+      "environment-setup"
+    ],
+    "answer": 1,
+    "explanation": "Stage 08 Train corresponds to your Trainer.train() loop."
+  },
+  {
+    "q": "What feeds the observability timeline and failure-cluster surface?",
+    "options": [
+      "The model weights",
+      "The RunEvent stream emitted by each stage",
+      "The tokenizer",
+      "The GPU driver"
+    ],
+    "answer": 1,
+    "explanation": "One RunEvent stream powers every observability consumer."
+  },
+  {
+    "q": "Which stages did your Track 2 script NOT have?",
+    "options": [
+      "Train and Evaluate",
+      "Introspect, Preflight, and Clean",
+      "Export and Deploy",
+      "Ingest and Map"
+    ],
+    "answer": 1,
+    "explanation": "Introspect, Preflight, and Clean are the safety rails the platform adds."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="../hands-on/capstone-end-to-end.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Capstone A: fine-tune end-to-end by hand</span></a>
+          <a href="ingest-and-map.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Ingest & map your data with per-row accountability</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

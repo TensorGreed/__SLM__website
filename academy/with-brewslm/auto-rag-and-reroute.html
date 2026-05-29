@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>When fine-tuning isn't the answer: auto-RAG & reroute-to-RAG — BrewSLM Academy</title>
+    <meta name="description" content="Sometimes the eval says fine-tuning won't get there. BrewSLM's post-eval decision engine can recommend retrieval: auto-RAG builds a BM25 index at training completion and prepends top-K passages at inference, and reroute-to-RAG clones the project into a retrieval-first sibling that uses the base model plus retrieval, no LoRA." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/with-brewslm/auto-rag-and-reroute.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="When fine-tuning isn't the answer: auto-RAG & reroute-to-RAG — BrewSLM Academy" />
+    <meta property="og:description" content="Sometimes the eval says fine-tuning won't get there. BrewSLM's post-eval decision engine can recommend retrieval: auto-RAG builds a BM25 index at training completion and prepends top-K passages at inference, and reroute-to-RAG clones the project into a retrieval-first sibling that uses the base model plus retrieval, no LoRA." />
+    <meta property="og:url" content="https://brewslm.com/academy/with-brewslm/auto-rag-and-reroute.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="When fine-tuning isn't the answer: auto-RAG & reroute-to-RAG — BrewSLM Academy" />
+    <meta name="twitter:description" content="Sometimes the eval says fine-tuning won't get there. BrewSLM's post-eval decision engine can recommend retrieval: auto-RAG builds a BM25 index at training completion and prepends top-K passages at inference, and reroute-to-RAG clones the project into a retrieval-first sibling that uses the base model plus retrieval, no LoRA." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "When fine-tuning isn't the answer: auto-RAG & reroute-to-RAG",
+        "description": "Sometimes the eval says fine-tuning won't get there. BrewSLM's post-eval decision engine can recommend retrieval: auto-RAG builds a BM25 index at training completion and prepends top-K passages at inference, and reroute-to-RAG clones the project into a retrieval-first sibling that uses the base model plus retrieval, no LoRA.",
+        "url": "https://brewslm.com/academy/with-brewslm/auto-rag-and-reroute.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["post-eval decision engine", "auto-RAG", "BM25 retrieval", "reroute-to-RAG", "when not to fine-tune"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "With BrewSLM", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "When fine-tuning isn't the answer: auto-RAG & reroute-to-RAG", "item": "https://brewslm.com/academy/with-brewslm/auto-rag-and-reroute.html" } ] }
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {
+    "@type": "Thing",
+    "name": "When fine-tuning isn't the answer: auto-RAG & reroute-to-RAG"
+  },
+  "hasPart": [
+    {
+      "@type": "Question",
+      "name": "When does the decision engine recommend retrieval over more fine-tuning?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "When failures look knowledge-bound (fluent but factually wrong)"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does auto-RAG do at inference?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Prepends top-K BM25-retrieved passages to the prompt"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "A reroute-to-RAG sibling project uses\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The base model plus retrieval, no LoRA"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "The decision engine recommending RAG means\u2026",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The platform is steering you to the right tool for a knowledge-bound task"
+      }
+    }
+  ]
+}
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="with-brewslm/auto-rag-and-reroute">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../index.html">Foundations</a>
+        <a href="../index.html">SFT fundamentals</a>
+        <a href="../index.html">Hands-on</a>
+        <a href="../index.html" aria-current="page">With BrewSLM</a>
+        <a href="../index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../index.html">With BrewSLM</a></li><li>Auto-RAG & reroute</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 3 · With BrewSLM · Lesson 9</span>
+          <h1>When fine-tuning isn't the answer: auto-RAG & reroute-to-RAG</h1>
+          <p class="lesson-header__outcome">After this lesson you can explain when the platform recommends retrieval over more fine-tuning, what auto-RAG adds at inference, and how reroute-to-RAG creates a base-model-plus-retrieval project — closing the loop Track 1 opened with 'fine-tuning vs RAG'.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="eval-packs-and-failure-clusters.html">Evaluate: eval packs, gates, failure clusters & remediation</a></span>
+          </div>
+        </header>
+
+        <p>Track 0 taught the choice between fine-tuning and retrieval; Track 2 lesson 2.7 ended with "if there's no lift, revisit the data." But sometimes the honest answer is that the task is knowledge-bound, not behavior-bound — no amount of fine-tuning teaches facts the model should be <em>looking up</em>. BrewSLM has surfaces for exactly that.</p>
+
+        <h2>The post-eval decision engine</h2>
+        <p>After evaluation, a <strong>decision engine</strong> reads the results and the failure clusters and recommends a next move. If the failures look like missing knowledge (the model is fluent but wrong on facts) rather than missing behavior, it can recommend <strong>retrieval</strong> instead of another training round — the platform telling you, with evidence, that you're holding the wrong tool.</p>
+
+        <h2>Auto-RAG — retrieval bolted onto your model</h2>
+        <p>At training completion, the auto-RAG service builds a <strong>BM25 index</strong> over your corpus. Then the playground's chat path <strong>prepends the top-K retrieved passages</strong> to the prompt before generation, so the model answers with relevant context in front of it. You can compare side by side — same model, with retrieval vs without — and there's a UI-triggered comparison Job for it:</p>
+        <pre class="code-block"><code>$ python -m scripts.auto_rag_ab --project 1
+# builds/loads the BM25 index, runs the gold set with and without
+# top-K retrieval, and reports the metric delta from retrieval</code></pre>
+        <div class="callout callout--note">
+          <p class="callout__label">From Track 1</p>
+          <p>BM25 is keyword retrieval — the lexical baseline from the foundations track. Auto-RAG uses it because it's fast, dependency-light, and strong for many tasks; the point is to test whether <em>any</em> retrieval helps before investing in heavier machinery.</p>
+        </div>
+
+        <h2>Reroute-to-RAG — a retrieval-first sibling</h2>
+        <p>If retrieval is clearly the right architecture, <strong>reroute-to-RAG</strong> goes further: it clones the project into a sibling with <code>runtime_config.rag_first=True</code>. That sibling's playground uses the <strong>base model plus retrieval — no LoRA adapter at all</strong>. You keep the original fine-tuning project intact for comparison, and the new project pursues the retrieval path cleanly. The clone runs as a background Job (the <code>reroute_to_rag</code> kind), so it's tracked in the bell like everything else.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">The honest-metrics point</p>
+          <p>The decision engine recommending RAG is not a failure of your fine-tune — it's the platform refusing to let you grind epochs against a problem training can't solve. Knowing <em>when not to fine-tune</em> is as valuable as knowing how, and it's the through-line from Track 0's pretraining-vs-fine-tuning-vs-RAG lesson.</p>
+        </div>
+
+        <p>Whichever path clears the gates — a fine-tuned adapter or a retrieval-first project — the last stage is getting it out into the world. Export, deploy, and the assistant that's been guiding the whole flow are the final lesson.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>When eval failures are knowledge-bound, the <strong>decision engine</strong> recommends retrieval. <strong>Auto-RAG</strong> prepends top-K BM25 passages to test the lift; <strong>reroute-to-RAG</strong> clones a base-model-plus-retrieval sibling with no LoRA. The platform helps you choose the right tool, not just turn the fine-tuning crank harder.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>post-eval decision engine</dt><dd>Reads eval results + clusters and recommends the next move — including retrieval over more training.</dd>
+            <dt>auto-RAG</dt><dd>Builds a BM25 index at training completion and prepends top-K retrieved passages at inference.</dd>
+            <dt>BM25</dt><dd>Keyword (lexical) retrieval — fast and dependency-light; the retrieval baseline.</dd>
+            <dt>reroute-to-RAG</dt><dd>Clones the project into a retrieval-first sibling (rag_first=True) using base model + retrieval, no LoRA.</dd>
+            <dt>knowledge-bound vs behavior-bound</dt><dd>Whether failures are missing facts (use retrieval) or missing behavior (fine-tune).</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "When does the decision engine recommend retrieval over more fine-tuning?",
+    "options": [
+      "Always",
+      "When failures look knowledge-bound (fluent but factually wrong)",
+      "When the GPU is small",
+      "Never"
+    ],
+    "answer": 1,
+    "explanation": "Knowledge gaps are a retrieval problem, not a fine-tuning one."
+  },
+  {
+    "q": "What does auto-RAG do at inference?",
+    "options": [
+      "Retrains the model",
+      "Prepends top-K BM25-retrieved passages to the prompt",
+      "Merges the adapter",
+      "Exports to GGUF"
+    ],
+    "answer": 1,
+    "explanation": "It adds retrieved context in front of the prompt before generation."
+  },
+  {
+    "q": "A reroute-to-RAG sibling project uses\u2026",
+    "options": [
+      "The LoRA adapter only",
+      "The base model plus retrieval, no LoRA",
+      "A bigger model",
+      "No model"
+    ],
+    "answer": 1,
+    "explanation": "rag_first=True means base model + retrieval, adapter-free."
+  },
+  {
+    "q": "The decision engine recommending RAG means\u2026",
+    "options": [
+      "Your fine-tune failed shamefully",
+      "The platform is steering you to the right tool for a knowledge-bound task",
+      "You need more GPUs",
+      "Evaluation is broken"
+    ],
+    "answer": 1,
+    "explanation": "Knowing when not to fine-tune is a feature, not a failure."
+  }
+]
+          </script>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="eval-packs-and-failure-clusters.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Evaluate: eval packs, gates, failure clusters & remediation</span></a>
+          <a href="export-deploy-coach.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Capstone B: export, deploy & Coach Mode end-to-end</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>
