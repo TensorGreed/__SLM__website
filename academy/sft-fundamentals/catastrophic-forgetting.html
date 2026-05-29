@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Catastrophic forgetting: when fine-tuning erases — BrewSLM Academy</title>
+    <meta name="description" content="Fine-tuning on narrow data can degrade abilities the base model already had. This lesson covers catastrophic forgetting — what it is, when it bites SFT hardest, and the standard mitigations: LoRA over full fine-tune, mixing in a slice of original data, early stopping, and broad eval." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/catastrophic-forgetting.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Catastrophic forgetting — BrewSLM Academy" />
+    <meta property="og:description" content="SFT on narrow data degrades broader capabilities. What catastrophic forgetting is, when it bites hardest, and the mitigations: LoRA, mixing original data, early stopping, broad eval." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/catastrophic-forgetting.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Catastrophic forgetting — BrewSLM Academy" />
+    <meta name="twitter:description" content="Fine-tuning on narrow data can erase broader skills. This lesson covers when it bites and how to mitigate it." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Catastrophic forgetting",
+        "description": "Catastrophic forgetting is the degradation of broader skills when a model is fine-tuned on narrow data. This lesson covers what it is, why SFT is especially susceptible, when it bites hardest (full fine-tune, small models, narrow data, long training), and the standard mitigations: prefer LoRA, mix in a slice of original instruction data, early stopping, and broad eval.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/catastrophic-forgetting.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT8M", "isAccessibleForFree": true,
+        "teaches": ["catastrophic forgetting", "capability retention", "data mixing", "LoRA as forgetting mitigation", "broad eval"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/sft-fundamentals/" },
+        { "@type": "ListItem", "position": 4, "name": "Catastrophic forgetting", "item": "https://brewslm.com/academy/sft-fundamentals/catastrophic-forgetting.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Catastrophic forgetting" },
+        "hasPart": [
+          { "@type": "Question", "name": "What is catastrophic forgetting?", "acceptedAnswer": { "@type": "Answer", "text": "The degradation of broader capabilities when a model is fine-tuned on narrow data; the optimizer optimises for the new objective and stops 'reinforcing' the old skills." } },
+          { "@type": "Question", "name": "Why does LoRA mitigate forgetting compared to full fine-tuning?", "acceptedAnswer": { "@type": "Answer", "text": "LoRA freezes the base and trains a small low-rank adapter; the base weights — which encode the broad skills — are untouched, and the adapter can be removed or merged at will." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/catastrophic-forgetting">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../sft-fundamentals/index.html">SFT fundamentals</a></li><li>Catastrophic forgetting</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 21</span>
+          <h1>Catastrophic forgetting</h1>
+          <p class="lesson-header__outcome">After this lesson you can explain catastrophic forgetting, predict when SFT will trigger it, and apply the standard mitigations (prefer LoRA, mix in a slice of original data, early stopping, broad eval) before your fine-tune erases the abilities you wanted to keep.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~8 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="full-finetuning-vs-lora.html">Full fine-tuning vs LoRA</a></span>
+          </div>
+        </header>
+
+        <p>You fine-tune a chat model into a perfect JSON extractor. The eval on your task is great. Then you ask the model an unrelated question and it tries to emit JSON. You taught it the new skill — and it forgot the old ones. That failure mode has a name: <strong>catastrophic forgetting</strong>. It bites SFT especially hard, and once you know to watch for it, the mitigations are cheap.</p>
+
+        <h2>What it is</h2>
+        <p>Training is a directed walk through parameter space: at every step, the optimizer adjusts every parameter to reduce the loss on the current batch. When the batch is narrow — only your task, only one format — the optimizer drifts the parameters toward what works for that batch, and the broader behaviours encoded in the original weights get pushed aside. Nothing in the loss function rewards keeping them. So they fade.</p>
+        <p>This is not a model bug. It's exactly what gradient descent is asked to do. Catastrophic forgetting is the consequence of optimising for narrow data without telling the optimizer to preserve anything.</p>
+
+        <h2>Why SFT is especially susceptible</h2>
+        <p>Pretraining used trillions of tokens covering everything; SFT typically uses hundreds to thousands of examples covering one task. The optimizer's signal during SFT is therefore overwhelmingly about your task, with no counter-pressure from the rest of language. A few epochs of that and the model is biased hard toward your shape. The narrower your data and the longer you train, the harder the bias becomes.</p>
+
+        <h2>When it bites hardest</h2>
+        <ul>
+          <li><strong>Full fine-tuning</strong> updates every weight in the base; broad knowledge is in those weights; full fine-tuning is therefore the worst case for forgetting (Lesson 1.13).</li>
+          <li><strong>Long training on narrow data</strong> — more epochs, more drift. The forgetting often happens late in training, after the task loss has already plateaued.</li>
+          <li><strong>Small models</strong> have less spare capacity. A 135M model can less afford to overwrite some weights than a 7B model can. Be more conservative with epochs on smaller bases.</li>
+          <li><strong>Very different distributions</strong> — if your fine-tune data sounds nothing like the pretraining mix (e.g. pure JSON-only, or one narrow domain jargon), forgetting comes faster.</li>
+        </ul>
+
+        <h2>Mitigation 1: prefer LoRA</h2>
+        <p>LoRA (Lesson 1.13, 1.14) freezes the base model and trains a small low-rank adapter on top. The base weights — which encode the broad skills — are untouched. The adapter learns the task; remove or merge the adapter and you can always recover the base. This is the single biggest forgetting mitigation in your toolbox and it costs you almost nothing.</p>
+
+        <h2>Mitigation 2: mix in a slice of original data</h2>
+        <p>Even with LoRA, if your fine-tune data is one shape, the adapter will be aggressive about producing that one shape. The fix: <strong>mix in a small fraction (5–10%) of general instruction data</strong> from a public set. Each batch then contains both your task and a reminder that other tasks exist, and the adapter learns "do this task on these prompts; do normal-chat on those prompts." Cheap and effective.</p>
+        <pre class="code-block"><code># crude mix in code
+narrow_ds = load_dataset("path/to/your/task")           # 1,000 rows
+broad_ds  = load_dataset("HuggingFaceH4/no_robots")    # general instruction data
+broad_sample = broad_ds.shuffle(seed=42).select(range(100))   # 10% of narrow
+mixed = concatenate_datasets([narrow_ds, broad_sample]).shuffle(seed=42)</code></pre>
+
+        <h2>Mitigation 3: stop training early</h2>
+        <p>Forgetting tends to compound with epochs. Track 1.17's loss-curve reading already told you to keep the checkpoint with the lowest <em>eval_loss</em>, not the final one — that policy doubles as a forgetting mitigation, because the final checkpoint is also the most forgotten one. If your task hits its quality gate at epoch 2 of 5, ship epoch 2.</p>
+
+        <h2>Mitigation 4: evaluate broadly, not just on your task</h2>
+        <p>The fastest way to discover forgetting is to look for it. Build a tiny "broad eval" — 10–30 prompts that test general instruction-following, polite refusals, basic reasoning, format-switching — and run it on every candidate checkpoint alongside your task eval. A run that aces the task eval but tanks the broad eval is forgetting; pick the earlier checkpoint or revisit the mix.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest beat — small models forget faster</p>
+          <p>The 135M default of this Academy is more sensitive to catastrophic forgetting than a 7B model is. Less spare capacity, fewer weights to spread the change across. Be more conservative with epochs on small bases; the right epoch count for a 7B isn't the right epoch count for a 135M. The cost of running the broad eval is one extra coffee. Run it.</p>
+        </div>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Catastrophic forgetting is what happens when you optimise for narrow data without protecting the rest. <strong>Use LoRA</strong>, <strong>mix in a slice of broad data</strong>, <strong>stop early</strong>, and <strong>evaluate broadly</strong> — all cheap. The cost of skipping them is a model that nails your task and breaks everywhere else.</p>
+        </div>
+
+        <p>That ends the SFT fundamentals track. You now have the concepts: the loss mask, chat templates, task shapes, tokenisation, data quality including gold sets, the training loop, cross-entropy, LR + schedule, batch + accumulation, full vs LoRA, LoRA knobs, GPU memory, OOM recovery, reading loss curves, evaluation, decoding controls, dataset formats, and catastrophic forgetting. Next: Track 2, where you do all of this in code by hand.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Catastrophic forgetting</dt><dd>Degradation of broader skills when a model is fine-tuned on narrow data — the optimizer has no signal to keep them.</dd>
+            <dt>Capability retention</dt><dd>The degree to which broad abilities survive a fine-tune; what mitigations are trying to preserve.</dd>
+            <dt>Data mixing (mix-back)</dt><dd>Including a small fraction (5–10%) of general instruction data alongside narrow task data, so the optimizer sees both shapes.</dd>
+            <dt>Broad eval</dt><dd>A small set of general prompts (instruction-following, refusals, format-switching) evaluated alongside the task eval to detect forgetting.</dd>
+            <dt>Early stopping (forgetting view)</dt><dd>Stopping training once the task gate is met, because additional epochs trade task gains for broader losses.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "Catastrophic forgetting is best described as…",
+   "options": ["A bug in the gradient descent algorithm", "The model crashing during training", "Loss of broader skills when fine-tuning on narrow data — the optimizer has no signal to preserve them", "Underfitting because the model is too small"],
+   "answer": 2,
+   "explanation": "It's a direct consequence of optimising for narrow data without protecting the rest; nothing in the loss rewards keeping the broader behaviours."},
+  {"q": "Which is the single biggest mitigation in your toolbox?",
+   "options": ["Higher learning rate", "Use LoRA instead of full fine-tuning — the base weights stay untouched", "Larger batch size", "More epochs"],
+   "answer": 1,
+   "explanation": "LoRA freezes the base; broad knowledge lives in the base; adapter-only updates preserve almost all of it."},
+  {"q": "How much general instruction data should you mix in to mitigate forgetting?",
+   "options": ["50% of the dataset", "Nothing — just use your task data", "5–10% of narrow data — enough to remind the optimizer other shapes exist", "An equal amount, doubling the dataset"],
+   "answer": 2,
+   "explanation": "A small fraction is enough to give the optimizer counter-pressure each epoch without diluting your task signal."},
+  {"q": "Why are small models more sensitive to catastrophic forgetting?",
+   "options": ["Small models train faster", "They have less spare capacity — fewer weights to spread the change across", "Their tokenizers are different", "They use bf16 instead of fp16"],
+   "answer": 1,
+   "explanation": "A 135M model has less room to absorb a task-specific change without overwriting other behaviours; the right epoch count for a 7B isn't the right epoch count for a 135M."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="full-finetuning-vs-lora.html">Full fine-tuning vs LoRA</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="overfitting-and-loss-curves.html">Overfitting &amp; reading a loss curve</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../foundations/llms-vs-slms.html">LLMs vs SLMs: scale, cost, latency</a><span class="related-lessons__track">Foundations</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="dataset-formats-in-the-wild.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Dataset formats in the wild</span></a>
+          <a href="../hands-on/environment-setup.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Set up the environment (Track 2)</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

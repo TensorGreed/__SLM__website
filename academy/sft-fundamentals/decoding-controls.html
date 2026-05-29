@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Decoding controls: temperature, top-p, stop tokens — BrewSLM Academy</title>
+    <meta name="description" content="Decoding is what turns a trained model's probability distribution into a sequence of tokens. Temperature, top-p, top-k, max_new_tokens, stop tokens, and the repetition penalty are not training knobs — they shape what an already-trained model produces." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/decoding-controls.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Decoding controls: temperature, top-p, stop tokens — BrewSLM Academy" />
+    <meta property="og:description" content="Decoding ≠ training. Temperature, top-p, top-k, max_new_tokens, stop tokens, and the repetition penalty shape what an already-trained model produces — and bad outputs often mean a decoding fix, not a retrain." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/decoding-controls.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Decoding controls — BrewSLM Academy" />
+    <meta name="twitter:description" content="Decoding is not training. Tune temperature, top-p, max_new_tokens, stop tokens, and repetition penalty before you reach for a retrain." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Decoding controls: temperature, top-p, stop tokens",
+        "description": "Decoding turns the model's per-token probability distribution into a sequence of tokens. This lesson covers greedy vs sampling, temperature, top-p (nucleus) and top-k, max_new_tokens, stop tokens, the repetition penalty, and time-to-first-token — and how to tell when a bad output is a decoding problem rather than a training problem.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/decoding-controls.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["greedy vs sampling", "temperature", "top-p (nucleus) sampling", "top-k", "max_new_tokens", "stop tokens", "repetition penalty", "time to first token"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/sft-fundamentals/" },
+        { "@type": "ListItem", "position": 4, "name": "Decoding controls", "item": "https://brewslm.com/academy/sft-fundamentals/decoding-controls.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Decoding controls" },
+        "hasPart": [
+          { "@type": "Question", "name": "What does temperature do?", "acceptedAnswer": { "@type": "Answer", "text": "Divides logits before softmax: T<1 sharpens the distribution (more deterministic), T>1 flattens it (more variety)." } },
+          { "@type": "Question", "name": "Why does greedy decoding sometimes produce repetitive output even from a well-trained model?", "acceptedAnswer": { "@type": "Answer", "text": "A locally-likely token cascades into a loop; a small repetition penalty or top-p sampling breaks the cycle without retraining." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/decoding-controls">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../sft-fundamentals/index.html">SFT fundamentals</a></li><li>Decoding controls</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 19</span>
+          <h1>Decoding controls: temperature, top-p, stop tokens</h1>
+          <p class="lesson-header__outcome">After this lesson you can name what each decoding knob does (temperature, top-p, top-k, max_new_tokens, stop tokens, repetition penalty), tune them for a use case, and recognise when a bad output is a decoding problem rather than a training problem.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="../foundations/how-language-models-work.html">Next-token prediction</a></span>
+          </div>
+        </header>
+
+        <p>The same trained model can produce wildly different outputs on the same prompt depending on how you decode. Decoding is the bridge from "a probability distribution over the next token" to "actual text" — and it is governed by knobs that have nothing to do with training. Every developer eventually mistakes a decoding problem for a training problem, retrains, and discovers nothing changed. This lesson is so you skip that step.</p>
+
+        <h2>Decoding is not training</h2>
+        <p>The model produces a probability for every token in the vocabulary at every position (Lesson 0.6). Decoding is the rule that <em>picks</em> a token from that distribution. The training process determines the distribution; the decoding rule determines which token in it you actually emit. Tuning decoding does not change a single weight — it changes which path you take through the model's predictions.</p>
+
+        <h2>Greedy vs sampling</h2>
+        <p>Two families of decoding rule. <strong>Greedy</strong> always takes the most likely token. It is deterministic — same prompt, same output — and tends toward the average; great for evaluation, can be repetitive for generation. <strong>Sampling</strong> draws a token from the distribution. It is non-deterministic, adds variety, and is the right default for chat / writing tasks where blandness is itself a failure.</p>
+        <p>In the HF Transformers API: <code>do_sample=False</code> is greedy; <code>do_sample=True</code> is sampling. For classification or structured extraction you almost always want greedy. For chat / FAQ-style generation you almost always want sampling.</p>
+
+        <h2>Temperature: sharpen or flatten the distribution</h2>
+        <p><strong>Temperature</strong> (<code>T</code>) divides the logits before softmax. <code>T = 1</code> is the trained distribution. <code>T &lt; 1</code> sharpens — high-probability tokens become more likely, low-probability tokens become less. <code>T &gt; 1</code> flattens — more variety, more risk. Extremes are easy to reason about: <code>T → 0</code> approaches greedy; <code>T → ∞</code> approaches uniform random.</p>
+        <ul>
+          <li><strong>Classification / extraction:</strong> <code>T = 0</code> (or greedy). Deterministic, no surprises.</li>
+          <li><strong>FAQ / structured chat:</strong> <code>T ≈ 0.2–0.4</code>. Slight variety; still anchored to high-confidence tokens.</li>
+          <li><strong>Creative / open-ended:</strong> <code>T ≈ 0.7–1.0</code>. The model takes risks.</li>
+          <li><strong>&gt; 1.2:</strong> rarely useful. Output is plausible-looking gibberish more often than it's interesting.</li>
+        </ul>
+
+        <h2>Top-p (nucleus) and top-k: chop off the tail</h2>
+        <p>Temperature reshapes the distribution but still allows any token. <strong>Top-p</strong> and <strong>top-k</strong> truncate the tail before sampling, so the model never picks an obviously bad token.</p>
+        <ul>
+          <li><strong>Top-k</strong>: keep only the <code>k</code> most likely tokens, renormalise, sample. Simple, effective. <code>k ≈ 40</code> is common.</li>
+          <li><strong>Top-p</strong> (nucleus sampling): keep the smallest set of tokens whose cumulative probability ≥ <code>p</code>, then sample. <code>p ≈ 0.9</code> is a sane default. Adapts to the distribution's shape (peaky → few tokens; flat → many).</li>
+        </ul>
+        <p>The standard combo for chat is <code>temperature=0.7, top_p=0.9, top_k=0</code> (top-k off, nucleus on). For deterministic tasks all of these are off (greedy).</p>
+
+        <h2>Stop tokens and max_new_tokens: don't let it ramble</h2>
+        <p><strong>Stop tokens</strong> tell the model to halt generation when it produces a particular token (often the chat template's end-of-turn marker, e.g. <code>&lt;|im_end|&gt;</code>). Without one — or with the wrong one — the model keeps going past your answer and emits the next user turn it imagines, or just trails off. Instruct models bake their end tokens into the tokenizer; chat templates set them automatically.</p>
+        <p><strong>max_new_tokens</strong> is a hard cap. Always set it. A chat answer with a forgotten stop token and no cap will fill its context window with hallucinated conversation. For a classification task that emits one label, <code>max_new_tokens = 4</code> is fine; for a chat answer, 256–512.</p>
+
+        <h2>Repetition penalty: small fix for a common bug</h2>
+        <p>Sometimes a model loops: it generates a phrase, then re-generates it, then re-generates it. The <strong>repetition penalty</strong> reduces the probability of any token that has already appeared in the output. A small value (<code>1.05</code>–<code>1.15</code>) usually breaks the loop with no quality cost. Don't go above ~<code>1.3</code> — you'll start suppressing legitimately repeated words like "the."</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest beat — repetitive output is two different bugs</p>
+          <p><strong>Repetitive output can mean a decoding problem or a training problem.</strong> First, check decoding: turn on <code>repetition_penalty=1.1</code> or switch from greedy to <code>top_p=0.9</code> sampling. If the variety returns, it was the decoding rule trapping you in a locally-likely loop — no retrain needed. If the model still loops with healthy decoding, it has overfit on repetitive training data and a retrain on more diverse examples is the right answer. Knowing which costs you a five-minute experiment instead of a five-hour rerun.</p>
+        </div>
+
+        <h2>Time to first token (TTFT) and streaming</h2>
+        <p>Decoding settings affect <em>throughput</em> (tokens per second) but the user-visible latency starts before any token is produced: <strong>time to first token (TTFT)</strong> is the gap between sending the prompt and seeing the first character of reply. For a chat UX, TTFT under ~200 ms feels instant; over ~1 s feels broken. Streaming — emitting tokens as they're produced rather than buffering the whole answer — masks the rest of the latency by giving the user something to read immediately. Most serving stacks support it; turn it on for any interactive use.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Decoding is not training. Before you retrain, try greedy vs sampling, <code>temperature ≈ 0.7</code>, <code>top_p ≈ 0.9</code>, a stop token, <code>max_new_tokens</code>, and a small <code>repetition_penalty</code>. Most "bad output" complaints have a decoding fix that costs five minutes. Save the retrain for when the model genuinely doesn't know.</p>
+        </div>
+
+        <p>Decoding lives at inference time, but it interacts with everything you've trained. Track 2 will pick the actual values in code; Lesson 1.20 covers another pre-training-time concern: the dataset format you've been handed.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Greedy decoding</dt><dd>Always take the most-likely next token. Deterministic; the default for evaluation and classification.</dd>
+            <dt>Sampling</dt><dd>Draw the next token from the distribution; non-deterministic, adds variety, the default for chat / writing.</dd>
+            <dt>Temperature (T)</dt><dd>Divides logits before softmax. <code>T &lt; 1</code> sharpens the distribution; <code>T &gt; 1</code> flattens it.</dd>
+            <dt>Top-p (nucleus sampling)</dt><dd>Keep the smallest set of tokens whose cumulative probability ≥ <code>p</code> and sample from that set. Adapts to distribution shape; <code>p ≈ 0.9</code> is a standard default.</dd>
+            <dt>Top-k</dt><dd>Keep only the <code>k</code> most likely tokens and sample from that subset.</dd>
+            <dt>max_new_tokens</dt><dd>Hard cap on how many tokens the model may emit per call. Always set it.</dd>
+            <dt>Stop tokens</dt><dd>Tokens that signal end-of-generation. Instruct models bake one into the chat template; without it the model rambles.</dd>
+            <dt>Repetition penalty</dt><dd>A scalar that reduces probability of tokens already in the output. Small values (1.05–1.15) break loops without quality loss.</dd>
+            <dt>Time to first token (TTFT)</dt><dd>Latency from request send to first generated character. Dominates perceived chat UX.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "Which decoding setting is the right default for a classification task whose output is a single label?",
+   "options": ["High temperature (T = 1.0) with top_p = 0.9", "Greedy (do_sample = False, T = 0)", "Sampling with top_k = 100", "Random sampling with no constraints"],
+   "answer": 1,
+   "explanation": "Classification needs determinism and a low risk of off-format output. Greedy + max_new_tokens just big enough for the label is the standard."},
+  {"q": "Your chat model produces repetitive loops. What is the cheapest thing to try first?",
+   "options": ["Retrain on more diverse data", "Set repetition_penalty around 1.1 (or switch from greedy to top_p sampling)", "Increase max_new_tokens", "Lower the temperature"],
+   "answer": 1,
+   "explanation": "Loops are often a greedy-decoding trap, not a training problem. A small repetition penalty (or nucleus sampling) breaks the loop in five minutes; only retrain if the loop survives healthy decoding."},
+  {"q": "What does top-p = 0.9 do?",
+   "options": ["Forces the model to output exactly 90% of the time", "Keeps the smallest set of tokens whose cumulative probability ≥ 0.9, then samples from that set", "Limits the output to 90 tokens", "Multiplies all probabilities by 0.9"],
+   "answer": 1,
+   "explanation": "Nucleus sampling truncates the tail dynamically: peaky distributions yield few candidates, flat ones yield many."},
+  {"q": "Why is setting max_new_tokens always recommended?",
+   "options": ["It improves the model's accuracy", "It prevents a forgotten stop token from letting the model fill its context window with hallucinated conversation", "It makes TTFT lower", "It changes the temperature"],
+   "answer": 1,
+   "explanation": "max_new_tokens is the hard cap. Without it, a missing stop token can let the model ramble until OOM or context-window exhaustion."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="../foundations/how-language-models-work.html">How language models work: next-token prediction</a><span class="related-lessons__track">Foundations</span></li>
+            <li><a class="inline-link" href="../advanced/serving-and-inference.html">Serving &amp; inference optimization</a><span class="related-lessons__track">Advanced</span></li>
+            <li><a class="inline-link" href="overfitting-and-loss-curves.html">Overfitting &amp; reading a loss curve</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="evaluation-fundamentals.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Evaluation that matches the task</span></a>
+          <a href="dataset-formats-in-the-wild.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Dataset formats in the wild</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

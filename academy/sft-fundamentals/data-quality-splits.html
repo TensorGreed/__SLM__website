@@ -162,6 +162,16 @@
           <p>Clean data, honest splits, no leakage. Get these right and ordinary training settings will carry you a long way; get them wrong and no amount of tuning will save the run.</p>
         </div>
 
+        <h2>Building the harder data</h2>
+        <p>"Representative" data is necessary but not sufficient. A dataset of normal examples teaches the model the average case; what makes a fine-tune <em>actually robust</em> is including the examples that pressure the model's decisions. Four sub-categories worth deliberate effort:</p>
+        <ul>
+          <li><strong>Hard negatives.</strong> Examples that look like a positive but aren't — and vice versa. For a sentiment classifier, "the service was so slow I had time to read a book — loved it" (positive with negative surface markers); for a PII extractor, fake-looking strings that should not be extracted. Hard negatives are where the decision boundary lives; the model only learns where it is if you put examples on both sides.</li>
+          <li><strong>Ambiguous cases.</strong> Examples a thoughtful human would have to pause on. Label them according to the rule you want enforced ("when ambiguous, prefer X"); the model then learns the rule, not just the obvious cases. Without ambiguous data, the model picks up whichever rule the easy cases happened to imply, which may not be the rule you wanted.</li>
+          <li><strong>Refusal data.</strong> Examples the model should <em>not</em> answer in the usual way — out-of-scope requests, harmful prompts, requests that need a clarifying question instead. Pair each with the desired refusal phrasing. Without refusal data, an SFT model will try to answer everything, including things it shouldn't.</li>
+          <li><strong>OOD (out of distribution) examples.</strong> Inputs deliberately outside the trained scope, labelled with the desired "I don't know" or "this isn't a question I handle" response. These teach the model to recognise its own limits, which production inevitably tests.</li>
+        </ul>
+        <p>None of these need to be huge. Twenty hard negatives plus twenty ambiguous cases plus a handful of refusal/OOD examples is enough to move the decision boundary measurably on a small dataset. Skipping them is the most common silent quality cap on SFT projects.</p>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
@@ -170,6 +180,10 @@
             <dt>Train/validation/test split</dt><dd>Disjoint sets for learning, in-training checking, and a final one-time estimate.</dd>
             <dt>Data leakage</dt><dd>Test information appearing in training (duplicates, same-source rows), inflating metrics dishonestly.</dd>
             <dt>Representativeness</dt><dd>Training data resembling the real inputs the model will face, including hard/edge cases.</dd>
+            <dt>Hard negative</dt><dd>An example that resembles the other class on the surface; placed on the correct side of the decision boundary to teach the model where the line is.</dd>
+            <dt>Ambiguous case</dt><dd>An example a thoughtful human would have to pause on; labelled per a stated rule so the model learns the rule, not the obvious cases only.</dd>
+            <dt>Refusal data</dt><dd>Examples the model should <em>not</em> answer the usual way — out-of-scope, harmful, or needing clarification — paired with the desired refusal phrasing.</dd>
+            <dt>OOD (out of distribution)</dt><dd>Inputs outside the trained scope, labelled with the desired "I don't know" so the model learns its limits.</dd>
           </dl>
         </section>
 

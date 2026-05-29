@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dataset formats in the wild: JSONL, Alpaca, ShareGPT, chat — BrewSLM Academy</title>
+    <meta name="description" content="The dataset you receive is almost never the format the trainer wants. This lesson covers the standard SFT dataset shapes — JSONL, completion, chat messages, Alpaca, ShareGPT, classification, extraction — and how to convert between them." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/dataset-formats-in-the-wild.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Dataset formats in the wild — BrewSLM Academy" />
+    <meta property="og:description" content="JSONL, completion, chat messages, Alpaca, ShareGPT, classification, extraction — the dataset shapes you'll meet, and how to convert between them." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/dataset-formats-in-the-wild.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Dataset formats in the wild — BrewSLM Academy" />
+    <meta name="twitter:description" content="The common SFT dataset shapes (JSONL, Alpaca, ShareGPT, chat messages, completion, classification, extraction) and how to convert between them." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Dataset formats in the wild",
+        "description": "The dataset you receive is almost never the format the trainer wants. This lesson covers the standard SFT dataset shapes — JSONL, completion, chat messages, Alpaca, ShareGPT, classification, extraction — and how to convert between them so the trainer sees what it expects.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/dataset-formats-in-the-wild.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Beginner", "timeRequired": "PT9M", "isAccessibleForFree": true,
+        "teaches": ["JSONL", "completion format", "chat messages format", "Alpaca format", "ShareGPT format", "classification format", "extraction format", "format conversion"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/sft-fundamentals/" },
+        { "@type": "ListItem", "position": 4, "name": "Dataset formats in the wild", "item": "https://brewslm.com/academy/sft-fundamentals/dataset-formats-in-the-wild.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Dataset formats in the wild" },
+        "hasPart": [
+          { "@type": "Question", "name": "What is JSONL?", "acceptedAnswer": { "@type": "Answer", "text": "One JSON object per line; streamable, line-recoverable, and the lingua franca of SFT datasets." } },
+          { "@type": "Question", "name": "What's the right format for a multi-turn chat fine-tune?", "acceptedAnswer": { "@type": "Answer", "text": "The chat-messages format: a list of {role, content} pairs that the tokenizer's apply_chat_template can render to text." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/dataset-formats-in-the-wild">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../sft-fundamentals/index.html">SFT fundamentals</a></li><li>Dataset formats in the wild</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 20</span>
+          <h1>Dataset formats in the wild</h1>
+          <p class="lesson-header__outcome">After this lesson you can recognise the common SFT dataset shapes — JSONL, completion, chat messages, Alpaca, ShareGPT, classification, extraction — pick the right one for a task, and convert between them so the trainer sees what it expects.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="anatomy-of-an-sft-example.html">Anatomy of an SFT example</a></span>
+          </div>
+        </header>
+
+        <p>The dataset you receive is almost never the format the trainer wants. You'll meet a Hugging Face dataset in Alpaca format and need chat messages; you'll meet a JSONL of <code>{prompt, completion}</code> rows and need to wrap them in the chat template; you'll meet a tab-separated classification CSV and have to decide whether to convert at all. The conversions are mechanical — and silently wrong if you get them slightly off. This lesson is the field guide.</p>
+
+        <h2>Why formats matter</h2>
+        <p>SFT trainers (raw <code>Trainer</code>, TRL's <code>SFTTrainer</code>, BrewSLM's task handlers) all eat the same fundamental object — tokenised <code>input_ids</code> with a loss mask — but they accept their <em>source</em> data in different shapes. Picking the right shape means the trainer's built-in chat-template + loss-mask code works correctly without bespoke glue. Picking the wrong shape means you'll fight the trainer or build your own preprocessing — and the training silently optimises the wrong tokens.</p>
+
+        <h2>JSONL: the lingua franca</h2>
+        <p><strong>JSONL</strong> is one JSON object per line. It's not a schema — it's a container. Inside each line, you can put any of the shapes below. JSONL exists because it's streamable (the trainer can read one line at a time), line-recoverable (a corrupt row only kills its line), and easy to inspect with <code>head</code>.</p>
+        <pre class="code-block"><code>{"prompt": "Classify: I loved it.", "completion": "positive"}
+{"prompt": "Classify: Broken on arrival.", "completion": "negative"}
+{"prompt": "Classify: Average.", "completion": "neutral"}</code></pre>
+        <p>When in doubt, write your dataset as JSONL. The format question becomes "what fields inside each line?"</p>
+
+        <h2>Completion format: simplest</h2>
+        <p>Two fields per row: <code>prompt</code> and <code>completion</code>. Used in Track 2's by-hand SFT and many tutorials. Good for: classification, extraction, anything where the assistant's output is a single block of text and there's no multi-turn structure. Bad for: chat data, multi-turn conversations, role-based prompts.</p>
+        <pre class="code-block"><code>{"prompt": "Summarise: The flight was delayed three hours...", "completion": "Three-hour delay; complaint resolved with voucher."}</code></pre>
+
+        <h2>Chat messages format: the standard for chat models</h2>
+        <p>A list of <code>{role, content}</code> objects. This is what an instruct model's <code>apply_chat_template</code> wants. The tokenizer renders the list to a string using the model's chat template (the role markers <code>&lt;|im_start|&gt;user</code> etc.), so you don't hand-format the special tokens — you describe the conversation and let the tokenizer do the rest.</p>
+        <pre class="code-block"><code>{
+  "messages": [
+    {"role": "system",    "content": "You are a customer-support agent. Be concise."},
+    {"role": "user",      "content": "My package never arrived."},
+    {"role": "assistant", "content": "I'm sorry. Can you share the tracking number so I can investigate?"}
+  ]
+}</code></pre>
+        <p>Use this for chat models, multi-turn tasks, anything where role matters. TRL's <code>SFTTrainer</code> accepts it directly.</p>
+
+        <h2>Alpaca format: legacy, but you'll see it</h2>
+        <p>From Stanford's original instruction-tuning dataset. Three fields: <code>instruction</code>, optional <code>input</code>, <code>output</code>. Lots of older HF datasets ship in this shape.</p>
+        <pre class="code-block"><code>{
+  "instruction": "Translate to French.",
+  "input": "Good morning.",
+  "output": "Bonjour."
+}</code></pre>
+        <p>Convert it to chat messages: <code>instruction + "\n\n" + input</code> becomes the user content, <code>output</code> becomes the assistant content. The conversion is mechanical; the easy bug is concatenating without the blank line and losing the boundary between instruction and input.</p>
+
+        <h2>ShareGPT format: messy multi-turn</h2>
+        <p>From early dumps of shared ChatGPT conversations. Multi-turn, with a quirky <code>from</code>/<code>value</code> field naming (instead of <code>role</code>/<code>content</code>).</p>
+        <pre class="code-block"><code>{
+  "conversations": [
+    {"from": "human", "value": "What's the capital of France?"},
+    {"from": "gpt",   "value": "Paris."},
+    {"from": "human", "value": "And of Germany?"},
+    {"from": "gpt",   "value": "Berlin."}
+  ]
+}</code></pre>
+        <p>Convert to chat messages: rename <code>from: "human"</code> → <code>role: "user"</code>, <code>from: "gpt"</code> → <code>role: "assistant"</code>, <code>value</code> → <code>content</code>. Done.</p>
+
+        <h2>Classification format: not a chat shape at all</h2>
+        <p>For pure classification tasks the simplest shape is two fields: <code>text</code> and <code>label</code>. This is what scikit-learn and the HF <code>evaluate</code> library expect, and it's what the BrewSLM Classification handler ingests.</p>
+        <pre class="code-block"><code>{"text": "Loved the service.", "label": "positive"}
+{"text": "Never again.",       "label": "negative"}</code></pre>
+        <p>When you train a chat-style SLM on classification data, you (or the trainer) wrap each row into a chat-messages turn: "Classify this: {text}" / "{label}". When you train a small classification head separately (no SFT), you don't — the classification format is the input directly.</p>
+
+        <h2>Extraction format: structured outputs</h2>
+        <p>For span extraction (PII, named entities, structured data pulled from text), you need to encode positions. Two common shapes — the <em>span set</em>: <code>{text, spans: [{start, end, label}, ...]}</code>; and the <em>field map</em>: <code>{text, fields: {invoice_number: "...", date: "..."}}</code>. BrewSLM's StructuredExtraction handler supports both via <code>scoring_mode</code>.</p>
+        <pre class="code-block"><code>{
+  "text": "Contact jane.doe@example.com or 555-0123",
+  "spans": [
+    {"start":  8, "end": 28, "label": "EMAIL"},
+    {"start": 32, "end": 40, "label": "PHONE"}
+  ]
+}</code></pre>
+
+        <h2>Converting between formats</h2>
+        <p>The mechanical conversion is usually 5–15 lines. The whole point of using a standard format is that the trainer's preprocessing handles tokenisation + chat-template + loss-mask for you. If you find yourself writing those by hand, step back and ask whether a small conversion would let the trainer's built-in path do it correctly.</p>
+        <pre class="code-block"><code>def alpaca_to_chat(row):
+    user = row["instruction"] + (f"\n\n{row['input']}" if row.get("input") else "")
+    return {"messages": [
+        {"role": "user",      "content": user},
+        {"role": "assistant", "content": row["output"]},
+    ]}
+
+def sharegpt_to_chat(row):
+    role_map = {"human": "user", "gpt": "assistant", "system": "system"}
+    return {"messages": [
+        {"role": role_map[t["from"]], "content": t["value"]}
+        for t in row["conversations"]
+    ]}</code></pre>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>The format question is not "what's correct?" — it's "what does my trainer expect, and does my data shape match it?" For chat models, the answer is almost always the <strong>chat messages</strong> format (a list of <code>{role, content}</code> dicts). For everything else — Alpaca, ShareGPT, completion, CSVs — write a tiny conversion and let the trainer's built-in chat-template + loss-mask code do the rest.</p>
+        </div>
+
+        <p>You can now read any dataset you're handed. The next lesson covers a failure mode that bites SFT especially hard once you start training on narrow data: catastrophic forgetting.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>JSONL</dt><dd>One JSON object per line; streamable, line-recoverable, the standard container for SFT datasets.</dd>
+            <dt>Completion format</dt><dd><code>{prompt, completion}</code>. Simplest shape; what Track 2's by-hand SFT uses. Good for single-turn tasks.</dd>
+            <dt>Chat messages format</dt><dd>A list of <code>{role, content}</code> dicts that the tokenizer's <code>apply_chat_template</code> renders. The standard for chat models and multi-turn data.</dd>
+            <dt>Alpaca format</dt><dd><code>{instruction, input, output}</code>. From Stanford's original instruction-tuning set; many older HF datasets use it.</dd>
+            <dt>ShareGPT format</dt><dd><code>{conversations: [{from, value}, ...]}</code>. Multi-turn, quirky field names; rename <code>from</code>→<code>role</code>, <code>value</code>→<code>content</code> to convert.</dd>
+            <dt>Classification format</dt><dd><code>{text, label}</code>. The native shape for classification tasks; what scikit-learn and HF <code>evaluate</code> ingest directly.</dd>
+            <dt>Extraction format</dt><dd>Span set (<code>{text, spans: [...]}</code>) or field map (<code>{text, fields: {...}}</code>) for structured extraction tasks.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "JSONL is…",
+   "options": ["A specific dataset schema with required fields", "A container: one JSON object per line, with whatever fields you put inside", "A binary tensor format", "A streaming protocol"],
+   "answer": 1,
+   "explanation": "JSONL just stores one JSON object per line — the schema is whatever fields you put inside. That's why JSONL alone doesn't say 'completion' or 'chat messages'; those are inner schemas."},
+  {"q": "You're fine-tuning a chat instruct model on multi-turn customer support data. Which format?",
+   "options": ["Alpaca", "ShareGPT, kept as-is", "Chat messages — apply_chat_template will render the role markers", "Completion — just concatenate everything"],
+   "answer": 2,
+   "explanation": "Chat models eat chat-messages format and let apply_chat_template handle the special tokens. Multi-turn role data is its native shape."},
+  {"q": "Converting Alpaca → chat messages, the user content should be…",
+   "options": ["Only the instruction field", "Only the input field", "The instruction and input joined (with a blank line between them when input is non-empty)", "The output field"],
+   "answer": 2,
+   "explanation": "Instruction + input form the user side; output is the assistant side. The blank line preserves the boundary so the model sees the structure consistently."},
+  {"q": "When can you skip the chat format entirely?",
+   "options": ["When the task is classification or extraction and you're training a dedicated head (or the trainer wraps it for you)", "Whenever the dataset is small", "When using QLoRA", "Never — every model needs chat format"],
+   "answer": 0,
+   "explanation": "Classification (text, label) and extraction (text, spans/fields) have native shapes that classifier/extraction handlers ingest directly. SFT-on-chat-model versions of those tasks still need a chat wrap; pure classification heads don't."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="chat-templates.html">Chat templates &amp; special tokens</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="anatomy-of-an-sft-example.html">Anatomy of an SFT example: the loss mask</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../hands-on/build-a-dataset.html">Build a tiny SFT dataset</a><span class="related-lessons__track">Hands-on</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="decoding-controls.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Decoding controls</span></a>
+          <a href="catastrophic-forgetting.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Catastrophic forgetting</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

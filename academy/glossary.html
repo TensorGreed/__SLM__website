@@ -190,6 +190,26 @@
           <dt id="scheduler">Scheduler / warmup</dt><dd>Warmup ramps the LR up over the first steps; the scheduler (e.g. cosine) then decays it toward zero. See <a class="inline-link" href="sft-fundamentals/learning-rate-and-schedules.html">Learning rate &amp; schedules</a>.</dd>
           <dt id="sequence-packing">Sequence packing</dt><dd>Concatenating short examples into one full-length sequence to avoid wasting compute on padding.</dd>
           <dt id="target-modules">Target modules</dt><dd>Which weight matrices get LoRA adapters (commonly the attention query/value projections).</dd>
+          <dt id="t1-greedy">Greedy decoding (T1)</dt><dd>Always take the most-likely next token. Deterministic; the default for classification and evaluation. See <a class="inline-link" href="sft-fundamentals/decoding-controls.html">Decoding controls</a>.</dd>
+          <dt id="t1-sampling">Sampling</dt><dd>Drawing the next token from the model's distribution (<code>do_sample=True</code>); adds variety, the default for chat/writing tasks.</dd>
+          <dt id="t1-top-p">Top-p (nucleus sampling)</dt><dd>Keep the smallest set of tokens whose cumulative probability ≥ <code>p</code>, then sample. <code>p ≈ 0.9</code> is a sane default.</dd>
+          <dt id="t1-top-k">Top-k</dt><dd>Keep only the <code>k</code> most likely tokens and sample from that subset.</dd>
+          <dt id="t1-max-new">max_new_tokens</dt><dd>Hard cap on tokens emitted per generation call. Always set it; a missing stop token with no cap can fill the context window with hallucinated conversation.</dd>
+          <dt id="t1-stop-tokens">Stop tokens</dt><dd>Tokens signalling end-of-generation. Instruct models bake one into the chat template; without it the model rambles.</dd>
+          <dt id="t1-rep-penalty">Repetition penalty</dt><dd>A scalar reducing probability of tokens already in the output. Small values (1.05–1.15) break greedy loops without quality loss.</dd>
+          <dt id="t1-ttft">Time to first token (TTFT)</dt><dd>Latency from request send to first generated character; dominates perceived chat UX.</dd>
+          <dt id="t1-jsonl">JSONL</dt><dd>One JSON object per line; the standard streamable container for SFT datasets. See <a class="inline-link" href="sft-fundamentals/dataset-formats-in-the-wild.html">Dataset formats in the wild</a>.</dd>
+          <dt id="t1-completion-fmt">Completion format</dt><dd><code>{prompt, completion}</code>. Simplest SFT shape; what Track 2's by-hand SFT uses.</dd>
+          <dt id="t1-chat-fmt">Chat messages format</dt><dd>A list of <code>{role, content}</code> dicts that the tokenizer's <code>apply_chat_template</code> renders. The standard for chat models and multi-turn data.</dd>
+          <dt id="t1-alpaca">Alpaca format</dt><dd><code>{instruction, input, output}</code>. From Stanford's original instruction-tuning set; many older HF datasets use it.</dd>
+          <dt id="t1-sharegpt">ShareGPT format</dt><dd><code>{conversations: [{from, value}, ...]}</code>. Multi-turn, quirky field names — rename <code>from</code>→<code>role</code>, <code>value</code>→<code>content</code> to convert.</dd>
+          <dt id="t1-cforget">Catastrophic forgetting</dt><dd>Degradation of broader skills when a model is fine-tuned on narrow data — the optimizer has no signal to preserve them. See <a class="inline-link" href="sft-fundamentals/catastrophic-forgetting.html">Catastrophic forgetting</a>.</dd>
+          <dt id="t1-mixback">Data mixing (mix-back)</dt><dd>Including a small fraction (5–10%) of general instruction data alongside narrow task data, so the optimizer sees both shapes and forgets less.</dd>
+          <dt id="t1-broadeval">Broad eval</dt><dd>A small set of general prompts (instruction-following, refusals, format-switching) evaluated alongside the task eval to detect forgetting.</dd>
+          <dt id="t1-hardneg">Hard negative</dt><dd>An example that resembles the other class on the surface; placed on the correct side of the decision boundary to teach the model where the line is.</dd>
+          <dt id="t1-ambig">Ambiguous case</dt><dd>An example a thoughtful human would have to pause on; labelled per a stated rule so the model learns the rule.</dd>
+          <dt id="t1-refusal">Refusal data</dt><dd>Examples the model should <em>not</em> answer the usual way (out-of-scope, harmful, needing clarification), paired with the desired refusal phrasing.</dd>
+          <dt id="t1-ood">OOD (out of distribution)</dt><dd>Inputs outside the trained scope, labelled with the desired "I don't know" so the model learns its limits.</dd>
         </dl>
 
         <h2>Track 2 — Hands-on</h2>
