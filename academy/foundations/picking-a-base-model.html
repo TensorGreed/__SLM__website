@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Picking a base model — BrewSLM Academy</title>
+    <meta
+      name="description"
+      content="There is no universal 'best' SLM. There are constraints — license, tokenizer, instruct quality, context length, size, community — and the smallest model that meets your constraints is the right one to start with. This lesson is the checklist."
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/foundations/picking-a-base-model.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Picking a base model — BrewSLM Academy" />
+    <meta property="og:description" content="The smallest SLM that meets your constraints (license, tokenizer, instruct quality, context, size) is the right starting point — not the trendiest." />
+    <meta property="og:url" content="https://brewslm.com/academy/foundations/picking-a-base-model.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Picking a base model — BrewSLM Academy" />
+    <meta name="twitter:description" content="License, tokenizer, instruct quality, context length, size, community — the checklist for picking a base SLM." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "LearningResource",
+        "name": "Picking a base model",
+        "headline": "Picking a base model",
+        "description": "Pick the smallest model that meets your constraints. The dimensions that matter: license (can you ship it commercially?), tokenizer family (a contract with your data and a hard constraint for distillation), instruct quality, context length, size and latency budget, and community support. Why this Academy uses SmolLM2-135M-Instruct.",
+        "url": "https://brewslm.com/academy/foundations/picking-a-base-model.html",
+        "inLanguage": "en",
+        "learningResourceType": "Lesson",
+        "educationalLevel": "Beginner",
+        "timeRequired": "PT9M",
+        "isAccessibleForFree": true,
+        "teaches": ["base model selection", "model license", "tokenizer family", "context length", "instruct quality", "community support"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+          { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+          { "@type": "ListItem", "position": 3, "name": "Foundations", "item": "https://brewslm.com/academy/foundations/" },
+          { "@type": "ListItem", "position": 4, "name": "Picking a base model", "item": "https://brewslm.com/academy/foundations/picking-a-base-model.html" }
+        ]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Picking a base model" },
+        "hasPart": [
+          { "@type": "Question", "name": "What's the default approach to model size when picking a base?", "acceptedAnswer": { "@type": "Answer", "text": "Default small; step up only when the small model demonstrably can't meet the task's quality bar." } },
+          { "@type": "Question", "name": "Why is the tokenizer family a hard constraint for distillation?", "acceptedAnswer": { "@type": "Answer", "text": "Offline distillation requires teacher and student to share a tokenizer so the captured top-k token ids mean the same tokens for both models." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="foundations/picking-a-base-model">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home">
+        <img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" />
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html" aria-current="page">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="../index.html">Academy</a></li>
+        <li><a href="../foundations/index.html">Foundations</a></li>
+        <li>Picking a base model</li>
+      </ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page">
+        <p class="lesson-toc__title">On this page</p>
+        <ol data-toc></ol>
+      </aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 0 · Foundations · Lesson 11</span>
+          <h1>Picking a base model</h1>
+          <p class="lesson-header__outcome">
+            After this lesson you can name the dimensions a base-model choice trades against —
+            license, tokenizer, instruct quality, context length, size, community — and pick a
+            sensible starting point for a project (or explain why this Academy defaults to
+            SmolLM2-135M-Instruct).
+          </p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~9 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="base-vs-instruct-models.html">Base vs instruct models</a></span>
+          </div>
+        </header>
+
+        <p>
+          There is no universal "best" SLM. There are constraints, and the smallest model that
+          meets your constraints is the right one to start with. The previous lesson sorted out
+          <em>which flavour</em> of a family to use (almost always: instruct). This lesson is
+          the checklist for picking <em>which family</em> in the first place.
+        </p>
+
+        <h2>The dimensions that matter</h2>
+        <p>
+          A base-model choice is a trade across six dimensions. Walk down the list, write the
+          constraints your project actually has, and the field of candidates narrows fast:
+        </p>
+        <ul>
+          <li><strong>License</strong> — can you legally ship what you train from it?</li>
+          <li><strong>Tokenizer family</strong> — a contract with your dataset and a hard constraint for distillation.</li>
+          <li><strong>Instruct quality</strong> — how aligned is the starting point already?</li>
+          <li><strong>Context length</strong> — how long is your input plus output?</li>
+          <li><strong>Size &amp; latency budget</strong> — what fits, what's fast enough, what costs what?</li>
+          <li><strong>Community</strong> — does the ecosystem support what you want to do next?</li>
+        </ul>
+
+        <h2>License: can you ship this commercially?</h2>
+        <p>
+          Check the license <em>before</em> training, not at deploy. Permissive licences
+          (Apache 2.0, MIT) let you fine-tune and ship a commercial product without much
+          friction. Others — research-only, non-commercial, "acceptable use" addenda — restrict
+          what you can do with derivatives. A fine-tune doesn't reset the licence; the parent
+          model's terms travel with it.
+        </p>
+        <p>
+          For this Academy we use a permissively licensed family (Apache 2.0) so every reader
+          can take what they learn into a product without a legal review.
+        </p>
+
+        <h2>Tokenizer: a contract with your data</h2>
+        <p>
+          The tokenizer is the rule that turns text into the model's vocabulary (Lesson 0.4).
+          A few practical reasons it matters when you pick:
+        </p>
+        <ul>
+          <li><strong>Vocab efficiency on your data.</strong> Different tokenizers split your
+              domain differently. Code-heavy data tokenizes more efficiently under a tokenizer
+              trained on code; multilingual data needs a multilingual tokenizer to avoid blowing
+              up sequence lengths.</li>
+          <li><strong>Special-token expectations.</strong> Instruct models bake their chat
+              template into specific special tokens — they aren't interchangeable across families.</li>
+          <li><strong>A hard constraint for distillation.</strong> Offline knowledge distillation
+              (Track 4, Lesson 4.2) captures the teacher's top-k token ids. If teacher and
+              student don't share a tokenizer, those ids mean different tokens to each model and
+              the soft targets are gibberish. Pick teacher and student from the same family if
+              distillation is on your roadmap.</li>
+        </ul>
+
+        <h2>Instruct quality: how aligned is the starting point?</h2>
+        <p>
+          Not all instruct models are equally well-tuned. Some refuse confidently; some are
+          chatty; some hold formats well; some drift. The cheapest way to find out is to load
+          two or three candidate instruct models, hand them a few of your real prompts, and
+          look at the raw outputs. Baseline quality is your starting line. A fine-tune lifts it,
+          but starting closer to the answer means cheaper, faster lifts.
+        </p>
+
+        <h2>Context length: how long is your input?</h2>
+        <p>
+          Modern SLMs ship with context windows from 2k up to 128k tokens. Match this to your
+          task's actual input length distribution, not the worst case from a paper. Long-context
+          models cost more compute per token and more memory per request; picking 32k when 2k
+          would have done is real overhead at scale.
+        </p>
+
+        <h2>Size &amp; latency budget: small first, step up with reason</h2>
+        <p>
+          Default to the smallest model that plausibly works for the task. Common starting
+          points: 135M, 360M, 1B, 1.5B, 3B. Step up to 7B only when the smaller model
+          demonstrably can't clear your gold-set bar after honest data work — not because
+          bigger sounds safer.
+        </p>
+        <p>
+          The cost is not just GPU memory at training (Track 1, Lesson 1.15). A 7B model is
+          orders of magnitude more expensive at inference too, every request, forever. If a 1B
+          model gets you to your quality gate, ship the 1B.
+        </p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">"Small first" can fail — be honest about it</p>
+          <p>
+            If your task genuinely requires broad world knowledge or multi-step reasoning,
+            no amount of LoRA on a 135M model will get you there. That's the lesson of
+            <a class="inline-link" href="llms-vs-slms.html">LLMs vs SLMs</a> made concrete:
+            small models give some things up. If your eval makes that clear, stepping up to a
+            larger model — or switching to RAG, or distilling from a bigger teacher — is the
+            right answer, not more epochs.
+          </p>
+        </div>
+
+        <h2>Community: who else is fine-tuning on this?</h2>
+        <p>
+          A model with an active fine-tuning community is a model you can ride: more recipes,
+          more reported quirks, more shared evals, more tools that work on day one. Hugging
+          Face download counts, the number of public LoRA adapters in the family, the activity
+          on the model card's issues — all rough but useful signals. Picking an obscure model
+          is fine if you have a strong reason; otherwise the safe pick is one the ecosystem
+          already knows.
+        </p>
+
+        <h2>Why this Academy uses SmolLM2-135M-Instruct</h2>
+        <p>
+          Concretely, the choice for the whole course is a trade matching the constraints above:
+        </p>
+        <ul>
+          <li><strong>License:</strong> Apache 2.0 — you can ship a commercial fine-tune.</li>
+          <li><strong>Tokenizer:</strong> HF-native, shared across the SmolLM2 family — leaves the door open for distillation across sizes.</li>
+          <li><strong>Instruct quality:</strong> usable baseline alignment; well-behaved chat template.</li>
+          <li><strong>Context length:</strong> 2k — sufficient for classification, extraction, short Q&amp;A; the Academy's running tasks fit.</li>
+          <li><strong>Size:</strong> 135M parameters — fits comfortably on a single consumer GPU (and even runs slowly on CPU), so every reader can follow along without a server.</li>
+          <li><strong>Community:</strong> HF-native, broad tooling support; vLLM, llama.cpp / GGUF, peft / TRL all work day one.</li>
+        </ul>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>
+            There is no universal best — pick the <strong>smallest</strong> model that meets
+            your licence, tokenizer, context, and quality constraints. The instinct to "just
+            use the biggest" is exactly backwards: bigger means more memory, more latency, more
+            cost on every request, forever. Step up only when the small model demonstrably
+            can't.
+          </p>
+        </div>
+
+        <p>
+          That ends the Foundations track. You now know what a model is, how it learns, how
+          text becomes tokens, how attention and the Transformer work, how a language model
+          predicts the next token, the four levers you can pull, the trade between large and
+          small, what an instruct model is, and how to pick a base. From here we go deep on
+          supervised fine-tuning itself — Track 1.
+        </p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Model license</dt><dd>The terms attached to a base model that travel with every derivative — including your fine-tune. Check before training, not at deploy.</dd>
+            <dt>Tokenizer family</dt><dd>A shared vocabulary and special-token set across a model family; required for cross-model distillation and shared chat templates.</dd>
+            <dt>Instruct quality</dt><dd>How well an instruct model already follows instructions and respects formats before any fine-tuning; the starting line a fine-tune lifts from.</dd>
+            <dt>Context length</dt><dd>The maximum tokens the model can take in plus produce; pick to match your real input/output distribution, not the worst case.</dd>
+            <dt>Small first</dt><dd>Default to the smallest model that plausibly works; step up only when the eval makes the case.</dd>
+            <dt>Community support</dt><dd>Active fine-tunes, shared evals, tools that work day one; the practical reason to favour well-known families when other constraints tie.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
+          <script type="application/json">
+            [
+              {
+                "q": "When should you check the base model's licence?",
+                "options": [
+                  "At deploy, when you're ready to ship",
+                  "Before training, because a fine-tune doesn't reset the parent's terms",
+                  "Only if you plan to redistribute the model",
+                  "It doesn't matter for fine-tuned derivatives"
+                ],
+                "answer": 1,
+                "explanation": "The parent licence travels with every derivative — including your fine-tune. Catching a non-commercial restriction at deploy is a wasted run."
+              },
+              {
+                "q": "Why does the tokenizer matter when distillation is on the roadmap?",
+                "options": [
+                  "It determines training speed",
+                  "Offline distillation captures the teacher's top-k token ids; teacher and student must share a tokenizer for those ids to mean the same tokens",
+                  "Distillation only works with SentencePiece",
+                  "The tokenizer is irrelevant to distillation"
+                ],
+                "answer": 1,
+                "explanation": "The same-tokenizer assumption (Track 4, Lesson 4.2) is what makes offline KD's captured ids meaningful to the student."
+              },
+              {
+                "q": "What's the default approach to model size?",
+                "options": [
+                  "Use the largest model that fits on your GPU",
+                  "Default to the smallest model that plausibly works; step up only when the eval makes the case",
+                  "Always pick 7B for serious work",
+                  "Pick whatever's newest"
+                ],
+                "answer": 1,
+                "explanation": "Bigger costs more memory, more latency, and more money on every request, forever. Step up only with evidence the small model can't clear the bar."
+              },
+              {
+                "q": "Your eval shows the 135M model is plateaued well below your gold-set gate even after honest data work. The right move is…",
+                "options": [
+                  "More epochs — eventually it'll get there",
+                  "Step up to a larger base (or switch to RAG / distillation) — honest about the size ceiling",
+                  "Drop the gold-set gate",
+                  "Train a separate model for each row"
+                ],
+                "answer": 1,
+                "explanation": "Small-first can fail. When the eval makes the case, step up — or change architecture (RAG, distill from a bigger teacher). Don't grind epochs against a ceiling."
+              }
+            ]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="llms-vs-slms.html">LLMs vs SLMs: scale, cost, latency</a><span class="related-lessons__track">Foundations</span></li>
+            <li><a class="inline-link" href="../advanced/distillation-teacher-capture.html">Distillation I: the teacher &amp; capturing logits</a><span class="related-lessons__track">Advanced</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/full-finetuning-vs-lora.html">Full fine-tuning vs LoRA</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="base-vs-instruct-models.html">
+            <span class="lesson-nav__dir">← Previous</span>
+            <span class="lesson-nav__title">Base vs instruct models</span>
+          </a>
+          <a href="../sft-fundamentals/what-is-sft.html" class="lesson-nav__next">
+            <span class="lesson-nav__dir">Next →</span>
+            <span class="lesson-nav__title">What is Supervised Fine-Tuning?</span>
+          </a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Base vs instruct models — BrewSLM Academy</title>
+    <meta
+      name="description"
+      content="A model family ships in two flavours: a base version trained on raw text, and an instruct version that has been aligned to follow instructions in a chat template. This lesson explains the difference and which one you should fine-tune."
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/foundations/base-vs-instruct-models.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Base vs instruct models — BrewSLM Academy" />
+    <meta property="og:description" content="Base models predict the next token from raw text. Instruct models have been aligned to follow instructions. Pick the wrong one and you waste your fine-tune." />
+    <meta property="og:url" content="https://brewslm.com/academy/foundations/base-vs-instruct-models.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Base vs instruct models — BrewSLM Academy" />
+    <meta name="twitter:description" content="Two flavours of the same family — base and instruct — behave very differently. Pick wrong and you waste a fine-tune." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "LearningResource",
+        "name": "Base vs instruct models",
+        "headline": "Base vs instruct models",
+        "description": "Same architecture, same parameter count, very different behaviour. A base model predicts the next token from raw text; an instruct model has been further trained (SFT + often preference tuning) to follow instructions inside a chat template. This lesson explains the difference and which one you should fine-tune.",
+        "url": "https://brewslm.com/academy/foundations/base-vs-instruct-models.html",
+        "inLanguage": "en",
+        "learningResourceType": "Lesson",
+        "educationalLevel": "Beginner",
+        "timeRequired": "PT8M",
+        "isAccessibleForFree": true,
+        "teaches": ["base model", "instruct model", "alignment training", "alignment tax", "continued pretraining"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+          { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+          { "@type": "ListItem", "position": 3, "name": "Foundations", "item": "https://brewslm.com/academy/foundations/" },
+          { "@type": "ListItem", "position": 4, "name": "Base vs instruct models", "item": "https://brewslm.com/academy/foundations/base-vs-instruct-models.html" }
+        ]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Base vs instruct models" },
+        "hasPart": [
+          { "@type": "Question", "name": "Which model is the result of further training a base model to follow instructions?", "acceptedAnswer": { "@type": "Answer", "text": "The instruct (or instruction-tuned) model." } },
+          { "@type": "Question", "name": "Why is the instruct model the usual starting point for SFT?", "acceptedAnswer": { "@type": "Answer", "text": "It already follows instructions and respects a chat template, so the fine-tune only has to teach your task, not instruction-following itself." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="foundations/base-vs-instruct-models">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home">
+        <img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" />
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html" aria-current="page">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="../index.html">Academy</a></li>
+        <li><a href="../foundations/index.html">Foundations</a></li>
+        <li>Base vs instruct models</li>
+      </ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page">
+        <p class="lesson-toc__title">On this page</p>
+        <ol data-toc></ol>
+      </aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 0 · Foundations · Lesson 10</span>
+          <h1>Base vs instruct models</h1>
+          <p class="lesson-header__outcome">
+            After this lesson you can explain the difference between a <em>base</em> model
+            and an <em>instruct</em> model, why one of them already speaks in chat turns
+            and the other doesn't, and why you almost always fine-tune the instruct version.
+          </p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~8 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="how-language-models-work.html">Next-token prediction</a></span>
+          </div>
+        </header>
+
+        <p>
+          Open Hugging Face and look at any modern model family — SmolLM2, Qwen, Llama, Mistral,
+          Phi. You'll see two flavours: a <strong>base</strong> version and an <strong>instruct</strong>
+          (or <em>chat</em>) version. Same architecture, same parameter count. Very different
+          behaviour. Pick the wrong one for your fine-tune and you waste budget teaching the model
+          something it should have started with.
+        </p>
+
+        <h2>What "base" means</h2>
+        <p>
+          A base model is what you get straight out of pretraining (Lesson 0.6, next-token
+          prediction). It has been trained on enormous piles of text — books, code, the web —
+          with one objective: given some tokens, predict the next one. That's it. A base model
+          knows a lot of facts, has internalised a lot of patterns, and is a strong next-token
+          continuer.
+        </p>
+        <p>
+          What it is <em>not</em>: a chatbot. Give a base model the input "What is the capital
+          of France?" and it doesn't necessarily answer "Paris." It might continue with another
+          question, or a textbook paragraph, or a multiple-choice list. It is doing exactly what
+          it was trained to do — continue the text plausibly. It has no concept of "user" and
+          "assistant," no concept of refusing, and no instinct to stop at the end of an answer.
+        </p>
+
+        <h2>What "instruct" means</h2>
+        <p>
+          An instruct model starts from the base model and goes through one or more rounds of
+          <strong>alignment training</strong> on top: supervised fine-tuning (SFT) on
+          instruction–response pairs, often followed by preference tuning like DPO or RLHF
+          (Track 4, Lesson 4.5). The point of that extra training is to teach behaviours the raw
+          next-token objective never asked for:
+        </p>
+        <ul>
+          <li>Treat the input as a question or instruction, and produce a direct answer.</li>
+          <li>Respect roles — there is a "user" and an "assistant," and the assistant only
+              speaks in its turn.</li>
+          <li>Stop when the answer is done.</li>
+          <li>Refuse certain kinds of requests.</li>
+          <li>Use a particular style and tone.</li>
+        </ul>
+        <p>
+          Same parameters, retrained. The result behaves like the chatbot you expected — because
+          someone else paid the cost of teaching it to behave like one.
+        </p>
+
+        <h2>The chat template is for instruct models</h2>
+        <p>
+          Instruct models are trained inside a <strong>chat template</strong>: a tokenizer rule
+          that wraps each message with role markers like <code>&lt;|im_start|&gt;user</code> and
+          <code>&lt;|im_start|&gt;assistant</code>. The model learned, during alignment training,
+          that <em>those exact special tokens</em> mean "now it's the assistant's turn." Feed an
+          instruct model raw text without its chat template and it gets confused; feed it the
+          template and it produces clean assistant replies.
+        </p>
+        <p>
+          Base models don't have a chat template — there is no assistant turn for them to fill,
+          because they were never taught the concept. They take raw text and continue it.
+        </p>
+
+        <h2>Which one should you fine-tune? Almost always: instruct</h2>
+        <p>
+          If your task is "answer this kind of question in this format" — classification,
+          extraction, structured output, tone adjustment, any normal SLM use case — fine-tune
+          the <strong>instruct</strong> version. Reasoning:
+        </p>
+        <ul>
+          <li>The instruct model already follows instructions and respects the chat template.
+              Your fine-tune only has to teach <em>your task</em>.</li>
+          <li>SFT a base model and your data must teach instruction-following <em>and</em> your
+              task at the same time. That's a much harder problem on a much smaller budget.</li>
+          <li>You are standing on the shoulders of whoever did the alignment work. Use them.</li>
+        </ul>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>
+            An instruct model is a base model plus someone else's alignment training. Fine-tuning
+            the instruct version means you start from a model that already knows how to follow
+            instructions, and you only have to teach it your task. That's the entire reason it
+            exists.
+          </p>
+        </div>
+
+        <h2>When base is the right choice</h2>
+        <p>
+          Three honest exceptions where you reach for the base model instead:
+        </p>
+        <ul>
+          <li><strong>Continued pretraining.</strong> If your goal is to teach a model a whole
+              new domain — internal codebase, legal corpus, medical literature — by training on
+              raw text in that domain, you start from the base. Continued pretraining is
+              "more pretraining," not instruction tuning.</li>
+          <li><strong>Building your own instruct from scratch.</strong> If you want full control
+              over the alignment — different refusal style, different tone, different objective
+              — and you have enough data and compute to redo that training, you start from base.</li>
+          <li><strong>The shipped alignment fights your task.</strong> If the instruct model's
+              alignment refuses things you legitimately need, or hedges where you need it
+              decisive, fine-tuning may not undo it. Sometimes starting from base + your own
+              SFT is the cleanest path.</li>
+        </ul>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">The alignment tax</p>
+          <p>
+            The instruct version comes with someone else's choices baked in: refusal patterns,
+            "as a language model" hedging, RLHF preferences, a particular style. Those choices
+            travel with the model. When they help, great. When they fight your task, you push
+            against them — sometimes successfully with more data, sometimes not. That cost is
+            sometimes called the <strong>alignment tax</strong>, and it's worth knowing it
+            exists before you pick a starting point.
+          </p>
+        </div>
+
+        <p>
+          Most of the time, on most tasks, the instruct version is the right starting point and
+          the alignment tax is small. The next lesson is about everything else that goes into
+          picking the specific base model — license, tokenizer, context length, size.
+        </p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Base model</dt><dd>The model straight from pretraining: a next-token continuer over raw text. No chat template, no roles, no refusals.</dd>
+            <dt>Instruct model</dt><dd>A base model further trained (SFT + often preference tuning) to follow instructions inside a chat template. Same architecture, different behaviour.</dd>
+            <dt>Alignment training</dt><dd>The post-pretraining training (SFT on instruction data plus optional DPO/RLHF) that turns a base into an instruct model.</dd>
+            <dt>Chat template</dt><dd>The tokenizer rule wrapping messages with role markers (<code>&lt;|im_start|&gt;user</code>, …). Instruct models expect it; base models don't.</dd>
+            <dt>Continued pretraining</dt><dd>Continuing the next-token objective on new raw text to teach a base model a new domain — not the same as instruction tuning.</dd>
+            <dt>Alignment tax</dt><dd>The cost of the instruct model's baked-in choices (refusals, hedges, style) when they don't match your task.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
+          <script type="application/json">
+            [
+              {
+                "q": "What is the training objective that produces a base model?",
+                "options": [
+                  "Follow instructions in a chat template",
+                  "Predict the next token in raw text",
+                  "Refuse harmful requests",
+                  "Match a teacher model's distribution"
+                ],
+                "answer": 1,
+                "explanation": "A base model comes out of pretraining: predict the next token over piles of raw text. Anything chatbot-like is added later, during alignment training."
+              },
+              {
+                "q": "Why does an instruct model expect a chat template and a base model doesn't?",
+                "options": [
+                  "Because instruct models are larger",
+                  "Because the chat template's role markers were part of the alignment training, and the model learned what they mean",
+                  "Because the chat template is required by every tokenizer",
+                  "Because base models don't have a tokenizer"
+                ],
+                "answer": 1,
+                "explanation": "Instruct models were trained inside the chat template; the role markers mean 'assistant's turn' to them. Base models never saw that contract."
+              },
+              {
+                "q": "You want to fine-tune for sentiment classification. Which version is the usual starting point?",
+                "options": [
+                  "The base model, because it has more raw knowledge",
+                  "The instruct model, because it already follows instructions and respects the chat template",
+                  "Either is fine; they perform identically after a fine-tune",
+                  "Neither — start with random weights"
+                ],
+                "answer": 1,
+                "explanation": "Fine-tuning the instruct version means your data only has to teach the task, not instruction-following itself."
+              },
+              {
+                "q": "What is the 'alignment tax'?",
+                "options": [
+                  "A licence fee charged by the model vendor",
+                  "The compute cost of running RLHF",
+                  "The cost of the instruct model's baked-in choices (refusals, hedges, style) when they fight your task",
+                  "The latency penalty of using a chat template"
+                ],
+                "answer": 2,
+                "explanation": "Someone else's alignment travels with the model. When it helps, great; when it fights your task, you push against it — sometimes successfully, sometimes not."
+              }
+            ]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="../sft-fundamentals/chat-templates.html">Chat templates &amp; special tokens</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="pretraining-vs-finetuning-vs-rag.html">Pretraining vs fine-tuning vs prompting vs RAG</a><span class="related-lessons__track">Foundations</span></li>
+            <li><a class="inline-link" href="../advanced/preference-tuning-dpo-orpo.html">Preference tuning: DPO &amp; ORPO</a><span class="related-lessons__track">Advanced</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="slm-project-lifecycle.html">
+            <span class="lesson-nav__dir">← Previous</span>
+            <span class="lesson-nav__title">The mental model of an SLM project</span>
+          </a>
+          <a href="picking-a-base-model.html" class="lesson-nav__next">
+            <span class="lesson-nav__dir">Next →</span>
+            <span class="lesson-nav__title">Picking a base model</span>
+          </a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>
