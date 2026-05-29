@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Eval pack &amp; failure cluster reference — BrewSLM Academy</title>
+    <meta name="description" content="The Evaluation Contract v2 schema: per-task gates with metric_id / operator / threshold / required, task specs, metric schema, and the promotability decision. Plus the FailureCluster row — keyed on (project_id, stage, reason_code, signature) with exemplar lists and the augment_from_cluster remediation path." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/with-brewslm/eval-pack-and-failure-cluster-reference.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Eval pack &amp; failure cluster reference — BrewSLM Academy" />
+    <meta property="og:description" content="Evaluation Contract v2 gate schema (gate_id / metric_id / operator / threshold / required) and the FailureCluster row keyed on (project_id, stage, reason_code, signature)." />
+    <meta property="og:url" content="https://brewslm.com/academy/with-brewslm/eval-pack-and-failure-cluster-reference.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Eval pack &amp; failure cluster reference — BrewSLM Academy" />
+    <meta name="twitter:description" content="The promotability gate schema + the failure cluster row + the augment_from_cluster remediation path." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Eval pack & failure cluster reference",
+        "description": "Catalog of BrewSLM's evaluation surfaces: the Evaluation Contract v2 schema (per-task gates with gate_id / metric_id / operator / threshold / required), how gates decide promotability, and the FailureCluster row — uniquely keyed on (project_id, stage, reason_code, signature) — with exemplar lists, counts, and the augment_from_cluster remediation path.",
+        "url": "https://brewslm.com/academy/with-brewslm/eval-pack-and-failure-cluster-reference.html",
+        "inLanguage": "en", "learningResourceType": "Reference", "educationalLevel": "Intermediate", "timeRequired": "PT11M", "isAccessibleForFree": true,
+        "teaches": ["Evaluation Contract v2", "eval pack schema", "promotability gates", "FailureCluster schema", "augment_from_cluster"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "With BrewSLM", "item": "https://brewslm.com/academy/with-brewslm/" },
+        { "@type": "ListItem", "position": 4, "name": "Eval pack & failure cluster reference", "item": "https://brewslm.com/academy/with-brewslm/eval-pack-and-failure-cluster-reference.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Eval pack & failure cluster reference" },
+        "hasPart": [
+          { "@type": "Question", "name": "What are the four required fields on an eval-pack gate?", "acceptedAnswer": { "@type": "Answer", "text": "gate_id, metric_id, operator (gte|lte), and threshold. Plus required:bool, source, and weight as optional extras." } },
+          { "@type": "Question", "name": "What uniquely keys a FailureCluster row?", "acceptedAnswer": { "@type": "Answer", "text": "(project_id, stage, reason_code, signature) — one row per distinct failure shape across nightly clustering runs." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="with-brewslm/eval-pack-and-failure-cluster-reference">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html" aria-current="page">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../with-brewslm/index.html">With BrewSLM</a></li><li>Eval pack &amp; failure cluster reference</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 3 · With BrewSLM · Lesson 13</span>
+          <h1>Eval pack &amp; failure cluster reference</h1>
+          <p class="lesson-header__outcome">After this reference you can read an eval pack's gate list as a promotability decision, identify which gates are required vs informational, and recognise a failure-cluster row by its <code>(project_id, stage, reason_code, signature)</code> key — then map the cluster to a remediation via <code>augment_from_cluster</code>.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~11 min</span>
+            <span><strong>Type:</strong> Reference</span>
+          </div>
+        </header>
+
+        <p>This last reference catalogues the two surfaces the evaluation lifecycle exposes: the <strong>eval pack</strong> (gates that decide whether a trained model is promotable) and the <strong>failure cluster</strong> (the grouping of similar errors that drives the data-iteration loop). Lesson 3.8's narrative explained the role; this lesson documents the schema.</p>
+
+        <h2>Eval pack — the envelope</h2>
+        <p>An eval pack is identified by id (e.g. <code>evalpack.general.default</code>, <code>evalpack.domain-profile</code>) and conforms to the <strong>Evaluation Contract v2</strong> (<code>slm.evaluation-pack/v2</code>). The pack carries per-task specs and a backward-compatible top-level gate list.</p>
+        <pre class="code-block"><code>{
+  "id":                  "evalpack.general.default",
+  "contract_version":    "slm.evaluation-pack/v2",
+  "description":         "...",
+  "gates":               [ /* default task profile's gates */ ],
+  "task_specs":          [ /* per-task-profile specs (preferred) */ ],
+  "default_task_profile": "instruction_sft"
+}</code></pre>
+        <p>The legacy top-level <code>gates</code> field still works for single-task projects; modern packs put their gates inside <code>task_specs</code> so different task profiles in one project can each carry their own promotion criteria.</p>
+
+        <h2>The gate schema (Evaluation Contract v2)</h2>
+        <p>Every gate is a small dict. Four fields are required; three are optional.</p>
+        <pre class="code-block"><code>{
+  "gate_id":   "min_macro_f1",        // stable id; defaults to f"min_{metric_id}"
+  "metric_id": "macro_f1",            // the metric the gate checks
+  "operator":  "gte",                 // "gte" (>=) or "lte" (<=); default "gte"
+  "threshold": 0.90,                  // the pass value
+  "required":  true,                  // required gates block promotion
+  "source":    "blueprint",           // optional — where the gate came from
+  "weight":    1.0                    // optional — relative importance
+}</code></pre>
+        <ul>
+          <li><strong><code>operator</code></strong> is normalised: anything outside <code>{gte, lte}</code> falls back to <code>gte</code>. There is no <code>eq</code>, no <code>in</code>, no string match — gates are scalar comparisons.</li>
+          <li><strong><code>required: true</code></strong> means the gate <em>blocks promotion</em>. A <code>required: false</code> gate is reported but doesn't block — useful for "we'd like this to hit 0.85 but don't fail the deploy."</li>
+          <li><strong><code>source</code></strong> is informational: it records where the gate came from (e.g. <code>blueprint</code>, <code>recipe</code>, <code>user_override</code>) so the audit can trace why a deploy was blocked.</li>
+        </ul>
+
+        <h2>Per-task specs (the canonical v2 form)</h2>
+        <pre class="code-block"><code>{
+  "task_specs": [
+    {
+      "task_profile":         "instruction_sft",
+      "display_name":         "Instruction SFT",
+      "description":          "...",
+      "required_metric_ids":  ["macro_f1", "exact_match"],
+      "metric_schema":        { "macro_f1": { /* aliases, range, ... */ } },
+      "gates": [
+        { "gate_id": "min_macro_f1",    "metric_id": "macro_f1",    "operator": "gte", "threshold": 0.90, "required": true },
+        { "gate_id": "min_exact_match", "metric_id": "exact_match", "operator": "gte", "threshold": 0.85, "required": true }
+      ]
+    }
+  ]
+}</code></pre>
+        <p>A pack with multiple task profiles supports projects whose blueprint says "we're training a classifier <em>and</em> a span extractor"; each profile gets its own gates and metric schema. <code>required_metric_ids</code> is auto-extended to include every metric referenced by a <code>required</code> gate, so a typo in a metric name there surfaces as a missing-metric error at apply rather than a silently un-evaluated gate.</p>
+
+        <h2>How gates decide promotability</h2>
+        <p>At Evaluate stage time (Track 3, Lesson 3.8) the trainer's <code>score()</code> produces a metrics dict — actual values for the metrics the task spec declared. The decision is then mechanical:</p>
+        <ol>
+          <li>For every gate in the task spec, look up <code>metrics[gate.metric_id]</code>.</li>
+          <li>If missing — gate is <strong>unmet</strong>.</li>
+          <li>If present — check the operator against the threshold.</li>
+          <li>If <strong>any required gate</strong> is unmet, the run is <strong>not promotable</strong> — the deploy stage refuses with <code>deployment_promote_blocked</code> (Lesson 3.12's taxonomy).</li>
+          <li>Non-required gates are reported in the eval result but never block.</li>
+        </ol>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Honest reporting: required vs informational</p>
+          <p>The pack's report distinguishes <strong>PASS / FAIL / BELOW_THRESHOLD</strong> on every gate, regardless of <code>required</code>. A model that clears its <code>required</code> gates but fails an informational one still ships — and the eval result row carries the failing gate explicitly. This is the "show the gate that failed" rule the Academy keeps coming back to: don't hide informational failures inside the headline "promotable: true."</p>
+        </div>
+
+        <h2>The metric_schema field</h2>
+        <p>Each task spec carries a <code>metric_schema</code> dict mapping <code>metric_id</code> to a small descriptor. The descriptor's role is to make metrics self-describing in the audit:</p>
+        <pre class="code-block"><code>{
+  "macro_f1": {
+    "aliases":     ["macro_f1", "macroF1", "f1_macro"],   // accepted variants in handler output
+    "display_name":"Macro F1",
+    "range":       [0.0, 1.0],
+    "higher_is":   "better"
+  }
+}</code></pre>
+        <p>If a handler emits the metric under one of the listed <code>aliases</code>, the eval pack normalises it to the canonical <code>metric_id</code> before checking gates. That's how a third-party score function whose code says <code>"f1_macro"</code> still passes a gate written against <code>"macro_f1"</code>.</p>
+
+        <h2>FailureCluster — the row schema</h2>
+        <p>Nightly clustering reads error / critical RunEvents (Lesson 3.12) and groups them. The result is a <code>failure_clusters</code> table with one row per distinct failure shape per project. The unique key is <strong><code>(project_id, stage, reason_code, signature)</code></strong>:</p>
+        <pre class="code-block"><code>id                  int                primary key
+project_id          int                FK projects.id
+stage               str(32)            from KNOWN_STAGES
+reason_code         str(128)           from the taxonomy
+signature           str(64)            hash of the canonical failure shape
+failure_count       int                running count of events in this cluster
+first_seen_at       datetime           when this signature first appeared
+last_seen_at        datetime           updated on every new occurrence
+exemplar_event_ids  json (list[int])   capped list of representative RunEvent ids
+exemplar_summaries  json (list[str])   first-line summaries of those events
+exemplar_run_ids    json (list[str])   the run_ids that emitted those exemplars
+created_at          datetime
+last_computed_at    datetime           refresh marker for clustering runs</code></pre>
+        <ul>
+          <li><strong><code>signature</code></strong> is a hash of the canonical shape of the failure — for OOM events, things like model id + batch size + sequence length. Same model + same batch + same seq → same signature → same cluster.</li>
+          <li><strong><code>failure_count</code></strong> grows over time; the cluster is the unit of "this keeps happening" not "this happened once."</li>
+          <li><strong>Exemplar lists are capped</strong> (small, not unbounded) — the cluster carries enough rows to investigate without each cluster ballooning.</li>
+        </ul>
+
+        <h2>Remediation: the augment_from_cluster path</h2>
+        <p>The remediation contract is: <strong>a cluster of eval failures becomes a generation source</strong>. Coach Mode's <code>augment_from_cluster</code> action (Lesson 3.12) takes the cluster id and a suggested top-up and routes the user to a generation flow seeded by the cluster's exemplars. The flow:</p>
+        <ol>
+          <li>User clicks an <code>augment_from_cluster</code> button on a cluster card.</li>
+          <li>The frontend calls the synthetic-data playbook with <code>cluster_id</code> in <code>params</code>.</li>
+          <li>The playbook reads the cluster's <code>exemplar_summaries</code> + the underlying RunEvent payloads to paraphrase / generalise / negate the failure shape.</li>
+          <li>The generated rows land in the synthetic dataset with <code>review_status="pending"</code> (Lesson 3.3).</li>
+          <li>The user reviews; approved rows roll into the next training round.</li>
+        </ol>
+        <p>That whole loop is the Track-3 version of "read the failures, add more data, retrain" — gated and audited rather than ad-hoc.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Two halves of one decision loop. The <strong>eval pack</strong> declares the promotion contract — every gate is a scalar comparison with <code>required</code> deciding whether it blocks. The <strong>failure cluster</strong> closes the loop — distinct failure shapes are surfaced and routed through <code>augment_from_cluster</code> back into the data layer. Both are <strong>schemas you can grep for</strong>: gate dicts in the pack, <code>(project_id, stage, reason_code, signature)</code>-keyed rows in <code>failure_clusters</code>. That's the v2 contract.</p>
+        </div>
+
+        <p>That completes the With BrewSLM track's reference layer. Combined with the narrative lessons (3.1–3.10), you can drive the platform end-to-end and inspect any surface it presents.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Evaluation Contract v2</dt><dd><code>slm.evaluation-pack/v2</code> — the eval-pack schema with per-task specs (each carrying its own gates and metric schema).</dd>
+            <dt>Gate</dt><dd>A scalar comparison: <code>{gate_id, metric_id, operator: gte|lte, threshold, required, source?, weight?}</code>.</dd>
+            <dt>Required gate</dt><dd>A gate with <code>required: true</code>; an unmet required gate blocks promotion (emits <code>deployment_promote_blocked</code>).</dd>
+            <dt>Task spec</dt><dd>Per-task-profile section of an eval pack carrying <code>required_metric_ids</code>, <code>metric_schema</code>, and the gate list.</dd>
+            <dt>FailureCluster</dt><dd>Row in <code>failure_clusters</code>, uniquely keyed on <code>(project_id, stage, reason_code, signature)</code>; carries counts, timestamps, and capped exemplar lists.</dd>
+            <dt><code>augment_from_cluster</code></dt><dd>Coach Mode action that opens a failure cluster as a generation source for the synthetic-data playbook.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "Which four gate fields are required?",
+   "options": ["gate_id, metric_id, operator, threshold", "gate_id, threshold, source, weight", "metric_id, operator, required, weight", "gate_id, metric_id, required, source"],
+   "answer": 0,
+   "explanation": "Required: gate_id, metric_id, operator (gte|lte), threshold. Plus required:bool, source, weight as optional extras."},
+  {"q": "What blocks promotion?",
+   "options": ["Any failed gate", "Only unmet required gates — non-required gates report but don't block", "Only critical-severity events", "The training_oom RunEvent alone"],
+   "answer": 1,
+   "explanation": "required:true is what makes a gate blocking. An unmet required gate triggers deployment_promote_blocked at deploy time."},
+  {"q": "What uniquely keys a FailureCluster row?",
+   "options": ["project_id alone", "run_id", "(project_id, stage, reason_code, signature)", "exemplar_event_ids"],
+   "answer": 2,
+   "explanation": "One row per distinct failure shape per project: same signature in the same stage with the same reason code under the same project = same cluster."},
+  {"q": "How does augment_from_cluster close the loop?",
+   "options": ["It auto-merges the failed rows back into training", "It triggers a synthetic-data playbook seeded by the cluster's exemplars; the generated rows land with review_status pending and roll into the next training round after review", "It increases the learning rate", "It silences the cluster"],
+   "answer": 1,
+   "explanation": "Cluster → generation seed → review queue → next training round. The whole loop is audited; nothing trains without review."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="eval-packs-and-failure-clusters.html">Eval packs, gates &amp; failure clusters (narrative)</a><span class="related-lessons__track">With BrewSLM</span></li>
+            <li><a class="inline-link" href="runevent-and-coach-catalogue.html">RunEvent taxonomy &amp; Coach Mode catalogue</a><span class="related-lessons__track">With BrewSLM</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/evaluation-fundamentals.html">Evaluation that matches the task</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="runevent-and-coach-catalogue.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">RunEvent taxonomy &amp; Coach Mode catalogue</span></a>
+          <a href="../advanced/beyond-a-single-run.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Beyond a single SFT run (Track 4)</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

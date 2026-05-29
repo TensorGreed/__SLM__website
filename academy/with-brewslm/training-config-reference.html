@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BrewSLM training config reference (brewslm.yaml manifest) — Academy</title>
+    <meta name="description" content="Field-by-field reference for BrewSLM's training configuration: the brewslm.yaml manifest (api_version brewslm/v1, kind Project) and its ten spec sections — workflow, blueprint, domain, model, data_sources, adapters, training_plan, eval_pack, export, deployment." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/with-brewslm/training-config-reference.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="BrewSLM training config reference — Academy" />
+    <meta property="og:description" content="brewslm.yaml manifest, section by section: workflow / blueprint / domain / model / data_sources / adapters / training_plan / eval_pack / export / deployment. Fields, defaults, what each controls." />
+    <meta property="og:url" content="https://brewslm.com/academy/with-brewslm/training-config-reference.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="BrewSLM training config reference — Academy" />
+    <meta name="twitter:description" content="The brewslm.yaml manifest, section by section. The canonical training config reference." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "BrewSLM training config reference (brewslm.yaml manifest)",
+        "description": "Field-by-field reference for the brewslm.yaml manifest — api_version brewslm/v1, kind Project — and its ten spec sections (workflow, blueprint, domain, model, data_sources, adapters, training_plan, eval_pack, export, deployment).",
+        "url": "https://brewslm.com/academy/with-brewslm/training-config-reference.html",
+        "inLanguage": "en", "learningResourceType": "Reference", "educationalLevel": "Intermediate", "timeRequired": "PT11M", "isAccessibleForFree": true,
+        "teaches": ["brewslm.yaml manifest", "BrewSLM training configuration", "training plan profile", "manifest sections", "schema reference"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "With BrewSLM", "item": "https://brewslm.com/academy/with-brewslm/" },
+        { "@type": "ListItem", "position": 4, "name": "Training config reference", "item": "https://brewslm.com/academy/with-brewslm/training-config-reference.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "BrewSLM training config reference" },
+        "hasPart": [
+          { "@type": "Question", "name": "What is the canonical training-config artifact?", "acceptedAnswer": { "@type": "Answer", "text": "brewslm.yaml — versioned manifest (api_version 'brewslm/v1', kind 'Project') with ten spec sections." } },
+          { "@type": "Question", "name": "What are the three named training-plan profiles?", "acceptedAnswer": { "@type": "Answer", "text": "safe, balanced (default), and max_quality." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="with-brewslm/training-config-reference">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html" aria-current="page">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../with-brewslm/index.html">With BrewSLM</a></li><li>Training config reference</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 3 · With BrewSLM · Lesson 11</span>
+          <h1>Training config reference: the brewslm.yaml manifest</h1>
+          <p class="lesson-header__outcome">After this reference you can read a <code>brewslm.yaml</code> manifest section by section, identify which knob controls which behaviour, and know which fields are safe to edit by hand versus generated.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~11 min</span>
+            <span><strong>Type:</strong> Reference</span>
+          </div>
+        </header>
+
+        <p>Track 3's narrative lessons described <em>what</em> BrewSLM does. This reference describes <em>how</em> a project is configured at the schema level. The canonical artifact is <code>brewslm.yaml</code> — a project-as-code manifest the platform reads, validates, diffs, and applies. Every training run is the result of resolving this file against the project's data. Knowing its sections gives you the keys to the platform.</p>
+
+        <h2>Manifest envelope</h2>
+        <p>Every <code>brewslm.yaml</code> opens with a fixed envelope:</p>
+        <pre class="code-block"><code>api_version: brewslm/v1
+kind: Project
+metadata:
+  name: my-project
+  description: "..."
+  labels: { team: "ml", env: "dev" }
+spec:
+  # ten sections, all optional, all defaulted</code></pre>
+        <p>The schema is <strong>strict-extra-forbid</strong>: unknown keys fail validation. Typos and stale fields are caught at apply time, not as silent no-ops. Schema drift is therefore visible by design.</p>
+
+        <h2>spec.workflow — project-level toggles</h2>
+        <p>Cross-cutting settings that don't belong to any single stage.</p>
+        <pre class="code-block"><code>workflow:
+  beginner_mode: false
+  pipeline_stage: ingestion
+  target_profile_id: vllm_server
+  training_preferred_plan_profile: balanced   # safe | balanced | max_quality
+  gate_policy: {}
+  budget_settings: {}</code></pre>
+        <ul>
+          <li><strong><code>training_preferred_plan_profile</code></strong> is the hyperparameter preset for the next launch. Three values: <code>safe</code> (conservative), <code>balanced</code> (default; right for most projects), <code>max_quality</code> (longer training, more aggressive knobs).</li>
+          <li><strong><code>target_profile_id</code></strong> defines the export/deploy target shape — <code>vllm_server</code>, <code>cpu_local</code>, etc.</li>
+          <li><strong><code>beginner_mode</code></strong> makes Coach Mode more proactive and disables a few destructive UI actions.</li>
+        </ul>
+
+        <h2>spec.blueprint — domain blueprint</h2>
+        <p>The "what is this project actually for" section. Optional, but if you fill it in, Coach suggestions and eval-pack auto-gates use the structured intent.</p>
+        <pre class="code-block"><code>blueprint:
+  domain_name: "Customer support"
+  problem_statement: "Classify intent of inbound tickets"
+  target_user_persona: "Tier-1 agents"
+  task_family: instruction_sft
+  input_modality: text
+  expected_output_schema: { ... }
+  expected_output_examples: [ ... ]
+  safety_compliance_notes: []
+  deployment_target_constraints: { ... }
+  success_metrics:
+    - { metric_id: macro_f1, label: "Intent macro F1", target: "min 0.90" }
+  glossary:
+    - { term: "P1", plain_language: "Highest-priority ticket", category: "ops" }
+  confidence_score: 0.0
+  unresolved_assumptions: []</code></pre>
+        <p>The blueprint is round-tripped, not executed. It anchors reviews ("did the model actually do what we said it should?") and feeds the eval-pack auto-suggestions.</p>
+
+        <h2>spec.domain — domain pack + profile</h2>
+        <pre class="code-block"><code>domain:
+  pack_id: customer-support
+  profile_id: ticket-intent</code></pre>
+        <p>A domain pack ships pre-built defaults (synth playbooks, eval prompts, blueprint hints) for a vertical. Profiles narrow further. Both are pointers; the platform resolves them on apply.</p>
+
+        <h2>spec.model — base model selection</h2>
+        <pre class="code-block"><code>model:
+  base_model: HuggingFaceTB/SmolLM2-135M-Instruct
+  cache_fingerprint: "sha256:..."
+  source_ref: "hf:..."
+  registry_id: 42</code></pre>
+        <p><strong>Only <code>base_model</code> is authoritative.</strong> Everything else is informational and re-derived on apply. Changing <code>base_model</code> in the manifest is a real change — apply will note it and your next training run will start from a different base.</p>
+
+        <h2>spec.data_sources — registered datasets</h2>
+        <pre class="code-block"><code>data_sources:
+  - name: tickets-train
+    type: jsonl
+    description: "Q3 labeled tickets"
+    record_count: 4812
+    file_path: data/projects/3/sources/tickets-train.jsonl
+    metadata: { schema_hash: "..." }
+    versions:
+      - { version: 1, record_count: 4812, file_path: "..." }</code></pre>
+        <p>Per-source <code>versions</code> entries let manifest apply detect "the underlying file changed" vs "a new source was added" — distinguishing resumable training from "you need to re-import."</p>
+
+        <h2>spec.adapters — Adapter Studio entries</h2>
+        <pre class="code-block"><code>adapters:
+  - name: ticket-extractor
+    version: 1
+    status: active
+    base_adapter_id: default-canonical
+    task_profile: instruction_sft
+    source_type: raw
+    source_ref: "..."
+    field_mapping: { input: question, output: answer }
+    adapter_config: { ... }
+    output_contract: { ... }</code></pre>
+        <p>Adapters are the data-transformation layer between raw rows and the training-ready shape. The schema is intentionally open (<code>adapter_config</code> + <code>output_contract</code> are free-form dicts) because the adapter class is what defines the contract.</p>
+
+        <h2>spec.training_plan — what the trainer actually executes</h2>
+        <p>The section most directly tied to "training" — the recipe and the resolved hyperparameters.</p>
+        <pre class="code-block"><code>training_plan:
+  training_mode: sft                # sft | kd
+  plan_profile: balanced            # safe | balanced | max_quality
+  preferred_runtime_id: simulate    # simulate | external | cloud_burst | ...
+  config: { ... }                   # flat dict — the resolved TrainingConfig</code></pre>
+        <ul>
+          <li><strong><code>training_mode</code></strong> selects the trainer. <code>sft</code> is the default (Track 2 by-hand pipeline). <code>kd</code> selects the Knowledge Distillation trainer (Track 4, Lesson 4.3 — the alpha*CE + (1-alpha)*T^2*KL loss against captured teacher logprobs).</li>
+          <li><strong><code>plan_profile</code></strong> is the hyperparameter preset. Maps to a concrete <code>TrainingConfig</code> with learning rate, batch size, epochs, LoRA knobs — the same knobs you set by hand in Track 2 Lesson 2.5.</li>
+          <li><strong><code>preferred_runtime_id</code></strong> picks where the run lands. <code>simulate</code> for tests, <code>external</code> for the subprocess runtime.</li>
+          <li><strong><code>config</code></strong> is a flat dict — the actual resolved hyperparameters. Manifest validation checks this against the <code>TrainingConfig</code> schema at apply time.</li>
+        </ul>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Where the actual hyperparameter values live</p>
+          <p>The manifest carries <code>plan_profile</code> as a name; the platform resolves that to a real <code>TrainingConfig</code> dict (learning rate, batch size, epochs, LoRA <code>r</code>/<code>alpha</code>/<code>dropout</code>, target modules, scheduler, warmup ratio, precision). The dict ends up in <code>training_plan.config</code> at apply time. Edit the dict to override individual fields; change <code>plan_profile</code> to flip the whole preset. The profile values themselves evolve with the recipe library — treat the named profile as the stable contract, the resolved config as the snapshot.</p>
+        </div>
+
+        <h2>spec.eval_pack — what counts as "good"</h2>
+        <pre class="code-block"><code>eval_pack:
+  pack_id: evalpack.general.default
+  datasets: [gold_dev, gold_test]
+  eval_types: [exact_match, f1, hallucination, safety]
+  extra: {}</code></pre>
+        <p>The pack referenced here declares the gates (Lesson 3.13's reference). <code>datasets</code> names the held-out sets that get evaluated; <code>eval_types</code> selects which scorers run. Default datasets are <code>gold_dev</code> + <code>gold_test</code> — the platform's standard names for the dev/test splits.</p>
+
+        <h2>spec.export — artifact production</h2>
+        <pre class="code-block"><code>export:
+  formats: [gguf, safetensors]
+  quantization: Q4_K_M
+  extra: {}</code></pre>
+        <p>Mapping straight onto Track 4 Lesson 4.6: pick the formats you'll deploy. Multiple formats can be produced from one trained model in a single export stage.</p>
+
+        <h2>spec.deployment — endpoint target hints</h2>
+        <pre class="code-block"><code>deployment:
+  target_profile_id: vllm_server
+  extra: {}</code></pre>
+        <p>The <code>target_profile_id</code> here overrides the project-level default in <code>workflow.target_profile_id</code> for the deploy stage. <code>extra</code> carries serving-stack-specific knobs (vLLM tensor parallelism, llama.cpp threads, etc.).</p>
+
+        <h2>What apply does with all of this</h2>
+        <p>The <strong>manifest apply</strong> service takes the parsed <code>brewslm.yaml</code> plus the project's current state and produces a <code>ManifestApplyPlan</code> — a list of <code>ManifestApplyAction</code> rows, each declaring a <code>target</code> (project / blueprint / data_source / adapter / training_plan), an <code>operation</code> (<code>create</code> / <code>update</code> / <code>noop</code> / <code>delete</code>), the before/after, and the fields that changed. <strong>Apply never silently drops a field</strong> — every actionable diff is reported, every unknown key is rejected, every conflict surfaced as a warning.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p><code>brewslm.yaml</code> is the catalog of every knob a project has. Read it section by section and you have read the platform's training contract. The schema is <strong>versioned</strong> (<code>api_version: brewslm/v1</code>) and <strong>strict</strong> (unknown keys are errors) — when the contract evolves, the next apply tells you. Edit by hand for surgical overrides; let the platform regenerate for ordinary changes.</p>
+        </div>
+
+        <p>The next reference catalogues the audit-spine surfaces that <em>watch</em> what apply triggers: the RunEvent taxonomy and the Coach Mode action catalogue.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt><code>brewslm.yaml</code></dt><dd>The project-as-code manifest. Versioned (<code>brewslm/v1</code>), strict-extra-forbid, validates / diffs / applies against project state.</dd>
+            <dt>Manifest spec sections</dt><dd>The ten sections of <code>spec</code>: <code>workflow</code>, <code>blueprint</code>, <code>domain</code>, <code>model</code>, <code>data_sources</code>, <code>adapters</code>, <code>training_plan</code>, <code>eval_pack</code>, <code>export</code>, <code>deployment</code>.</dd>
+            <dt>Training plan profile</dt><dd>Named hyperparameter preset — <code>safe</code> / <code>balanced</code> / <code>max_quality</code> — that resolves to a concrete <code>TrainingConfig</code> at apply time.</dd>
+            <dt>Training mode</dt><dd><code>training_plan.training_mode</code>: <code>sft</code> for supervised fine-tuning, <code>kd</code> for knowledge distillation (Track 4).</dd>
+            <dt>Eval pack id</dt><dd>Registered pack reference like <code>evalpack.general.default</code>; the pack declares the gates (Lesson 3.13).</dd>
+            <dt>ManifestApplyPlan</dt><dd>The before/after action list produced by manifest apply — every create / update / noop / delete is declared, every unknown key rejected.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "What does brewslm.yaml's strict-extra-forbid behaviour mean for an unknown key?",
+   "options": ["It's silently ignored", "It's logged as a warning", "Validation fails — typos and stale fields are caught at apply time, not as silent no-ops", "It's auto-renamed to the closest match"],
+   "answer": 2,
+   "explanation": "Strict-extra-forbid is the explicit choice in the manifest's Pydantic config. Schema drift is visible by design."},
+  {"q": "What are the three named training-plan profiles?",
+   "options": ["beginner / standard / expert", "safe / balanced / max_quality", "lo / mid / hi", "v1 / v2 / v3"],
+   "answer": 1,
+   "explanation": "training_plan.plan_profile is one of {safe, balanced, max_quality}. Balanced is the default for most projects."},
+  {"q": "Which section carries the actual flat hyperparameter dict the trainer runs?",
+   "options": ["spec.workflow.budget_settings", "spec.training_plan.config", "spec.adapters[].adapter_config", "spec.model.cache_fingerprint"],
+   "answer": 1,
+   "explanation": "training_plan.config is the resolved TrainingConfig — learning rate, batch, epochs, LoRA knobs, etc. The profile is the name; the dict is the snapshot."},
+  {"q": "Which manifest field is the only authoritative one in spec.model?",
+   "options": ["cache_fingerprint", "source_ref", "registry_id", "base_model — everything else is informational and re-derived on apply"],
+   "answer": 3,
+   "explanation": "base_model is authoritative. cache_fingerprint, source_ref, registry_id are informational; apply re-resolves them."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="recipes-and-handlers.html">Recipes &amp; task handlers</a><span class="related-lessons__track">With BrewSLM</span></li>
+            <li><a class="inline-link" href="runevent-and-coach-catalogue.html">RunEvent taxonomy &amp; Coach Mode catalogue</a><span class="related-lessons__track">With BrewSLM</span></li>
+            <li><a class="inline-link" href="eval-pack-and-failure-cluster-reference.html">Eval pack &amp; failure cluster reference</a><span class="related-lessons__track">With BrewSLM</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="export-deploy-coach.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Capstone B: export, deploy &amp; Coach Mode</span></a>
+          <a href="runevent-and-coach-catalogue.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">RunEvent taxonomy &amp; Coach Mode catalogue</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>
