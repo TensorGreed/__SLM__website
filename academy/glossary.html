@@ -225,6 +225,12 @@
           <dt id="t1-ambig">Ambiguous case</dt><dd>An example a thoughtful human would have to pause on; labelled per a stated rule so the model learns the rule.</dd>
           <dt id="t1-refusal">Refusal data</dt><dd>Examples the model should <em>not</em> answer the usual way (out-of-scope, harmful, needing clarification), paired with the desired refusal phrasing.</dd>
           <dt id="t1-ood">OOD (out of distribution)</dt><dd>Inputs outside the trained scope, labelled with the desired "I don't know" so the model learns its limits.</dd>
+          <dt id="t1-cpt">Continued pretraining (CPT)</dt><dd>Continuing the next-token objective on raw text from a new domain, before any task SFT. Same loss as pretraining, different data, smaller learning rate. The right tool when the base model doesn&#x27;t speak your domain&#x27;s language; the wrong tool when it does. See <a class="inline-link" href="sft-fundamentals/continued-pretraining.html">Continued pretraining</a>.</dd>
+          <dt id="t1-dapt">Domain-adaptive pretraining (DAPT)</dt><dd>The research name for CPT applied to a specific domain (medical, legal, code, finance). Same mechanic — the &quot;domain-adaptive&quot; label emphasises the purpose.</dd>
+          <dt id="t1-vocab-extension">Vocab extension</dt><dd>Adding new tokens to the tokenizer for domain-specific vocabulary before CPT, so those terms become single tokens. Sharp trade-off: cheaper at inference, but the new embeddings start random and need enough CPT to learn — and it breaks the same-tokenizer assumption distillation needs.</dd>
+          <dt id="t1-cpt-forgetting">Catastrophic forgetting (CPT view)</dt><dd>The same risk as in SFT, sharpened: a CPT&#x27;d model is already pulled toward the domain, and narrow SFT on top compounds the drift unless mix-back and broad eval are kept in.</dd>
+          <dt id="t1-cpt-sft-pipeline">Two-stage CPT → SFT pipeline</dt><dd>The standard shape: stage 1 is CPT on raw domain text producing a CPT&#x27;d checkpoint, stage 2 is SFT on task instructions from that checkpoint. Evaluated end-to-end on the same gold set you&#x27;d use without CPT.</dd>
+          <dt id="t1-downstream-probe">Downstream probe</dt><dd>A pinned SFT recipe + gold set used to compare a base checkpoint and a CPT&#x27;d checkpoint on the metric that actually matters — task performance, not CPT loss.</dd>
         </dl>
 
         <h2>Track 2 — Hands-on</h2>

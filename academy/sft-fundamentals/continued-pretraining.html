@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Continued pretraining: when SFT isn't enough — BrewSLM Academy</title>
+    <meta name="description" content="Continued pretraining (CPT) is what you do when the base model doesn't know the language of your domain — not when it knows the language and just needs the task. This lesson covers when CPT actually helps, what the data must look like, the recipe knobs (learning rate, sequence length, vocab extension), how to evaluate it, and the two-stage CPT → SFT pipeline." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/sft-fundamentals/continued-pretraining.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Continued pretraining — BrewSLM Academy" />
+    <meta property="og:description" content="When SFT isn't enough: the data shape, recipe, evaluation cadence, and CPT → SFT two-stage pipeline." />
+    <meta property="og:url" content="https://brewslm.com/academy/sft-fundamentals/continued-pretraining.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Continued pretraining — BrewSLM Academy" />
+    <meta name="twitter:description" content="The right tool when the base model doesn't speak your domain; the wrong tool when it does." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Continued pretraining: when SFT isn't enough",
+        "description": "Continued pretraining (CPT) continues the next-token objective on raw text from a new domain, so the model learns the domain's language before any task fine-tune. This lesson covers when CPT actually helps versus when it's a misdiagnosis of an SFT problem, the data shape (raw text, no instruction format), the recipe (smaller LR than pretraining, longer sequences, vocab-extension trade-offs), how to evaluate it (downstream-task SFT performance, not just CPT loss), and the canonical two-stage CPT → SFT pipeline.",
+        "url": "https://brewslm.com/academy/sft-fundamentals/continued-pretraining.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["continued pretraining", "domain-adaptive pretraining", "vocab extension", "two-stage CPT-then-SFT pipeline", "evaluating CPT"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "SFT fundamentals", "item": "https://brewslm.com/academy/sft-fundamentals/" },
+        { "@type": "ListItem", "position": 4, "name": "Continued pretraining", "item": "https://brewslm.com/academy/sft-fundamentals/continued-pretraining.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Continued pretraining" },
+        "hasPart": [
+          { "@type": "Question", "name": "When does continued pretraining actually help, versus when is it a misdiagnosis?", "acceptedAnswer": { "@type": "Answer", "text": "CPT helps when the base model doesn't know the language of your domain — unfamiliar vocabulary, syntax, or structure that shows up at the token level. It's a misdiagnosis when the model speaks your domain but is failing at the task — that needs better SFT data, not more pretraining." } },
+          { "@type": "Question", "name": "What does CPT data look like?", "acceptedAnswer": { "@type": "Answer", "text": "Raw text — paragraphs, documents, transcripts — packed into long sequences. No instruction format, no prompt/completion split, no chat template, no loss mask. The model is doing next-token prediction over your corpus, exactly like pretraining." } },
+          { "@type": "Question", "name": "How do you tell whether a CPT run was useful?", "acceptedAnswer": { "@type": "Answer", "text": "Not by CPT loss alone — that goes down on any in-distribution data. The honest signal is downstream-task SFT performance on a frozen gold set: run SFT from the base, run SFT from the CPT'd checkpoint, compare. CPT earns its keep only if the gate moves." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="sft-fundamentals/continued-pretraining">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html" aria-current="page">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../sft-fundamentals/index.html">SFT fundamentals</a></li><li>Continued pretraining</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 21</span>
+          <h1>Continued pretraining: when SFT isn't enough</h1>
+          <p class="lesson-header__outcome">After this lesson you can tell whether your problem is &quot;the model doesn't speak my domain&quot; or &quot;the model speaks my domain but fails my task,&quot; pick continued pretraining only when it's the first one, prepare raw-text data and the right recipe (smaller learning rate, longer sequences, conservative vocab decisions), and evaluate honestly by measuring downstream-task SFT performance, not CPT loss.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="dataset-formats-in-the-wild.html">Dataset formats in the wild</a></span>
+          </div>
+        </header>
+
+        <p>SFT bends a model toward a task. <strong>Continued pretraining</strong> (CPT) does something earlier in the pipeline: it continues the original pretraining objective — next-token prediction over raw text — on a new corpus, so the model learns the <em>language</em> of your domain before any task fine-tune is even attempted. It's the right answer to a narrow question: <em>does the base model know my domain's words at all?</em> It's the wrong answer to almost every other question, and it gets picked for the wrong reasons often enough that this lesson spends as much time on when not to use it as on how to use it.</p>
+
+        <h2>What CPT actually is</h2>
+        <p>The base model was pretrained by reading enormous quantities of generic text and predicting the next token. CPT is exactly the same recipe — same loss, same data shape — applied to <em>your</em> corpus. No prompts, no completions, no chat template, no loss mask. Documents in, next-token loss over every position, gradients back. The output is a new checkpoint with the same architecture and tokenizer (usually) as the base, but with weights nudged toward your domain's distribution. That checkpoint becomes the starting point for SFT in stage two.</p>
+
+        <h2>When CPT actually helps</h2>
+        <p>The honest signal that CPT is the right tool is that the model can't even <em>read</em> your domain fluently. Symptoms:</p>
+        <ul>
+          <li>Per-token loss on a held-out slice of your raw text is much higher than on generic text — the model is genuinely surprised by your tokens.</li>
+          <li>Domain-specific vocabulary is being split into long token streams (medical entity names, legal citation formats, ICD codes, ticker symbols, protein sequences, source code in a niche language).</li>
+          <li>SFT on the base produces fluent-looking but factually warped outputs because the model is filling in details from its generic prior, not your corpus.</li>
+          <li>You have <strong>a lot</strong> of unlabeled raw text — millions of tokens minimum, ideally tens of millions — that nobody has labelled into instructions yet.</li>
+        </ul>
+        <p>If those signals are present, CPT is doing real work: it's giving the model exposure to your distribution under the same objective that built its general competence in the first place.</p>
+
+        <h2>When CPT is a misdiagnosis</h2>
+        <p>Most of the time, "my model is bad at my task" is not a CPT problem. Patterns that look like they need CPT but don't:</p>
+        <ul>
+          <li><strong>The model speaks the language, it just doesn't do the task.</strong> If asking the base model to explain a domain term gets a passable answer, the domain isn't unknown — your SFT data, format, or eval is the bottleneck. Fix that.</li>
+          <li><strong>You have 500 instruction examples and CPT seems like &quot;more training.&quot;</strong> CPT is not "SFT with no labels." It optimises a different objective on different data; throwing 500 instructions in raw will just teach the model to autocomplete prompt formats.</li>
+          <li><strong>You want the model to follow a new format or refuse a class of prompts.</strong> Those are SFT and preference-tuning problems (Lesson 1.2). CPT doesn't teach format compliance — it teaches token distributions.</li>
+          <li><strong>You have a small corpus and a big task gap.</strong> CPT on 50k tokens is mostly noise. If you don't have the data scale, skip CPT and put the effort into SFT data quality.</li>
+        </ul>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest beat — CPT is the most over-prescribed step in SLM workflows</p>
+          <p>Teams reach for continued pretraining because it sounds more serious than "make better SFT data." It almost never beats the alternative of putting that compute into curating, deduping, and gold-setting your task data. If you can't say what specific token-level fluency CPT is supposed to fix, you don't need CPT.</p>
+        </div>
+
+        <h2>The data shape</h2>
+        <p>CPT data is <strong>raw text</strong>. Paragraphs, documents, transcripts, source files — whatever your domain produces, deduplicated and lightly cleaned, with documents concatenated and packed into long sequences (typically 2k–8k tokens per sample, depending on the base model's context length). Things CPT data is <em>not</em>:</p>
+        <ul>
+          <li>JSONL with prompt/completion fields. (That's SFT.)</li>
+          <li>Chat-template-formatted messages with role markers. (That's SFT.)</li>
+          <li>Instructions and answers. (That's SFT.)</li>
+          <li>One paragraph per row, each row short. (Wastes compute on padding tokens; pack into long sequences instead — Lesson 1.6.)</li>
+        </ul>
+        <pre class="code-block"><code># raw-text packing for CPT — no loss mask, no roles
+from datasets import load_dataset
+from transformers import AutoTokenizer
+
+tok = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-135M")
+raw = load_dataset("path/to/your/domain/corpus", split="train")   # one doc per row
+
+def to_ids(batch):
+    return {"ids": tok(batch["text"], add_special_tokens=False)["input_ids"]}
+
+ids = raw.map(to_ids, batched=True, remove_columns=raw.column_names)
+
+# pack: concat all docs, split into 2048-token chunks
+SEQ = 2048
+flat = sum(ids["ids"], [])
+chunks = [flat[i:i+SEQ] for i in range(0, len(flat) - SEQ + 1, SEQ)]
+# each `chunks[i]` is a CPT training example; labels = inputs (no mask)</code></pre>
+
+        <h2>The recipe (and why it differs from SFT)</h2>
+        <p>CPT is more delicate than SFT because you're touching weights the model uses for everything, not just adding a task-specific behaviour. Conservative defaults:</p>
+        <ul>
+          <li><strong>Learning rate</strong> — smaller than SFT, much smaller than the original pretraining. A typical CPT learning rate for a small base is 1e-5 to 5e-5. Too high and you wreck the broader behaviours faster than catastrophic forgetting in SFT does (Lesson 1.21). Use a short warmup and cosine decay.</li>
+          <li><strong>Sequence length</strong> — longer than SFT, because pretraining-style learning benefits from cross-sentence context. Pack to the model's full context (2k for SmolLM2-135M, 8k+ for larger bases) if memory allows.</li>
+          <li><strong>Epochs</strong> — usually one pass over the corpus, sometimes two. Repeating raw text aggressively is a well-known way to make pretraining-style runs worse, not better.</li>
+          <li><strong>Mix-back of generic data</strong> — exactly the same mitigation as Lesson 1.21: include 5–10% of generic pretraining-style text in the mix so the model doesn't drift wholesale into your domain and lose general competence.</li>
+          <li><strong>LoRA vs full</strong> — LoRA for CPT is a recent, viable option (LoRA-CPT) and dramatically cheaper. Full CPT moves more weight but risks more forgetting; if you don't have a strong reason for full, start with LoRA.</li>
+        </ul>
+
+        <h2>Vocab extension: a separate decision</h2>
+        <p>If your domain has tokens that the base tokenizer splits into long ugly streams (e.g. <code>oxytocin</code> → <code>oxy + tocin</code> across multiple pieces, or domain-specific code identifiers), you may consider <strong>extending the tokenizer's vocabulary</strong> by adding new tokens before CPT begins. The trade-off is sharp:</p>
+        <ul>
+          <li><strong>Benefit:</strong> fewer tokens per document → cheaper context, faster inference, sometimes faster learning of those terms.</li>
+          <li><strong>Cost:</strong> the new embeddings start <em>random</em>. Until CPT trains them, they're noise. If you extend vocab and then do only a short CPT run, those embeddings stay nearly random and the model gets <em>worse</em> at those tokens. Vocab extension only pays off if you have enough CPT data to train the new embeddings into useful representations.</li>
+          <li><strong>Distillation foot-gun:</strong> if you're planning to distil from a teacher later, vocab extension breaks the same-tokenizer assumption. Pick one path.</li>
+        </ul>
+        <p>The conservative default: <em>don't extend the vocab</em> on a first CPT run. Run CPT without it, look at the gate, and only reach for vocab extension if the token-stream cost is a measured bottleneck.</p>
+
+        <h2>Evaluating CPT: don't trust the CPT loss alone</h2>
+        <p>The most common honest-metrics failure in CPT projects: the team watches CPT loss drop on the domain corpus and declares victory. CPT loss <em>always</em> drops on in-distribution data — that's just memorisation pressure. It tells you nothing about whether the model is more useful for your downstream task.</p>
+        <p>The honest evaluation cadence is downstream-task SFT performance, frozen across runs:</p>
+        <ol>
+          <li>Pin a gold set and an SFT recipe (data, hyperparameters, epochs) — call this the <em>downstream probe</em>.</li>
+          <li>Run the probe from the original base. Record the gate score. This is your <strong>baseline</strong>.</li>
+          <li>Run CPT to produce a candidate checkpoint.</li>
+          <li>Run the same probe from the CPT'd checkpoint. Record the gate score.</li>
+          <li>Compare. CPT earned its keep only if the gate moved in your favour by a meaningful, repeatable margin. If it's a tie or noise, CPT didn't help — and you spent training compute to learn that.</li>
+        </ol>
+
+        <h2>The two-stage CPT → SFT pipeline</h2>
+        <p>The shape of a CPT-enabled project is two stages:</p>
+        <pre class="code-block"><code>Stage 1 — Continued pretraining
+  base model  ──►  CPT on domain raw text  ──►  cpt-checkpoint
+  (objective: next-token; data: raw text; no labels)
+
+Stage 2 — Supervised fine-tuning
+  cpt-checkpoint  ──►  SFT on task instructions  ──►  task-model
+  (objective: next-token over completion; data: prompt/completion; loss mask on)
+
+Evaluate task-model on the same gold set you would have used without stage 1.</code></pre>
+        <p>Two practical notes about this pipeline:</p>
+        <ul>
+          <li><strong>Stage 2's recipe is unchanged.</strong> CPT replaces the starting point, not the SFT method. Same SFT data, same chat template, same LR range, same gold set.</li>
+          <li><strong>Catastrophic forgetting (next lesson) is a stage-2 concern that CPT can amplify.</strong> Mix-back during SFT becomes more important, not less, because a CPT'd model has already been pulled toward your domain — narrow SFT pulls it further. Track 1.21's mitigations apply.</li>
+        </ul>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Continued pretraining is the right tool for one specific problem — the base model doesn't speak your domain at the token level — and the wrong tool for almost everything else. The decision rule: <strong>can the base model read your text without surprise?</strong> If yes, CPT is wasted compute; improve your SFT data instead. If no, run a small CPT pass with a conservative LR, evaluate by downstream-task SFT gate, and only then commit to the two-stage pipeline.</p>
+        </div>
+
+        <p>Catastrophic forgetting (Lesson 1.22) gets sharper after CPT: you've pulled the base toward your domain, and SFT will pull it further. The mitigations there are not optional in a two-stage pipeline.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Continued pretraining (CPT)</dt><dd>Continuing the next-token objective on raw text from a new domain, before any task SFT. Same loss as pretraining, different data, smaller learning rate.</dd>
+            <dt>Domain-adaptive pretraining (DAPT)</dt><dd>The research name for CPT applied to a specific domain (medical, legal, code, finance). Same mechanic; the "domain-adaptive" label emphasises the purpose.</dd>
+            <dt>Vocab extension</dt><dd>Adding new tokens to the tokenizer for domain-specific vocabulary before CPT, so those terms become single tokens. Sharp trade-off: cheaper at inference, but the new embeddings start random and need enough CPT to learn.</dd>
+            <dt>Catastrophic forgetting (CPT view)</dt><dd>The same forgetting risk as in SFT (Lesson 1.22), but a CPT'd model is already biased toward the domain — narrow SFT on top can compound the drift unless mix-back and broad eval are kept in.</dd>
+            <dt>Two-stage CPT → SFT pipeline</dt><dd>The standard shape: stage 1 is CPT on raw domain text, stage 2 is SFT on task instructions from the CPT'd checkpoint. Evaluated end-to-end on the downstream task gold set.</dd>
+            <dt>Downstream probe</dt><dd>A pinned SFT recipe + gold set used to compare a base checkpoint and a CPT'd checkpoint on the metric that actually matters — task performance, not CPT loss.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "Which problem is continued pretraining actually the right tool for?",
+   "options": ["The model gives wrong answers on your task — needs better instructions", "The model knows your domain but won't follow your output format", "The base model literally doesn't speak your domain's language: surprising per-token loss, vocabulary split into long token streams", "You want the model to refuse a class of prompts"],
+   "answer": 2,
+   "explanation": "CPT addresses token-level unfamiliarity with a domain's text. The other three are SFT or preference-tuning problems; CPT will not fix them and will burn compute trying."},
+  {"q": "What does CPT data look like?",
+   "options": ["JSONL with prompt and completion fields", "Chat-template messages with role markers", "Raw text — documents and paragraphs packed into long sequences, no labels, no mask", "Preference pairs (chosen vs rejected)"],
+   "answer": 2,
+   "explanation": "CPT is the next-token objective on raw text — same shape as the original pretraining. Anything resembling an instruction format belongs in SFT."},
+  {"q": "How should you decide whether a CPT run was worth doing?",
+   "options": ["CPT loss dropped on the domain corpus", "The model emits more domain jargon", "Downstream-task SFT performance moved on a frozen gold set, compared head-to-head against SFT from the original base", "Perplexity dropped on a generic benchmark"],
+   "answer": 2,
+   "explanation": "CPT loss always drops on in-distribution data — that's memorisation pressure, not progress. The honest signal is task-level performance from the same SFT recipe, base vs CPT'd."},
+  {"q": "Why is vocab extension a sharp trade-off, not a free win?",
+   "options": ["Extended vocabs can't be saved to disk", "The new embeddings start random; without enough CPT to train them, the model gets worse at those tokens, and extension breaks the same-tokenizer assumption distillation needs", "Hugging Face doesn't support it", "Vocab extension only works at inference"],
+   "answer": 1,
+   "explanation": "New tokens mean new embedding rows, initialised randomly. Short CPT leaves them nearly random — worse than the split-token baseline. And if you plan to distil later, you've broken the teacher/student tokenizer match."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="choosing-the-objective.html">Choosing the training objective</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="catastrophic-forgetting.html">Catastrophic forgetting</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../foundations/pretraining-vs-finetuning-vs-rag.html">Pretraining vs fine-tuning vs RAG</a><span class="related-lessons__track">Foundations</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="dataset-formats-in-the-wild.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Dataset formats in the wild</span></a>
+          <a href="catastrophic-forgetting.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Catastrophic forgetting</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>
