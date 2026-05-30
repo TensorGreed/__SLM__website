@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Public benchmarks &amp; lm-evaluation-harness — BrewSLM Academy</title>
+    <meta name="description" content="Public benchmarks (MMLU, HellaSwag, ARC, GSM8K) and EleutherAI's lm-evaluation-harness are useful as smoke checks against a base or fine-tuned checkpoint — not as the truth. This lesson covers what each benchmark actually measures, few-shot vs zero-shot, how to read the numbers, why your gold set still matters more, and the contamination caveats that quietly distort headline numbers." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/public-benchmarks-and-lm-eval-harness.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Public benchmarks &amp; lm-eval-harness — BrewSLM Academy" />
+    <meta property="og:description" content="Smoke checks for SLMs: MMLU, HellaSwag, ARC, GSM8K, lm-eval-harness — and the contamination caveats you need to know before quoting a number." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/public-benchmarks-and-lm-eval-harness.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Public benchmarks &amp; lm-eval-harness — BrewSLM Academy" />
+    <meta name="twitter:description" content="Useful smoke checks, not truth. What each benchmark measures, how to read it, and where contamination lurks." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Public benchmarks & lm-evaluation-harness",
+        "description": "Public benchmarks like MMLU, HellaSwag, ARC, GSM8K and the EleutherAI lm-evaluation-harness are the standard way to compare a checkpoint against the wider model landscape. This lesson covers what each benchmark actually measures, the difference between zero-shot and few-shot scoring, how to run lm-eval-harness over a local checkpoint, how to interpret the numbers (and what the per-benchmark gotchas are), why your task-specific gold set still matters more, and the data-contamination caveats that quietly distort headline numbers.",
+        "url": "https://brewslm.com/academy/hands-on/public-benchmarks-and-lm-eval-harness.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT11M", "isAccessibleForFree": true,
+        "teaches": ["MMLU", "HellaSwag", "ARC", "GSM8K", "lm-evaluation-harness", "few-shot vs zero-shot", "benchmark contamination"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Hands-on", "item": "https://brewslm.com/academy/hands-on/" },
+        { "@type": "ListItem", "position": 4, "name": "Public benchmarks & lm-eval-harness", "item": "https://brewslm.com/academy/hands-on/public-benchmarks-and-lm-eval-harness.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Public benchmarks for language models" },
+        "hasPart": [
+          { "@type": "Question", "name": "What are public benchmarks like MMLU, HellaSwag, ARC, and GSM8K best used for?", "acceptedAnswer": { "@type": "Answer", "text": "As smoke checks — to detect catastrophic regressions during fine-tuning and to roughly place your model in the wider landscape. They are not the truth and they don't replace your task-specific gold set." } },
+          { "@type": "Question", "name": "What's the difference between zero-shot and few-shot scoring?", "acceptedAnswer": { "@type": "Answer", "text": "Zero-shot asks the model with no in-context examples; few-shot prepends N labelled examples to the prompt. Few-shot scores are usually higher because the model picks up the format from the examples — they tell you more about in-context learning, less about base knowledge." } },
+          { "@type": "Question", "name": "What is benchmark contamination?", "acceptedAnswer": { "@type": "Answer", "text": "The benchmark's questions or answers appeared in the model's pretraining or fine-tuning data. The model effectively memorised them, so the headline number overstates capability. It's a known issue for popular benchmarks and is why your private gold set matters more than any public number." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="hands-on/public-benchmarks-and-lm-eval-harness">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html" aria-current="page">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../hands-on/index.html">Hands-on</a></li><li>Public benchmarks &amp; lm-eval-harness</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 17</span>
+          <h1>Public benchmarks &amp; lm-evaluation-harness</h1>
+          <p class="lesson-header__outcome">After this lesson you can use public benchmarks (MMLU, HellaSwag, ARC, GSM8K) as honest <em>smoke checks</em> against a checkpoint — not as the truth — run them with EleutherAI&#x27;s lm-evaluation-harness, read few-shot vs zero-shot numbers correctly, recognise the contamination caveats that quietly inflate headline scores, and stop treating MMLU-65% as a project goal when your gold-set accuracy is the metric that actually pays the bills.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~11 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="llm-as-a-judge.html">LLM-as-a-judge</a></span>
+          </div>
+        </header>
+
+        <p>Every SLM model card carries a constellation of three-letter benchmark names — MMLU, HSWAG, ARC, GSM8K — followed by a percentage. They&#x27;re convenient. They let you compare against the base, against the previous fine-tune, and against the wider model landscape with one number per axis. They are also widely misread: as the goal of fine-tuning rather than a smoke check, as a measure of your task quality rather than a sanity bar, and (worst) as ground truth in cases where the benchmark has leaked into pretraining. This lesson covers what each benchmark actually measures, how to run them, and how to read the numbers without being misled.</p>
+
+        <h2>What the standard benchmarks measure</h2>
+        <ul>
+          <li><strong>MMLU</strong> (Massive Multitask Language Understanding) — multiple-choice questions across 57 subjects from elementary to professional. The closest thing to a general "what does this model know?" score. Usually reported 5-shot.</li>
+          <li><strong>HellaSwag</strong> — pick the most plausible continuation of a short scenario from four options. Tests commonsense / world-model. Usually 10-shot; zero-shot scores look very different.</li>
+          <li><strong>ARC</strong> (Easy / Challenge) — grade-school science MCQs. ARC-Challenge filters for questions retrieval-based methods couldn&#x27;t solve, making it harder.</li>
+          <li><strong>GSM8K</strong> — grade-school math word problems requiring multi-step arithmetic reasoning. The shape that most predicts whether a chain-of-thought-style instruct model is doing real work.</li>
+          <li><strong>TruthfulQA</strong> — questions designed to elicit common misconceptions; scores how often the model resists the wrong-but-popular answer.</li>
+          <li><strong>WinoGrande</strong> — Winograd-style pronoun resolution; lightweight commonsense reasoning.</li>
+        </ul>
+        <p>None of these is your task. None of them measures the thing your fine-tune is supposed to do. They measure the substrate the fine-tune sits on top of.</p>
+
+        <h2>Few-shot vs zero-shot</h2>
+        <p>Almost every reported benchmark number has a shot count attached: MMLU 5-shot, HellaSwag 10-shot, GSM8K 8-shot CoT. The shot count is the number of labelled in-context examples prepended to the prompt before the question. The difference between zero-shot and 5-shot can be 20+ percentage points; reporting one and calling it the other is the most common honest-mistake in benchmark tables.</p>
+        <p>Read the convention with the score:</p>
+        <ul>
+          <li><strong>Zero-shot</strong> tells you what the model knows without help. The honest measure of a base model&#x27;s knowledge.</li>
+          <li><strong>Few-shot</strong> tells you how well the model picks up a task from examples. The honest measure of in-context learning. Higher numbers, but they&#x27;re measuring a different thing.</li>
+          <li>An instruct model usually wins on zero-shot vs its base; a base model often wins on few-shot vs an instruct, because instruct training rewards templated single-shot completions over learning from in-context examples.</li>
+        </ul>
+
+        <h2>lm-evaluation-harness, the standard tool</h2>
+        <p>EleutherAI&#x27;s <code>lm-evaluation-harness</code> is the de-facto runner for these benchmarks. It supports hundreds of tasks under a unified evaluator, lets you point at a local Hugging Face checkpoint or a hosted endpoint, and reports per-task accuracy + standard error. It is what nearly every public model card was scored with.</p>
+        <pre class="code-block"><code># install
+pip install lm-eval
+
+# evaluate a local checkpoint on the standard smoke-check set
+lm_eval \
+  --model hf \
+  --model_args pretrained=./runs/sft-v3,dtype=bfloat16 \
+  --tasks mmlu,hellaswag,arc_easy,arc_challenge,gsm8k \
+  --num_fewshot 5 \
+  --batch_size 16 \
+  --output_path eval/sft-v3.json
+
+# compare against the base — same flags, different checkpoint
+lm_eval \
+  --model hf \
+  --model_args pretrained=HuggingFaceTB/SmolLM2-135M,dtype=bfloat16 \
+  --tasks mmlu,hellaswag,arc_easy,arc_challenge,gsm8k \
+  --num_fewshot 5 \
+  --batch_size 16 \
+  --output_path eval/base.json</code></pre>
+        <p>The output JSON has per-task accuracy and a standard error you should always report — a 0.4-point delta with a 0.6-point standard error is noise, not progress.</p>
+
+        <h2>How to read the numbers</h2>
+        <p>The four useful comparisons:</p>
+        <ol>
+          <li><strong>Base vs SFT, same shot count</strong> — does SFT preserve substrate knowledge? A modest drop is normal (the fine-tune narrowed the model toward your task). A large drop on MMLU / HellaSwag is catastrophic forgetting; revisit Lesson 1.22&#x27;s mitigations.</li>
+          <li><strong>Your fine-tune vs same-size peer models</strong> — places you in the landscape. Useful as a "do I have a competitive substrate?" check; not useful as a fine-tune goal.</li>
+          <li><strong>Across versions of your own fine-tune</strong> — for tracking regressions. If MMLU drops by 3 points between two runs, something changed in your data or recipe that you want to understand.</li>
+          <li><strong>Against the lm-eval-harness <em>standard error</em>, not its average</strong> — a difference smaller than the SE is statistical noise, not a result.</li>
+        </ol>
+
+        <h2>Why your gold set still matters more</h2>
+        <p>Three reasons the public benchmarks are insufficient on their own:</p>
+        <ul>
+          <li><strong>They measure substrate, not your task.</strong> A 5-point MMLU bump tells you nothing about whether your sentiment classifier is more accurate or your JSON extractor parses more reliably. Your task is your task.</li>
+          <li><strong>They are multiple-choice or short-answer.</strong> Real outputs are free-form. MMLU accuracy correlates loosely with free-form helpfulness; LLM-as-a-judge (Lesson 16) and your gold set close the gap.</li>
+          <li><strong>They&#x27;re contaminated.</strong> Which brings us to —</li>
+        </ul>
+
+        <h2>Contamination caveats</h2>
+        <p>Public benchmarks are widely scraped, widely indexed, and routinely end up in pretraining corpora. The fingerprint of a contaminated benchmark: the model gets the right answer on the canonical question but fails on lightly paraphrased versions of the same question. Several known contamination patterns:</p>
+        <ul>
+          <li><strong>MMLU</strong> has substantial overlap with publicly indexed test-bank questions; many model families have shown the canonical-vs-paraphrased gap.</li>
+          <li><strong>HellaSwag</strong> contexts and ARC questions have appeared verbatim in pretraining web scrapes.</li>
+          <li><strong>GSM8K</strong> — the original 8,500 problems have shown up in code repositories, blog posts, and instruction-tuning datasets. The GSM8K-Hard / GSM-Symbolic re-renderings exist specifically to test whether a model learned the structure or memorised the corpus.</li>
+        </ul>
+        <p>Mitigations when you actually need a reliable number:</p>
+        <ul>
+          <li>Run a paraphrased / re-rendered variant of the benchmark alongside the canonical one. A large canonical-paraphrased gap is the contamination tell.</li>
+          <li>Read the model card&#x27;s contamination section if there is one. Many recent SLMs (Phi, SmolLM) publish n-gram overlap checks.</li>
+          <li>Treat public benchmarks as <strong>relative</strong>, not absolute. Your fine-tune&#x27;s delta vs your own base is harder to game than the absolute score.</li>
+          <li>Keep a small, <strong>private</strong>, never-published task gold set. That number is the one that matters.</li>
+        </ul>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest beat — &quot;MMLU 65%&quot; is not a project goal</p>
+          <p>It&#x27;s a smoke check. The reason your stakeholder cares about the SLM is the task — whether the JSON parses, whether the extraction lands, whether the support reply was correct. Public-benchmark scores belong in the appendix of the model card, not the project's headline KPI. Build a gold set that measures the task; quote it; <em>then</em> report the substrate numbers as context.</p>
+        </div>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Public benchmarks are useful — for placing your model in the landscape, for catching catastrophic regressions during fine-tuning, for a shared vocabulary with the wider community. They are <em>not</em> useful as the truth, the project goal, or a substitute for a task-specific gold set. Run them with <strong>lm-evaluation-harness</strong> with the shot count published, report the <strong>standard error</strong>, watch for the <strong>canonical-vs-paraphrased</strong> contamination signature, and remember that your private gold set is the one that the user pays for.</p>
+        </div>
+
+        <p>The next lesson covers the bookkeeping that makes all this comparable across runs three weeks from now: experiment tracking with MLflow and W&amp;B.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>lm-evaluation-harness</dt><dd>EleutherAI&#x27;s open-source benchmark runner — the standard tool used to produce the MMLU / HellaSwag / ARC / GSM8K numbers in model cards.</dd>
+            <dt>MMLU</dt><dd>Massive Multitask Language Understanding: ~14k multiple-choice questions across 57 subjects. Usually reported 5-shot. The standard substrate-knowledge benchmark.</dd>
+            <dt>HellaSwag</dt><dd>Commonsense scenario-continuation MCQs; usually 10-shot. Tests world-model plausibility.</dd>
+            <dt>ARC</dt><dd>AI2 Reasoning Challenge: grade-school science MCQs in Easy / Challenge splits.</dd>
+            <dt>GSM8K</dt><dd>Grade-school math word problems requiring multi-step arithmetic; the standard chain-of-thought benchmark.</dd>
+            <dt>Few-shot vs zero-shot</dt><dd>Few-shot prepends N labelled examples to the prompt; zero-shot prepends none. Different shot counts produce very different scores; the shot count must be reported with the number.</dd>
+            <dt>Standard error (lm-eval)</dt><dd>The lm-evaluation-harness reports SE alongside accuracy. A delta smaller than the SE is noise, not a result.</dd>
+            <dt>Benchmark contamination</dt><dd>The benchmark&#x27;s questions or answers appeared in the model&#x27;s pretraining corpus; the model memorised rather than reasoned. The tell is a large gap between canonical and paraphrased versions of the same question.</dd>
+            <dt>Substrate vs task</dt><dd>Public benchmarks measure the substrate of general capability the fine-tune sits on; your gold set measures the task itself. Both matter, in that order.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "What are MMLU / HellaSwag / ARC / GSM8K best used for in an SLM project?",
+   "options": ["As the project's headline KPI — what you ship the model against", "As smoke checks against substrate knowledge and as a way to detect catastrophic forgetting during fine-tuning", "As a substitute for a task-specific gold set", "As a label source for SFT training"],
+   "answer": 1,
+   "explanation": "They measure general substrate, not your task. Useful as smoke checks; not useful as the goal. Your task-specific gold set is the metric that actually pays the bills."},
+  {"q": "What's the difference between zero-shot and few-shot benchmark scoring?",
+   "options": ["Zero-shot uses fewer tokens; few-shot uses more — they're the same task", "Zero-shot prepends no in-context examples; few-shot prepends N. Few-shot scores are usually higher and measure in-context learning, not raw knowledge", "Zero-shot is for instruct models; few-shot is for base models", "Few-shot uses CoT; zero-shot does not"],
+   "answer": 1,
+   "explanation": "The shot count is the number of labelled examples prepended to the prompt. The same model can score 20+ points higher in 5-shot than in zero-shot; the shot count must be reported with the score."},
+  {"q": "What is benchmark contamination, and what does it look like?",
+   "options": ["The benchmark file got corrupted on disk", "The benchmark's questions/answers appeared in the model's pretraining data; the tell is a large gap between canonical questions and paraphrased versions of the same questions", "A judge model leaked the gold answers", "Decoding noise inflates the score"],
+   "answer": 1,
+   "explanation": "Public benchmarks are widely scraped; the canonical-vs-paraphrased gap is the standard contamination signature. Re-rendered variants (GSM-Symbolic, etc.) exist for exactly this check."},
+  {"q": "Why is your private task gold set still more important than the public benchmark numbers?",
+   "options": ["It's cheaper to run", "It measures what the user actually pays for — your task — and it can't be contaminated because it isn't public", "Public benchmarks are illegal to use commercially", "Public benchmarks don't support batching"],
+   "answer": 1,
+   "explanation": "Public benchmarks measure substrate; your gold set measures the task. A 5-point MMLU bump tells you nothing about whether your JSON extractor parses more reliably."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="llm-as-a-judge.html">LLM-as-a-judge</a><span class="related-lessons__track">Hands-on</span></li>
+            <li><a class="inline-link" href="experiment-tracking-mlflow-wandb.html">Experiment tracking with MLflow &amp; W&amp;B</a><span class="related-lessons__track">Hands-on</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/evaluation-fundamentals.html">Evaluation that matches the task</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="llm-as-a-judge.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">LLM-as-a-judge</span></a>
+          <a href="experiment-tracking-mlflow-wandb.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Experiment tracking with MLflow &amp; W&amp;B</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

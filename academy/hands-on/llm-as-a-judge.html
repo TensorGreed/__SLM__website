@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LLM-as-a-judge: scoring free-form outputs — BrewSLM Academy</title>
+    <meta name="description" content="A strong language model can be used as a rubric-driven judge for free-form outputs where exact-match metrics don't apply. This lesson covers pairwise A/B vs absolute scoring, the position/length/style biases that quietly distort results, judge-model selection, calibration against a small human-rated set, and the JSON-schema rubric pattern — with the honest beat that LLM judges agree with each other more than with humans." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/llm-as-a-judge.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="LLM-as-a-judge — BrewSLM Academy" />
+    <meta property="og:description" content="Rubric-driven judging for free-form outputs: pairwise vs absolute, judge bias, calibration, the JSON-schema rubric — and the honest beat about inter-judge correlation." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/llm-as-a-judge.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="LLM-as-a-judge — BrewSLM Academy" />
+    <meta name="twitter:description" content="Use a strong model as a judge, but calibrate it — and know what it's biased by before you trust the score." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "LLM-as-a-judge: scoring free-form outputs",
+        "description": "LLM-as-a-judge is the practice of using a strong language model to score the outputs of another model against a written rubric. This lesson covers when to reach for it (free-form generation, where exact-match metrics don't apply), the two judging modes (pairwise A/B, which is more reliable, vs absolute single-output scoring, which is easier to aggregate), the three classic biases (position, length, style), how to pick a judge model that isn't the model you're testing, calibration against a small human-rated gold-of-the-gold set, the JSON-schema rubric pattern that constrains the judge to a checkable shape, and the honest beat — LLM judges agree with each other more than they agree with humans, so calibration is not optional.",
+        "url": "https://brewslm.com/academy/hands-on/llm-as-a-judge.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT11M", "isAccessibleForFree": true,
+        "teaches": ["LLM-as-a-judge", "rubric design", "pairwise judging", "judge bias (position/length/style)", "judge calibration", "JSON-schema rubric pattern"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Hands-on", "item": "https://brewslm.com/academy/hands-on/" },
+        { "@type": "ListItem", "position": 4, "name": "LLM-as-a-judge", "item": "https://brewslm.com/academy/hands-on/llm-as-a-judge.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "LLM-as-a-judge" },
+        "hasPart": [
+          { "@type": "Question", "name": "When is LLM-as-a-judge the right tool?", "acceptedAnswer": { "@type": "Answer", "text": "When the output is free-form (summaries, explanations, multi-turn dialogue) and there's no exact-match metric. For classification, JSON extraction, or anything with a labelled gold answer, use the deterministic metric instead — it's cheaper and not biased." } },
+          { "@type": "Question", "name": "Why is pairwise A/B more reliable than absolute scoring?", "acceptedAnswer": { "@type": "Answer", "text": "Asking 'which is better, A or B?' gives a discriminative signal that compounds well; asking 'rate this 1-5' invites style/length bias and drifts in calibration over time. Pairwise still has position bias — always randomise the order — but it removes the absolute-scale instability." } },
+          { "@type": "Question", "name": "What's the honest beat about LLM judges?", "acceptedAnswer": { "@type": "Answer", "text": "LLM judges agree with each other more than they agree with humans — two judge models share the same training-data biases, and reporting only their agreement is a vanity metric. Calibration against a small human-rated set is required before treating a judge score as ground truth." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="hands-on/llm-as-a-judge">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html" aria-current="page">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../hands-on/index.html">Hands-on</a></li><li>LLM-as-a-judge</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 16</span>
+          <h1>LLM-as-a-judge: scoring free-form outputs</h1>
+          <p class="lesson-header__outcome">After this lesson you can decide when LLM-as-a-judge is the right tool (free-form outputs, no exact-match metric), pick pairwise over absolute when reliability matters, write a JSON-schema rubric that constrains the judge to a checkable shape, anticipate the three classic biases (position, length, style), pick a judge model that isn&#x27;t the model you&#x27;re testing, and calibrate against a small human-rated set before you trust any aggregate.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~11 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="real-metrics-with-sklearn-evaluate.html">Real metrics with sklearn &amp; HF evaluate</a></span>
+          </div>
+        </header>
+
+        <p>Classification has accuracy. Extraction has F1. JSON has a parse rate. But the moment your model emits a paragraph of explanation, a multi-turn dialogue, or a long-form summary, those metrics give you nothing useful — and graders by hand stop scaling somewhere around the third candidate model. <strong>LLM-as-a-judge</strong> fills that gap: a strong model reads a rubric and scores the output. It is the standard practice for free-form eval today. It is also the easiest place in the pipeline to lie to yourself, because every step of it can drift and the failure modes are quiet.</p>
+
+        <h2>When to reach for it (and when not)</h2>
+        <p>LLM-as-a-judge is the right tool when:</p>
+        <ul>
+          <li>The output is free-form: summaries, explanations, customer replies, multi-turn assistant turns, creative completions.</li>
+          <li>There&#x27;s no exact-match metric you trust. Human variance on phrasing makes string-match useless.</li>
+          <li>You have more candidates than you can grade by hand — multiple training runs, multiple decoding configurations, an A/B over data variants.</li>
+        </ul>
+        <p>It is the <em>wrong</em> tool for anything that has a labelled gold answer. Classification, NER, JSON extraction, tool-call generation, retrieval relevance with a ground-truth label — use the deterministic metric. Judges cost more and bring biases you don&#x27;t need.</p>
+
+        <h2>Two judging modes</h2>
+        <h3>Pairwise A/B (preferred)</h3>
+        <p>Show the judge a prompt and two candidate outputs. Ask which is better, given the rubric. Aggregate win-rates across many prompts. This is the more reliable mode — discriminating between two outputs is a task LLMs do well; the comparative signal compounds, and you don&#x27;t need a stable absolute scale.</p>
+        <p>The cost: <strong>position bias</strong> — judges have a measurable preference for "A" or "B" regardless of content. The mitigation is mandatory: for every pair, ask the judge twice with the order swapped, and count a win only when the judge picks the same candidate in both orders. Half the runs is a tie; the other half is your signal.</p>
+
+        <h3>Absolute single-output scoring</h3>
+        <p>Show the judge one output and ask for a numeric score (1–5, 0–10, etc.) against the rubric. Easier to aggregate — averages, distributions, gates — but the scale is unstable: drift in the rubric, drift in the judge model, drift in your own intuition over time. Use absolute scoring when you need a one-shot gate ("does the output clear the bar?") or to track a single model over time, not to compare models against each other.</p>
+
+        <h2>The JSON-schema rubric pattern</h2>
+        <p>The pattern that makes judging machine-checkable: write the rubric as a JSON schema the judge must return. Free-text justifications are fine and worth keeping (you read them during calibration), but the numeric/categorical fields are what aggregates over the run.</p>
+        <pre class="code-block"><code># pairwise judge prompt (sketch)
+RUBRIC = """
+You are evaluating which of two customer-support replies is better.
+Rate each on three dimensions, then pick a winner.
+
+Dimensions (each 1-5):
+  - correctness: does it answer the customer's actual question?
+  - tone: is it polite without being syrupy or evasive?
+  - concision: as short as possible without losing necessary detail.
+
+Return ONLY a JSON object matching this schema. No prose outside it.
+
+{
+  "winner": "A" | "B" | "tie",
+  "scores": {
+    "A": {"correctness": int, "tone": int, "concision": int},
+    "B": {"correctness": int, "tone": int, "concision": int}
+  },
+  "reasoning": "one sentence on why the winner won"
+}
+"""
+
+# render and call twice with order swapped
+for (order, a, b) in [("forward", out_x, out_y), ("reverse", out_y, out_x)]:
+    judgement = judge_model.chat(RUBRIC + render_pair(prompt, a, b))
+    parsed = json.loads(judgement)
+    record(order, parsed)
+
+# count a win only when both orders agree
+win = forward.winner == reverse.winner and forward.winner != "tie"</code></pre>
+        <p>The constraints that matter in this pattern: <strong>JSON only, no prose</strong>, <strong>fixed schema</strong>, <strong>swap-order check</strong>, <strong>structured numeric fields</strong> for aggregation. Skip any of these and you&#x27;re hand-cleaning judge output for the rest of the project.</p>
+
+        <h2>The three classic biases</h2>
+        <ul>
+          <li><strong>Position bias</strong> — judges favour the first (or sometimes second) option presented. Mitigate with mandatory order-swap and "both must agree" win counting.</li>
+          <li><strong>Length bias</strong> — judges tend to prefer the longer answer when in doubt, treating verbosity as effort. Mitigate by including <em>concision</em> as an explicit rubric dimension and by checking the win-rate correlation against output length on a held-out slice — if a 1-point length difference systematically predicts the winner, you have length bias.</li>
+          <li><strong>Style / family bias</strong> — judges trained by the same lab as one candidate tend to favour that candidate&#x27;s style. The mitigation is judge selection: never use the same model family as either candidate, and ideally use two judges from different labs and only treat agreed-on wins as wins.</li>
+        </ul>
+
+        <h2>Judge-model selection</h2>
+        <p>The rules of thumb that hold up:</p>
+        <ul>
+          <li>The judge must be <strong>strictly stronger</strong> than every candidate. A weaker model judges by surface markers (length, hedging, formality) more than by content.</li>
+          <li>The judge must not be in the same family as any candidate — Gemini judges Gemini favourably, GPT judges GPT favourably, Claude judges Claude favourably. The pattern is robust enough that "what family is the judge in?" is the first question to ask of any LLM-as-judge result.</li>
+          <li>If your candidates are SLMs (135M–7B), a 70B-class judge is enough; you don&#x27;t need a frontier model just to outclass them. The marginal precision past that point doesn&#x27;t pay back the cost.</li>
+          <li>Pin the judge model and decoding config. A judge with temperature=0.7 will flip on the same prompt; use temperature=0 and pin the model version.</li>
+        </ul>
+
+        <h2>Calibration against a human-rated set</h2>
+        <p>This is the step everyone skips and then everyone regrets. The judge&#x27;s score is not the ground truth — it&#x27;s a proxy. The calibration cadence:</p>
+        <ol>
+          <li>Take 50–200 pairs from your eval set.</li>
+          <li>Have 2–3 humans (you, a colleague, a contractor — anyone with the domain context) independently rate each pair against the same rubric the judge is using. Resolve disagreements; this becomes your <strong>human-rated gold-of-the-gold</strong>.</li>
+          <li>Run the judge over the same pairs.</li>
+          <li>Compute inter-judge agreement (judge vs human) — Cohen&#x27;s κ for categorical, Spearman ρ for ordinal. Anything below κ ≈ 0.4 / ρ ≈ 0.5 means the judge is not measuring what you think it&#x27;s measuring; revise the rubric, swap the judge, or accept that this dimension needs human evaluation.</li>
+          <li>Pin the human set. Re-run it whenever you change the rubric, the judge model, or the candidate population.</li>
+        </ol>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest beat — LLM judges agree with each other more than they agree with humans</p>
+          <p>Two judge models will often correlate 0.8+ with each other while correlating only 0.4–0.6 with human raters. Reporting "two judges agreed on the same winner" sounds rigorous and is often a vanity statistic; both judges are sharing the same length / style / position biases. The numbers that matter are judge-vs-human agreement on your calibration set. If you don&#x27;t have that, you don&#x27;t have an eval — you have an aesthetic.</p>
+        </div>
+
+        <h2>Aggregation and reporting</h2>
+        <p>Once judging is calibrated, the honest report has three numbers:</p>
+        <ul>
+          <li><strong>Win-rate over the eval set</strong> (pairwise) or <strong>mean rubric score</strong> (absolute), with a confidence interval — bootstrap, not the standard error of a mean over correlated examples.</li>
+          <li><strong>Per-dimension breakdown</strong>. The aggregate hides patterns. If your model wins on correctness but loses on concision, the user wants to know.</li>
+          <li><strong>The calibration κ</strong>. Reporting a judge win-rate without the calibration agreement is reporting a number without its units.</li>
+        </ul>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>LLM-as-a-judge is the practical answer to "how do I score free-form outputs at scale?" — but it&#x27;s a measurement device, not the truth. Prefer <strong>pairwise A/B with order-swapping</strong>, write the rubric as <strong>JSON-schema-constrained</strong>, never use a judge from the same family as a candidate, and <strong>calibrate against humans</strong> before you trust the aggregate. A judge win-rate without a calibration agreement is half a number.</p>
+        </div>
+
+        <p>The next lesson covers public benchmarks: a different (and complementary) eval layer that catches catastrophic regressions a task-specific judge would never see.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>LLM-as-a-judge</dt><dd>The practice of using a strong language model to score the outputs of another model against a written rubric, used when exact-match metrics don&#x27;t apply.</dd>
+            <dt>Rubric</dt><dd>The written criteria the judge scores against — dimensions (correctness, tone, concision, etc.) and a scale. The clearer the rubric, the more consistent the judge.</dd>
+            <dt>Pairwise judging (A/B)</dt><dd>Showing the judge two outputs and asking which is better. More reliable than absolute scoring because discriminative judgments compound; introduces position bias which order-swapping fixes.</dd>
+            <dt>Position bias</dt><dd>The judge&#x27;s preference for the first (or sometimes second) option presented, independent of content. Mitigated by running every pair in both orders and counting only agreed-on wins.</dd>
+            <dt>Length bias</dt><dd>The judge&#x27;s tendency to prefer the longer answer, treating verbosity as effort. Mitigated by including <em>concision</em> in the rubric and checking length / win-rate correlation.</dd>
+            <dt>Style / family bias</dt><dd>The judge&#x27;s tendency to prefer outputs from the same model family it was trained from. Mitigated by judge selection — never reuse a candidate&#x27;s family.</dd>
+            <dt>JSON-schema rubric</dt><dd>The pattern of requiring the judge to return a fixed-schema JSON object so per-dimension scores are machine-aggregatable. No free-text outside the schema.</dd>
+            <dt>Judge calibration</dt><dd>Comparing judge scores against a small human-rated set (50–200 pairs) and reporting the agreement (Cohen&#x27;s κ, Spearman ρ). Required to interpret any aggregate judge metric.</dd>
+            <dt>Inter-judge agreement</dt><dd>Correlation between two judge models. Always higher than judge-vs-human; reporting it instead of human calibration is a vanity metric.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "Which is a good task for LLM-as-a-judge?",
+   "options": ["Sentiment classification with a labelled gold set", "JSON extraction where the schema is known", "Free-form customer-support replies where no exact-match metric applies", "Tool-call generation against a labelled function-call ground truth"],
+   "answer": 2,
+   "explanation": "Free-form outputs are where deterministic metrics break down — that's the gap LLM-as-a-judge fills. The other three have labelled answers; use the deterministic metric."},
+  {"q": "Why is pairwise judging usually more reliable than absolute scoring?",
+   "options": ["It's cheaper to run", "It avoids tokenization overhead", "Discriminative 'which is better?' judgments compound; absolute scores drift in calibration and invite length/style bias", "It eliminates position bias automatically"],
+   "answer": 2,
+   "explanation": "Pairwise A/B is a discrimination task LLMs handle well, and the comparative signal compounds. Position bias still exists — order-swap mitigates it."},
+  {"q": "What's the calibration step that everyone skips and everyone regrets?",
+   "options": ["Pinning the judge's decoding temperature", "Comparing judge scores against a small human-rated set and reporting the agreement (κ / ρ)", "Running the judge twice and averaging", "Using two different judges"],
+   "answer": 1,
+   "explanation": "Judge scores are a proxy. Without a human-rated gold-of-the-gold set to calibrate against, you don't know what the judge is measuring — and inter-judge agreement isn't a substitute."},
+  {"q": "Why is using a judge from the same model family as a candidate a problem?",
+   "options": ["Licensing restrictions prevent it", "Same-family judges share training-data biases and style preferences — they favour their own family's outputs", "The output format conflicts", "It triggers tokenizer warnings"],
+   "answer": 1,
+   "explanation": "Style / family bias is robust enough that it's the first thing to check on any LLM-as-judge result. Use a different family, ideally two judges from different labs."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="real-metrics-with-sklearn-evaluate.html">Real metrics with sklearn &amp; HF evaluate</a><span class="related-lessons__track">Hands-on</span></li>
+            <li><a class="inline-link" href="public-benchmarks-and-lm-eval-harness.html">Public benchmarks &amp; lm-eval-harness</a><span class="related-lessons__track">Hands-on</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/evaluation-fundamentals.html">Evaluation that matches the task</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="project-gallery.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Project gallery</span></a>
+          <a href="public-benchmarks-and-lm-eval-harness.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Public benchmarks &amp; lm-eval-harness</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

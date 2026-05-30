@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Experiment tracking with MLflow &amp; W&amp;B — BrewSLM Academy</title>
+    <meta name="description" content="Ad-hoc training runs without tracking lose to bookkeeping every time. This lesson compares MLflow, Weights &amp; Biases, and TensorBoard, covers what's worth logging on every run (config, code SHA, dataset hash, per-step loss + eval, system metrics, artefacts), and draws the reproducible-vs-replicable distinction that lets you compare today's run against a checkpoint from three weeks ago without lying to yourself." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/hands-on/experiment-tracking-mlflow-wandb.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Experiment tracking with MLflow &amp; W&amp;B — BrewSLM Academy" />
+    <meta property="og:description" content="The bookkeeping that beats ad-hoc runs every time: what to log, MLflow vs W&amp;B vs TensorBoard, and reproducible-vs-replicable." />
+    <meta property="og:url" content="https://brewslm.com/academy/hands-on/experiment-tracking-mlflow-wandb.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Experiment tracking with MLflow &amp; W&amp;B — BrewSLM Academy" />
+    <meta name="twitter:description" content="Without tracking, every run is one-shot. With tracking, you can answer 'why did this regress?' three weeks later." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Experiment tracking with MLflow & W&B",
+        "description": "Experiment tracking is the bookkeeping layer that lets a training pipeline answer 'why did this regress?' three weeks later. This lesson compares MLflow (open-source, self-hosted, free), Weights & Biases (hosted, opinionated UI, free tier for individuals), and TensorBoard (offline, minimal). Covers what to log on every run — full config, code SHA, dataset hash, per-step loss and eval, system metrics, output artefacts — the integration pattern with HF Trainer, and the reproducible-vs-replicable distinction that separates tracking that actually helps from tracking that just produces dashboards.",
+        "url": "https://brewslm.com/academy/hands-on/experiment-tracking-mlflow-wandb.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT10M", "isAccessibleForFree": true,
+        "teaches": ["experiment tracking", "MLflow", "Weights & Biases", "TensorBoard", "run metadata", "reproducible vs replicable"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Hands-on", "item": "https://brewslm.com/academy/hands-on/" },
+        { "@type": "ListItem", "position": 4, "name": "Experiment tracking with MLflow & W&B", "item": "https://brewslm.com/academy/hands-on/experiment-tracking-mlflow-wandb.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Experiment tracking" },
+        "hasPart": [
+          { "@type": "Question", "name": "Why does ad-hoc training lose to bookkeeping every time?", "acceptedAnswer": { "@type": "Answer", "text": "Without tracking, every run is one-shot. The first time someone asks 'why did this regress?' three weeks after the fact, you can't reconstruct the config, the data split, or the code state — and you redo the comparison from scratch. With tracking, the question is two clicks." } },
+          { "@type": "Question", "name": "What is the reproducible-vs-replicable distinction?", "acceptedAnswer": { "@type": "Answer", "text": "Reproducible means same input → bit-for-bit identical output (same model file, same eval number). Replicable means same recipe → equivalent outcome within noise. Most ML can be replicable but not reproducible without strict seed/version/library pinning. The distinction matters because tracking targets replicability — comparing runs — not bit-equivalence." } },
+          { "@type": "Question", "name": "What's the minimum useful set of things to log on every run?", "acceptedAnswer": { "@type": "Answer", "text": "Full config (every hyperparameter), the git SHA of the code at run time, a hash of the dataset, per-step loss and eval, system metrics (GPU utilisation, memory), and the output artefacts (final checkpoint or its path). Anything less and you can't reliably compare two runs." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="hands-on/experiment-tracking-mlflow-wandb">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html" aria-current="page">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../hands-on/index.html">Hands-on</a></li><li>Experiment tracking with MLflow &amp; W&amp;B</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 18</span>
+          <h1>Experiment tracking with MLflow &amp; W&amp;B</h1>
+          <p class="lesson-header__outcome">After this lesson you can pick an experiment-tracking tool that matches your situation (MLflow, W&amp;B, or TensorBoard), log the minimum useful set of run metadata, point an HF <code>Trainer</code> at it with one flag, draw the reproducible-vs-replicable line so you know which one you&#x27;re actually achieving, and answer "why did this regress?" three weeks later with two clicks instead of a forensic excavation.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Read time:</strong> ~10 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="public-benchmarks-and-lm-eval-harness.html">Public benchmarks &amp; lm-eval-harness</a></span>
+          </div>
+        </header>
+
+        <p>Track 2 has spent the last several lessons making your evaluation honest — gold sets, real metrics, LLM-as-a-judge, public benchmarks. None of that helps if, three weeks from now, you can&#x27;t answer the question <em>which run produced that checkpoint?</em> A training run is a vector of decisions: data split, learning rate, batch size, LoRA rank, evaluation cadence, code version, library version, GPU, seed. Forget any one of them and the next comparison is unreliable. Experiment tracking is the bookkeeping layer that makes the vector retrievable. It is also the cheapest insurance in the pipeline; teams that skip it are the ones who later say "the old model was better but we don&#x27;t know why."</p>
+
+        <h2>What ad-hoc loses to</h2>
+        <p>The pattern that ends in tears: you tune a fine-tune to a good gate, ship the checkpoint, move on. A month later eval drops. Someone re-runs "the same recipe" — but the dataset has been mutated, a HF library bumped, the random seed shifted, the LR schedule subtly changed. The "regression" might be your code, your data, your tools, or all three. Without a record, the only honest answer is "I don&#x27;t know."</p>
+        <p>Tracking turns that question into a join: previous run&#x27;s config + current run&#x27;s config → here are the deltas. Two clicks. The first time it saves you a day of forensic work, every cost of setting it up is paid.</p>
+
+        <h2>The three tools in practice</h2>
+        <h3>MLflow — open-source, self-hosted, free</h3>
+        <p>MLflow is the BSD-licensed industry standard. Self-host the tracking server (a single process backed by a database and an artefact store), point runs at it with the <code>MLFLOW_TRACKING_URI</code> env var, get a web UI for runs / metrics / artefacts / model registry. The right pick when you can&#x27;t send run metadata to a third party (compliance, IP) or when you want a free tool that works at any scale. Slightly less polished UI than W&amp;B; substantially more honest about local-first workflows.</p>
+
+        <h3>Weights &amp; Biases — hosted, opinionated, free for individuals</h3>
+        <p>W&amp;B is a hosted product with a free tier for personal use and academic projects, and a paid tier for teams. The dashboards, sweeps (hyperparameter search), and report-sharing features are the most polished in the space. The right pick when you want zero-ops tracking and your data can leave the network. Lock-in is real — moving away from W&amp;B usually means re-running everything for the artefacts.</p>
+
+        <h3>TensorBoard — offline, minimal</h3>
+        <p>TensorBoard is the original, ships with PyTorch, writes event files to disk that any viewer can render. No server, no UI server, no account. Good for single-machine work and for a permanent backup of scalar metrics. The right pick when you just want loss curves on disk and don&#x27;t need the run-registry / artefact / sweep tooling.</p>
+
+        <p>The combination most teams settle on: <strong>MLflow for the source of truth</strong> (config, artefacts, registry) + <strong>TensorBoard event files mirrored in the run directory</strong> as a portable backup. W&amp;B becomes the right call if you specifically want sweeps or shared reports.</p>
+
+        <h2>What to log on every run</h2>
+        <p>The minimum useful set:</p>
+        <ul>
+          <li><strong>Full config</strong> — every hyperparameter, not just the ones you changed today. The dataset path, the model id, the LR, the schedule, the batch size, the LoRA rank/alpha/dropout, the precision, the max seq length, the eval cadence, the seed. Log the same config schema for every run; missing fields make later joins lie.</li>
+          <li><strong>Code state</strong> — the git SHA at run time, and whether the working tree was dirty (uncommitted changes). A dirty run is forensically useless and you should know which runs were.</li>
+          <li><strong>Dataset hash</strong> — a hash of the actual data the model trained on (every row, in order). If the dataset gets mutated and you can&#x27;t reproduce a run, the hash is the first thing you check.</li>
+          <li><strong>Per-step loss + eval</strong> — training loss and validation loss at the cadence the Trainer logs, plus any task metric you compute (Lessons 2.7, 2.12).</li>
+          <li><strong>System metrics</strong> — GPU utilisation, GPU memory, host RAM, disk I/O. Knowing whether a run was GPU-bound vs IO-bound vs underutilised matters when you tune for throughput.</li>
+          <li><strong>Output artefacts</strong> — the final checkpoint (or its path), the LoRA adapter, the eval results JSON, the lm-eval-harness output, the loss curve plot. Tracked artefacts beat "I uploaded it to a bucket somewhere."</li>
+          <li><strong>Decoding sweeps you ran</strong> — if you tried temperature ∈ {0, 0.3, 0.7} on the same checkpoint, log each as a child run, not as one merged number.</li>
+        </ul>
+
+        <h2>Integration with the HF Trainer</h2>
+        <p>The good news: HF&#x27;s <code>TrainingArguments</code> has a one-flag integration with all three tools. The boilerplate stays in one place.</p>
+        <pre class="code-block"><code># MLflow — point at a local or remote tracking URI
+import os
+os.environ["MLFLOW_TRACKING_URI"] = "http://localhost:5000"  # or your hosted URI
+os.environ["MLFLOW_EXPERIMENT_NAME"] = "smollm2-sentiment"
+
+args = TrainingArguments(
+    output_dir="runs/sft-v3",
+    report_to="mlflow",                         # or "wandb", "tensorboard", or a list
+    run_name="sft-v3-lora-r16",                 # what you see in the UI
+    logging_steps=10,                           # per-step loss cadence
+    eval_strategy="steps",
+    eval_steps=200,
+    save_strategy="steps",
+    save_steps=200,
+    # ... the rest of your training config
+)
+
+# log dataset hash + code SHA explicitly — Trainer doesn't do this for you
+import mlflow, subprocess, hashlib
+with mlflow.start_run():
+    mlflow.log_param("git_sha", subprocess.check_output(["git","rev-parse","HEAD"]).decode().strip())
+    mlflow.log_param("git_dirty", bool(subprocess.check_output(["git","status","--porcelain"])))
+    mlflow.log_param("dataset_hash", hashlib.sha256(open(DATA_PATH,"rb").read()).hexdigest()[:12])
+    trainer.train()
+    mlflow.log_artifact("runs/sft-v3/eval_results.json")</code></pre>
+        <p>For W&amp;B, swap <code>report_to="wandb"</code> + <code>os.environ["WANDB_PROJECT"] = "smollm2-sentiment"</code>. For TensorBoard, <code>report_to="tensorboard"</code> writes event files to <code>output_dir/runs</code> and <code>tensorboard --logdir runs/</code> renders them.</p>
+
+        <h2>The reproducible-vs-replicable distinction</h2>
+        <p>Two words often used interchangeably; tracking is honest only if you respect the difference.</p>
+        <ul>
+          <li><strong>Reproducible</strong> — same inputs → bit-for-bit identical outputs. Same checkpoint file, same eval number to the last decimal. Achievable in ML only with strict pinning of the random seed, the library versions, the GPU architecture (CUDA non-determinism on some ops), the data ordering, and the floating-point precision. Even with all of that, distributed training adds non-determinism most teams don&#x27;t fully control.</li>
+          <li><strong>Replicable</strong> — same recipe → equivalent outcome <em>within noise</em>. Re-run the recipe; the gold-set accuracy lands in the same confidence interval. This is what 99% of real ML workflows can actually achieve.</li>
+        </ul>
+        <p>Tracking should target <strong>replicability</strong>. The metadata you log makes it possible to re-run a recipe and verify the outcome is within noise. Chasing reproducibility — bit-equivalence — usually means pinning the seed for political reasons rather than practical ones, and it doesn&#x27;t buy you what you want. If your evaluation has a meaningful confidence interval, equivalence-within-noise is the right bar.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest beat — a dashboard isn&#x27;t a workflow</p>
+          <p>It&#x27;s easy to set up MLflow or W&amp;B, get a pretty chart, and feel rigorous. The work that actually pays off is the boring part: making sure every team member logs the same config schema, the same dataset hash, the same code SHA — so that joins across runs are reliable. Inconsistent logging hurts more than no logging, because it makes the lookups <em>look</em> answered when they aren&#x27;t.</p>
+        </div>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Pick a tracker (MLflow if you can self-host, W&amp;B if you want zero-ops, TensorBoard as a backup), log <strong>config + git SHA + dataset hash + per-step loss + per-step eval + system metrics + artefacts</strong> on every run, and target <strong>replicability</strong>, not reproducibility. The reward isn&#x27;t the dashboard — it&#x27;s answering "why did this regress?" three weeks later in two clicks instead of two days.</p>
+        </div>
+
+        <p>That closes Track 2 — Hands-on. You can now fine-tune SLMs in code, evaluate them honestly across deterministic, judge-based, and benchmark axes, and keep a record of what you did so the next-week-you can build on the this-week-you. Track 3 takes the same pipeline through BrewSLM and shows what the platform automates and what&#x27;s worth the trade.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Experiment tracking</dt><dd>The bookkeeping layer that logs the inputs, intermediate metrics, and outputs of every training run so they can be compared, joined, and reproduced later.</dd>
+            <dt>MLflow</dt><dd>Open-source experiment-tracking platform; self-hosted; tracks runs, parameters, metrics, artefacts, and a model registry. The BSD-licensed standard.</dd>
+            <dt>Weights &amp; Biases (W&amp;B)</dt><dd>Hosted experiment-tracking product with the most polished UI, sweeps for hyperparameter search, and team report-sharing. Free tier for individuals; paid for teams.</dd>
+            <dt>TensorBoard</dt><dd>Offline, file-based experiment viewer that ships with PyTorch. Writes event files any viewer can render. Minimal — no run registry or artefacts.</dd>
+            <dt>Run metadata</dt><dd>The non-metric record of a run: config, git SHA, dataset hash, library versions, system info. The piece that makes runs joinable later.</dd>
+            <dt>Dataset hash</dt><dd>A content-addressed hash of the actual dataset bytes used by a run. The fastest way to know whether two runs trained on identical data.</dd>
+            <dt>Reproducible</dt><dd>Same inputs → bit-for-bit identical outputs. Hard in ML; requires strict pinning of seed, libraries, hardware, and precision.</dd>
+            <dt>Replicable</dt><dd>Same recipe → equivalent outcome within noise. The practical bar most ML workflows can meet and what experiment tracking should target.</dd>
+            <dt>Sweep</dt><dd>A hyperparameter search across a configured space (grid, random, Bayesian), each point a child run of a parent. Native to W&amp;B; manual or tooling-based on MLflow.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "Why does ad-hoc training without tracking lose to bookkeeping every time?",
+   "options": ["It runs slower", "It uses more GPU memory", "When eval regresses weeks later, you can't reconstruct the config, code state, or data split — and the comparison restarts from scratch", "It's harder to type the command"],
+   "answer": 2,
+   "explanation": "Tracking turns 'why did this regress?' into a two-click join. Without it, every comparison is a fresh forensic exercise."},
+  {"q": "What is the difference between reproducible and replicable?",
+   "options": ["They're synonyms", "Reproducible means same inputs → bit-for-bit identical outputs; replicable means same recipe → equivalent outcome within noise", "Reproducible is for papers; replicable is for production — that's all", "Reproducible means open-source; replicable means closed"],
+   "answer": 1,
+   "explanation": "Bit-equivalence (reproducible) is hard in ML and usually not what you actually need; equivalence-within-noise (replicable) is the practical bar tracking should target."},
+  {"q": "What is the minimum useful set of things to log on every run?",
+   "options": ["Just the final eval number", "Loss curves only", "Full config, git SHA, dataset hash, per-step loss + eval, system metrics, output artefacts", "The README file"],
+   "answer": 2,
+   "explanation": "Anything less and you can't reliably compare two runs later. Missing a field breaks the join — the dataset hash and the code SHA are the ones teams most often skip and most often regret."},
+  {"q": "When would you pick MLflow over Weights & Biases?",
+   "options": ["When you want a hosted UI with sweeps and zero ops", "When you can't send run metadata to a third party, or when you want a free self-hosted tool that works at any scale", "When you only need loss curves", "When you don't want a UI"],
+   "answer": 1,
+   "explanation": "MLflow is open-source and self-hosted — the right pick under compliance / IP constraints or for free tooling at scale. W&B is the zero-ops hosted option."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="public-benchmarks-and-lm-eval-harness.html">Public benchmarks &amp; lm-eval-harness</a><span class="related-lessons__track">Hands-on</span></li>
+            <li><a class="inline-link" href="run-and-read-logs.html">Run and read logs</a><span class="related-lessons__track">Hands-on</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/overfitting-and-loss-curves.html">Overfitting &amp; reading a loss curve</a><span class="related-lessons__track">SFT fundamentals</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="public-benchmarks-and-lm-eval-harness.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Public benchmarks &amp; lm-eval-harness</span></a>
+          <a href="../with-brewslm/from-script-to-platform.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">From script to platform (Track 3)</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>
