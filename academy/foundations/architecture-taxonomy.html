@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Architecture taxonomy: encoder, encoder-decoder, decoder-only — BrewSLM Academy</title>
+    <meta
+      name="description"
+      content="Three Transformer-family flavours: encoder-only (BERT) for understanding, encoder-decoder (T5) for input-to-output transformation, decoder-only (GPT, Llama, SmolLM2) for generation. This lesson explains the attention pattern that defines each, what each is good for, and why decoder-only won for chat."
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/foundations/architecture-taxonomy.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Architecture taxonomy: encoder, encoder-decoder, decoder-only — BrewSLM Academy" />
+    <meta property="og:description" content="Three Transformer-family flavours and when to use each. Why decoder-only won for chat and where the others still win." />
+    <meta property="og:url" content="https://brewslm.com/academy/foundations/architecture-taxonomy.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Architecture taxonomy — BrewSLM Academy" />
+    <meta name="twitter:description" content="Encoder, encoder-decoder, decoder-only — the three Transformer families and what each is for." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "LearningResource",
+        "name": "Architecture taxonomy: encoder, encoder-decoder, decoder-only",
+        "headline": "Architecture taxonomy",
+        "description": "The three Transformer-family flavours are defined by their attention pattern: encoder-only models (BERT, RoBERTa) use bidirectional attention and shine at understanding tasks; encoder-decoder models (T5, BART) read input bidirectionally and generate causally for transformation tasks; decoder-only models (GPT, Llama, Qwen, SmolLM2) use causal attention and dominate chat. This lesson explains each, when to use which, and why decoder-only became the default for general-purpose chat.",
+        "url": "https://brewslm.com/academy/foundations/architecture-taxonomy.html",
+        "inLanguage": "en",
+        "learningResourceType": "Lesson",
+        "educationalLevel": "Beginner",
+        "timeRequired": "PT8M",
+        "isAccessibleForFree": true,
+        "teaches": ["encoder-only models", "encoder-decoder models", "decoder-only models", "masked language modeling", "causal attention", "in-context learning"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+          { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+          { "@type": "ListItem", "position": 3, "name": "Foundations", "item": "https://brewslm.com/academy/foundations/" },
+          { "@type": "ListItem", "position": 4, "name": "Architecture taxonomy", "item": "https://brewslm.com/academy/foundations/architecture-taxonomy.html" }
+        ]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Architecture taxonomy" },
+        "hasPart": [
+          { "@type": "Question", "name": "What distinguishes encoder-only models from decoder-only models?", "acceptedAnswer": { "@type": "Answer", "text": "Encoder-only models use bidirectional attention (every token sees every other) and are trained with masked language modeling; decoder-only models use causal attention (each token only sees previous tokens) and are trained on next-token prediction." } },
+          { "@type": "Question", "name": "When should you still pick an encoder-only model in 2026?", "acceptedAnswer": { "@type": "Answer", "text": "When the task doesn't need generation — text classification with a fixed label set, named-entity recognition, or building sentence embeddings for retrieval. An encoder-only model with a classification head is usually cheaper and often better than fine-tuning a decoder-only LLM." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="foundations/architecture-taxonomy">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home">
+        <img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" />
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html" aria-current="page">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="../index.html">Academy</a></li>
+        <li><a href="../foundations/index.html">Foundations</a></li>
+        <li>Architecture taxonomy</li>
+      </ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page">
+        <p class="lesson-toc__title">On this page</p>
+        <ol data-toc></ol>
+      </aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 0 · Foundations · Lesson 13</span>
+          <h1>Architecture taxonomy: encoder, encoder-decoder, decoder-only</h1>
+          <p class="lesson-header__outcome">
+            After this lesson you can read a Hugging Face model card, identify which
+            of the three Transformer families it belongs to, and explain when each
+            is the right starting point — including the cases where a decoder-only
+            LLM is the <em>wrong</em> answer.
+          </p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~8 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="from-n-grams-to-transformers.html">From n-grams to Transformers</a></span>
+          </div>
+        </header>
+
+        <p>
+          Every modern language model is built from Transformer blocks, but the
+          blocks can be wired together in three different ways. The difference is
+          how attention flows. That single choice — set at pretraining time —
+          decides what the model is good at, what training objective it learned,
+          and what you should reach for it to do. Three families: encoder-only,
+          encoder-decoder, decoder-only.
+        </p>
+
+        <h2>Encoder-only: read the whole thing at once</h2>
+        <p>
+          In an <strong>encoder-only</strong> model, every token can attend to
+          every other token — past <em>and</em> future. There is no left-to-right
+          constraint. The model reads the whole input in parallel and produces a
+          rich contextual representation for each position.
+        </p>
+        <p>
+          They are pretrained with <strong>masked language modelling (MLM)</strong>:
+          randomly hide ~15% of the tokens in a sentence, and ask the model to
+          recover them using the unmasked context on both sides. Because the model
+          gets to look in both directions, MLM produces dense, deeply contextual
+          representations.
+        </p>
+        <p>
+          Famous examples: <strong>BERT</strong>, <strong>RoBERTa</strong>,
+          <strong>DeBERTa</strong>, and the modern embedding-model family
+          (<strong>BGE</strong>, <strong>E5</strong>).
+        </p>
+        <ul>
+          <li><strong>Great at:</strong> classification (sentiment, intent, topic), named-entity recognition, sentence embeddings for search/retrieval, fill-in-the-blank tasks.</li>
+          <li><strong>Bad at:</strong> free-form generation. The training objective never asked the model to produce a sequence one token at a time; it can't natively do that.</li>
+        </ul>
+
+        <h2>Encoder-decoder: input in, output out</h2>
+        <p>
+          An <strong>encoder-decoder</strong> model has two halves. The encoder is
+          a bidirectional Transformer that reads the input. The decoder is a
+          causal Transformer that generates the output, attending both to the
+          encoder's representation (cross-attention) and to its own previous
+          tokens (self-attention).
+        </p>
+        <p>
+          Training objectives vary by model: <strong>T5</strong> uses
+          <em>span corruption</em> (predict deleted spans of the input);
+          <strong>BART</strong> uses general denoising (shuffle, delete, mask,
+          reconstruct); both teach the encoder to read and the decoder to
+          generate a target sequence.
+        </p>
+        <p>
+          Famous examples: <strong>T5</strong>, <strong>FLAN-T5</strong>,
+          <strong>BART</strong>, original transformer for machine translation.
+        </p>
+        <ul>
+          <li><strong>Great at:</strong> machine translation, dense summarisation, structured QA — anywhere input and output are clearly distinct sequences with a transformation between them.</li>
+          <li><strong>Awkward at:</strong> open-ended chat. The encoder/decoder split fits "given X, produce Y" cleanly; it fits "have a conversation" less naturally.</li>
+        </ul>
+
+        <h2>Decoder-only: predict the next token, over and over</h2>
+        <p>
+          A <strong>decoder-only</strong> model uses <strong>causal (autoregressive)
+          attention</strong>: each token can only attend to tokens that came before
+          it. Training is the simplest possible objective — predict the next token
+          on raw text, no masks, no encoder, no special structure.
+        </p>
+        <p>
+          Famous examples: <strong>GPT</strong> family, <strong>Llama</strong>,
+          <strong>Qwen</strong>, <strong>Mistral</strong>, <strong>Phi</strong>,
+          <strong>SmolLM2</strong> — every modern chat model the Academy uses.
+        </p>
+        <ul>
+          <li><strong>Great at:</strong> chat, code, free-form generation, summarisation in conversational style — and a property that surprised everyone: <strong>in-context learning</strong>. Show the model a few examples in the prompt and it learns the pattern without any weight updates.</li>
+          <li><strong>Bad at, natively:</strong> producing a single fixed-size representation of input. You can extract one (mean-pool the last hidden states), but encoder-only models do it cleaner.</li>
+        </ul>
+
+        <h2>Why decoder-only won for chat</h2>
+        <p>
+          Three factors made the decoder-only family dominate general-purpose chat
+          between 2020 and now:
+        </p>
+        <ul>
+          <li><strong>Simplest objective.</strong> Next-token prediction needs nothing but raw text. No mask scheme to design, no encoder/decoder split, no auxiliary losses. Easy to scale to terabytes of web data.</li>
+          <li><strong>In-context learning emerged.</strong> The ability to follow few-shot examples in the prompt — to "learn" from context without training — appeared as a side effect of scale, and it's the basis of every modern prompt-engineering practice.</li>
+          <li><strong>Better scaling.</strong> Empirically, decoder-only models kept getting better with more parameters and more data, past the point where encoder-decoder gains flattened. The chinchilla-era scaling work and everything that followed used decoder-only as the substrate.</li>
+        </ul>
+
+        <h2>When to still pick the others</h2>
+        <p>
+          The decoder-only default is right most of the time. It is wrong when the
+          task does not actually need generation.
+        </p>
+        <ul>
+          <li><strong>Need a sentence embedding for retrieval / clustering / search?</strong> Use an encoder-only model purpose-built for it (BGE, E5). It will be cheaper and produce better embeddings than mean-pooling a decoder-only LLM.</li>
+          <li><strong>Need a binary or multi-class classifier?</strong> A small encoder-only model with a classification head trained on your data is usually faster and as accurate as fine-tuning Llama for it. A 110M-parameter BERT is hard to beat on its home turf.</li>
+          <li><strong>Need translation between two languages?</strong> Encoder-decoder models (NLLB, FLAN-T5) are the natural shape; their pretraining objective is closer to the task.</li>
+        </ul>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest beat — don't fine-tune Llama for a classifier</p>
+          <p>
+            The temptation to use one big decoder-only LLM for everything is real.
+            For a classification or extraction problem with a fixed label set, an
+            encoder-only model with a classification head will train faster, run
+            faster, and often score higher than fine-tuning a 1B-parameter chat
+            model into the same shape. Knowing which family to reach for is half
+            the engineering.
+          </p>
+        </div>
+
+        <h2>What this Academy assumes</h2>
+        <p>
+          Every track from here forward — SFT fundamentals, Hands-on, With BrewSLM,
+          Advanced — assumes a <strong>decoder-only causal LM</strong>. The
+          mechanics we teach (the loss mask, chat templates, KV cache, completion-
+          only loss) all live in that family. Most production SLM work uses
+          decoder-only models, so this is the right default. But know the other
+          two exist, know what they're for, and reach for them when the task fits.
+        </p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>
+            Three families, one decision — the attention pattern at pretraining.
+            <strong>Encoder-only</strong> (bidirectional, MLM) for understanding;
+            <strong>encoder-decoder</strong> (read then generate) for input-to-output
+            transformation; <strong>decoder-only</strong> (causal, next-token) for
+            chat, code, and any generation that benefits from in-context learning.
+            We use decoder-only — but if the task doesn't need generation, the
+            others are still the right tool.
+          </p>
+        </div>
+
+        <p>
+          You have now finished the Foundations track. From here you understand
+          what a model is, how it learns, how text becomes numbers, attention and
+          the Transformer, next-token prediction, the four levers (prompting / RAG /
+          fine-tuning / pretraining), large vs small, the SLM project shape, the
+          base-vs-instruct distinction, how to pick a base, the lineage from
+          n-grams to Transformers, and the three architecture families. Track 1
+          goes deep on supervised fine-tuning itself.
+        </p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Encoder-only</dt><dd>Transformer model with bidirectional attention; reads input in parallel and produces contextual representations. BERT, RoBERTa, BGE, E5.</dd>
+            <dt>Encoder-decoder</dt><dd>Two-half model — a bidirectional encoder reads input, a causal decoder generates output with cross-attention to the encoder. T5, BART.</dd>
+            <dt>Decoder-only</dt><dd>Transformer model with causal attention; each token only attends to previous tokens. GPT, Llama, Qwen, SmolLM2. The chat default.</dd>
+            <dt>Masked language modelling (MLM)</dt><dd>Pretraining objective for encoder-only models — randomly mask tokens, predict them from bidirectional context.</dd>
+            <dt>Span corruption / denoising</dt><dd>Encoder-decoder pretraining objectives — delete or corrupt spans of input, train the decoder to reconstruct them.</dd>
+            <dt>Causal (autoregressive) attention</dt><dd>Attention masked so each token can only see previous tokens; the defining feature of decoder-only models.</dd>
+            <dt>In-context learning</dt><dd>The decoder-only property of learning a pattern from examples in the prompt without any weight updates; emergent at scale.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
+          <script type="application/json">
+            [
+              {
+                "q": "Which family is BERT in?",
+                "options": [
+                  "Encoder-only — bidirectional attention, trained with masked language modelling",
+                  "Encoder-decoder",
+                  "Decoder-only",
+                  "None of the above"
+                ],
+                "answer": 0,
+                "explanation": "BERT is the canonical encoder-only model. Bidirectional attention + MLM pretraining."
+              },
+              {
+                "q": "Which family is T5 in?",
+                "options": [
+                  "Encoder-only",
+                  "Encoder-decoder — an encoder reads input, a decoder generates the target sequence",
+                  "Decoder-only",
+                  "Neural n-gram"
+                ],
+                "answer": 1,
+                "explanation": "T5 is the canonical encoder-decoder model; its pretraining objective is span corruption."
+              },
+              {
+                "q": "Why did decoder-only win for chat?",
+                "options": [
+                  "They're the newest",
+                  "Simplest pretraining objective + in-context learning emerged + better empirical scaling — together",
+                  "They have more parameters by definition",
+                  "They use less memory"
+                ],
+                "answer": 1,
+                "explanation": "Simplicity, the in-context-learning emergent property, and continued scaling gains together made decoder-only the default for chat."
+              },
+              {
+                "q": "You need a binary text classifier with a fixed label set. The right starting point is…",
+                "options": [
+                  "Fine-tune a 7B decoder-only Llama",
+                  "A small encoder-only model (BERT-class) with a classification head — usually faster, often better, and far cheaper",
+                  "A T5 encoder-decoder",
+                  "Train an n-gram model"
+                ],
+                "answer": 1,
+                "explanation": "For classification with a fixed label set, an encoder-only model with a classification head is the natural shape and usually wins on cost and quality."
+              }
+            ]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="from-n-grams-to-transformers.html">From n-grams to Transformers</a><span class="related-lessons__track">Foundations</span></li>
+            <li><a class="inline-link" href="attention-and-the-transformer.html">Attention &amp; the Transformer, gently</a><span class="related-lessons__track">Foundations</span></li>
+            <li><a class="inline-link" href="base-vs-instruct-models.html">Base vs instruct models</a><span class="related-lessons__track">Foundations</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="from-n-grams-to-transformers.html">
+            <span class="lesson-nav__dir">← Previous</span>
+            <span class="lesson-nav__title">From n-grams to Transformers</span>
+          </a>
+          <a href="../sft-fundamentals/what-is-sft.html" class="lesson-nav__next">
+            <span class="lesson-nav__dir">Next →</span>
+            <span class="lesson-nav__title">What is Supervised Fine-Tuning?</span>
+          </a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

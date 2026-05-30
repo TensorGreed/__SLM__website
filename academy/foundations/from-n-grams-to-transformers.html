@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>From n-grams to Transformers — BrewSLM Academy</title>
+    <meta
+      name="description"
+      content="A brief history of language models — n-grams, neural language models, RNNs and LSTMs, and the 2017 Transformer that changed scale. Each step replaced the prior bottleneck; understanding the lineage tells you why modern fine-tuning works."
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/foundations/from-n-grams-to-transformers.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="From n-grams to Transformers — BrewSLM Academy" />
+    <meta property="og:description" content="The lineage from n-gram language models through neural LMs, RNNs/LSTMs, to the Transformer — what each step fixed about the one before." />
+    <meta property="og:url" content="https://brewslm.com/academy/foundations/from-n-grams-to-transformers.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="From n-grams to Transformers — BrewSLM Academy" />
+    <meta name="twitter:description" content="Each generation of language model replaced the prior bottleneck. The history makes fine-tuning make sense." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "LearningResource",
+        "name": "From n-grams to Transformers",
+        "headline": "From n-grams to Transformers: a brief history",
+        "description": "Language models did not start with Transformers. This lesson walks the lineage — n-gram count tables, neural language models with shared embeddings, recurrent networks, and the 2017 Transformer — explaining what each step fixed about the previous one and why modern fine-tuning sits on top of so much accumulated structure.",
+        "url": "https://brewslm.com/academy/foundations/from-n-grams-to-transformers.html",
+        "inLanguage": "en",
+        "learningResourceType": "Lesson",
+        "educationalLevel": "Beginner",
+        "timeRequired": "PT8M",
+        "isAccessibleForFree": true,
+        "teaches": ["n-gram language model", "Markov assumption", "neural language model", "RNN", "LSTM", "Transformer architecture", "history of language models"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+          { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+          { "@type": "ListItem", "position": 3, "name": "Foundations", "item": "https://brewslm.com/academy/foundations/" },
+          { "@type": "ListItem", "position": 4, "name": "From n-grams to Transformers", "item": "https://brewslm.com/academy/foundations/from-n-grams-to-transformers.html" }
+        ]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "From n-grams to Transformers" },
+        "hasPart": [
+          { "@type": "Question", "name": "What is the core limitation of an n-gram language model?", "acceptedAnswer": { "@type": "Answer", "text": "It can only condition on a small fixed window of previous tokens (the n-1 history), and it has no notion of similarity between tokens — every unseen sequence is invisible regardless of how close it is to seen ones." } },
+          { "@type": "Question", "name": "What did the Transformer fix that RNNs and LSTMs couldn't?", "acceptedAnswer": { "@type": "Answer", "text": "Recurrence prevented parallelism, so RNNs/LSTMs scaled badly with sequence length and dataset size. Attention is parallel across positions, which is why Transformers absorbed dramatically more training compute." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="foundations/from-n-grams-to-transformers">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home">
+        <img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" />
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html" aria-current="page">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="../index.html">Academy</a></li>
+        <li><a href="../foundations/index.html">Foundations</a></li>
+        <li>From n-grams to Transformers</li>
+      </ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page">
+        <p class="lesson-toc__title">On this page</p>
+        <ol data-toc></ol>
+      </aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 0 · Foundations · Lesson 12</span>
+          <h1>From n-grams to Transformers: a brief history</h1>
+          <p class="lesson-header__outcome">
+            After this lesson you can name the four major language-model generations
+            (n-gram, neural, recurrent, Transformer) and explain what each one fixed
+            about the previous one — and why the Transformer's structure is what
+            makes modern fine-tuning even worth doing.
+          </p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Read time:</strong> ~8 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="picking-a-base-model.html">Picking a base model</a></span>
+          </div>
+        </header>
+
+        <p>
+          Language models did not start with the Transformer. They are the result of
+          a fifty-year lineage in which each new architecture solved one specific
+          thing the previous one could not, then collided with its own bottleneck.
+          Knowing the lineage matters because it tells you what assumptions you are
+          standing on when you fine-tune — and which problems modern models still
+          inherit from their ancestors.
+        </p>
+
+        <h2>n-gram models: count what you have seen</h2>
+        <p>
+          The earliest practical language models were <strong>n-gram models</strong>:
+          you assume the next token depends only on the previous <code>n − 1</code>
+          tokens (the <strong>Markov assumption</strong>), then estimate the probability
+          by counting in a large corpus.
+        </p>
+        <div class="code-block">
+          <p>P(<span class="code-key">w<sub>t</sub></span> | <span class="code-key">w<sub>t-2</sub>, w<sub>t-1</sub></span>) = count(w<sub>t-2</sub>, w<sub>t-1</sub>, w<sub>t</sub>) / count(w<sub>t-2</sub>, w<sub>t-1</sub>)</p>
+        </div>
+        <p>
+          A 3-gram model conditions on the previous two words. Build a giant table
+          of triple-counts, and you have a working speech recogniser, autocomplete,
+          or machine translator — pre-2010, every major one used n-grams under the
+          hood. They are fast, interpretable, and they work.
+        </p>
+        <p>
+          But they hit two walls hard. <strong>Sparsity:</strong> raise <em>n</em>
+          to use more context and the table size explodes; most longer sequences are
+          never seen and get probability zero. <strong>No similarity:</strong> the
+          model has no notion that <code>"the cat sat"</code> and
+          <code>"the dog sat"</code> share structure — the second is just as
+          unfamiliar as random gibberish if you never saw it. Smoothing tricks
+          (Kneser-Ney, back-off) help; they don't fix the underlying problem.
+        </p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Not gone — still useful</p>
+          <p>
+            n-grams are still in production: speech recognition decoders
+            (<code>kenLM</code>), keyword-based retrieval (BM25 is n-gram-flavoured),
+            and on-device autocomplete. We rejected n-grams as the
+            <em>backbone</em> for general-purpose language; we did not abandon them
+            as tools.
+          </p>
+        </div>
+
+        <h2>Neural language models: tokens that share strength</h2>
+        <p>
+          The 2003 breakthrough (Bengio et al.) was simple in hindsight: instead of
+          storing a count for every n-gram, learn a <strong>vector</strong> for every
+          token and a small neural network that maps a sequence of vectors to a
+          probability distribution over the next token. Train end-to-end with
+          gradient descent.
+        </p>
+        <p>
+          Two things changed. First, the embedding for <code>"cat"</code> ends up
+          near the embedding for <code>"dog"</code> because they appear in similar
+          contexts — so what the model learns about one transfers to the other.
+          That is exactly the <strong>statistical strength sharing</strong> n-grams
+          could not do. Second, the network can in principle take arbitrarily many
+          previous tokens, not just <em>n − 1</em>.
+        </p>
+        <p>
+          Word2Vec and GloVe were the famous side-effects of this line: standalone
+          embedding tables trained on enormous corpora that anyone could plug into
+          downstream tasks. They are the ancestors of every embedding model in use today.
+        </p>
+
+        <h2>RNNs and LSTMs: recurrence over long sequences</h2>
+        <p>
+          Neural LMs in their early form still used a fixed-size window. To handle
+          arbitrary context, <strong>recurrent neural networks (RNNs)</strong>
+          process tokens one at a time and carry a hidden state forward — at each
+          step, the state summarises everything seen so far. The
+          <strong>Long Short-Term Memory (LSTM)</strong> variant, popularised after
+          2010, added gating mechanisms that mitigated the
+          <strong>vanishing gradient</strong> problem (gradients tend to shrink to
+          nothing over many recurrent steps, so the network forgets early tokens).
+        </p>
+        <p>
+          LSTMs were the state of the art for nearly a decade. They drove
+          machine translation, summarisation, the first wave of practical chatbots.
+          But they had two of their own bottlenecks. <strong>Long-range memory was
+          still hard:</strong> compressing arbitrary history into one fixed-size
+          vector lost detail. And — fatally — <strong>recurrence is sequential:</strong>
+          you cannot process token 5 until you have processed token 4. That makes
+          training painfully slow on long sequences, and it makes scaling to bigger
+          datasets a brick wall.
+        </p>
+
+        <h2>2017: Attention is all you need</h2>
+        <p>
+          The Transformer (Vaswani et al., 2017) discarded recurrence entirely.
+          Every token attends directly to every other token through the attention
+          mechanism (Lesson 0.5). Two consequences mattered enormously:
+        </p>
+        <ul>
+          <li>
+            <strong>Long-range dependencies are first-class.</strong> Any token can
+            look at any other in one attention step. The model does not have to
+            squeeze information through a single hidden state.
+          </li>
+          <li>
+            <strong>It parallelises.</strong> All positions can be processed at
+            once. Matrix multiplications on a GPU stay saturated, so the more
+            compute and data you throw at it, the bigger the model can get — and
+            the better it gets.
+          </li>
+        </ul>
+        <p>
+          Once Transformers could be scaled, the field discovered the
+          <strong>scaling laws</strong>: predictable improvements with more
+          parameters, more data, and more compute. That is the chain reaction that
+          gave us GPT, Llama, Qwen, SmolLM2 — every model this Academy actually
+          uses.
+        </p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>
+            Each generation removed one specific bottleneck. n-grams couldn't
+            generalise between similar tokens; <strong>neural LMs</strong> fixed that
+            with embeddings. Fixed-window neural LMs couldn't see arbitrary context;
+            <strong>RNNs/LSTMs</strong> fixed that with recurrence. Recurrence
+            couldn't parallelise and couldn't preserve long-range detail; the
+            <strong>Transformer</strong> fixed that with attention. Each step earned
+            its reward by absorbing dramatically more data and compute than the one
+            before.
+          </p>
+        </div>
+
+        <h2>Why this matters for fine-tuning</h2>
+        <p>
+          A modern small language model is a 100-million-parameter Transformer
+          pretrained on trillions of tokens of text. By the time you touch it, it
+          already encodes vast statistical structure about language — grammar,
+          common phrases, world facts, formats. <strong>SFT works precisely because
+          you are not teaching language</strong>. You are nudging an existing,
+          well-trained next-token machine to lean toward the specific outputs you
+          want on the specific inputs you provide. The lineage above is what put
+          all that structure inside the model before you arrived.
+        </p>
+        <p>
+          The next lesson catalogues the three Transformer-family flavours — encoder,
+          encoder-decoder, decoder-only — so that when you see a Hugging Face model
+          card that says <code>T5ForConditionalGeneration</code> or
+          <code>BertForSequenceClassification</code>, you know which lineage you are
+          looking at and what it is good for.
+        </p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>n-gram model</dt><dd>A language model assuming the next token depends only on the previous <em>n − 1</em>; trained by counting frequencies in a corpus.</dd>
+            <dt>Markov assumption</dt><dd>The simplifying assumption that the future depends only on a fixed-size recent history, not the whole past.</dd>
+            <dt>Sparsity (in n-grams)</dt><dd>The problem that most longer n-gram sequences are never observed in any finite corpus, so their probabilities collapse to zero without smoothing.</dd>
+            <dt>Neural language model</dt><dd>A model that maps tokens to learned embeddings and predicts the next token through a neural network — letting similar tokens share statistical strength.</dd>
+            <dt>RNN / LSTM</dt><dd>Recurrent architectures that pass a hidden state from one time step to the next; LSTM added gating to mitigate vanishing gradients over long sequences.</dd>
+            <dt>Vanishing gradient</dt><dd>Gradients shrinking to near-zero as they propagate back through many time steps, preventing the network from learning long-range dependencies.</dd>
+            <dt>Transformer (2017)</dt><dd>The architecture that replaced recurrence with attention — parallel across positions, easy to scale, and the basis for every modern LLM.</dd>
+            <dt>Scaling laws</dt><dd>Empirical relationships predicting model quality from parameters, data, and compute — the reason Transformers kept improving past every other architecture.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
+          <script type="application/json">
+            [
+              {
+                "q": "What is the Markov assumption in an n-gram model?",
+                "options": [
+                  "That the model is a Markov chain because it uses Python",
+                  "That the next token depends only on the previous n − 1 tokens, not the entire history",
+                  "That all tokens are equally likely",
+                  "That the model can never see more than 512 tokens"
+                ],
+                "answer": 1,
+                "explanation": "n-gram models simplify the future-given-past distribution by conditioning only on a small fixed window — the Markov assumption."
+              },
+              {
+                "q": "What problem did neural language models (Bengio 2003) fix that n-grams couldn't?",
+                "options": [
+                  "Training time",
+                  "GPU support",
+                  "The lack of similarity — embeddings let related tokens share statistical strength, so what the model learns about 'cat' transfers to 'dog'",
+                  "Memory usage"
+                ],
+                "answer": 2,
+                "explanation": "Shared embeddings are the key win: similar tokens get similar vectors, so generalisation across unseen sequences becomes possible."
+              },
+              {
+                "q": "What was the fundamental scaling bottleneck of RNNs and LSTMs that the Transformer removed?",
+                "options": [
+                  "They didn't support GPUs",
+                  "Recurrence is sequential — you can't process position 5 until position 4 is done — so they couldn't fully parallelise across a long sequence",
+                  "They used too much disk",
+                  "They couldn't tokenise text"
+                ],
+                "answer": 1,
+                "explanation": "Recurrence is inherently sequential. Attention is parallel across all positions, which is why Transformers absorbed dramatically more compute and data."
+              },
+              {
+                "q": "Why does SFT work at all on a modern Transformer?",
+                "options": [
+                  "Because SFT trains the model from scratch",
+                  "Because the pretrained Transformer already encodes vast statistical structure about language; SFT just nudges that structure toward your task",
+                  "Because LoRA is magic",
+                  "Because the model has no prior knowledge"
+                ],
+                "answer": 1,
+                "explanation": "You're not teaching language — you're standing on trillions of tokens of pretrained structure and nudging the output distribution toward your specific task."
+              }
+            ]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="attention-and-the-transformer.html">Attention &amp; the Transformer, gently</a><span class="related-lessons__track">Foundations</span></li>
+            <li><a class="inline-link" href="architecture-taxonomy.html">Architecture taxonomy: encoder, encoder-decoder, decoder-only</a><span class="related-lessons__track">Foundations</span></li>
+            <li><a class="inline-link" href="tokens-and-embeddings.html">From text to numbers: tokens &amp; embeddings</a><span class="related-lessons__track">Foundations</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="picking-a-base-model.html">
+            <span class="lesson-nav__dir">← Previous</span>
+            <span class="lesson-nav__title">Picking a base model</span>
+          </a>
+          <a href="architecture-taxonomy.html" class="lesson-nav__next">
+            <span class="lesson-nav__dir">Next →</span>
+            <span class="lesson-nav__title">Architecture taxonomy</span>
+          </a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>
