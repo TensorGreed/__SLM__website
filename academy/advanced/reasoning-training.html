@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reasoning training: CoT SFT, process supervision, GRPO — BrewSLM Academy</title>
+    <meta name="description" content="&quot;Reasoning training&quot; covers three distinct things — chain-of-thought SFT, process supervision via a step-level reward model, and outcome-based RL with GRPO. This lesson distinguishes them, walks the CoT SFT pattern, contrasts PRM vs ORM, explains why GRPO is the practical RL recipe for SLM-scale reasoning, and ends on the honest beat that small-model &quot;reasoning&quot; claims are often format-following — verifier-grounded eval is the only way to tell." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/advanced/reasoning-training.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Reasoning training — BrewSLM Academy" />
+    <meta property="og:description" content="CoT SFT, process supervision, outcome supervision, GRPO — and the honest beat that small-model 'reasoning' is often format-following." />
+    <meta property="og:url" content="https://brewslm.com/academy/advanced/reasoning-training.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Reasoning training — BrewSLM Academy" />
+    <meta name="twitter:description" content="When &quot;reasoning&quot; is real, when it's a tag, and how to tell — with PRM, ORM, and GRPO." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Reasoning training: CoT SFT, process supervision, GRPO",
+        "description": "&quot;Reasoning training&quot; on small language models covers three distinct techniques that get conflated. Chain-of-thought SFT trains on prompt → reasoning trace → final answer with the loss on both trace and answer. Process supervision uses a step-level reward model (PRM) to score each reasoning step; outcome supervision (ORM) rewards only the final answer. GRPO is the practical RL recipe for SLM-scale reasoning, with group-relative advantage and no value network. This lesson distinguishes the techniques, walks the CoT SFT pattern, contrasts PRM and ORM, explains why GRPO scales when PPO doesn&#x27;t, surveys the math-and-code bias of public reasoning benchmarks, and ends on the honest beat that small-model reasoning claims are often format-following rather than genuine multi-step reasoning.",
+        "url": "https://brewslm.com/academy/advanced/reasoning-training.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Advanced", "timeRequired": "PT12M", "isAccessibleForFree": true,
+        "teaches": ["chain-of-thought SFT", "process supervision (PRM)", "outcome supervision (ORM)", "GRPO", "verifier-grounded eval", "reasoning benchmarks"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Advanced", "item": "https://brewslm.com/academy/advanced/" },
+        { "@type": "ListItem", "position": 4, "name": "Reasoning training", "item": "https://brewslm.com/academy/advanced/reasoning-training.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Reasoning training" },
+        "hasPart": [
+          { "@type": "Question", "name": "What are the three distinct techniques the term 'reasoning training' covers?", "acceptedAnswer": { "@type": "Answer", "text": "Chain-of-thought SFT (train on prompt → trace → answer with the loss on both), process supervision with a step-level reward model (PRM scores each step), and outcome-supervised RL (ORM rewards only the final verified answer) — typically run with GRPO at SLM scale. They get conflated under one label but optimise different things." } },
+          { "@type": "Question", "name": "What does GRPO replace from PPO, and why does that matter for SLMs?", "acceptedAnswer": { "@type": "Answer", "text": "GRPO drops PPO's value (critic) network. The advantage is computed group-relative — sample several completions for the same prompt, normalise their rewards by group mean and standard deviation. No second network to train, no critic to keep stable; the training is roughly half the memory and computationally simpler. That tractability is what makes RL on SLMs practical." } },
+          { "@type": "Question", "name": "What's the honest beat about small-model reasoning claims?", "acceptedAnswer": { "@type": "Answer", "text": "Most small-model reasoning gains look like format-following — the model learned to emit &lt;think&gt; tags, to verbose-prose its arithmetic, to mimic the structure of a reasoning trace. Whether the trace is correct end-to-end is a separate measurement that only verifier-grounded eval (a math executor, a code runner, a step-level checker) can produce. Without that, the gain is aesthetic." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="advanced/reasoning-training">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html" aria-current="page">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../advanced/index.html">Advanced</a></li><li>Reasoning training</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 4 · Advanced · Lesson 15</span>
+          <h1>Reasoning training: CoT SFT, process supervision, GRPO</h1>
+          <p class="lesson-header__outcome">After this lesson you can distinguish the three things people mean by &quot;reasoning training&quot; (CoT SFT, process supervision via PRM, outcome supervision via ORM-style RL), build a CoT SFT dataset that trains on the trace plus the answer, choose between PRM and ORM for your data budget, recognise why GRPO is the practical RL recipe for SLM-scale reasoning (no value network, group-relative advantage), and avoid the most common honest-metrics failure — calling a model that learned to emit &lt;think&gt; tags a &quot;reasoning&quot; model without verifier-grounded eval.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> advanced</span>
+            <span><strong>Read time:</strong> ~12 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="preference-tuning-dpo-orpo.html">Preference tuning: DPO &amp; ORPO</a></span>
+          </div>
+        </header>
+
+        <p>&quot;Reasoning training&quot; arrived as a single banner after o1, DeepSeek-R1, and the wave of distilled reasoning SLMs that followed. The label covers at least three different techniques that get cited interchangeably — chain-of-thought SFT, process-supervised RL with a step-level reward model, and outcome-supervised RL with a verifier — and they don&#x27;t optimise the same thing, don&#x27;t need the same data, and don&#x27;t fail in the same ways. For an SLM team, the difference between picking the right one and picking the wrong one is roughly the difference between a model that does multi-step work and a model that has learned to look like it does.</p>
+
+        <h2>The three techniques the label covers</h2>
+        <ul>
+          <li><strong>Chain-of-thought SFT</strong> — supervised fine-tuning where each example is <code>prompt → reasoning trace → final answer</code>, and the loss covers <em>both</em> the trace and the answer. The simplest, the most data-efficient, and the right starting point unless you have very strong reasons to skip it.</li>
+          <li><strong>Process supervision (PRM)</strong> — train a process reward model that scores each step of a reasoning trace, then use it as a reward signal to fine-tune the model with RL. Higher fidelity than outcome reward; far more expensive to collect data for (step-level human labels).</li>
+          <li><strong>Outcome supervision (ORM) + RL</strong> — only the final answer is rewarded (by a verifier: a math executor, a code runner, a unit test, a string-match). The model is trained with RL to produce traces that lead to verifier-passing answers. Cheaper data, harder optimisation, the recipe behind R1-style models.</li>
+        </ul>
+        <p>The three are layered, not exclusive: CoT SFT is usually the warm-start, and one of PRM/ORM follows. Skipping the SFT warm-start with cold RL is possible but quality is typically worse on small models.</p>
+
+        <h2>Chain-of-thought SFT, in detail</h2>
+        <p>The data shape is the lesson&#x27;s most concrete artefact:</p>
+        <pre class="code-block"><code># one example
+{
+  "prompt": "Mira has 3 apples. She buys 4 more, eats 1, then gives half to her brother. How many does she have?",
+  "trace":  "Start: 3 apples. Buy 4 → 3 + 4 = 7. Eat 1 → 7 - 1 = 6. Give half away → 6 / 2 = 3.",
+  "answer": "3"
+}
+
+# render with a separator the tokenizer doesn't merge
+text = (
+    f"&lt;|user|&gt;{prompt}&lt;|end|&gt;\n"
+    f"&lt;|assistant|&gt;&lt;think&gt;{trace}&lt;/think&gt;{answer}&lt;|end|&gt;"
+)
+
+# loss mask: train on the trace AND the answer (NOT the prompt — Lesson 1.3)
+# Lesson 2.5's collator with a "&lt;|assistant|&gt;" split works here unchanged.</code></pre>
+        <p>Three things this pattern gets right that hand-rolled versions usually get wrong:</p>
+        <ul>
+          <li>The loss is on <em>both</em> the trace and the answer. Masking only the answer teaches the model to skip the trace; masking only the trace teaches it to hallucinate answers that don&#x27;t follow.</li>
+          <li>The trace and the answer are wrapped with the same chat-template tokens (Lesson 1.4) the model already speaks. Inventing new role markers that the tokenizer splits into multiple pieces silently degrades training.</li>
+          <li>The dataset is verifier-clean: every trace ends in the correct answer. Noisy traces (right answer, wrong arithmetic) teach the model to mimic the noise. Filter aggressively before training.</li>
+        </ul>
+
+        <h2>Process supervision vs outcome supervision</h2>
+        <p>Two ways to score a reasoning trace once the model can produce one:</p>
+        <ul>
+          <li><strong>Outcome reward (ORM)</strong> — run a verifier on the final answer. Math problem? Execute the arithmetic. Code problem? Run the unit tests. Multiple-choice? String-match the letter. Reward = 1 if verifier passes, 0 otherwise (or graded). Cheap because the data is just <code>(prompt, gold answer)</code>; the trace doesn&#x27;t need labels.</li>
+          <li><strong>Process reward (PRM)</strong> — train a separate model on step-level human labels: &quot;is this step correct given the steps before it?&quot;. Use the PRM to score every step of a candidate trace at training time. Higher fidelity (rewards correctness of reasoning, not just the answer) but the data is expensive — collecting step-level labels at scale was the most labour-intensive part of the early reasoning-model work.</li>
+        </ul>
+        <p>The practical reality at SLM scale: ORM is what most reproductions of the R1 recipe use, because outcome verifiers are cheap to write for math and code (the two domains where almost all public reasoning benchmarks live) and the data scales with no human labellers. PRM gives better local signal but the data cost dominates.</p>
+
+        <h2>GRPO: why it beats PPO for SLM-scale RL</h2>
+        <p>Proximal Policy Optimisation (PPO) is the canonical RL fine-tuning algorithm — it needs a policy network (the model you&#x27;re training) and a value network (a critic that estimates expected reward). For SLM-scale reasoning, PPO has two problems: training a competent critic on noisy reasoning rewards is itself hard, and the second network roughly doubles memory.</p>
+        <p><strong>Group Relative Policy Optimisation (GRPO)</strong> — the algorithm behind DeepSeek-R1&#x27;s public recipe — solves both by dropping the critic entirely. The advantage is computed group-relative:</p>
+        <ol>
+          <li>For each prompt, sample G completions from the current policy (e.g. G = 8).</li>
+          <li>Score each completion with the verifier or PRM.</li>
+          <li>Compute the advantage of each sample as <code>(reward - group_mean) / group_std</code>. No value network needed.</li>
+          <li>Apply a clipped policy-gradient update with a KL penalty to the reference (frozen) model, exactly like PPO from this point.</li>
+        </ol>
+        <p>The wins for an SLM team: no critic to train (half the memory), no critic instability to debug, and the group-relative normalisation handles reward scaling automatically — which matters because verifier rewards are usually 0/1 and would otherwise need careful baseline subtraction. The cost: G× the rollouts per step, which makes inference throughput the new bottleneck. vLLM-style rollouts are basically mandatory.</p>
+        <pre class="code-block"><code># sketch of one GRPO step, after CoT SFT warm-start
+G = 8                                              # group size
+for prompt, gold in batch:
+    completions = policy.sample(prompt, n=G, temperature=0.7)
+    rewards = [verifier(c, gold) for c in completions]   # 0 or 1
+    mean, std = stats(rewards)
+    advantages = [(r - mean) / (std + 1e-6) for r in rewards]
+    loss = grpo_loss(policy, ref_policy, prompt, completions, advantages, kl_beta=0.04)
+    loss.backward(); optimiser.step()</code></pre>
+
+        <h2>The math-and-code bias of public reasoning benchmarks</h2>
+        <p>Read any reasoning model card and the numbers are on GSM8K, MATH, HumanEval, MBPP, sometimes AIME. There&#x27;s a reason: those are the domains with cheap automatic verifiers. The verifier writes itself for math (execute the arithmetic) and for code (run the tests); writing a verifier for &quot;is this a good plan?&quot; or &quot;is this a correct legal analysis?&quot; is the actual hard problem nobody has solved at scale. So reasoning models are trained where the verifiers are, and they&#x27;re reported on benchmarks that ride the same rails.</p>
+        <p>What this means for an SLM project:</p>
+        <ul>
+          <li>If your task is math or code or anything with a clear binary verifier, reasoning training is a real lever — the R1-style recipe transfers.</li>
+          <li>If your task is open-ended reasoning (planning, summarisation, multi-step writing, legal analysis), the public benchmarks tell you almost nothing about what to expect on your task, and the recipes don&#x27;t obviously apply because there&#x27;s no verifier to plug in.</li>
+          <li>GSM8K and MATH contamination is now widely-documented (Lesson 2.17); the canonical-vs-paraphrased gap is the contamination tell. Treat the headline numbers with the same caution as any other public benchmark.</li>
+        </ul>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest beat — small-model &quot;reasoning&quot; is often format-following</p>
+          <p>The most common way a small-model team declares &quot;reasoning&quot; success: training on R1-distilled traces, generating outputs that emit <code>&lt;think&gt;</code> tags and verbose multi-step prose, observing that the outputs &quot;look like reasoning,&quot; and shipping. The model learned the <em>format</em> of a reasoning trace. Whether the trace is <em>correct</em> end-to-end — whether the step-2 arithmetic in step 2 is actually right — is a separate question that only verifier-grounded eval can answer. Reporting trace-emission rate as a reasoning metric is the new vanity number. Always run the math executor / code runner / step-level checker before quoting a reasoning gain.</p>
+        </div>
+
+        <h2>The minimum honest evaluation</h2>
+        <p>If you train a reasoning SLM, the report has three numbers, in this order:</p>
+        <ol>
+          <li><strong>Verifier-pass rate</strong> on a held-out test set the model didn&#x27;t see during training. Math executor, unit tests, string-match — whatever the task admits. This is the only number that measures the thing &quot;reasoning training&quot; is supposed to improve.</li>
+          <li><strong>Substrate drift</strong> on MMLU / HellaSwag / your task gold set (Lesson 2.17). RL on narrow reasoning data is a textbook recipe for catastrophic forgetting; if the substrate dropped 5 points, your &quot;reasoning&quot; gain is partly other-skill loss.</li>
+          <li><strong>Trace-format rate</strong>, reported <em>separately</em> from verifier-pass rate. The two together let a reader see whether you have format-following only (high trace rate, low verifier pass) or genuine reasoning (both high). One number hides the failure mode.</li>
+        </ol>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>&quot;Reasoning training&quot; is three techniques, not one: <strong>CoT SFT</strong> (warm-start, train on trace + answer), <strong>process or outcome supervision</strong> (PRM vs ORM, depending on data budget), and at SLM scale <strong>GRPO</strong> as the practical RL recipe (no critic, group-relative advantage). Pick by data shape and verifier availability, not by what sounds rigorous. And separate <em>verifier-pass rate</em> from <em>trace-format rate</em> in the report — without that separation, &quot;reasoning&quot; on small models is mostly the model learning to emit a <code>&lt;think&gt;</code> tag.</p>
+        </div>
+
+        <p>That closes the v3 expansion of Track 4 — Advanced. From distillation and preference tuning through quantization, multi-task, serving, observability, the feedback loop, tool-use, structured pruning, speculative decoding, and now reasoning training, the track now covers the post-SFT toolkit end-to-end. Claim your certificate next.</p>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Reasoning training</dt><dd>An umbrella term covering chain-of-thought SFT, process-supervised RL, and outcome-supervised RL — techniques aimed at producing multi-step traces that a verifier can score, not just final answers.</dd>
+            <dt>Chain-of-thought SFT</dt><dd>Supervised fine-tuning where each example is <code>prompt → reasoning trace → final answer</code>, with the loss covering both the trace and the answer. The standard warm-start before any RL-based reasoning step.</dd>
+            <dt>Process supervision</dt><dd>Scoring each step of a reasoning trace with a separately-trained reward model (the PRM). Higher fidelity than outcome reward; data is expensive because the labels are step-level human judgments.</dd>
+            <dt>Outcome supervision</dt><dd>Scoring only the final answer with a verifier (math executor, code runner, string-match). Cheap data, harder optimisation; the recipe behind R1-style training.</dd>
+            <dt>PRM (Process Reward Model)</dt><dd>A reward model trained on step-level labels. Scores each step of a candidate trace at RL training time.</dd>
+            <dt>ORM (Outcome Reward Model)</dt><dd>A reward signal derived from a final-answer verifier. Reward = 1 if the verifier passes, 0 otherwise. Often a deterministic verifier rather than a model.</dd>
+            <dt>GRPO (Group Relative Policy Optimisation)</dt><dd>RL fine-tuning algorithm used by DeepSeek-R1 and similar recipes. Drops PPO&#x27;s value network; computes advantage group-relative across G samples per prompt. The practical RL recipe at SLM scale.</dd>
+            <dt>Verifier-grounded eval</dt><dd>Evaluation that runs a deterministic checker (math executor, code runner, step checker) on the model&#x27;s output. The only way to distinguish genuine reasoning from format-following.</dd>
+            <dt>Trace-format rate</dt><dd>Fraction of outputs that emit the expected reasoning-trace structure (<code>&lt;think&gt;</code> tags, multi-step prose). Must be reported separately from verifier-pass rate to expose format-following.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "What's the correct loss-masking setup for a chain-of-thought SFT example with prompt → trace → answer?",
+   "options": ["Mask everything except the final answer", "Mask everything except the trace", "Mask the prompt; train on both the trace AND the answer", "Mask nothing — train on the whole sequence including the prompt"],
+   "answer": 2,
+   "explanation": "Mask the prompt (otherwise you train on user-voice text — Lesson 1.3). Train on both trace and answer; masking only the answer teaches the model to skip the trace, masking only the trace teaches it to hallucinate answers that don't follow."},
+  {"q": "How does GRPO differ from PPO, and why does it matter at SLM scale?",
+   "options": ["GRPO uses a larger value network", "GRPO drops the value (critic) network and computes advantage group-relative across G samples per prompt — roughly half the memory and no critic to keep stable", "GRPO requires more reward-model labels", "GRPO is just PPO with a different optimiser"],
+   "answer": 1,
+   "explanation": "GRPO's no-critic, group-relative advantage is what makes RL fine-tuning practical at SLM scale; the tradeoff is G× the rollouts per step (vLLM-style serving recommended)."},
+  {"q": "When is outcome supervision (ORM) the right tool, and when is process supervision (PRM)?",
+   "options": ["Always use PRM; ORM is for legacy systems", "Use ORM when you have a cheap verifier (math executor, code runner) and lots of (prompt, gold-answer) pairs but no step labels; use PRM when you need higher local signal and can afford step-level human labels", "ORM is for code, PRM is for math — never mix", "They're interchangeable"],
+   "answer": 1,
+   "explanation": "ORM scales because the data is just (prompt, gold answer). PRM gives better local signal — rewards correctness of reasoning, not just answer — but step-level labels are expensive."},
+  {"q": "What's the honest-metrics failure when reporting 'reasoning' gains on a small model?",
+   "options": ["Quoting the public benchmark number without standard error", "Reporting trace-format rate as if it were a reasoning metric — the model learned the <think>-tag format without the underlying reasoning being correct", "Using GRPO instead of PPO", "Running too few epochs of CoT SFT"],
+   "answer": 1,
+   "explanation": "Format-following is the most common small-model trap. Verifier-grounded eval (math executor, code runner, step checker) is the only way to distinguish a model that emits reasoning-shaped output from one whose reasoning is actually correct."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="preference-tuning-dpo-orpo.html">Preference tuning: DPO &amp; ORPO</a><span class="related-lessons__track">Advanced</span></li>
+            <li><a class="inline-link" href="distillation-kd-loss.html">Distillation: the KD loss</a><span class="related-lessons__track">Advanced</span></li>
+            <li><a class="inline-link" href="../hands-on/public-benchmarks-and-lm-eval-harness.html">Public benchmarks &amp; lm-eval-harness</a><span class="related-lessons__track">Hands-on</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="speculative-decoding.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Speculative decoding</span></a>
+          <a href="../certificate.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next · Graduate</span><span class="lesson-nav__title">Claim your completion certificate</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>
