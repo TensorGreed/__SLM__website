@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Speculative decoding: draft, verify, accept — BrewSLM Academy</title>
+    <meta name="description" content="Speculative decoding speeds up autoregressive generation: a small draft model proposes K tokens, the target verifies them in one forward pass, and accepted tokens commit. Expected speed-up depends on acceptance rate α, draft length K, and the draft-to-target cost ratio — and it scales with target cost, which is why SLM targets see modest wins." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/advanced/speculative-decoding.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Speculative decoding: draft, verify, accept — BrewSLM Academy" />
+    <meta property="og:description" content="A small draft proposes K tokens, the target verifies in one pass, accepted tokens commit. Honest speed-up math and why SLM targets see modest wins." />
+    <meta property="og:url" content="https://brewslm.com/academy/advanced/speculative-decoding.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Speculative decoding: draft, verify, accept — BrewSLM Academy" />
+    <meta name="twitter:description" content="Acceptance rate, EAGLE/Medusa, same-tokenizer constraint, and why KV-cache + batching + quantization beat spec-decoding on SLM targets." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Speculative decoding: draft, verify, accept",
+        "description": "Speculative decoding accelerates autoregressive generation by letting a small draft model propose K tokens, having the target model verify them in a single forward pass, accepting the prefix where draft and target agree, and falling back to the target's correction on first disagreement. Covers the math of the expected speed-up (acceptance rate α, draft length K, draft/target cost ratio), the same-tokenizer constraint, EAGLE / Medusa variants, why the win is modest for SLM targets, and tooling pointers for vLLM, llama.cpp, and HuggingFace Transformers.",
+        "url": "https://brewslm.com/academy/advanced/speculative-decoding.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Advanced", "timeRequired": "PT11M", "isAccessibleForFree": true,
+        "teaches": ["speculative decoding", "draft model", "target model", "acceptance rate", "EAGLE", "Medusa", "tree attention", "inference optimization"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Advanced", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Speculative decoding: draft, verify, accept", "item": "https://brewslm.com/academy/advanced/speculative-decoding.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Speculative decoding: draft, verify, accept" },
+        "hasPart": [
+          { "@type": "Question", "name": "What does speculative decoding actually do that beats one-token-at-a-time?", "acceptedAnswer": { "@type": "Answer", "text": "A small draft model proposes K tokens, the target verifies them in a single forward pass, and accepted tokens commit. It wins when more than one token is accepted per round on average." } },
+          { "@type": "Question", "name": "Why is speculative decoding less of a win for SLM targets than for large models?", "acceptedAnswer": { "@type": "Answer", "text": "Wall-clock speed-up scales with the target's per-token cost. For a 135M–1.7B target, the per-token forward is already cheap and the draft cannot be meaningfully smaller, so KV-cache, batching, and quantization usually move latency more." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="advanced/speculative-decoding">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html" aria-current="page">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../advanced/index.html">Advanced</a></li><li>Speculative decoding: draft, verify, accept</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 4 · Advanced · Lesson 14</span>
+          <h1>Speculative decoding: draft, verify, accept</h1>
+          <p class="lesson-header__outcome">After this lesson you can explain how speculative decoding turns sequential token generation into a propose-and-verify loop, do the back-of-envelope math for the expected speed-up from acceptance rate and draft cost, and decide whether it is worth wiring on for your target model — including the honest answer for SLM-sized targets.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> advanced</span>
+            <span><strong>Read time:</strong> ~11 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="serving-and-inference.html">Serving and inference optimization</a></span>
+          </div>
+        </header>
+
+        <p>Speculative decoding is one of the cleanest ideas in inference acceleration: instead of generating one token per forward pass, you have a small draft model guess the next few tokens and use the target model to verify the guess in a single pass. When the draft is right, you commit multiple tokens for the price of one target forward. When it is wrong, you fall back. This lesson is the mechanics, the math, and the honest verdict on whether you should bother for an SLM target.</p>
+
+        <h2>The problem speculative decoding solves</h2>
+        <p>Autoregressive generation is sequential by construction. To produce token <em>t</em>, the model needs the keys, values, and logits conditioned on tokens 1 through <em>t-1</em>. Causal masking makes parallel generation across future positions ill-defined — you cannot just predict five tokens in parallel from the same context, because token <em>t+1</em>'s probability depends on the token actually chosen at position <em>t</em>.</p>
+        <p>A 7B target generating 100 tokens needs 100 sequential forward passes. On a GPU this is a memory-bandwidth-bound workload: each pass moves the model weights from HBM into compute, does a tiny amount of work for a single token, and writes the result back. The compute units are idle most of the wall clock. The math wants more tokens per forward pass, but the math of causal attention forbids it. Speculative decoding sneaks around that constraint by introducing a second, cheaper model whose guesses can be verified in parallel.</p>
+
+        <h2>How speculative decoding works</h2>
+        <p>One round of speculative decoding has three steps:</p>
+        <ul>
+          <li><strong>Draft.</strong> A small draft model takes the current context and autoregressively generates K candidate tokens — typically K is 4 to 8. This is cheap because the draft is much smaller than the target.</li>
+          <li><strong>Verify.</strong> The target model runs <em>one</em> forward pass over the context plus all K draft tokens. Because all K positions are now fully specified, the target can compute logits at every draft position in parallel — that is just a normal batched-position forward, not a parallel generation across futures.</li>
+          <li><strong>Accept.</strong> Walk the draft tokens left to right. At each position, compare the draft's token to the target's distribution at that position. Under the standard rejection-sampling rule (Leviathan et al., 2022), the target accepts the draft token with probability <code>min(1, p_target / p_draft)</code>; on first rejection, the target samples a corrected token from a normalised residual distribution and discards the rest of the draft. For greedy decoding, the rule degenerates to "accept while the draft matches the target's argmax."</li>
+        </ul>
+        <p>The output distribution is provably identical to running the target on its own — speculative decoding is exact, not approximate. The total cost of a round is one target forward pass plus K cheap draft forwards. If on average more than one token is accepted per round, you win.</p>
+
+        <h2>The acceptance-rate equation</h2>
+        <p>Let α be the per-token acceptance probability (how often the draft's next token agrees with the target), K the draft length, and <em>c</em> the draft-to-target cost ratio (draft forward time divided by target forward time). The expected speed-up over plain target decoding is approximately</p>
+        <pre class="code-block"><code>speedup ≈ (1 − α^(K+1)) / ((1 − α) · (1 + c·K))</code></pre>
+        <p>Concretely: with a target 10x more expensive than the draft (<em>c</em> = 0.1), K = 4, and α = 0.7, you get roughly 2.3x throughput. With α = 0.5 the same configuration gives only about 1.4x — because half the draft tokens are wasted work. With α = 0.9 you push past 3x. Real-world large-target/small-draft pairs typically land between 1.5x and 3x; published claims above 3x are usually for very high-α drafts (EAGLE) or specific benchmarks. Treat anything over 4x with suspicion until you have measured it on your traffic.</p>
+        <p>Two failure modes lurk in this equation. If α is low, the second term in the denominator (the wasted draft work) eats your gains. If <em>c</em> is high — the draft is not actually cheap relative to the target — the same denominator term grows. Both happen together when you try to use speculative decoding with a target that is already small.</p>
+
+        <h2>Same-tokenizer constraint and draft-model alignment</h2>
+        <p>Speculative decoding requires the draft and target to share a tokenizer. The verification step compares draft tokens to target logits at the <em>same positions</em>; if the two models tokenise differently, those positions do not line up and the comparison is meaningless. There are research variants that bridge tokenizer mismatches by re-tokenising on the fly, but they pay a substantial overhead and remain niche.</p>
+        <p>Within the same-tokenizer family, α depends on how well the draft mimics the target. A small model from the same training pipeline as the target (think Llama-3-8B as a draft for Llama-3-70B) is the natural pick: shared pretraining data, shared instruction-tuning conventions, shared safety post-training all push α up. A small model from a different family — even with the same tokenizer — typically gives much lower α because its distribution diverges in idiosyncratic ways. If you are picking a draft, prefer a same-family sibling over a generic small model.</p>
+
+        <h2>EAGLE, Medusa, and the draft-model family</h2>
+        <p>The base recipe uses a separately-trained small model as the draft. The frontier has moved on:</p>
+        <ul>
+          <li><strong>EAGLE</strong> trains a tiny auxiliary head (a single decoder layer on top of the target's hidden states) to predict the target's next-token embedding directly. Because it is conditioned on the target's actual hidden states, EAGLE's α is much higher than a standalone small model's — published numbers reach 0.8+ on common benchmarks — at the cost of training a custom head per target.</li>
+          <li><strong>Medusa</strong> attaches several parallel decoding heads to the <em>target</em> itself, each predicting one extra position. A tree-attention verification step lets the target validate many candidate continuations in a single forward pass. There is no separate draft model in memory — useful when VRAM is tight — but the bookkeeping of tree attention is real engineering work.</li>
+        </ul>
+        <p>Both raise the practical α-ceiling and both ship in production stacks today. If you are operating a large-target serving rig, EAGLE or Medusa is usually the right starting point over a standalone-draft recipe.</p>
+
+        <h2>Why it matters less for SLMs than for big models</h2>
+        <p>Notice that the speed-up equation contains <em>c</em> (draft-to-target cost) but not the absolute target cost. The wall-clock benefit of speculative decoding scales with how expensive the target's forward pass is. For a 70B target on a single GPU, one forward pass takes tens of milliseconds and the memory-bandwidth bottleneck is severe — there is plenty of room for a 7B draft (<em>c</em> ≈ 0.1) to add value. For a 135M SLM, one forward pass already runs in a millisecond or two, and a model 10x smaller is essentially a tokenizer wrapper plus a few embeddings: you cannot find a meaningfully cheaper draft.</p>
+        <p>Concretely, for SmolLM2-135M or a 1.7B fine-tune, the per-token cost is already small enough that the fixed overhead of running two models — draft warm-up, draft KV-cache, the verification accounting — eats most of the theoretical win. Practical experiments on SLM targets show speed-ups in the 1.1x to 1.5x range with a well-chosen draft, and frequently <em>regressions</em> when the draft is poorly matched. Speculative decoding is worth wiring on for an SLM only when (a) you have a much smaller specialised draft such as an n-gram model or a 10M-parameter shallow head, or (b) the SLM is being served alongside a larger fallback model where speculative decoding bridges the two.</p>
+        <p>For the typical SLM serving setup, the bigger wall-clock wins come from <strong>KV-cache management</strong>, <strong>continuous batching</strong>, and <strong>quantization</strong> (covered in Lesson 4.8 — serving and inference). Those move the latency needle reliably; speculative decoding on an SLM target moves it marginally and only with care.</p>
+
+        <h2>Tooling pointers</h2>
+        <p>Three production stacks expose speculative decoding today:</p>
+        <ul>
+          <li><strong>vLLM</strong> has first-class support for speculative decoding with both standalone drafts and Medusa / EAGLE heads. The configuration is one block in the <code>LLM</code> constructor.</li>
+          <li><strong>llama.cpp</strong> supports draft-model speculative decoding via the <code>--draft</code> family of flags on the server and CLI. Same-tokenizer constraint applies; bring a matched GGUF for the draft.</li>
+          <li><strong>HuggingFace Transformers</strong> exposes the simplest version: an <code>assistant_model</code> argument on <code>generate()</code> that turns on draft-and-verify with whatever model you pass.</li>
+        </ul>
+        <pre class="code-block"><code>from transformers import AutoModelForCausalLM, AutoTokenizer
+
+target_id = "meta-llama/Llama-3.1-8B-Instruct"
+draft_id  = "meta-llama/Llama-3.2-1B-Instruct"   # same tokenizer family
+
+tok    = AutoTokenizer.from_pretrained(target_id)
+target = AutoModelForCausalLM.from_pretrained(target_id, torch_dtype="bfloat16", device_map="auto")
+draft  = AutoModelForCausalLM.from_pretrained(draft_id,  torch_dtype="bfloat16", device_map="auto")
+
+inputs = tok("Explain speculative decoding in two sentences.", return_tensors="pt").to(target.device)
+
+out = target.generate(
+    **inputs,
+    assistant_model=draft,            # turn on speculative decoding
+    num_assistant_tokens=5,           # K = draft length per round
+    max_new_tokens=200,
+    do_sample=False,                  # greedy verification
+)
+print(tok.decode(out[0], skip_special_tokens=True))</code></pre>
+        <p>The same recipe in vLLM looks like <code>LLM(model=target_id, speculative_model=draft_id, num_speculative_tokens=5)</code>; in llama.cpp it is <code>./llama-server -m target.gguf --draft 5 -md draft.gguf</code>. Measure throughput and tokens-per-second before and after; if α is poor you will see a regression, not a gain.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest beat — modest gains on SLM targets</p>
+          <p>For an SLM target (135M to 1.7B), speculative decoding's realistic margin is usually <strong>1.2x to 1.8x</strong> at best — and that assumes you have a draft that meaningfully outpaces the target. With a poorly-matched draft the wall-clock can go the wrong way. <strong>KV-cache reuse, continuous batching, and quantization will move the latency needle more than speculative decoding on a 135M–1.7B target.</strong> Treat speculative decoding as the last optimisation you reach for on an SLM, not the first.</p>
+        </div>
+
+        <h2>What to measure if you turn it on</h2>
+        <p>Three numbers matter and one of them is the one most teams forget to record:</p>
+        <ul>
+          <li><strong>Acceptance rate α.</strong> Log it per request and per workload. If α collapses on a new prompt distribution, the draft no longer matches the target there.</li>
+          <li><strong>Mean accepted tokens per round.</strong> Equal to <code>(1 − α^(K+1)) / (1 − α)</code> in the limit; in practice you want it above 2 to justify the bookkeeping.</li>
+          <li><strong>End-to-end tokens-per-second on your real traffic</strong>, with and without speculative decoding. Synthetic prompts overstate the win; conversational traffic with short turns understates it. Measure both and report the median, not the best run.</li>
+        </ul>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Speculative decoding is exact, not approximate: a small draft proposes K tokens and the target verifies them in a single forward pass, so the output distribution is unchanged. The win is the math <code>(1 − α^(K+1)) / ((1 − α) · (1 + c·K))</code>, governed by acceptance rate, draft length, and draft-to-target cost ratio. It scales with target cost — which is why a 70B target sees 2–3x and an SLM target sees 1.2–1.8x at best. For SLM serving, KV-cache, batching, and quantization usually pay better.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Speculative decoding</dt><dd>An inference-time acceleration technique where a small draft model proposes K tokens and the target model verifies them in a single forward pass, accepting matching tokens and falling back to a target correction on first disagreement.</dd>
+            <dt>Draft model</dt><dd>The small, fast model that proposes candidate tokens during speculative decoding; must share a tokenizer with the target and ideally come from the same model family for high α.</dd>
+            <dt>Target model</dt><dd>The model whose output distribution you actually want; verifies the draft's K candidates in parallel and provides the corrected token on rejection.</dd>
+            <dt>Acceptance rate (α)</dt><dd>The probability that the target accepts a draft token at a given position; the dominant driver of speculative decoding's speed-up.</dd>
+            <dt>Draft length (K)</dt><dd>The number of tokens the draft proposes per round before the target verifies; typical values are 4 to 8.</dd>
+            <dt>EAGLE</dt><dd>A speculative-decoding variant that trains a tiny auxiliary head on top of the target's hidden states to predict the target's next embedding, achieving very high α at the cost of training a custom head per target.</dd>
+            <dt>Medusa</dt><dd>A variant that attaches several parallel decoding heads to the target itself and uses tree attention to verify many candidate continuations in one pass, removing the separate draft model.</dd>
+            <dt>Tree attention</dt><dd>A verification scheme that lets a model score a tree of candidate continuations in a single forward pass; used by Medusa and other speculative-decoding variants.</dd>
+            <dt>Same-tokenizer constraint</dt><dd>The hard requirement that draft and target share a tokenizer so that draft positions line up with target logit positions during verification.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "What does speculative decoding actually do that beats one-token-at-a-time?",
+   "options": ["It runs the target model in parallel across future positions", "A small draft proposes K tokens, the target verifies them in a single forward pass, and accepted tokens commit", "It skips low-probability tokens during decoding", "It caches the target's KV state across requests"],
+   "answer": 1,
+   "explanation": "Speculative decoding wins when the average number of accepted tokens per round exceeds 1, paying one target forward plus K cheap draft forwards per round."},
+  {"q": "What determines the expected speed-up from speculative decoding?",
+   "options": ["Only the target model's size", "The number of GPUs", "Acceptance rate α, draft length K, and the draft-to-target cost ratio c — higher α and lower c give more speed-up", "The tokenizer vocabulary size"],
+   "answer": 2,
+   "explanation": "The formula speedup ≈ (1 − α^(K+1)) / ((1 − α) · (1 + c·K)) shows α, K, and c are the three knobs that matter."},
+  {"q": "Why is the same-tokenizer constraint a hard requirement?",
+   "options": ["It is a licensing requirement", "Draft and target must produce comparable token streams so verification at the same positions is meaningful — different tokenizers leave no shared positions to compare", "It improves quantization quality", "It is required by EAGLE specifically"],
+   "answer": 1,
+   "explanation": "Verification compares draft tokens to target logits at the same positions; mismatched tokenizers make those positions undefined."},
+  {"q": "Why is speculative decoding less of a win for SLM targets than for large models?",
+   "options": ["SLMs cannot use a draft model", "The speed-up scales with target cost; for a 135M–1.7B target the per-token forward is already cheap and the draft cannot be meaningfully smaller — KV-cache, batching, and quantization usually move latency more", "SLMs do not support causal attention", "Tokenizers are different in SLMs"],
+   "answer": 1,
+   "explanation": "Wall-clock gains are proportional to how expensive the target is. SLM targets leave little headroom for a cheaper draft, and overheads can swamp the benefit."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="serving-and-inference.html">Serving and inference optimization</a><span class="related-lessons__track">Advanced</span></li>
+            <li><a class="inline-link" href="structured-pruning.html">Structured pruning</a><span class="related-lessons__track">Advanced</span></li>
+            <li><a class="inline-link" href="distillation-kd-loss.html">Distillation: KD loss</a><span class="related-lessons__track">Advanced</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="structured-pruning.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Structured pruning</span></a>
+          <a href="../certificate.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next · Graduate</span><span class="lesson-nav__title">Claim your completion certificate</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>

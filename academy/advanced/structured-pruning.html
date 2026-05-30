@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Structured pruning: removing heads, layers, and channels — BrewSLM Academy</title>
+    <meta name="description" content="Structured pruning removes whole attention heads, layers, or channels from a trained SLM and runs a short recovery training pass — so the matrix shapes shrink and wall-clock wins are real. Covers importance scoring, the prune-then-recover workflow, and the honest signal that for SLMs you usually shouldn't bother until quantization and distillation are already pushed." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/advanced/structured-pruning.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Structured pruning: removing heads, layers, and channels — BrewSLM Academy" />
+    <meta property="og:description" content="Remove whole heads, layers, or channels; run a short recovery pass; ship a smaller model with real wall-clock wins — or skip pruning entirely if 4-bit already meets your budget." />
+    <meta property="og:url" content="https://brewslm.com/academy/advanced/structured-pruning.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Structured pruning: removing heads, layers, and channels — BrewSLM Academy" />
+    <meta name="twitter:description" content="Heads, layers, channels — what to cut, how to score importance, and why recovery training is not optional." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "LearningResource",
+        "name": "Structured pruning: removing heads, layers, and channels",
+        "description": "Structured pruning physically removes whole attention heads, transformer layers, or MLP channels from a trained model, then runs a short SFT or distillation recovery pass. Unlike unstructured pruning (which only saves theoretical FLOPs without sparse-aware kernels), structured pruning shrinks matrix shapes and produces real wall-clock and memory wins. Covers head/layer/channel pruning, importance scoring families (magnitude, gradient × weight, Hessian-based), the prune-then-recover workflow, when it pays off for SLMs (rarely — usually only after quantization and distillation), and tooling pointers (Sheared-LLaMA, ShortGPT, LLM-Pruner).",
+        "url": "https://brewslm.com/academy/advanced/structured-pruning.html",
+        "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Advanced", "timeRequired": "PT11M", "isAccessibleForFree": true,
+        "teaches": ["structured pruning", "head pruning", "layer pruning", "channel pruning", "importance scoring", "recovery training", "Sheared-LLaMA", "ShortGPT", "LLM-Pruner"],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 3, "name": "Advanced", "item": "https://brewslm.com/academy/" },
+        { "@type": "ListItem", "position": 4, "name": "Structured pruning: removing heads, layers, and channels", "item": "https://brewslm.com/academy/advanced/structured-pruning.html" } ] }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org", "@type": "Quiz",
+        "about": { "@type": "Thing", "name": "Structured pruning: removing heads, layers, and channels" },
+        "hasPart": [
+          { "@type": "Question", "name": "What's the practical difference between structured and unstructured pruning?", "acceptedAnswer": { "@type": "Answer", "text": "Structured pruning removes whole heads, layers, or channels — matrix shapes actually shrink — so wall-clock wins are real. Unstructured pruning zeros individual weights, which only helps if you have sparse-aware kernels; on commodity GPUs almost no one does, so a 70% sparse model still runs at dense speed." } },
+          { "@type": "Question", "name": "Why is recovery training not optional?", "acceptedAnswer": { "@type": "Answer", "text": "Aggressive pruning without recovery typically costs 10–30 points on substrate benchmarks. A short SFT or distillation pass after pruning is what makes the technique competitive." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="advanced/structured-pruning">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home"><img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" /></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html" aria-current="page">Advanced</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol><li><a href="../index.html">Academy</a></li><li><a href="../advanced/index.html">Advanced</a></li><li>Structured pruning: removing heads, layers, and channels</li></ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page"><p class="lesson-toc__title">On this page</p><ol data-toc></ol></aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Track 4 · Advanced · Lesson 13</span>
+          <h1>Structured pruning: removing heads, layers, and channels</h1>
+          <p class="lesson-header__outcome">After this lesson you can decide whether structured pruning is worth attempting on your SLM, pick the right granularity (head / layer / channel), score importance on a calibration set, run the prune-then-recover workflow, and recognise when 4-bit quantization has already eaten the budget pruning would have given you.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> advanced</span>
+            <span><strong>Read time:</strong> ~11 min</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="quantization-and-compression.html">Quantization & compression</a></span>
+          </div>
+        </header>
+
+        <p>Structured pruning is the version of pruning that actually shows up in wall-clock benchmarks. You pick a granularity — a whole attention head, a whole transformer layer, or a whole MLP channel — score every unit at that granularity for importance on a calibration set, drop the lowest-scoring ones until you hit a target size, then run a short SFT or distillation pass to recover the quality you just damaged. Done well, you get a model with smaller matrices, fewer FLOPs, lower memory, and a believable latency win. Done badly — especially without the recovery pass — you get a smaller model that's also dramatically worse, and you'll wish you'd just shipped the quantized original.</p>
+
+        <h2>What structured pruning actually does</h2>
+        <p>"Structured" means the unit you remove is a whole tensor-aligned block, not an individual scalar weight. There are three common granularities, listed coarsest to finest:</p>
+        <ul>
+          <li><strong>Layer pruning.</strong> Drop entire transformer blocks. The model goes from <em>N</em> layers to <em>N − k</em>. Coarsest cut, biggest absolute speed-up per unit pruned, and the easiest to implement — you literally delete blocks from <code>model.model.layers</code>. ShortGPT and similar layer-importance studies show that, in many trained LLMs, several middle layers can be removed with surprisingly little quality loss before recovery.</li>
+          <li><strong>Head pruning.</strong> Remove whole attention heads inside each block. With <em>H</em> heads of dimension <em>d_head</em>, you're shrinking the Q/K/V projections from <code>H · d_head</code> back to <code>(H − k) · d_head</code>. The shapes of <code>q_proj</code>, <code>k_proj</code>, <code>v_proj</code>, and <code>o_proj</code> all change consistently. Real wins, finer-grained than layer pruning.</li>
+          <li><strong>Channel / MLP-width pruning.</strong> Inside each MLP block, the intermediate dimension <em>d_ff</em> shrinks. <code>up_proj</code> and <code>gate_proj</code> lose output rows; <code>down_proj</code> loses input columns. Because MLPs hold the bulk of an SLM's parameters (often 60–70% in modern Llama-style architectures), MLP-width pruning is where most of the parameter savings come from.</li>
+        </ul>
+        <p>All three cases end with smaller matrices. <code>nn.Linear(4096, 11008)</code> becomes <code>nn.Linear(4096, 8192)</code>. PyTorch sees a smaller tensor; cuBLAS does a smaller matmul; the inference engine runs faster. This is the win that matters.</p>
+
+        <h2>Why unstructured pruning rarely pays off in practice</h2>
+        <p>Unstructured pruning zeros out individual weights inside a matrix, leaving the matrix the same shape. On paper a 70% sparse weight matrix needs 70% fewer multiplies. In practice, on commodity GPUs and on Apple Silicon, your matmul is still being dispatched to a dense kernel — cuBLAS, cuDNN, MPS — which happily multiplies by zero billions of times and reports identical wall-clock latency to the un-pruned version. Sparse-aware kernels exist (NVIDIA's 2:4 structured sparsity on Ampere+, some research kernels for higher sparsity), but coverage across the stack you actually use — your tokenizer wrapper, your inference server, your quantization library — is patchy at best.</p>
+        <p>For an SLM you intend to ship on a real device, treat unstructured pruning as a research technique and structured pruning as the production one. The rest of this lesson is about the production version.</p>
+
+        <h2>Importance scoring: how do you decide what to cut?</h2>
+        <p>Once you've picked a granularity, you need a score per unit. Three families dominate, in order of cost and accuracy:</p>
+        <ul>
+          <li><strong>Magnitude.</strong> Score a head, layer, or channel by the L2 (or L1) norm of its weights. Cheap, requires no data, and often misleading. Large-magnitude weights can sit in dead pathways that the rest of the network has learned to route around; small-magnitude weights can be the load-bearing ones for a specific behaviour. Magnitude is a reasonable first pass for a baseline; it is not a reliable production criterion.</li>
+          <li><strong>Gradient × weight (Taylor / SNIP-style).</strong> Run a calibration set through the model and compute, per unit, the first-order Taylor estimate of the loss change if that unit were set to zero — usually <code>|w · ∂L/∂w|</code> aggregated over the unit. Requires a few hundred to a few thousand examples representative of the deployment distribution. LLM-Pruner uses a variant of this for head and channel scoring. It is the practical sweet spot: significantly better signal than magnitude, far cheaper than second-order methods, and tractable on a single GPU.</li>
+          <li><strong>Hessian-based / OBD / WoodFisher.</strong> Use second-order curvature information (Optimal Brain Damage / Optimal Brain Surgeon style, or the WoodFisher Fisher-matrix approximation). Most accurate signal per unit, considerably more expensive to compute, and finicky to implement correctly. Worth it when you're squeezing the last few percent of quality out of a heavily-pruned model.</li>
+        </ul>
+        <p>For most SLM pruning work, gradient × weight on a calibration set of 256–2,048 examples drawn from your real distribution is the right starting point. The calibration set matters more than the scoring formula — score on data that looks like deployment and you'll keep the units that matter for deployment.</p>
+
+        <h2>The prune-to-target, then recover workflow</h2>
+        <p>The workflow has four steps:</p>
+        <ol>
+          <li><strong>Pick a target.</strong> Either a parameter count (e.g. 7B → 4.5B), a latency budget (e.g. p50 first-token under 200 ms on your target hardware), or a memory ceiling. Concrete targets — not "make it smaller" — keep the rest of the process honest.</li>
+          <li><strong>Score importance</strong> on the calibration set at the chosen granularity.</li>
+          <li><strong>Drop</strong> the lowest-scoring heads / layers / channels until the target is hit. Re-shape the parameter tensors so the model actually has fewer parameters; this is the step where the matmuls get smaller.</li>
+          <li><strong>Recover.</strong> Run a short SFT pass (or, better, a teacher-distilled pass using the pre-pruning model as the teacher — the offline KD recipe in Lesson 4.4 plugs in directly) on a small, high-quality dataset. The model regains most of the quality the pruning step cost. Skip this step and you're shipping a damaged model.</li>
+        </ol>
+        <pre class="code-block"><code># Recovery pass after structured pruning — short SFT with a small LR
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from datasets import load_from_disk
+from trl import SFTConfig, SFTTrainer
+
+model = AutoModelForCausalLM.from_pretrained("checkpoints/pruned-4_5B")
+tok   = AutoTokenizer.from_pretrained("checkpoints/pruned-4_5B")
+ds    = load_from_disk("data/recovery_sft")            # ~5–50k high-quality rows
+
+trainer = SFTTrainer(
+    model=model, processing_class=tok, train_dataset=ds,
+    args=SFTConfig(output_dir="checkpoints/pruned-4_5B-recovered",
+        per_device_train_batch_size=4, gradient_accumulation_steps=8,
+        learning_rate=1e-5, num_train_epochs=1, lr_scheduler_type="cosine",
+        warmup_ratio=0.03, bf16=True, max_seq_length=2048, report_to=[]),
+)
+trainer.train(); trainer.save_model("checkpoints/pruned-4_5B-recovered")</code></pre>
+        <p>Two notes on the recovery pass. First, the learning rate is small — you're nudging the surviving weights back into a good basin, not retraining from scratch; <code>1e-5</code> to <code>5e-5</code> is the usual band. Second, the dataset is small but clean. Sheared-LLaMA's published recipe uses on the order of tens of billions of tokens for recovery on a 2.7B–1.3B-class prune; an SFT recovery on a narrower task can be much smaller, but the floor is "enough to see the loss curve flatten and the eval metrics rebound."</p>
+
+        <h2>When it's worth it for SLMs</h2>
+        <p>Rarely. The honest framing: SLMs are already small. The first compression knobs to turn are quantization (Lesson 4.6) and LoRA distillation (Lesson 4.4), both of which usually deliver larger wall-clock wins with smaller quality cost than pruning does. Pruning is the third lever, and it earns its place only when the first two have been pushed and the budget still isn't met.</p>
+        <ul>
+          <li><strong>7B → 4.5B</strong> with structured pruning + recovery is a believable target, and is roughly the regime Sheared-LLaMA published. You'll lose a measurable amount of quality even with a careful recovery pass — usually a few points on aggregate benchmarks — but the speed and memory wins are real.</li>
+          <li><strong>Pruning a 135M model is almost never worth it.</strong> The remaining capacity is too small to absorb the damage; the recovery pass struggles; the wall-clock saving is a millisecond no one will notice. Quantize it to 4-bit and move on.</li>
+          <li><strong>If 4-bit quantization already meets your latency budget, skip pruning entirely.</strong> The compounded engineering cost — score, prune, recover, re-evaluate, re-quantize — is rarely justified by the marginal gains over a clean quantized model.</li>
+        </ul>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest beat — pruning without recovery training tanks quality fast</p>
+          <p>Aggressive structured pruning — say, dropping 25–40% of heads, layers, or channels — typically costs <strong>10–30 points</strong> on substrate benchmarks (MMLU, HellaSwag, the usual suspects) <em>before</em> the recovery pass. The recovery pass is what makes the technique competitive; it is also where most of the compute and data cost lives. If you cannot afford the recovery training — the GPU hours, the curated dataset, the eval loop to confirm the rebound — <strong>do not prune</strong>. Ship the quantized un-pruned model and revisit when you have the budget. A correctly quantized 7B will beat a badly recovered pruned 4.5B every time.</p>
+        </div>
+
+        <h2>Tooling pointers</h2>
+        <p>You will almost never write structured pruning from scratch — the bookkeeping (re-shaping every dependent tensor consistently, re-registering the model's config, keeping the tokenizer and chat template valid) is painful and error-prone. Use a published recipe:</p>
+        <ul>
+          <li><strong>Sheared-LLaMA</strong> (Xia et al., 2023) — the canonical recipe for structured pruning a 7B Llama down to 2.7B / 1.3B with a multi-stage recovery. Published code, dataset mix, and learning-rate schedule. Start here if you want a working baseline.</li>
+          <li><strong>ShortGPT</strong> (Men et al., 2024) — layer-importance scoring with a "Block Influence" metric. The cleanest read on how few layers some models actually need.</li>
+          <li><strong>LLM-Pruner</strong> (Ma et al., 2023) — gradient × weight scoring with a CLI for head and channel pruning across common architectures. Good for SLM-scale experiments.</li>
+          <li><strong>torch.nn.utils.prune</strong> — PyTorch's built-in pruning utilities. Useful for the mechanical re-shaping and mask-and-remove steps; you still bring the importance scoring and the recovery pass.</li>
+        </ul>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Structured pruning is a three-step bargain: shrink the matrices (heads / layers / channels), pay a quality tax, then pay a recovery training bill to claw most of it back. For SLMs it is the <strong>third</strong> compression lever, not the first — reach for it only after quantization (Lesson 4.6) and distillation (Lesson 4.4) have been pushed and you still need to be smaller or faster. If 4-bit quantization already hits your latency budget, the right move is to skip pruning entirely.</p>
+        </div>
+
+        <section class="key-terms">
+          <h2>Key terms</h2>
+          <dl>
+            <dt>Structured pruning</dt><dd>Removing whole tensor-aligned units — heads, layers, or channels — so the model's parameter matrices physically shrink and matmuls become smaller.</dd>
+            <dt>Unstructured pruning</dt><dd>Zeroing out individual weights inside a matrix; only translates to wall-clock speed-ups with sparse-aware kernels, which are not standard on commodity GPUs.</dd>
+            <dt>Head pruning</dt><dd>Removing whole attention heads from each block; the Q/K/V/O projections shrink consistently and the per-block attention compute drops.</dd>
+            <dt>Layer pruning</dt><dd>Deleting whole transformer blocks; coarsest cut, easiest to implement, biggest absolute speed-up per unit pruned.</dd>
+            <dt>Channel / MLP-width pruning</dt><dd>Shrinking the intermediate dimension of the MLP block; <code>up_proj</code> and <code>gate_proj</code> lose output rows and <code>down_proj</code> loses input columns.</dd>
+            <dt>Recovery training</dt><dd>A short SFT or teacher-distilled pass run after pruning to claw back most of the quality lost in the prune step; not optional.</dd>
+            <dt>Importance scoring</dt><dd>Per-unit score (magnitude, gradient × weight, or Hessian-based) used to decide which heads / layers / channels to drop.</dd>
+            <dt>Calibration set (pruning sense)</dt><dd>A small dataset — typically 256–2,048 examples drawn from your real deployment distribution — used to compute importance scores under realistic input statistics.</dd>
+            <dt>Sparse matmul kernels</dt><dd>Specialised matmul implementations that skip zero weights for real wall-clock gain; rare in the commodity-GPU stack, which is why unstructured pruning usually fails to translate FLOP savings into latency savings.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Lesson quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {"q": "What's the practical difference between structured and unstructured pruning?",
+   "options": ["Structured is faster to compute; unstructured is more accurate", "Structured removes whole heads/layers/channels so matrix shapes shrink and wall-clock wins are real; unstructured zeros individual weights and only helps if you have sparse-aware kernels — on commodity GPUs almost no one does", "Structured uses LoRA; unstructured uses QLoRA", "There's no real difference at inference time"],
+   "answer": 1,
+   "explanation": "Structured pruning shrinks the actual matrices, so dense matmul kernels run faster. Unstructured pruning leaves the matrix shape unchanged; without a sparse kernel a 70%-sparse model still runs at dense speed."},
+  {"q": "Why is recovery training not optional?",
+   "options": ["It's required by the licence", "Aggressive pruning typically costs 10–30 points on substrate benchmarks; the short SFT / distillation pass after pruning is what makes the technique competitive", "It saves disk space", "It only matters for unstructured pruning"],
+   "answer": 1,
+   "explanation": "A pruned-but-not-recovered model is usually dramatically worse than the un-pruned original. Recovery training is where most of the lost quality comes back."},
+  {"q": "Which importance-scoring family is the cheapest but most misleading?",
+   "options": ["Hessian-based / WoodFisher", "Gradient × weight (SNIP-style)", "Magnitude — large-magnitude weights can still be unused, and small ones can be load-bearing; gradient × weight is the practical sweet spot", "Random scoring"],
+   "answer": 2,
+   "explanation": "Magnitude needs no data and no gradients, but it correlates only loosely with importance. Gradient × weight on a calibration set is the usual production choice."},
+  {"q": "When is structured pruning likely to be worth it for an SLM?",
+   "options": ["Always — it's the first compression knob to turn", "Only on models above 70B parameters", "Rarely — usually only after quantization and LoRA distillation have been pushed; if 4-bit quantization already meets the latency budget, skip pruning", "Whenever you have a free GPU"],
+   "answer": 2,
+   "explanation": "Pruning is the third lever, after quantization and distillation. The recovery-training cost and quality risk only justify themselves when the cheaper levers have been exhausted."}
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2>Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="quantization-and-compression.html">Quantization & compression</a><span class="related-lessons__track">Advanced</span></li>
+            <li><a class="inline-link" href="distillation-kd-loss.html">Distillation: KD loss</a><span class="related-lessons__track">Advanced</span></li>
+            <li><a class="inline-link" href="serving-and-inference-optimization.html">Serving and inference optimization</a><span class="related-lessons__track">Advanced</span></li>
+            <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-complete" data-lesson-complete>
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark lesson complete</button>
+          <span class="lesson-complete__status" data-complete-status>Progress is stored locally in your browser.</span>
+        </div>
+
+        <nav class="lesson-nav" aria-label="Lesson navigation">
+          <a href="tool-use-fine-tuning.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Tool-use / function-calling fine-tuning</span></a>
+          <a href="speculative-decoding.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Speculative decoding</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p><a class="footer-link" href="https://github.com/TensorGreed/__SLM__/issues" target="_blank" rel="noopener noreferrer">Support &amp; questions: GitHub Issues</a></p>
+    </footer>
+    <script src="../../script.js"></script>
+    <script src="../../academy.js"></script>
+  </body>
+</html>
