@@ -411,6 +411,43 @@
     });
   }
 
+  /* ── Track-overview YouTube facade ──────────────────────────────
+   * Pages render a thumbnail + play button (.yt-facade). On click,
+   * swap the facade for a youtube-nocookie iframe with autoplay=1
+   * so the first paint stays fast and we don't ping youtube.com
+   * on every page view. */
+  function initYouTubeFacade() {
+    var facades = document.querySelectorAll(".yt-facade");
+    for (var i = 0; i < facades.length; i++) {
+      (function (el) {
+        var btn = el.querySelector(".yt-facade__play");
+        if (!btn) return;
+        btn.addEventListener("click", function () {
+          var id = el.getAttribute("data-video-id");
+          var title = el.getAttribute("data-video-title") || "YouTube video";
+          if (!id) return;
+          var iframe = document.createElement("iframe");
+          iframe.setAttribute(
+            "src",
+            "https://www.youtube-nocookie.com/embed/" + encodeURIComponent(id) + "?autoplay=1&rel=0"
+          );
+          iframe.setAttribute("title", title);
+          iframe.setAttribute(
+            "allow",
+            "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          );
+          iframe.setAttribute("allowfullscreen", "");
+          iframe.setAttribute("loading", "lazy");
+          iframe.className = "yt-facade__iframe";
+          // Replace facade contents with the live iframe.
+          while (el.firstChild) el.removeChild(el.firstChild);
+          el.appendChild(iframe);
+          el.classList.add("yt-facade--playing");
+        });
+      })(facades[i]);
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     showDegradedNotice();
     initMarkComplete();
@@ -418,5 +455,6 @@
     initQuizzes();
     initHub();
     initCertificate();
+    initYouTubeFacade();
   });
 })();

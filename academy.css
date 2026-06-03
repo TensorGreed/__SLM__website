@@ -253,3 +253,23 @@
 .track-index-lessons__title { display: inline-block; font-weight: 600; font-size: var(--fs-md); color: var(--text-primary); text-decoration: none; }
 .track-index-lessons__title:hover { text-decoration: underline; }
 .track-index-lessons__desc { color: var(--text-secondary); margin: var(--space-xs) 0 0; font-size: var(--fs-sm); }
+
+
+/* ── Track-overview YouTube facade ───────────────────────────────────
+ * Lazy YouTube embeds: render a thumbnail + play button; only load
+ * the real iframe on click (academy.js handles the swap). Saves a
+ * youtube.com request on every track-index page view. */
+.track-video { margin: 0 0 var(--space-2xl); }
+.track-video__title { margin: 0 0 var(--space-xs); font-size: var(--fs-md); font-weight: 600; }
+.track-video__hint { color: var(--text-secondary); font-size: var(--fs-sm); margin: 0 0 var(--space-md); }
+.track-video__pair { display: grid; grid-template-columns: 1fr; gap: var(--space-lg); }
+@media (min-width: 720px) { .track-video__pair { grid-template-columns: 1fr 1fr; } }
+.track-video__pair-item h3 { margin: 0 0 var(--space-xs); font-size: var(--fs-sm); font-weight: 600; color: var(--text-secondary); }
+
+.yt-facade { position: relative; aspect-ratio: 16 / 9; max-width: 100%; background: #000; border-radius: var(--radius-lg); overflow: hidden; }
+.yt-facade__thumb { display: block; width: 100%; height: 100%; object-fit: cover; }
+.yt-facade__play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: transparent; border: 0; padding: 0; cursor: pointer; }
+.yt-facade__play svg { width: 68px; height: 48px; transition: transform 180ms ease; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+.yt-facade:hover .yt-facade__play svg { transform: scale(1.10); }
+.yt-facade__play:focus-visible { outline: 3px solid var(--accent, #3b82f6); outline-offset: 2px; }
+.yt-facade__iframe { width: 100%; height: 100%; border: 0; display: block; }
