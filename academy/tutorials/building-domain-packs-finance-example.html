@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Building domain packs — the finance / AP pack worked example — BrewSLM Academy</title>
+    <meta
+      name="description"
+      content="The canonical BrewSLM Academy tutorial on building domain packs. Walks the pack data model end to end — identity, overlay, hooks, registry gates, versioning, assignment — with a finance / AP pack as the worked example. Covers cleaning recipes for currency and locale, per-entity precision floors tied to SOX key controls (three-way match, duplicate detection, vendor master), glossary overlays, sharing across teams, anti-patterns, and migration. Deeper reference than T8."
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Building domain packs — the finance / AP pack worked example" />
+    <meta property="og:description" content="Pack data model end to end. Identity, overlays, hooks, registry gates, versioning, assignment, sharing. Finance / AP pack as the worked example — currency normalisation, three-way-match field harmonisation, per-entity precision floors." />
+    <meta property="og:url" content="https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Building domain packs — finance / AP pack worked example" />
+    <meta name="twitter:description" content="The deep BrewSLM Academy reference on packaging your conventions. Finance / AP pack as the worked example." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YDPSHSVE1K"></script>
+    <script src="../../assets/analytics.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "Build a domain pack in BrewSLM, with the finance / AP pack as the worked example",
+        "description": "End-to-end walkthrough of building a custom BrewSLM domain pack — identity, overlays, hooks, registry gates, versioning, assignment, sharing — using finance / AP extraction as the worked example. Maps per-entity precision floors to SOX key controls (three-way match, duplicate detection, vendor master).",
+        "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html",
+        "inLanguage": "en",
+        "totalTime": "PT3H0M",
+        "estimatedCost": { "@type": "MonetaryAmount", "currency": "USD", "value": "0" },
+        "supply": [
+          { "@type": "HowToSupply", "name": "BrewSLM running locally, with at least one existing extraction project to package conventions from" },
+          { "@type": "HowToSupply", "name": "A finished invoice-extractor project (Tutorial 3) or similar AP project as the seed" }
+        ],
+        "tool": [
+          { "@type": "HowToTool", "name": "BrewSLM" },
+          { "@type": "HowToTool", "name": "Domain Pack Manager" }
+        ],
+        "step": [
+          { "@type": "HowToStep", "name": "What you'll build", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#what-youll-build" },
+          { "@type": "HowToStep", "name": "Why packs", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#why-packs" },
+          { "@type": "HowToStep", "name": "Pack anatomy", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#pack-anatomy" },
+          { "@type": "HowToStep", "name": "Design your pack", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#design-your-pack" },
+          { "@type": "HowToStep", "name": "Cleaning recipes", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#cleaning-recipes" },
+          { "@type": "HowToStep", "name": "Eval threshold overlays", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#eval-threshold-overlays" },
+          { "@type": "HowToStep", "name": "Refusal variants", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#refusal-variants" },
+          { "@type": "HowToStep", "name": "Glossary overlays", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#glossary-overlays" },
+          { "@type": "HowToStep", "name": "Building in the UI", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#building-in-the-ui" },
+          { "@type": "HowToStep", "name": "Testing your pack", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#testing-your-pack" },
+          { "@type": "HowToStep", "name": "Assigning to projects", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#assigning-to-projects" },
+          { "@type": "HowToStep", "name": "Versioning", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#versioning" },
+          { "@type": "HowToStep", "name": "Sharing internally", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#sharing-internally" },
+          { "@type": "HowToStep", "name": "Worked example: finance-pack-v1", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#worked-example-finance" },
+          { "@type": "HowToStep", "name": "Applying to the invoice project", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#applying-to-the-invoice-project" },
+          { "@type": "HowToStep", "name": "Extending the pack", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#extending-the-pack" },
+          { "@type": "HowToStep", "name": "Anti-patterns", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#anti-patterns" },
+          { "@type": "HowToStep", "name": "What's next", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#whats-next" }
+        ],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+          { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+          { "@type": "ListItem", "position": 3, "name": "Tutorials", "item": "https://brewslm.com/academy/tutorials/" },
+          { "@type": "ListItem", "position": 4, "name": "Building domain packs — finance / AP example", "item": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html" }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="tutorials/building-domain-packs-finance-example">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home">
+        <img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" />
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+        <a href="index.html" aria-current="page">Tutorials</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="../index.html">Academy</a></li>
+        <li><a href="index.html">Tutorials</a></li>
+        <li>Building domain packs — finance / AP example</li>
+      </ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page">
+        <p class="lesson-toc__title">On this page</p>
+        <ol data-toc></ol>
+      </aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Tutorial · Deep reference · Domain packs</span>
+          <h1>Building domain packs — the finance / AP pack worked example</h1>
+          <p class="lesson-header__outcome">By the end you'll have a reusable <code>finance-pack-v1</code> registered in BrewSLM, assigned to a working invoice-extraction project, and ready to apply to sibling AP projects (POs, statements, expense reports). The pack carries the conventions your team has converged on — currency normalisation across locales, a weighted-score evaluator hook reflecting which fields drive the SOX key controls, a starter glossary, and tighter registry gates than the platform default. (Per-entity precision floors as gating still live in the project's eval pack.) Where T8 introduced packs lightly, this tutorial is the canonical reference: every contract field, every overlay slot, every assignment edge case.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate → advanced</span>
+            <span><strong>Time:</strong> ~3 hours total (most of it design discussion + JSON authoring)</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="setup-brewslm.html">Tutorial 0 (Setup BrewSLM)</a>. Strongly recommended companions: <a class="inline-link" href="invoice-field-extraction.html">Tutorial 3 (invoice extraction)</a> — the project this pack augments — and <a class="inline-link" href="legal-contracts-domain-pack.html">Tutorial 8 (legal contracts domain pack)</a> — the lighter pack walkthrough, this tutorial goes deeper.</span>
+          </div>
+        </header>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Before you start</p>
+          <p>This tutorial assumes BrewSLM is running locally at <code>http://localhost:5173</code> with an admin user signed in. If you haven't done that yet, complete <a class="inline-link" href="setup-brewslm.html"><strong>Tutorial 0 — Set up BrewSLM and your first project</strong></a> first.</p>
+          <p>You'll get the most out of this tutorial if you already have a finished invoice-extraction project sitting in your workspace — the gold set, the cleaned data, the eval thresholds you converged on. The finance pack we'll build is the act of <em>packaging</em> what's already working into something the rest of your AP team can apply to their projects. <a class="inline-link" href="invoice-field-extraction.html">Tutorial 3</a> walks the invoice extractor end to end.</p>
+          <p>If you've read <a class="inline-link" href="legal-contracts-domain-pack.html">T8</a>, you've already seen the pack contract once. This tutorial does not re-walk the rag-protocol recipe; head back to T1 or T8 for that. The focus here is on the pack layer itself, with finance / AP as the worked example.</p>
+        </div>
+
+        <details class="tutorial-glossary">
+          <summary><strong>Terms you'll see in this tutorial</strong> (click to expand)</summary>
+          <dl>
+            <dt>Domain pack</dt><dd>A typed configuration bundle persisted as a JSON contract against the <code>slm.domain-pack/v1</code> schema. Carries identity, hook references, and an overlay block (dataset split, training defaults, registry gates). Stored in the <code>domain_packs</code> table; one row per pack.</dd>
+            <dt>Recipe</dt><dd>The training-plan template you pick at project creation (rag-protocol, span-extraction, qa-sft, etc.). The pack overlays the recipe — it does not replace it.</dd>
+            <dt>Overlay</dt><dd>The fields inside a pack contract that override platform defaults. Three first-class overlay sections today: <code>dataset_split</code>, <code>training_defaults</code>, <code>registry_gates</code>. Other sections (cleaning hints, glossary, eval thresholds) live in the contract JSON but are not exposed as separate UI form fields.</dd>
+            <dt>Hook</dt><dd>One of three plug-points in a pack: <code>normalizer</code> (per-row transformation), <code>validator</code> (batch quality report), <code>evaluator</code> (metrics enrichment). Each hook is selected from a built-in catalog by ID, with an optional per-hook config dict.</dd>
+            <dt>Registry gates</dt><dd>Promotion thresholds the pack imposes for moving an experiment from training → staging or staging → production. Independent of eval-pack gates but stack with them.</dd>
+            <dt>Schema reference</dt><dd>The literal <code>slm.domain-pack/v1</code> — the contract version every pack is validated against. The platform patches missing fields on load (the historical <code>hooks</code> field, for instance), but breaking changes require a new schema version.</dd>
+            <dt>Default profile</dt><dd>The domain profile a pack adopts when assigned. The platform's default pack points at <code>generic-domain-v1</code>; bespoke packs typically reuse the same profile and rely on the overlay to differentiate.</dd>
+            <dt>Three-way match</dt><dd>The AP control where an incoming invoice has to reconcile against (a) the purchase order issued by procurement and (b) the goods receipt confirming delivery. Mismatch blocks payment in ERPs like SAP, Oracle, NetSuite, Coupa. The single concept most worth getting right when designing a finance pack.</dd>
+          </dl>
+        </details>
+
+        <p>The most common mistake teams make starting out is treating each project as a fresh start. The first invoice extractor lands; conventions get baked in; six weeks later somebody starts a PO extractor and re-derives the same currency normalisation, precision floors, and glossary. The third project does the same. Now there are three projects with three drifting interpretations of "what good looks like" in AP, and the auditor at year-end has three stories to read. Domain packs exist to stop that drift — bundle the conventions into a typed contract once, assign at project creation, and every AP project inherits the same shape. The finance / AP pack we build here is the canonical reference because the field-level precision priorities tie directly to the controls SOX 404 examines.</p>
+
+        <h2 id="what-youll-build">What you'll build</h2>
+        <p>A registered <code>finance-pack-v1</code> with:</p>
+        <ul>
+          <li><strong>Identity</strong> — pack_id, version, AP-eng owner, status active, schema_ref <code>slm.domain-pack/v1</code>, <code>generic-domain-v1</code> as the default profile.</li>
+          <li><strong>Hooks</strong> — three references from the built-in catalog (<code>default-normalizer</code>, <code>default-validator</code>, <code>default-evaluator</code>), each with a config dict carrying finance-specific knobs.</li>
+          <li><strong>Overlay — dataset_split</strong> — 80/10/10 with seed 42 for reproducible manifest hashes.</li>
+          <li><strong>Overlay — training_defaults</strong> — sft / llama3 / 3 epochs / batch 4 / lr 2e-4 / LoRA on. Same shape as platform default, pinned so future drift doesn't move your team's defaults.</li>
+          <li><strong>Overlay — registry_gates</strong> — tighter than platform default. <code>to_staging</code>: F1 ≥ 0.72, llm_judge ≥ 0.80. <code>to_production</code>: F1 ≥ 0.78, llm_judge ≥ 0.85, safety ≥ 0.95, max regression 0.02 on F1 and exact match.</li>
+          <li><strong>Contract sections</strong> for cleaning recipes, the evaluator hook's <code>weights</code> config, glossary — JSON-only (no first-class form fields). Per-entity precision floors themselves live in the project's eval pack, not the domain pack.</li>
+          <li><strong>Assigned to your Tutorial 3 invoice project</strong> with <code>adopt_pack_default_profile=true</code>.</li>
+        </ul>
+
+        <p>Here's the skeleton you'll end up with — a 30-line slice; the full contract appears in the <a class="inline-link" href="#worked-example-finance">Worked example</a> section:</p>
+
+        <pre class="code-block"><code>{
+  "$schema": "slm.domain-pack/v1",
+  "pack_id": "finance-pack-v1",
+  "version": "1.0.0",
+  "display_name": "Finance / AP",
+  "description": "Overlay for accounts-payable extraction projects: invoices, POs, statements, expense reports.",
+  "owner": "ap-eng",
+  "status": "active",
+  "default_profile_id": "generic-domain-v1",
+  "tags": ["finance", "accounts-payable", "extraction"],
+  "overlay": {
+    "dataset_split": { "train": 0.8, "val": 0.1, "test": 0.1, "seed": 42 },
+    "training_defaults": { "training_mode": "sft", "chat_template": "llama3", "num_epochs": 3,
+                           "batch_size": 4, "learning_rate": 0.0002, "use_lora": true },
+    "registry_gates": {
+      "to_staging":    { "min_metrics": { "f1": 0.72, "llm_judge_pass_rate": 0.80 } },
+      "to_production": {
+        "min_metrics": { "f1": 0.78, "llm_judge_pass_rate": 0.85, "safety_pass_rate": 0.95 },
+        "max_regression_vs_prod": { "f1": 0.02, "exact_match": 0.02 }
+      }
+    }
+  },
+  "hooks": {
+    "normalizer": { "hook_id": "default-normalizer", "config": { /* finance knobs */ } },
+    "validator":  { "hook_id": "default-validator",  "config": { /* finance knobs */ } },
+    "evaluator":  { "hook_id": "default-evaluator",  "config": { /* finance knobs */ } }
+  }
+}</code></pre>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>A pack is a typed config bundle, not a model. There is no "finance base model" sitting underneath; the model you train still comes from the recipe. The pack is the layer that says "in our AP world, the dataset splits look like this, the registry gates look like this, the hooks behave like this, the precision priorities look like this." Apply it at project create; every project in the AP portfolio inherits the same shape.</p>
+        </div>
+
+        <h2 id="why-packs">Why bundle conventions as packs</h2>
+        <p>Three reasons, in escalating order of how badly the absence hurts.</p>
+        <dl>
+          <dt>Consistency across siblings</dt>
+          <dd>An AP portfolio is rarely one project — invoice extractor, PO extractor, statement-reconciliation classifier, expense-report categoriser. They share a vocabulary, a currency set, and a definition of "what good looks like" on total_amount precision. Without a pack, each project re-derives the conventions and drift accumulates until somebody notices in the same room.</dd>
+          <dt>Maintenance — change once, propagate by reassign</dt>
+          <dd>When you tighten the production F1 floor from 0.75 to 0.78, you change it in one place. Bump the version, reassign, the new gates apply on next prepare. Without the pack you'd hand-edit five eval configs, miss one, discover it in a post-mortem.</dd>
+          <dt>Audit trail — a typed artifact the auditor can read</dt>
+          <dd>A pack is a JSON contract with identity, version, owner, status, explicit gates. "How does this team enforce minimum precision on payment-blocking fields?" — point at the pack. Better than "we agreed in Slack last March."</dd>
+        </dl>
+        <p>The pack is a discipline, not magic: <em>if it's true across more than one of our projects, it belongs in the pack; otherwise it stays in the project</em>. The rest of this tutorial applies that discipline to finance / AP.</p>
+
+        <h2 id="pack-anatomy">Pack anatomy — every field, what it does, why it's there</h2>
+        <p>The pack is a single typed contract validated against <code>slm.domain-pack/v1</code>. Eleven fields on the row, of which the contract JSON carries identity + overlay + hooks. Walking it field by field, because once you understand each one you can build any pack you need.</p>
+
+        <h3 id="anatomy-identity">Identity fields</h3>
+        <dl>
+          <dt><code>pack_id</code> (3-128 chars, normalised lowercase-with-dashes, unique)</dt>
+          <dd>The stable identifier the rest of the platform references. Once a project is assigned, that string is the join key — treat it as immutable. Casing and whitespace are normalised on lookup, so <code>Finance-Pack-V1</code> and <code>finance-pack-v1</code> resolve to the same row.</dd>
+          <dt><code>version</code> (1-32 chars)</dt>
+          <dd>User-managed version string. The duplicate flow auto-bumps the patch component, but there is no structured semver parsing — it's a string, not a typed semantic version. Use semver shape anyway (<code>1.0.0</code>, <code>1.1.0</code>) for the audit trail.</dd>
+          <dt><code>display_name</code> (1-255 chars, required)</dt>
+          <dd>What humans see in the manager dropdown. "Finance / AP" reads better than "finance-pack-v1" in a list of twelve.</dd>
+          <dt><code>description</code> (optional)</dt>
+          <dd>One or two sentences. The audit reader is your audience.</dd>
+          <dt><code>owner</code> (1-128 chars, default <code>platform</code>)</dt>
+          <dd>The team that maintains the pack. The platform doesn't enforce permissions off it but does display it.</dd>
+          <dt><code>status</code> (<code>draft</code> / <code>active</code> / <code>deprecated</code>)</dt>
+          <dd>Lifecycle marker. There is no DELETE endpoint for packs — flip to <code>deprecated</code> to retire one. Existing assignments are unaffected; deprecation does not detach.</dd>
+          <dt><code>schema_ref</code> (default <code>slm.domain-pack/v1</code>)</dt>
+          <dd>The contract schema. Only one shipping today. Leave it.</dd>
+          <dt><code>default_profile_id</code> (3-128 chars, nullable)</dt>
+          <dd>The domain profile a project adopts when assigned with <code>adopt_pack_default_profile=true</code>. For most bespoke packs, reuse <code>generic-domain-v1</code>.</dd>
+          <dt><code>tags</code> (list)</dt>
+          <dd>Free-form labels. Not filtered in the UI, but visible in the contract diff when you bump versions.</dd>
+        </dl>
+
+        <h3 id="anatomy-overlay">The overlay block</h3>
+        <p>The overlay is where the pack does its work. Three first-class fields on the overlay spec:</p>
+        <dl>
+          <dt><code>overlay.dataset_split</code></dt>
+          <dd>The ratios used at prepare-dataset time. Default <code>{ "train": 0.8, "val": 0.1, "test": 0.1, "seed": 42 }</code>. For AP, the default ratios are almost always right. Override the default ratios from the Prepare panel when one category dominates — the platform's prepare endpoint runs uniform random off the canonical config (train_ratio / val_ratio / test_ratio / seed), so genuine stratification means pre-partitioning your import into 3 separate JSONLs (train.jsonl / val.jsonl / test.jsonl) before import. Same workaround as the other tutorials in this track.</dd>
+          <dt><code>overlay.training_defaults</code></dt>
+          <dd>Pinned training-hyperparameter defaults — sft / llama3 / 3 epochs / batch 4 / lr 2e-4 / LoRA on, matching the platform default. Pinning them in the pack future-proofs against platform-default drift.</dd>
+          <dt><code>overlay.registry_gates</code></dt>
+          <dd>Promotion thresholds — <code>to_staging.min_metrics</code> and <code>to_production.min_metrics</code> set the floors; <code>to_production.max_regression_vs_prod</code> caps per-metric regression for re-promotion. Independent from eval-pack gates but stack with them.</dd>
+          <dt>Other overlay sections (data_quality, normalization, tools, evaluation, audit, glossary)</dt>
+          <dd>The overlay accepts arbitrary additional keys, stored in the JSON and read by hooks that know to look. Not surfaced as form fields — you edit them in the contract textarea.</dd>
+        </dl>
+
+        <h3 id="anatomy-hooks">The hooks block</h3>
+        <p>Three independent hook references — one of each type:</p>
+        <dl>
+          <dt><code>hooks.normalizer</code></dt>
+          <dd>Per-row callable. Receives raw record + canonical record + config; returns normalised record or <code>None</code> to drop. Built-ins: <code>default-normalizer</code>, <code>qa-required-normalizer</code>, <code>min-text-length-normalizer</code>, <code>strip-markdown-normalizer</code>.</dd>
+          <dt><code>hooks.validator</code></dt>
+          <dd>Batch callable. Receives records + profile + config; returns a report with <code>status</code>, <code>total_records</code>, <code>valid_records</code>, <code>failed_records</code>, <code>pass_rate</code>, <code>base_normalization_coverage</code>. Built-ins: <code>default-validator</code>, <code>min-text-length-validator</code>, <code>qa-pair-validator</code>.</dd>
+          <dt><code>hooks.evaluator</code></dt>
+          <dd>Receives eval_type + metrics + config + context; returns enriched metrics. Built-ins: <code>default-evaluator</code>, <code>pass-rate-band-evaluator</code>, <code>weighted-score-evaluator</code>. For finance, weighted-score pairs naturally with per-entity precision priorities (see <a class="inline-link" href="#eval-threshold-overlays">below</a>).</dd>
+        </dl>
+
+        <p>Each hook reference is a <code>hook_id</code> string plus a <code>config</code> dict shaped however the hook implementation expects. Hook errors fall back to default behaviour — robust, but a typo'd config key is silent. Test your hooks.</p>
+
+        <p><strong>✓ Checkpoint:</strong> you can name every field and say which layer reads it (identity = display; overlay = manifest at prepare/train/promote; hooks = data + eval pipeline).</p>
+
+        <h2 id="design-your-pack">Design your pack — what belongs where</h2>
+        <p>The first design question is "what belongs in the pack vs the project." Get it wrong and either the pack carries project-specific bits that don't generalise, or the project carries pack-shaped conventions that drift between siblings. A four-row decision table:</p>
+
+        <table class="comparison-table">
+          <thead>
+            <tr><th>Question</th><th>Pack</th><th>Project</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>True across most AP projects (invoice + PO + statement + expense)?</td><td>✓</td><td>—</td></tr>
+            <tr><td>True only for one project (e.g. invoice line-item descriptions)?</td><td>—</td><td>✓</td></tr>
+            <tr><td>An audit answer the org needs (precision floor tied to a SOX key control)?</td><td>✓</td><td>—</td></tr>
+            <tr><td>A model artefact (LoRA adapter, checkpoint, eval results)?</td><td>—</td><td>✓</td></tr>
+          </tbody>
+        </table>
+
+        <p>The shorthand: <strong>policy goes in the pack, artefacts go in the project</strong>. The pack says "we expect this precision on payment-blocking fields"; the project carries the model and eval results demonstrating it. "Show me the policy" — point at the pack. "Show me compliance" — point at the project's eval row. The per-entity precision priorities (total_amount tight, line_item_description looser) belong in the pack; the eval scores belong in the project.</p>
+
+        <h2 id="cleaning-recipes">Cleaning recipes — currency, locale, three-way-match harmonisation</h2>
+        <p>The cleaning pipeline runs per row on import and before training. The pack overlays its conventions on the platform's cleaning defaults via the normalizer hook's <code>config</code> dict — most knobs in finance land here. Three areas worth packaging.</p>
+
+        <h3 id="cleaning-currency">Currency normalisation</h3>
+        <p>Currency parsing makes the cut because the gotchas are quietly numerous and a naive "split on comma" parser misclassifies a meaningful fraction of European and Indian invoices:</p>
+        <ul>
+          <li><strong>US / UK / most-English</strong> use comma-thousand period-decimal (<code>$1,234.56</code>). The baseline most parsers assume.</li>
+          <li><strong>German / Austrian / Italian / most-EU</strong> use period-thousand comma-decimal (<code>1.234,56 €</code>). A US-locale parser reading that as a decimal lands at one thousand two hundred thirty-four — a thousand-fold overpayment.</li>
+          <li><strong>French</strong> often uses space-thousand comma-decimal (<code>1 234,56 €</code>); non-breaking spaces from PDF extractors break naive regex.</li>
+          <li><strong>Swiss CHF</strong> uses apostrophe-thousand period-decimal (<code>1'234.56</code>) — apostrophe is distinctive enough to drive locale detection.</li>
+          <li><strong>Indian Numbering System</strong> uses lakh grouping — first separator after 3 digits then every 2 (<code>1,23,456.78</code>). Parsers assuming 3-digit groups mis-parse Indian invoices.</li>
+          <li><strong>JPY / KRW</strong> have no minor unit (<code>¥1,234</code>, not <code>¥1,234.00</code>). Forcing two decimals introduces spurious <code>.00</code> values.</li>
+        </ul>
+        <p>The canonical normalisation target is <strong>ISO 4217 codes</strong> — USD, EUR, GBP, INR, JPY, CHF — paired with the amount as a decimal. Symbol-only (<code>$</code>) is ambiguous (USD vs CAD vs AUD vs MXN vs SGD); the pack should encode "bare dollar sign resolves via vendor billing country" rather than guess.</p>
+
+        <p>The pack contract encodes the locale set the normalizer attempts plus the fallback rules; the hook reads the config and does the work:</p>
+
+        <pre class="code-block"><code>"normalizer": {
+  "hook_id": "default-normalizer",
+  "config": {
+    "currency": {
+      "iso4217_target": true,
+      "locales_attempted": ["en_US", "en_GB", "de_DE", "fr_FR", "it_IT", "de_CH", "en_IN", "ja_JP"],
+      "symbol_only_fallback_via": "vendor_billing_country",
+      "no_minor_unit_currencies": ["JPY", "KRW"]
+    }
+  }
+}</code></pre>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Today: default-normalizer is a no-op</p>
+          <p>Today the platform's <code>default-normalizer</code> hook is a no-op — it accepts the config and returns the row unchanged. The config block above is read-only documentation until you ship a custom normalizer plugin that implements the locale-aware logic, OR you handle currency normalisation in your gold-set preparation workflow (the more common path). The config still documents the intent for your team; the actual normalisation lives elsewhere for now.</p>
+        </div>
+
+        <h3 id="cleaning-dates">Date format disambiguation</h3>
+        <p><code>03/04/2026</code> is March 4 in the US and April 3 across most of Europe. The pack-level policy: if the vendor billing country is in the EU-locale set, parse as DD/MM/YYYY; otherwise MM/DD/YYYY; if no country is known, flag the row for the validator. Silent locale flips on <code>due_date</code> are the textbook way to miss early-payment discounts.</p>
+
+        <h3 id="cleaning-three-way">Three-way-match field harmonisation</h3>
+        <p>The three-way match reconciles each invoice line against the purchase order and the goods receipt; mismatch blocks payment in the ERP. Common break points: quantity drift (ordered vs received vs billed), unit-price drift (list vs negotiated), UOM mismatch (case vs each), and PO-line vs invoice-line aggregation differences.</p>
+        <p>At the cleaning layer, the pack harmonises the field shapes feeding the match — standardise UOM strings (<code>EA</code>, <code>CS</code>, <code>BX</code>, <code>PLT</code>) onto a common vocabulary, normalise quantity to a decimal, pin PO_number formatting so a vendor's reformatting whim doesn't break the match key. The match runs in the ERP; the data feeding it should be clean.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Three-way match is the control; extraction is the data feeding it</p>
+          <p>Get the amount, the PO number, and the quantities wrong and the control fails silently — which is exactly the scenario SOX 404 exists to prevent. The pack's cleaning recipe is partially in service of keeping the three-way match's input clean.</p>
+        </div>
+
+        <p><strong>✓ Checkpoint:</strong> your normalizer hook config carries the currency-locale set, the date-format resolution rule, and the UOM standardisation vocabulary your AP team agrees on. If two contributors disagree on the right value, that's the conversation the pack design forced — which is the point.</p>
+
+        <h2 id="eval-threshold-overlays">Eval threshold overlays — per-entity precision floors</h2>
+        <p>The most load-bearing finance-pack insight is that <em>not every field is equally important</em>. An extractor scoring 99% on <code>line_item_description</code> and 94% on <code>total_amount</code> is not "mostly working" — it's failing on the field that drives the SOX control. The pack encodes that asymmetry once; every project inherits it.</p>
+
+        <p>Three tiers, in descending priority:</p>
+
+        <dl>
+          <dt>Payment-blocking (tightest floor)</dt>
+          <dd><code>total_amount</code>, <code>currency</code>, <code>vendor_tax_id</code>, <code>invoice_number</code>, <code>invoice_date</code>, <code>due_date</code>, <code>PO_number</code>, line <code>quantity</code>, line <code>unit_price</code>. Errors block payment or cause over/duplicate payment. The duplicate-detection key is typically <code>(vendor_id, invoice_number, invoice_date, amount)</code> — <code>invoice_number</code> precision directly drives that control. <strong>Target: precision ≥ 0.95.</strong></dd>
+          <dt>Match-feeding (tight floor)</dt>
+          <dd>UOM, line aggregation keys, vendor name. Don't immediately block payment but break the three-way match and route to the exceptions queue. <strong>Target: precision ≥ 0.90.</strong></dd>
+          <dt>Informational (looser floor)</dt>
+          <dd><code>shipping_address</code>, <code>line_item_description</code> prose, contact name, remit-to phone. Recoverable, rarely block payment. <strong>Target: precision ≥ 0.80.</strong></dd>
+        </dl>
+
+        <p>The pack does <em>not</em> override eval-pack thresholds directly. Eval packs and domain packs are siblings — eval packs gate the trained model; domain packs gate dataset / training / registry transitions. Per-entity floors live in the eval pack the project selects (the JSON copy-edit-select flow from the eval-pack scaffold). The domain pack documents your team's per-entity priorities as guidance; the actual gating happens at the eval-pack layer. The evaluator hook on the domain pack provides only the weighted-score signal:</p>
+
+        <pre class="code-block"><code>"evaluator": {
+  "hook_id": "weighted-score-evaluator",
+  "config": {
+    "weights": { "payment_blocking": 0.6, "match_feeding": 0.3, "informational": 0.1 }
+  }
+}</code></pre>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Future: per-entity precision floors as a pack-level overlay</p>
+          <p>Per-entity precision floors as a pack-level overlay aren't yet wired into the evaluator hook — today the weighted-score evaluator reads only a <code>weights</code> key. For the moment, set per-entity precision floors on your eval pack (via the JSON copy-edit-select flow), not on the domain pack.</p>
+        </div>
+
+        <p>The weighted-score evaluator adds a single <code>weighted_score</code> metric to your eval results — a configurable weighted average across entities you've prioritised. It does NOT compute per-tier precision or flag floor failures; that's an eval-pack concern (set those gates in the pack JSON, not the evaluator hook). The pack's <code>registry_gates</code> stay independent and still apply.</p>
+
+        <p>Why the asymmetry matters for AP: duplicate detection samples on amount; auditors sample on amount; reconciliation breaks on penny mismatches; the three-way match keys on PO_number and quantities. The payment-blocking tier is the set of fields where extraction errors translate directly to a control failure. Skipping an early-payment discount because <code>due_date</code> drifted by a month is a 36.5%-annualised opportunity cost on that invoice; quietly paying a duplicate because <code>invoice_number</code> missed a leading zero is a control deficiency the auditor will write up. The looser informational floor isn't laziness — it's honest prioritisation of the precision budget.</p>
+
+        <h2 id="refusal-variants">Refusal variants — current platform gap, honest workaround</h2>
+        <p>If you've read T8, you've met this gap. The pack contract is a typed config bundle applied at project-create time; synthetic playbooks read their prompt text from the project's synth config separately. <strong>The pack does not rewrite playbook prompts today.</strong> Per-pack refusal-phrase customisation would be a natural fit for the contract — it's a portfolio-wide policy — but it isn't wired yet.</p>
+
+        <p>The honest workaround, translated to finance:</p>
+        <ol>
+          <li>Hand-seed 8-12 gold rows where the right answer is your AP team's refusal phrase ("I can't extract that field from this invoice — the required marker is missing or illegible. Please route to the AP exceptions queue.").</li>
+          <li>Customise the relevant synth playbook's prompt text in the project's synth config so the teacher's refusals match your team's approved wording rather than the platform default.</li>
+          <li>Hand-edit a few generated rows in the synth review queue before accepting.</li>
+        </ol>
+
+        <p>Document the workaround in the pack's description field. The audit reader sees "this pack uses the platform default refusal phrase; the AP-eng team layers the team-specific phrase via gold + synth prompts per project" — the honest state.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Honest gap, not a feature</p>
+          <p>Putting refusal phrases into the pack contract today is "looks right, no effect." The validator accepts any extra keys, but no platform code reads them. Keep the workaround in the runbook, not the contract.</p>
+        </div>
+
+        <h2 id="glossary-overlays">Glossary overlays — packaging the vocabulary</h2>
+        <p>AP has a glossary every new team member has to absorb: PO (purchase order), GR/IR (goods receipt / invoice receipt), three-way match, vendor master, tax ID, payment terms (Net 30, Net 60, EOM, 2/10 net 30). Packaging the vocabulary into the pack does two things — it gives the audit reader a documented definition of the terms the pack policies refer to, and it gives downstream consumers (the synth playbook prompts, the eval explanations, the model card) a single source of truth.</p>
+
+        <p>The pack contract today does not surface a first-class <code>glossary</code> field; the overlay accepts arbitrary keys, so you encode the glossary in the contract JSON and the downstream consumers read it by convention. A minimal AP glossary section looks like:</p>
+
+        <pre class="code-block"><code>"overlay": {
+  "glossary": {
+    "PO":              "Purchase order. The procurement document that authorises a vendor to deliver goods/services.",
+    "GR/IR":           "Goods receipt / invoice receipt. The accrual account for received-not-yet-invoiced spend.",
+    "three_way_match": "Reconciliation of invoice ↔ purchase order ↔ goods receipt before payment.",
+    "vendor_master":   "Authoritative supplier record (legal name, tax ID, remit-to bank, terms).",
+    "tax_id":          "Vendor tax identifier (EIN for US persons, VAT for EU, GSTIN for India, etc.).",
+    "Net 30":          "Payment due 30 days after invoice date.",
+    "2/10 net 30":     "2% discount if paid within 10 days; otherwise full balance by day 30."
+  }
+}</code></pre>
+
+        <p>It's worth stating the limits clearly. The glossary section is not a first-class form field in the manager — you author it inside the contract JSON. Nothing in the platform parses the glossary keys today; the value of including it is documentation, not behaviour. If you want the glossary to drive synth prompt generation or model-card output, the consumer code that reads it lives in your hooks or your project automation, not in the platform core.</p>
+
+        <p>The selection that pays back the most is the dozen terms that appear in your refusal phrases, your eval explanations, and your audit responses. Anything beyond that is glossary-bloat — the second-most-common pack-design mistake (the first is putting refusal phrases there, see the prior section).</p>
+
+        <h2 id="building-in-the-ui">Building the pack in the Domain Pack Manager</h2>
+        <p>Open the Domain Pack Manager from <strong>Project → Domain → Pack</strong>. It's the only entry point — pack assignment doesn't happen anywhere else. Four areas:</p>
+
+        <ol>
+          <li><strong>Active pack panel</strong> — top, read-only, shows the currently-assigned pack's display name and <code>pack_id@version</code>. If nothing was set, shows <code>general-pack-v1</code>.</li>
+          <li><strong>Pack-selection controls</strong> — a dropdown of every installed pack plus four buttons: <em>Assign to Project</em>, <em>View / Edit Contract</em>, <em>Duplicate + Open Editor</em>, <em>New Pack</em>. A clickable grid list below with metadata badges (status, system flag, selected) offers the same selection as the dropdown.</li>
+          <li><strong>Hook catalog</strong> — three-column panel of available normalizers, validators, evaluators with descriptions and source plugin module. Below: <em>Loaded Plugin Modules</em>, <em>Plugin Load Errors</em>, and two buttons (<em>Refresh Catalog</em>, <em>Reload Plugins</em>).</li>
+          <li><strong>Editor modal</strong> — opens on <em>New Pack</em>, <em>View / Edit Contract</em>, or after a duplicate. Contains the <em>Hook Helper</em> (three dropdowns + Load From JSON / Apply To JSON for bidirectional sync) and the <em>Contract JSON textarea</em> (monospace editor where the contract actually lives).</li>
+        </ol>
+
+        <p>The flow to build <code>finance-pack-v1</code>:</p>
+        <ol>
+          <li><strong>Click <em>New Pack</em>.</strong> The editor opens with a starter contract.</li>
+          <li><strong>Fill identity in the JSON</strong> — pack_id, version, display_name, description, owner, status, default_profile_id, tags. The hint flags pack_id and display_name as required.</li>
+          <li><strong>Use the Hook Helper to pick hooks.</strong> Pick a normalizer, validator, evaluator; click <em>Apply To JSON</em> to write the IDs into the contract's <code>hooks</code> section. The dropdowns are the only first-class way to see which hook IDs are valid — typing them by hand is a typo waiting to happen.</li>
+          <li><strong>Edit the overlay JSON</strong> — dataset_split, training_defaults, registry_gates, plus the additional contract sections (cleaning hints, glossary, the evaluator hook's <code>weights</code> config). Overlay sections beyond the three first-class fields are JSON-only; no form fields exist for cleaning, validation, glossary, or eval thresholds.</li>
+          <li><strong>Save.</strong> Validates against <code>slm.domain-pack/v1</code>. Common errors: typo'd hook IDs (Hook Helper avoids this), missing required identity fields, malformed JSON.</li>
+        </ol>
+
+        <div class="callout callout--note">
+          <p class="callout__label">What the UI does not surface</p>
+          <p>The manager has <strong>no search or filter</strong> on the pack list (every pack shows; pick from the dropdown or click in the grid). Overlay sections beyond the three first-class fields are <strong>JSON-only</strong> — no form fields for cleaning, glossary, or eval thresholds. There is <strong>no view-only mode</strong> (opening the editor opens it editable). There is <strong>no in-line delete or archive button</strong>; use the <code>status</code> enum to deprecate. There is <strong>no version picker</strong> (the version shown is whatever was last saved). There is <strong>no batch operation</strong> (assign-many, duplicate-many). And there is <strong>no unassign button</strong> after a pack has been assigned to a project — only reassign to a different pack.</p>
+        </div>
+
+        <p><strong>✓ Checkpoint:</strong> the pack list shows <code>finance-pack-v1</code> alongside the seeded <code>general-pack-v1</code>, with the active badge if you assigned it, the system badge only on the seeded one, and your chosen status. Opening the editor on it should round-trip — Load From JSON populates the hook helper dropdowns to the IDs you saved, Apply To JSON writes them back unchanged.</p>
+
+        <h2 id="testing-your-pack">Testing your pack before applying it</h2>
+        <p>There's no dry-run endpoint, and the manager's save step validates only the JSON contract structure (schema reference, required identity fields, hook reference shape). The actual hook behaviour is wrapped in try/except with fallback to default behaviour — a typo in a hook config key is silent. The implication: testing is on you.</p>
+
+        <p>The minimum acceptable test pass:</p>
+        <ol>
+          <li><strong>Round-trip the contract.</strong> Save the pack, reopen the editor, confirm the contract JSON comes back unchanged (modulo whitespace). If it doesn't round-trip, the validator dropped a field you wrote — usually a typo in a known key.</li>
+          <li><strong>Assign to a sandbox project.</strong> Create a throwaway project (or reuse an existing scratch one), assign the pack, look at the project's prepare-dataset and training-defaults panels. Confirm the dataset split, training defaults, and registry gates now reflect the pack's overlay rather than the platform default.</li>
+          <li><strong>Run prepare and watch the validator output.</strong> The validator hook reports its findings; compare a baseline run to your test run to see whether your pack config is actually being applied. If you expected a config change to bite and didn't see one, check: (1) the hook ID spelling matches a registered hook, (2) any custom plugin you wrote has been loaded via the Reload Plugins button on the manager, (3) your config-key names match what the hook implementation reads. Most pack debugging starts with one of these three.</li>
+          <li><strong>Run a training experiment.</strong> Even a small one — 30 rows is enough. The registry gates show on the experiment page after training; the <code>weighted_score</code> metric shows in the eval summary if your evaluator hook is reading the <code>weights</code> config. The act of running through end-to-end catches the hook-loading and config-key issues the JSON validator can't catch.</li>
+        </ol>
+
+        <p>The Reload Plugins button is your friend during this phase. If you ship a custom hook implementation as a Python plugin module, the platform lazy-loads it on first reference; if you change the plugin code, you'll need to reload to pick up the change. The Loaded Plugin Modules card on the catalog shows you what's currently in memory; the Plugin Load Errors card surfaces import-time failures.</p>
+
+        <h2 id="assigning-to-projects">Assigning the pack to projects</h2>
+        <p>Assignment is a single click — pick the pack from the dropdown, click <em>Assign to Project</em>, confirm. What actually happens on the backend is worth knowing:</p>
+        <ol>
+          <li>The project's <code>domain_pack_id</code> foreign key gets set to the pack's <code>pack_id</code>.</li>
+          <li>If <code>adopt_pack_default_profile=true</code> (the UI's default), the project's <code>domain_profile_id</code> gets reset to the pack's <code>default_profile_id</code> — if that profile exists. If it doesn't, the profile stays as-is.</li>
+          <li>The runtime resolution path will, from this point onward, fetch the pack's contract on every prepare / train / promote and merge the overlay into the effective project config.</li>
+        </ol>
+
+        <p>One quietly important fact: the merge precedence depends on whether the assigned pack is the platform default. For the platform default pack (<code>general-pack-v1</code>), the project's profile takes precedence over the pack's overlay — the default pack is a fallback, not an override. For any non-default pack (everything you'll ever build), the pack's overlay takes precedence over the profile. The intent is clear: if you went out of your way to build a custom pack and assign it, you want it to win.</p>
+
+        <p>There is <strong>no unassign or detach endpoint</strong>. Reassign to a different pack to change behaviour; manually null-setting the foreign key would require database surgery, which is not a workflow the platform supports. The practical workaround for "I want to undo this pack assignment" is to reassign to <code>general-pack-v1</code>, which puts the project back on platform defaults.</p>
+
+        <p>And there is no automatic re-assignment when you bump a pack's version — see the next section.</p>
+
+        <p><strong>✓ Checkpoint:</strong> your invoice project's header now labels it with <code>finance-pack-v1</code>; the prepare and training panels show the pack's dataset split and training defaults; the registry gates panel shows the tightened to-staging and to-production floors.</p>
+
+        <h2 id="versioning">Versioning — what packs do, what they don't, how to migrate</h2>
+        <p>The pack's <code>version</code> is a user-managed string. No structured semver parsing, no migration plumbing, no auto-versioning. The duplicate flow auto-bumps the patch component when you copy a pack — that's the only automation. Three implications:</p>
+
+        <ul>
+          <li><strong>Bumping the version is a discipline, not a feature.</strong> When you tighten the production F1 floor from 0.78 to 0.80 (the kind of change a team makes after their first audit cycle), bump the version. <code>1.0.0 → 1.1.0</code> for material policy changes; <code>1.0.0 → 1.0.1</code> for description tweaks.</li>
+          <li><strong>Pack updates do not retroactively change assigned projects.</strong> Overlay is read at prepare / train / promote time. Existing projects pick up the new overlay on their next run, not retroactively; in-flight runs are unaffected.</li>
+          <li><strong>No DELETE.</strong> Retire by setting <code>status=deprecated</code>; existing assignments keep working, the badge discourages new ones. The platform doesn't refuse a deprecated-pack assignment — the signal is social.</li>
+        </ul>
+
+        <p>Migration workflow for bumping to <code>finance-pack-v2</code>:</p>
+        <ol>
+          <li>Duplicate <code>finance-pack-v1</code>. The manager opens the editor on a copy with a bumped pack_id (auto-suffixed <code>-v2</code>) — overwrite to <code>1.1.0</code> for an in-place bump, or to a new pack_id if the contract changes shape.</li>
+          <li>Edit the overlay or hook config to encode the change.</li>
+          <li>Save.</li>
+          <li>Re-assign the AP projects you want migrated. Each picks up the new overlay on its next prepare / train / promote.</li>
+          <li>Mark <code>finance-pack-v1</code> as <code>deprecated</code> once migration is complete.</li>
+        </ol>
+
+        <p>The discipline pays back when an auditor reads the contract history: "this pack moved to v1.1.0 on 2026-09-15 to raise the production F1 floor; here are the projects that re-prepared under v1.1.0 and each project's eval row demonstrating compliance." That sentence is what the versioning system buys you.</p>
+
+        <h2 id="sharing-internally">Sharing the pack across teams — manual copy, no marketplace</h2>
+        <p>BrewSLM does not ship a Pack Marketplace, a Pack Hub, or a shared upstream registry. There is no export endpoint and no import endpoint. The sharing model is manual JSON copy-paste, which is honest about what exists and works fine at the scale most internal AP teams operate at.</p>
+
+        <p>The workflow:</p>
+        <ol>
+          <li><strong>Source side</strong> — open the pack in the editor, copy the contract JSON out of the textarea.</li>
+          <li><strong>Paste it into a shared internal docs page, a git repo, or wherever your team versions configuration.</strong> Treat the JSON as the canonical artefact — it's the typed contract anyway.</li>
+          <li><strong>Target side</strong> — in the other tenant's Domain Pack Manager, click <em>New Pack</em>, paste the JSON into the editor's textarea, save.</li>
+          <li><strong>Re-pick the hooks via the Hook Helper.</strong> Hook IDs are tenant-local — if the target tenant has different hook plugins installed, the source pack's hook IDs may not resolve. The Hook Helper's dropdowns are populated from the target tenant's catalog; pick equivalents and Apply To JSON.</li>
+        </ol>
+
+        <p>This sounds clunky and is. It is also, today, exactly what the platform offers. The accurate framing for the audit reader is "the pack contract is stored as JSON, which we version in our internal docs and replicate by manual copy to each BrewSLM tenant." Not "we have a marketplace." If your AP team operates across many tenants, treat the JSON as the artefact and the tenant as the deployment target.</p>
+
+        <h2 id="worked-example-finance">Worked example — the full finance-pack-v1 contract</h2>
+        <p>Pulling the sections together. Annotations inside the JSON use <code>// …</code> markers — they're not valid JSON syntax, the reader sees them as inline commentary; strip the comments before pasting into the editor.</p>
+
+        <pre class="code-block"><code>{
+  "$schema": "slm.domain-pack/v1",
+  "pack_id": "finance-pack-v1",
+  "version": "1.0.0",
+  "display_name": "Finance / AP",
+  "description": "Overlay for accounts-payable extraction projects (invoices, POs, statements, expense reports). Encodes currency-locale normalisation, a weighted-score evaluator hook reflecting which fields drive the SOX key controls, AP glossary, and tighter registry gates than the platform default. (Per-entity precision floors as gating live in each project's eval pack.)",
+  "owner": "ap-eng",
+  "status": "active",
+  "default_profile_id": "generic-domain-v1",
+  "tags": ["finance", "accounts-payable", "extraction", "sox-keyed"],
+
+  "overlay": {
+    // Standard split, pinned so a platform-default drift doesn't move the AP team's ratios.
+    "dataset_split": { "train": 0.8, "val": 0.1, "test": 0.1, "seed": 42 },
+
+    // Pinned training defaults — same shape as the platform default, explicit in the pack.
+    "training_defaults": {
+      "training_mode": "sft", "chat_template": "llama3",
+      "num_epochs": 3, "batch_size": 4, "learning_rate": 0.0002, "use_lora": true
+    },
+
+    // Tighter than platform default (staging 0.65, production 0.70, regression cap 0.03).
+    "registry_gates": {
+      "to_staging":    { "min_metrics": { "f1": 0.72, "llm_judge_pass_rate": 0.80 } },
+      "to_production": {
+        "min_metrics":            { "f1": 0.78, "llm_judge_pass_rate": 0.85, "safety_pass_rate": 0.95 },
+        "max_regression_vs_prod": { "f1": 0.02, "exact_match": 0.02 }
+      }
+    },
+
+    // Non-first-class overlay sections — JSON-only, read by hooks that know to look here.
+    "glossary": {
+      "PO":              "Purchase order — procurement document authorising a vendor to deliver.",
+      "GR/IR":           "Goods receipt / invoice receipt accrual for received-not-yet-invoiced spend.",
+      "three_way_match": "Reconciliation of invoice ↔ PO ↔ goods receipt prior to payment.",
+      "vendor_master":   "Authoritative supplier record (legal name, tax ID, remit-to bank, terms).",
+      "tax_id":          "Vendor tax identifier (US EIN, EU VAT, India GSTIN, etc.).",
+      "Net 30":          "Payment due 30 days after invoice date.",
+      "2/10 net 30":     "2% discount if paid within 10 days; otherwise full balance by day 30."
+    }
+  },
+
+  "hooks": {
+    "normalizer": {
+      "hook_id": "default-normalizer",
+      "config": {
+        "currency": {
+          "iso4217_target": true,
+          "locales_attempted": ["en_US", "en_GB", "de_DE", "fr_FR", "it_IT", "de_CH", "en_IN", "ja_JP"],
+          "symbol_only_fallback_via": "vendor_billing_country",
+          "no_minor_unit_currencies": ["JPY", "KRW"]
+        },
+        "date": {
+          "resolution_via": "vendor_billing_country",
+          "us_locales": ["en_US"], "eu_locales": ["en_GB", "de_DE", "fr_FR", "it_IT", "de_CH"],
+          "ambiguous_action": "flag_for_validator"
+        },
+        "three_way_match_fields": {
+          "uom_vocabulary": ["EA", "CS", "BX", "PLT", "KG", "L"],
+          "po_number_strip_whitespace": true,
+          "po_number_uppercase": true
+        }
+      }
+    },
+    "validator": {
+      "hook_id": "default-validator",
+      "config": {
+        "required_fields": ["total_amount", "currency", "invoice_number", "invoice_date"],
+        "flag_ambiguous_dates": true,
+        "flag_missing_po_number_for_goods": true
+      }
+    },
+    "evaluator": {
+      "hook_id": "weighted-score-evaluator",
+      "config": {
+        "weights": { "payment_blocking": 0.6, "match_feeding": 0.3, "informational": 0.1 }
+      }
+    }
+  }
+}</code></pre>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Future: per-entity precision floors as a pack-level overlay</p>
+          <p>Per-entity precision floors as a pack-level overlay aren't yet wired into the evaluator hook — today the weighted-score evaluator reads only a <code>weights</code> key. For the moment, set per-entity precision floors on your eval pack (via the JSON copy-edit-select flow), not on the domain pack.</p>
+        </div>
+
+        <p>That is the full contract. It encodes the conventions an AP team is likely to converge on after one or two audit cycles, in a shape every project in the AP portfolio can apply at create-time. The audit reader's first question — "show me the policy" — has a single artefact to answer it.</p>
+
+        <h2 id="applying-to-the-invoice-project">Applying the pack to the invoice project</h2>
+        <p>Go to your Tutorial 3 invoice project. Open the Domain Pack Manager. The Active panel shows <code>general-pack-v1</code>. Pick <code>finance-pack-v1</code> from the dropdown; click <em>Assign to Project</em>; confirm.</p>
+
+        <p>What changes on the next prepare or training run:</p>
+        <ul>
+          <li><strong>Dataset split</strong> moves to 80/10/10 with seed 42. If the project was on a different seed, the held-out slice changes — re-run eval after the next prepare for comparable numbers.</li>
+          <li><strong>Training defaults</strong> are pinned. Per-experiment overrides still win at the trainer-call layer; the pack pins what new experiments inherit.</li>
+          <li><strong>Registry gates</strong> tighten. Existing eval rows may now show "not promotable" against the new floors even if they were promotable before — the pack is doing its job.</li>
+          <li><strong>The cleaning pipeline</strong> runs with the new normalizer config on the next prepare. Currency attempts the full locale set; dates resolve via vendor billing country; UOM standardises.</li>
+          <li><strong>The eval summary</strong> now includes a single <code>weighted_score</code> metric (the configured weighted average across the entities you prioritised) alongside the raw F1/precision/recall numbers. Per-entity precision and recall are still reported by the eval handler in the standard breakdown; the <code>weighted_score</code> is the additional convenience signal the evaluator hook provides.</li>
+          <li><strong>The refusal phrase</strong> does <em>not</em> change automatically — the gap from the refusal section applies. Customise the synth prompt to imprint the AP-team phrase.</li>
+        </ul>
+
+        <p>One subtle artefact: <code>adopt_pack_default_profile=true</code> is the UI default, so the project's <code>domain_profile_id</code> resets to <code>generic-domain-v1</code>. If you had a bespoke profile, re-set it afterward.</p>
+
+        <p><strong>✓ Checkpoint:</strong> the experiment page reflects the tightened registry gates; the eval summary shows the additional <code>weighted_score</code> metric from the evaluator hook (set up correctly + reading your weights config); the validator surfaces ambiguous-date and missing-PO flags. If nothing changed, check the project header for the active pack badge.</p>
+
+        <h2 id="extending-the-pack">Extending the pack to PO, statement, and expense extractors</h2>
+        <p>The same pack carries cleanly to the other AP projects in the portfolio. The interesting question is what stays in the pack and what stays per-project. Walking through the sibling projects:</p>
+
+        <dl>
+          <dt>Purchase-order extractor</dt>
+          <dd>Same currency normalisation, same date handling, same UOM standardisation, same tax_id precision floor. POs have a slightly different field shape (no invoice_date, no due_date, but they do have a required_delivery_date and a PO-issuer's authorising signature), so your team's mental tiers shift — <code>required_delivery_date</code> joins the payment-blocking priority group and the signature field is informational. You'd reflect this in the eval pack's per-entity gates, not in the domain pack itself (per the "eval pack carries the floors" note above). The conventions are pack; the field shape is project.</dd>
+          <dt>Statement-reconciliation classifier</dt>
+          <dd>This is a classifier, not an extractor, so per-entity precision priorities don't directly apply. What does apply is the dataset_split, training_defaults, registry_gates — the structural overlays. The hooks still apply too; the validator's three-way-match checks aren't relevant, but the currency normalisation is (statements list invoice amounts; the same locale set has to parse). The pack's design intentionally allows partial use — only the relevant overlays bite.</dd>
+          <dt>Expense-report categoriser</dt>
+          <dd>Closer to the invoice case but with a smaller field surface (employee_id, expense_category, expense_amount, currency, receipt_date). Same currency and date rules apply. Your team's mental priority tiers compress to two — a payment-blocking group (amount, currency, employee_id) and an informational group (category prose, merchant name) — and you'd encode the per-entity floors that follow in the project's eval pack rather than in the domain pack.</dd>
+        </dl>
+
+        <p>The pack scales across the portfolio by carrying the conventions that <em>do</em> generalise and leaving the field-shape specifics to the project. If you find yourself wanting to put per-project field lists into the pack, that's the signal to ask "do these field lists generalise, or am I about to drag project-specific cruft into the pack?" Usually it's the latter; usually the right answer is to leave it in the project and let the pack carry the framework.</p>
+
+        <h2 id="anti-patterns">Anti-patterns — common pack-design mistakes</h2>
+
+        <dl>
+          <dt>Over-stuffing — everything goes into the pack</dt>
+          <dd>The temptation when you start is to put everything that worked into the pack — exact field list, specific synth prompts, model-card text. The result is a project clone with extra steps that doesn't generalise. The discipline: "true across more than one project"; if not, leave it in the project.</dd>
+          <dt>Version drift — changing thresholds without bumping the version</dt>
+          <dd>Editing the JSON in place and saving without bumping the version leaves the audit trail with a single version string and a silently-changed policy. Bump on any policy change, even small ones. <code>1.0.0 → 1.0.1</code> is cheap; "we don't know which version was in force during Q3 close" is expensive.</dd>
+          <dt>Tight coupling — pack assumes a specific recipe</dt>
+          <dd>Hardcoding <code>training_mode: span-extraction</code> means the pack can't apply to siblings on a different recipe. Encode the values that genuinely generalise (epochs, learning rate, batch size); leave recipe-specific ones to the project's recipe-default layer.</dd>
+          <dt>Schema rot — fields the validator accepts but no platform code reads</dt>
+          <dd>Adding aspirational fields (refusal customisation, eval-gate overrides, model-card templates) gives a contract that looks richer than it is. The audit reader can't tell which fields drive behaviour. Write only fields the platform reads, and document the gap honestly when you'd like more.</dd>
+          <dt>Pack-versus-eval-pack confusion</dt>
+          <dd>Pack <code>registry_gates</code> and the eval pack's eval gates are separate. Tightening the production F1 floor in the pack does <em>not</em> change what the eval pack scores against. Both must pass for promotion; both need updating for policy changes.</dd>
+          <dt>Refusal phrases in the contract</dt>
+          <dd>The validator accepts any extra keys, but no platform code reads a refusal phrase today. Encoding refusal text in the contract gives the illusion of policy with none of the behaviour. Carry refusal text in the project's synth prompts until pack-level wiring exists.</dd>
+        </dl>
+
+        <h2 id="whats-next">What's next</h2>
+        <p>You have a registered <code>finance-pack-v1</code>, an invoice project applying it, and a path to extend it to the rest of the AP portfolio. Three next moves:</p>
+        <dl>
+          <dt>Apply it across the portfolio</dt>
+          <dd>Open every AP project in your tenant. Assign the pack. Watch which ones now show "not promotable" against the tightened registry gates — those are the projects that were quietly under-performing. Use that signal to prioritise data and synth work.</dd>
+          <dt>Monitor pack effectiveness over time</dt>
+          <dd>The pack is policy; the projects' eval rows are the evidence. Track per-quarter the share of AP-portfolio projects whose latest eval clears the pack's gates. Falling share means either the gates have outrun the data shape (sometimes legitimate — bump the version downward) or the data shape is decaying (more likely — investigate per project).</dd>
+          <dt>Contribute back to your internal pack library</dt>
+          <dd>If your <code>finance-pack-v1</code> turns out to encode conventions other AP teams in your org would benefit from, copy the JSON contract into your internal documentation repo, label it with the version, and circulate. There's no marketplace; the JSON file is the artefact. Other teams paste it into their tenant via <em>New Pack</em>, re-pick hooks via the Hook Helper if the IDs differ, and they have the same policy applied.</dd>
+        </dl>
+
+        <p>For more end-to-end tutorials covering other recipes — the rag-protocol family, span extraction, classification — head back to the <strong><a class="inline-link" href="index.html">tutorials hub</a></strong>.</p>
+
+        <section class="key-terms">
+          <h2 id="key-terms">Key terms</h2>
+          <dl>
+            <dt>Domain pack</dt><dd>Typed configuration bundle persisted as JSON against the <code>slm.domain-pack/v1</code> schema. Carries identity, overlay (dataset_split, training_defaults, registry_gates plus other JSON-only sections), and three hook references (normalizer, validator, evaluator). Stored in the <code>domain_packs</code> table, one row per pack.</dd>
+            <dt>Overlay</dt><dd>The fields in a pack contract that override platform defaults. Three first-class sections (dataset_split, training_defaults, registry_gates); additional sections (cleaning hints, glossary, eval thresholds via hook config) live in the JSON but are not exposed as form fields in the UI.</dd>
+            <dt>Hook</dt><dd>One of three plug-points in a pack — normalizer (per-row transformation), validator (batch report), evaluator (metrics enrichment). Selected from a built-in catalog by ID; each carries an optional config dict.</dd>
+            <dt>Registry gates</dt><dd>The promotion thresholds the pack imposes for training → staging → production. Independent from eval-pack gates; both must pass for promotion.</dd>
+            <dt>Default profile</dt><dd>The domain profile a pack adopts when assigned with <code>adopt_pack_default_profile=true</code>. Most bespoke packs reuse <code>generic-domain-v1</code>.</dd>
+            <dt>Pack assignment</dt><dd>The act of pointing a project at a pack — sets the project's <code>domain_pack_id</code> foreign key and optionally adopts the default profile. One-way from the UI; there is no unassign endpoint, only reassign.</dd>
+            <dt>Three-way match</dt><dd>The AP control reconciling invoice ↔ purchase order ↔ goods receipt before payment. The single concept whose extraction failure mode drives the most direct mapping to a control failure; the finance pack's cleaning recipe and per-entity precision priorities both serve it.</dd>
+            <dt>Payment-blocking fields</dt><dd>The AP fields where extraction errors translate directly to either blocked payment or wrong payment — total_amount, currency, vendor_tax_id, invoice_number, invoice_date, due_date, PO_number, line quantities, line unit prices. The finance team's convention is a 0.95 precision floor on this priority group, encoded in the project's eval pack.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Tutorial quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "Which of these belongs in the pack (vs the project) for an AP portfolio?",
+    "options": [
+      "The trained LoRA adapter weights",
+      "The eval results from the last training run",
+      "The dataset_split, training_defaults, and registry_gates that every AP project should inherit",
+      "The list of specific PO line items in the held-out test split"
+    ],
+    "answer": 2,
+    "explanation": "Policy goes in the pack; artefacts go in the project. The dataset split, training defaults, and registry gates are portfolio-wide conventions — they belong in the pack. The trained adapter, the eval results, and the specific data rows are artefacts of one project's run. (Per-entity precision floors as actual gating live in the eval pack — the domain pack only documents the team's per-entity priorities and the evaluator hook's <code>weights</code> config.)"
+  },
+  {
+    "q": "You bump the production F1 floor in finance-pack-v1 from 0.78 to 0.80 by editing the contract JSON and saving. What happens to existing projects already assigned to the pack?",
+    "options": [
+      "All assigned projects re-prepare automatically and re-evaluate against the new floor",
+      "The overlay is read at prepare / train / promote time; existing projects pick up the new floor on their next prepare/train/promote, not retroactively. You should also bump the version, because no auto-versioning exists",
+      "The platform refuses the edit because the version wasn't bumped",
+      "Existing projects keep the old floor permanently; only newly-assigned projects see the new value"
+    ],
+    "answer": 1,
+    "explanation": "Pack overlays are read at prepare / train / promote time — they apply to the next run, not retroactively. Version bumping is a discipline, not an enforcement; the platform won't stop you from editing in place, but the audit trail loses a story if you don't bump. Honest pack maintenance is bump-version, re-assign or re-run, document."
+  },
+  {
+    "q": "Why doesn't this tutorial put the AP team's refusal phrase ('I can't extract that field; route to exceptions') directly into the pack contract?",
+    "options": [
+      "Refusal phrases are not a SOX-permitted artefact",
+      "The pack contract validator accepts any extra keys, but no platform code reads a refusal phrase out of the pack today. Synth playbooks read prompt text from the project's synth config separately. The honest workaround is gold examples + per-project synth prompt customisation",
+      "Refusal phrases are immutable and come from the recipe",
+      "The pack does change the refusal phrase, but only after a full re-training run"
+    ],
+    "answer": 1,
+    "explanation": "The contract validator will accept the field; no behaviour follows. Per-pack refusal customisation would be a natural future enhancement — today, the refusal phrase has to be imprinted via the project's gold set plus synth-prompt edits. Documenting the workaround keeps the pack honest."
+  },
+  {
+    "q": "Which of these is NOT something the Domain Pack Manager UI exposes today?",
+    "options": [
+      "A dropdown of every installed pack",
+      "A Hook Helper with three dropdowns and Load From JSON / Apply To JSON buttons",
+      "A search/filter bar on the pack list",
+      "A Contract JSON textarea for editing overlay sections that don't have first-class form fields"
+    ],
+    "answer": 2,
+    "explanation": "The manager has no search or filter UI; every installed pack shows, pick from the dropdown or the click list. The Hook Helper, the JSON textarea, and the four-button control set are the manager's actual surface area. Overlay sections beyond dataset_split / training_defaults / registry_gates are JSON-only."
+  }
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2 id="related">Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="setup-brewslm.html">Tutorial 0 — Set up BrewSLM and your first project</a><span class="related-lessons__track">Tutorials</span></li>
+            <li><a class="inline-link" href="invoice-field-extraction.html">Tutorial 3 — Invoice field extraction (the AP project this pack augments)</a><span class="related-lessons__track">Tutorials</span></li>
+            <li><a class="inline-link" href="legal-contracts-domain-pack.html">Tutorial 8 — Legal contracts domain pack (the lighter pack walkthrough)</a><span class="related-lessons__track">Tutorials</span></li>
+            <li><a class="inline-link" href="../with-brewslm/eval-packs-and-failure-clusters.html">Eval packs, gates & failure clusters</a><span class="related-lessons__track">Track 3</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/gold-sets.html">Gold sets — what they are, how to build one</a><span class="related-lessons__track">Track 1B</span></li>
+            <li><a class="inline-link" href="../with-brewslm/auto-rag-and-reroute.html">Auto-RAG & reroute-to-RAG</a><span class="related-lessons__track">Track 3</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-actions">
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark tutorial complete</button>
+          <a class="btn btn-outline" href="index.html">← All tutorials</a>
+        </div>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>© <span id="footer-year">2026</span> BrewSLM Academy. <a class="inline-link" href="../glossary.html">Glossary</a> · <a class="inline-link" href="../certificate.html">Certificate</a> · <a class="inline-link" href="../small-language-model-roadmap.html">Roadmap</a></p>
+    </footer>
+    <script src="../../academy.js"></script>
+    <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
+  </body>
+</html>
