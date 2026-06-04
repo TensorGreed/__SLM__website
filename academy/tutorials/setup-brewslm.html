@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tutorial 0 — Set up BrewSLM and your first project — BrewSLM Academy</title>
+    <meta
+      name="description"
+      content="Get BrewSLM running locally in 15 minutes: clone the repo, start the backend on port 8000, start the frontend on port 5173, log in as the bootstrap admin user, create your first project, and learn where the main surfaces (Data Studio, Training, Evaluation, Playground, the notification bell) live in the UI. Prerequisite for every other tutorial in this track."
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/tutorials/setup-brewslm.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Tutorial 0 — Set up BrewSLM and your first project" />
+    <meta property="og:description" content="Clone, install, run, log in, and tour the main surfaces. The prerequisite for every other BrewSLM Academy tutorial." />
+    <meta property="og:url" content="https://brewslm.com/academy/tutorials/setup-brewslm.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Tutorial 0 — Set up BrewSLM and your first project" />
+    <meta name="twitter:description" content="Clone, install, run, log in, tour the surfaces." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YDPSHSVE1K"></script>
+    <script src="../../assets/analytics.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "Set up BrewSLM and create your first project",
+        "description": "Clone the BrewSLM repository, install backend + frontend dependencies, run the dev servers, log in as the bootstrap admin user, create your first project, and tour the main surfaces.",
+        "url": "https://brewslm.com/academy/tutorials/setup-brewslm.html",
+        "inLanguage": "en",
+        "totalTime": "PT15M",
+        "estimatedCost": { "@type": "MonetaryAmount", "currency": "USD", "value": "0" },
+        "supply": [
+          { "@type": "HowToSupply", "name": "Python 3.11 or later" },
+          { "@type": "HowToSupply", "name": "Node.js 18 or later" },
+          { "@type": "HowToSupply", "name": "Git" },
+          { "@type": "HowToSupply", "name": "Optional: Redis for queued jobs; optional: a GPU for real training" }
+        ],
+        "step": [
+          { "@type": "HowToStep", "name": "Clone the repository", "url": "https://brewslm.com/academy/tutorials/setup-brewslm.html#clone" },
+          { "@type": "HowToStep", "name": "Start the backend", "url": "https://brewslm.com/academy/tutorials/setup-brewslm.html#backend" },
+          { "@type": "HowToStep", "name": "Start the frontend", "url": "https://brewslm.com/academy/tutorials/setup-brewslm.html#frontend" },
+          { "@type": "HowToStep", "name": "Log in", "url": "https://brewslm.com/academy/tutorials/setup-brewslm.html#login" },
+          { "@type": "HowToStep", "name": "Create your first project", "url": "https://brewslm.com/academy/tutorials/setup-brewslm.html#first-project" },
+          { "@type": "HowToStep", "name": "Tour the main surfaces", "url": "https://brewslm.com/academy/tutorials/setup-brewslm.html#tour" }
+        ],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+          { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+          { "@type": "ListItem", "position": 3, "name": "Tutorials", "item": "https://brewslm.com/academy/tutorials/" },
+          { "@type": "ListItem", "position": 4, "name": "Setup BrewSLM", "item": "https://brewslm.com/academy/tutorials/setup-brewslm.html" }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="tutorials/setup-brewslm">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home">
+        <img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" />
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+        <a href="index.html" aria-current="page">Tutorials</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="../index.html">Academy</a></li>
+        <li><a href="index.html">Tutorials</a></li>
+        <li>Setup BrewSLM</li>
+      </ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page">
+        <p class="lesson-toc__title">On this page</p>
+        <ol data-toc></ol>
+      </aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Tutorial 0 · Setup · Prerequisite</span>
+          <h1>Set up BrewSLM and create your first project</h1>
+          <p class="lesson-header__outcome">By the end of this tutorial you'll have BrewSLM running locally at <code>http://localhost:5173</code>, an admin user you can log in as, an empty project you created from the dashboard, and a mental map of where the main surfaces (Data Studio, Training, Evaluation, Playground, the notification bell) live. Every other tutorial in this track assumes you've done this one — start here.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> beginner</span>
+            <span><strong>Time:</strong> ~15 minutes (mostly waiting for <code>pip install</code> and <code>npm install</code>)</span>
+            <span><strong>Prerequisites:</strong> Git, Python 3.11+, Node.js 18+, a terminal</span>
+          </div>
+        </header>
+
+        <p>This is the unglamorous tutorial that every other tutorial leans on. We're going to clone the repo, get the backend running on port 8000, get the frontend running on port 5173, log in, and click through the dashboard so you know where things are. No machine learning yet — just enough to land you in front of a working empty project, ready to import data in Tutorial 1.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>BrewSLM is two processes: a <strong>FastAPI backend on port 8000</strong> and a <strong>Vite frontend on port 5173</strong>. The frontend is what you'll click; the backend is what does the work. They talk to each other over HTTP. In dev mode they both run on your laptop.</p>
+        </div>
+
+        <h2 id="prereqs">What you need installed first</h2>
+        <p>Confirm these are on your machine before you start. From a terminal:</p>
+        <pre class="code-block"><code>python3 --version    # need 3.11 or later
+node --version       # need 18 or later
+git --version        # any modern version
+</code></pre>
+        <p>If <code>python3</code> reports 3.10 or earlier: install Python 3.11 from <a class="inline-link" href="https://www.python.org/downloads/" target="_blank" rel="noopener noreferrer">python.org</a> or via your package manager (<code>brew install python@3.12</code> on macOS, <code>apt install python3.12</code> on Debian/Ubuntu). If Node is too old: <a class="inline-link" href="https://nodejs.org/" target="_blank" rel="noopener noreferrer">nodejs.org</a> or <code>nvm install 20</code>.</p>
+        <p>Optional but recommended:</p>
+        <ul>
+          <li><strong>A GPU with CUDA.</strong> Strictly optional — the SmolLM2-135M default model trains on CPU in 10-15 minutes. With a GPU it's 3-5 minutes. You can finish every tutorial without a GPU.</li>
+          <li><strong>Redis.</strong> Only needed for queued long-running jobs (the Celery worker). The tutorials don't require it — the platform falls back to synchronous execution without it.</li>
+          <li><strong>Ollama.</strong> The free local synth backend the tutorials use. Install from <a class="inline-link" href="https://ollama.com" target="_blank" rel="noopener noreferrer">ollama.com</a> and run <code>ollama pull llama3.1</code> to grab a teacher model. Without Ollama you'll need OpenAI / Anthropic / DeepSeek API keys for synth generation.</li>
+        </ul>
+
+        <h2 id="clone">Step 1 — Clone the repository</h2>
+        <p>In a terminal:</p>
+        <pre class="code-block"><code>git clone https://github.com/TensorGreed/__SLM__.git
+cd __SLM__</code></pre>
+        <p>You should see a project structure like this:</p>
+        <pre class="code-block"><code>__SLM__/
+├── backend/        # FastAPI + SQLAlchemy + alembic — the work happens here
+├── frontend/      # React + TypeScript + Vite — the UI
+├── data/          # gitignored; created on first backend run
+├── README.md
+└── package.json   # repo-root tooling</code></pre>
+        <p><strong>✓ Checkpoint:</strong> running <code>ls backend frontend</code> shows both directories. If <code>git clone</code> failed: confirm you have GitHub access and the URL is reachable — public clones don't need auth.</p>
+
+        <h2 id="backend">Step 2 — Start the backend (port 8000)</h2>
+        <p>This is the longer of the two installs because Python ML libraries are heavy. Plan for ~3-5 minutes for the first install.</p>
+        <pre class="code-block"><code>cd backend
+python3 -m venv .venv
+source .venv/bin/activate       # on Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env
+uvicorn app.main:app --reload --port 8000</code></pre>
+        <p>When the backend starts you'll see log lines ending with:</p>
+        <pre class="code-block"><code>INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [12345]
+INFO:     Started server process [12346]
+INFO:     Application startup complete.</code></pre>
+        <p>Leave that terminal running. The <code>--reload</code> flag means the backend will hot-reload when you edit Python files — handy if you peek at the code while doing the tutorials.</p>
+        <p><strong>✓ Checkpoint:</strong> open <a class="inline-link" href="http://localhost:8000/docs" target="_blank" rel="noopener noreferrer"><code>http://localhost:8000/docs</code></a> in your browser. You should see the FastAPI auto-generated API docs page (Swagger UI) with a long list of endpoints. If the page doesn't load: check the uvicorn terminal for errors; the most common issue is a missing dependency that <code>pip install</code> skipped silently — re-run <code>pip install -r requirements.txt</code>.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">GPU users</p>
+          <p>For real training on a GPU, install the GPU-flavoured requirements instead: <code>pip install -r requirements-gpu.txt</code>, then install a CUDA-enabled torch wheel that matches your CUDA version (see the README for vendor-specific instructions). For the tutorials' default model (SmolLM2-135M) CPU is fine.</p>
+        </div>
+
+        <h2 id="frontend">Step 3 — Start the frontend (port 5173)</h2>
+        <p>Open a <em>second</em> terminal — leave the backend running in the first one.</p>
+        <pre class="code-block"><code>cd __SLM__/frontend
+npm install
+npm run dev</code></pre>
+        <p>npm install takes 1-3 minutes the first time. When the dev server starts, you'll see:</p>
+        <pre class="code-block"><code>  VITE v7.x.x  ready in 432 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose</code></pre>
+        <p><strong>✓ Checkpoint:</strong> open <a class="inline-link" href="http://localhost:5173" target="_blank" rel="noopener noreferrer"><code>http://localhost:5173</code></a> in your browser. The page should redirect you to <code>/login</code> automatically. You should see the BrewSLM logo, a "Sign in" form, and a "Sign in with SSO" button. If the page is blank: check the frontend terminal — usually a missing env var or a port conflict (5173 already in use). The frontend hot-reloads on file edits the same way the backend does.</p>
+
+        <h2 id="login">Step 4 — Log in as the bootstrap admin user</h2>
+        <p>BrewSLM ships with a "local login" path that auto-provisions new users on first sign-in. In dev mode (<code>AUTH_ENABLED=false</code> is the default in <code>.env.example</code>), you can use any username and a fixed dev password. <strong>Use the username <code>admin</code></strong> — the platform treats this username specially as the bootstrap user with full project access.</p>
+        <p>On the login page:</p>
+        <ol>
+          <li>In <strong>Username</strong>, type <code>admin</code>.</li>
+          <li>In <strong>Password</strong>, type the value of <code>API_KEY</code> from your <code>backend/.env</code> file. The default value from <code>.env.example</code> is <code>sk-mock-admin-key</code>.</li>
+          <li>Click <strong>Sign in</strong>.</li>
+        </ol>
+        <p><strong>✓ Checkpoint:</strong> after sign-in you should land on <code>/projects</code> — the project dashboard. The header shows <code>admin</code> in the top right. The body says something like "You don't have any projects yet" with a big <strong>+ New Project</strong> button. If you see "you don't have access to any projects" instead, you logged in as a non-admin user (the default ENGINEER role doesn't get any projects until an admin grants access). Sign out, sign back in with the exact username <code>admin</code>.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Production auth is different</p>
+          <p>In a real deployment you'd set <code>AUTH_ENABLED=true</code>, configure OIDC, and admins would manage user → project memberships explicitly. The auto-provisioning + dev-password path is dev-only convenience. Don't ship a real deployment with <code>sk-mock-admin-key</code> as the API key.</p>
+        </div>
+
+        <h2 id="first-project">Step 5 — Create your first project</h2>
+        <p>On the <code>/projects</code> dashboard:</p>
+        <ol>
+          <li>Click the <strong>+ New Project</strong> button (top right of the project list).</li>
+          <li>A modal opens. Fill in:
+            <ul>
+              <li><strong>Name</strong>: anything memorable — for example <code>tutorial-0-test</code>.</li>
+              <li><strong>Description</strong>: optional — type "first project from Tutorial 0" or leave it empty.</li>
+              <li><strong>Recipe</strong>: the dropdown lists every recipe BrewSLM ships. For this first project pick <code>qa-sft</code> (the most general). Other recipes (<code>classification</code>, <code>rag-protocol</code>, <code>span-extraction</code>, <code>summarization</code>, <code>code-review</code>, <code>generic-sft</code>) all work too — you can change later or create a second project per recipe.</li>
+              <li><strong>Domain Pack</strong> + <strong>Domain Profile</strong>: leave both blank. The platform's defaults work fine. (Tutorial 8 covers domain packs.)</li>
+            </ul>
+          </li>
+          <li>Click <strong>Create project</strong>.</li>
+        </ol>
+        <p><strong>✓ Checkpoint:</strong> you should now be on the project detail page. The URL looks like <code>/project/1</code> (the project id is 1 since this is your first). The left sidebar shows pipeline stages: <strong>Pipeline</strong>, <strong>Domain</strong>, <strong>Workflow</strong>, <strong>Training Config</strong>. The top of the page shows the project name. The center panel shows the Data Studio overview — which is empty because there's no data yet. That's expected.</p>
+
+        <h2 id="tour">Step 6 — Tour the main surfaces</h2>
+        <p>Take five minutes to click through the main panels so the rest of the tutorials don't feel like a treasure hunt. The terms used in the other tutorials map to these surfaces:</p>
+        <dl>
+          <dt>Top navigation bar</dt>
+          <dd>Persistent across every page. From left: the BrewSLM logo (clicks home to the project dashboard), the project name dropdown (switches projects), the page-level navigation, and on the far right the <strong>notification bell</strong> (the cluster of icons including a bell shape). The bell tracks every background job — synth generation, training runs, dataset prep, RAG comparison. Click it to see in-flight + completed jobs.</dd>
+          <dt>Left sidebar — pipeline stages</dt>
+          <dd>The vertical sidebar on the project detail page. Stages are: Ingest → Clean → Gold Set → Synthetic → Dataset Prep → Tokenize → Train → Evaluate → Compress → Export → Deploy. Click any stage to jump to its surface. The current stage is highlighted.</dd>
+          <dt>Data Studio</dt>
+          <dd>The most-used surface. Mostly that's the <strong>Pipeline → Data</strong> entry in the sidebar (you may also see "Data Studio" as a top-level link depending on the build). It's a multi-panel view: <strong>Overview readiness</strong> at the top (the "% toward your stated goal" widget), then panels for <strong>Sources</strong>, <strong>Mapping</strong>, <strong>Quality &amp; Safety</strong>, <strong>Gold Set</strong>, <strong>Synthetic Playbook Center</strong>, <strong>Review Queue</strong>, <strong>Prepare Dataset</strong>, <strong>Dataset Versions</strong>. The tutorials refer to these by name; you can find any of them by scrolling the Data Studio page or using the in-page section index.</dd>
+          <dt>Synthetic tab</dt>
+          <dd>Where you run synth playbooks (paraphrase, hard-negatives, refusals, etc.) and accept/reject generated rows in the <strong>Review Queue</strong> at the bottom of the page. The playbooks themselves are configured from the <strong>Synthetic Playbook Center</strong> in Data Studio.</dd>
+          <dt>Training tab</dt>
+          <dd>Where you configure + launch training runs. The center shows the experiment list with live-loss sparklines for in-flight runs and a "kill switch" if a run goes off the rails. Each experiment has its own detail page with the full loss curve, eval results, exported artifacts.</dd>
+          <dt>Evaluation tab</dt>
+          <dd>Where eval packs run + scorecards land. The <strong>Failure Clusters</strong> panel groups eval failures by reason so you can fix the biggest cluster first. The <strong>Reroute Recommendation</strong> panel surfaces when the platform thinks you should switch to RAG instead of more training.</dd>
+          <dt>Playground</dt>
+          <dd>Chat with your trained model. Each turn carries a small provenance footer at the bottom showing which adapter served the reply, which RAG chunks (if any) were retrieved, and the latency. The Playground is the most reliable smoke test for "did the model actually learn what I trained it on?"</dd>
+        </dl>
+        <p>You don't have to memorise this — the tutorials reference these surfaces by exact name, and your project's empty state will guide you through filling them in.</p>
+
+        <h2 id="optional-worker">Optional — Start the worker (only for big jobs)</h2>
+        <p>For long-running queued jobs (real GPU training, big synth runs, remote dataset imports), BrewSLM uses Celery. The tutorials don't strictly require it — small synth runs and the SmolLM2 default model finish synchronously. But if you plan to run heavy GPU training, start the worker in a third terminal:</p>
+        <pre class="code-block"><code>cd backend
+source .venv/bin/activate
+celery -A app.worker.celery_app worker --loglevel=INFO --pool=threads --concurrency=2</code></pre>
+        <p>You'll need Redis running for this — install Redis from your package manager (<code>brew install redis</code> / <code>apt install redis-server</code>) and start it (<code>redis-server</code>). If you skip this, queued jobs will sit in the bell as "queued" forever — that's the symptom.</p>
+
+        <h2 id="api-docs">Optional — Browse the API docs</h2>
+        <p>With the backend running, <a class="inline-link" href="http://localhost:8000/docs" target="_blank" rel="noopener noreferrer"><code>http://localhost:8000/docs</code></a> serves Swagger UI for every endpoint. Useful when you want to know what's available behind a panel ("what does that 'Run prepare now' button POST to?") or you're scripting BrewSLM from a notebook. The right side of the page shows endpoint groups: Projects, Datasets, Experiments, Evaluation, Synthetic, Coach, Playground, etc. Each endpoint has a "Try it out" button — handy for sanity checks.</p>
+
+        <h2 id="troubleshoot">Common first-time issues</h2>
+        <dl>
+          <dt>Port 8000 or 5173 already in use</dt>
+          <dd>Another process is hogging the port. Find it with <code>lsof -i :8000</code> (macOS/Linux) or <code>netstat -ano | findstr :8000</code> (Windows) and kill it, or start the backend on a different port (<code>uvicorn ... --port 8001</code>). If you change the backend port, the frontend's dev proxy in <code>frontend/vite.config.ts</code> needs to match.</dd>
+          <dt>pip install fails on the heavy dependencies (torch, transformers)</dt>
+          <dd>The most common cause is an older Python (3.10 or earlier) where some wheels aren't available. Confirm <code>python3 --version</code> shows 3.11+. On Apple Silicon, set <code>SYSTEM_VERSION_COMPAT=0</code> before <code>pip install</code> if you see arm64 wheel resolution issues.</dd>
+          <dt>npm install fails with peer-dep warnings</dt>
+          <dd>For Node 18+ those warnings are usually safe to ignore — the platform tests against Node 18 + 20. If npm errors hard, try <code>npm install --legacy-peer-deps</code>.</dd>
+          <dt>Login succeeds but I see "no project access"</dt>
+          <dd>You logged in with a non-admin username. The platform auto-provisions new users with the ENGINEER role which has no project access by default. Sign out (top-right user menu) and sign back in with <code>admin</code> as the username — that user has full bootstrap access.</dd>
+          <dt>The bell is empty even after I click "Run something"</dt>
+          <dd>Background jobs need either Celery+Redis (real queue) or sync execution (default fallback). If you're seeing "queued" status that never progresses, you started a Celery-routed action without Celery running — either start Celery (see above) or check that the action's endpoint isn't passing <code>async_job=true</code>.</dd>
+          <dt>The frontend can't talk to the backend (network errors in the browser console)</dt>
+          <dd>Confirm both processes are running. Open <code>http://localhost:8000/docs</code> directly to verify the backend; open <code>http://localhost:5173</code> to verify the frontend. If both load but the frontend fires <code>fetch('/api/...')</code> calls that 404, the dev proxy isn't routing — check <code>frontend/vite.config.ts</code>.</dd>
+        </dl>
+
+        <h2 id="whats-next">What's next</h2>
+        <p>You have BrewSLM running, an admin user, and an empty project. The other tutorials assume exactly this state. Pick one:</p>
+        <dl>
+          <dt><a class="inline-link" href="support-faq-rag-protocol.html">Tutorial 1 — Support FAQ assistant with rag-protocol</a></dt>
+          <dd>The canonical workflow. Build a small model that grounds answers in your FAQ corpus, cites the source chunk, and refuses cleanly off-topic. Best first tutorial if you want to ship a customer-facing retrieval-grounded assistant.</dd>
+          <dt><a class="inline-link" href="sql-injection-classifier.html">Tutorial 2 — SQL injection classifier (security)</a></dt>
+          <dd>A binary classifier for inline security checks. Best first tutorial if you want to learn the classification recipe + the hard-negatives playbook, especially if your team is security-focused.</dd>
+        </dl>
+        <p>If your project doesn't match either of these shapes (you want extraction, multi-class triage, code review, etc.), wait for the upcoming tutorials — the <a class="inline-link" href="index.html">tutorials hub</a> tracks the roster + status.</p>
+
+        <section class="key-terms">
+          <h2 id="key-terms">Key terms (just the bare minimum for now)</h2>
+          <dl>
+            <dt>Backend</dt><dd>The FastAPI Python process at <code>http://localhost:8000</code>. Handles all data, model, and job work. Survives frontend restarts.</dd>
+            <dt>Frontend</dt><dd>The Vite/React UI at <code>http://localhost:5173</code>. The thing you click. Talks to the backend over HTTP.</dd>
+            <dt>Project</dt><dd>One BrewSLM training effort. Has one recipe, one gold set, one dataset family, one trained model (or many experiments comparing variants). Multiple projects per BrewSLM install are normal.</dd>
+            <dt>Recipe</dt><dd>The training plan template — base model + adapter + eval pack bundle. You pick one when creating a project. The full list (rag-protocol, classification, qa-sft, span-extraction, summarization, code-review, generic-sft) is covered across the other tutorials.</dd>
+            <dt>Data Studio</dt><dd>The dashboard for getting data into shape: import, clean, gold set, synthetic data, prepare. Where you spend most of your time before training.</dd>
+            <dt>Notification bell</dt><dd>Top-right icon. Tracks every background job. Tells you when a 30-second synth generation is done or a 30-minute training run is converging.</dd>
+            <dt>Admin user</dt><dd>The bootstrap account with full project access. Always log in as <code>admin</code> for the tutorials — other usernames auto-provision as engineers with no project access.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Tutorial quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "On a fresh BrewSLM dev install, what URL serves the frontend you click and what URL serves the backend API?",
+    "options": [
+      "Frontend on :8000, backend on :5173",
+      "Frontend on :5173, backend on :8000",
+      "Both on :3000",
+      "Frontend on :3000, backend on :8080"
+    ],
+    "answer": 1,
+    "explanation": "Vite serves the frontend on :5173 (the URL you'll point your browser at). FastAPI serves the backend on :8000 (the URL Swagger UI lives at /docs)."
+  },
+  {
+    "q": "Why log in as the username 'admin' specifically and not anything else for the tutorials?",
+    "options": [
+      "It's the only username the platform accepts",
+      "Other usernames auto-provision as ENGINEER with no project access — admin is the bootstrap user with full perms",
+      "It triggers special analytics",
+      "It bypasses the password check"
+    ],
+    "answer": 1,
+    "explanation": "Per the platform's auto-provisioning rule, new usernames land as ENGINEER (no project access). The 'admin' username is the bootstrap account with full perms — every tutorial assumes you're admin."
+  },
+  {
+    "q": "Where do you watch progress for a background job (synth generation, training run, dataset prep)?",
+    "options": [
+      "The browser dev tools network tab",
+      "The notification bell in the top right of every page",
+      "The uvicorn terminal",
+      "There's no way to track it"
+    ],
+    "answer": 1,
+    "explanation": "The bell is the persistent surface for background-job progress. It survives page navigation and surfaces 'X% complete' for in-flight jobs and a 'open' deep-link when a job completes."
+  },
+  {
+    "q": "You started both the backend and frontend, opened localhost:5173/login, signed in as admin, and saw 'no project access'. What's the cause?",
+    "options": [
+      "The backend isn't running",
+      "Your password is wrong",
+      "You typed a different username — the auto-provisioning rule put you in the ENGINEER role",
+      "BrewSLM isn't installed correctly"
+    ],
+    "answer": 2,
+    "explanation": "The exact username 'admin' is what triggers full bootstrap access. Any typo (Admin, ADMIN, admin1) auto-provisions a new ENGINEER user with no project access. Sign out, sign back in with the exact lowercase 'admin'."
+  }
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2 id="related">Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="support-faq-rag-protocol.html">Tutorial 1 — Support FAQ assistant with rag-protocol</a><span class="related-lessons__track">Tutorials</span></li>
+            <li><a class="inline-link" href="sql-injection-classifier.html">Tutorial 2 — SQL injection classifier</a><span class="related-lessons__track">Tutorials</span></li>
+            <li><a class="inline-link" href="../foundations/slm-project-lifecycle.html">The mental model of an SLM project</a><span class="related-lessons__track">Track 0</span></li>
+            <li><a class="inline-link" href="../with-brewslm/from-script-to-platform.html">From script to platform: the BrewSLM lifecycle</a><span class="related-lessons__track">Track 3</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-actions">
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark tutorial complete</button>
+          <a class="btn btn-outline" href="index.html">← All tutorials</a>
+        </div>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>© <span id="footer-year">2026</span> BrewSLM Academy. <a class="inline-link" href="../glossary.html">Glossary</a> · <a class="inline-link" href="../certificate.html">Certificate</a> · <a class="inline-link" href="../small-language-model-roadmap.html">Roadmap</a></p>
+    </footer>
+    <script src="../../academy.js"></script>
+    <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
+  </body>
+</html>

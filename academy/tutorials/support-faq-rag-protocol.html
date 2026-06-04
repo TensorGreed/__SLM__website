@@ -132,6 +132,27 @@
           </div>
         </header>
 
+        <div class="callout callout--note">
+          <p class="callout__label">Before you start</p>
+          <p>This tutorial assumes BrewSLM is running locally at <code>http://localhost:5173</code> with an admin user signed in. If you haven't done that yet, complete <a class="inline-link" href="setup-brewslm.html"><strong>Tutorial 0 — Set up BrewSLM and your first project</strong></a> first. It takes ~15 minutes and is the prerequisite for every tutorial in this track.</p>
+          <p>You'll also want, before you start: <strong>~60 rows of (context, question, answer) FAQ data</strong> in a CSV or JSONL file. Easiest source: scrape your help-center pages, or grab a row sample from <a class="inline-link" href="https://huggingface.co/datasets/squad" target="_blank" rel="noopener noreferrer">SQuAD</a> if you just want to validate the workflow.</p>
+        </div>
+
+        <details class="tutorial-glossary">
+          <summary><strong>Terms you'll see in this tutorial</strong> (click to expand)</summary>
+          <dl>
+            <dt>Recipe</dt><dd>The training-plan template you pick when creating a project. For this tutorial: <code>rag-protocol</code>. Defines the base model + adapter + eval pack defaults.</dd>
+            <dt>Adapter</dt><dd>The mapping layer that converts your CSV/JSONL rows into training-ready fields. For rag-protocol, the adapter is <code>rag-grounded</code> — it reads (context, question, answer) triples.</dd>
+            <dt>Gold set</dt><dd>Your trusted reference rows. What the model is trained and evaluated against. Aim for 60+ rows; quality beats quantity.</dd>
+            <dt>Synth playbook</dt><dd>A platform-provided generator that expands your gold set with controlled variations. rag-protocol ships three: paraphrase (citation drill), refusals, and format-robustness.</dd>
+            <dt>Review queue</dt><dd>Where every synth-generated row lands with <code>pending</code> status. You accept, soft-reject, or purge — explicit review prevents bad data from sneaking into training.</dd>
+            <dt>Eval pack</dt><dd>The gates your trained model is scored against. For rag-protocol the pack is <code>evalpack.rag_protocol.discipline</code> — four gates (citation rate, hallucination, refusal match, F1).</dd>
+            <dt>Goal ledger</dt><dd>The "% toward your stated goal" widget at the top of Data Studio. Expands into per-component progress (data ready, gold set ready, predicted pass probability, eval pass rate with gate breakdown).</dd>
+            <dt>Citation marker</dt><dd>The <code>[#1]</code> token in an answer that points at the source chunk. The training signal the model learns to emit when its answer is grounded in a retrieved passage.</dd>
+            <dt>Auto-RAG</dt><dd>BrewSLM's BM25 retrieval index. Built automatically over your corpus at training completion; loaded at inference time to ground answers in retrieved chunks.</dd>
+          </dl>
+        </details>
+
         <p>This is the canonical BrewSLM workflow for any project where the model needs to <strong>answer questions grounded in a body of text</strong> — customer FAQ, internal knowledge base, support transcripts, legal QA, product docs. The recipe stays the same; only your corpus changes. The platform learns the protocol; the index supplies the facts.</p>
 
         <p>The end state is the model you'd actually deploy at a B2B SaaS company: small enough to host yourself, accurate enough to answer in production, honest enough to refuse when it shouldn't guess.</p>
@@ -187,6 +208,8 @@
   "answer": "You have 30 days from delivery to return unused items in their original packaging [#1]."
 }</code></pre>
         <p>The Data Studio mapping panel shows you a confidence-scored preview of three to five rows mapped through the adapter. Click <strong>Apply mapping</strong> when the preview looks right.</p>
+
+        <p><strong>✓ Checkpoint:</strong> the Data Studio Overview now shows your imported row count (e.g. "247 trainable rows"), and the <strong>Sources</strong> panel lists your imported CSV/JSONL with a green status badge. If the mapping is wrong, the preview will show empty or mis-shaped rows — click <strong>Edit mapping</strong> on the panel and pick the correct column for each field.</p>
 
         <div class="callout callout--warning">
           <p class="callout__label">Citation marker format</p>
@@ -250,6 +273,8 @@
         </ol>
         <p>This compresses 4 hours of manual gold-writing into 30 minutes of review. The trade-off: you have to actually review the rows. The platform will not auto-accept LLM-generated gold (per the safety rule); every promotion is an explicit decision.</p>
 
+        <p><strong>✓ Checkpoint:</strong> the Data Studio Overview's <strong>Gold Set ready</strong> row should now be green ("60 gold rows ready (≥ 100 recommended)") or amber ("12 gold rows · 100 recommended"). The amber state is fine for now — you'll add more via synth in the next sections. If the row is grey ("No Gold Set yet"), nothing got promoted — check the Gold Set workbench page directly to confirm rows landed there.</p>
+
         <div class="callout callout--note">
           <p class="callout__label">Don't skip refusal examples</p>
           <p>Your gold set must contain rows where the right answer is the canonical refusal phrase ("I don't have enough context to answer that."). Add 5-10 of these manually — questions that are obviously off-topic for your domain. Without refusal examples in gold, the model never learns to refuse, and the discipline pack's <code>appropriate_refusal_rate</code> gate will fail.</p>
@@ -305,7 +330,9 @@
           <dt>Batch size + gradient accumulation</dt>
           <dd>Batch 4, accumulate 4 → effective batch 16. Adjust down on GPUs under 8 GB.</dd>
         </dl>
-        <p>Expected runtime: 5-15 minutes on a single GPU (RTX 3060 or better). The training panel shows live loss + a sparkline; if loss isn't dropping after the first 50 steps, kill the run and check your data — the dataset is probably misshapen.</p>
+        <p>Expected runtime: 5-15 minutes on a single GPU (RTX 3060 or better), 15-30 minutes on CPU. The training panel shows live loss + a sparkline; if loss isn't dropping after the first 50 steps, kill the run and check your data — the dataset is probably misshapen.</p>
+
+        <p><strong>✓ Checkpoint:</strong> in the Training tab, your experiment row shows a live sparkline that drops from ~2-3 in the first few steps down to ~0.3-0.5 by the end. The bell shows a "training" notification with a percentage. When complete, the experiment row turns green and the experiment detail page shows the final loss + a "Run evaluation" button.</p>
 
         <h2 id="forecast">Read the trainability forecast</h2>
         <p>Before kicking off a real training run, the platform pre-computes a <strong>trainability forecast</strong>: given your current data + gold set + base model, what's the predicted F1 / pass rate? The goal ledger on the Data Studio overview shows it as the <code>predicted_pass</code> row.</p>
@@ -377,7 +404,7 @@
           <dd>Capture real customer questions that produced low-confidence answers. Promote the best ones into the gold set; retrain when gold grows by ~50 rows. Over a quarter, the model gets noticeably sharper on the questions your customers actually ask.</dd>
         </dl>
 
-        <p>The next tutorial in this series picks a different recipe: <strong><a class="inline-link" href="index.html">SQL injection classifier</a></strong> — same end-to-end shape, classification recipe, hard-negative drills, security-grade refusal handling. Same workflow, different shape.</p>
+        <p>The next tutorial in this series picks a different recipe: <strong><a class="inline-link" href="sql-injection-classifier.html">SQL injection classifier</a></strong> — same end-to-end shape, classification recipe, hard-negative drills, per-class precision floors. Same workflow, different platform path.</p>
 
         <section class="key-terms">
           <h2 id="key-terms">Key terms</h2>
