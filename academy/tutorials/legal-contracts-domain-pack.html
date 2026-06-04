@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>End-to-end tutorial: build a legal-contract QA assistant with a custom domain pack — BrewSLM Academy</title>
+    <meta
+      name="description"
+      content="A complete, hands-on walkthrough: build a contract-clause QA assistant with the rag-protocol recipe AND a custom legal domain pack that tightens citation discipline, normalises jurisdictional citations, and swaps the canonical refusal phrase for legal-appropriate copy. Covers what a BrewSLM domain pack actually is, how to scaffold one from the platform default, and how to overlay tighter eval thresholds without inventing a UI editor."
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/tutorials/legal-contracts-domain-pack.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Build a legal-contract QA assistant with a custom domain pack — end-to-end tutorial" />
+    <meta property="og:description" content="Train a small model on contract clauses with the rag-protocol recipe and a custom legal pack: tighter citation discipline, jurisdictional-citation normalisation, and a legal-appropriate refusal phrase." />
+    <meta property="og:url" content="https://brewslm.com/academy/tutorials/legal-contracts-domain-pack.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Build a legal-contract QA assistant with a custom domain pack" />
+    <meta name="twitter:description" content="Rag-protocol recipe + a custom legal pack. End-to-end BrewSLM walkthrough." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YDPSHSVE1K"></script>
+    <script src="../../assets/analytics.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "Build a legal-contract QA assistant with a custom domain pack in BrewSLM",
+        "description": "End-to-end walkthrough: dataset selection (CUAD, LexGLUE, in-house contracts), ingestion via the rag-grounded adapter, legal-text cleanup, building a custom domain pack from the platform default, tighter eval thresholds, training, evaluation, and shipping behind your own /ask microservice.",
+        "url": "https://brewslm.com/academy/tutorials/legal-contracts-domain-pack.html",
+        "inLanguage": "en",
+        "totalTime": "PT2H30M",
+        "estimatedCost": { "@type": "MonetaryAmount", "currency": "USD", "value": "0" },
+        "supply": [
+          { "@type": "HowToSupply", "name": "BrewSLM running locally or on a GPU host" },
+          { "@type": "HowToSupply", "name": "80+ (clause, question, answer-with-citation) triples drawn from CUAD or your own contract archive" },
+          { "@type": "HowToSupply", "name": "A small GPU (8 GB+) or CPU-only for the 135M base model" }
+        ],
+        "tool": [
+          { "@type": "HowToTool", "name": "BrewSLM" },
+          { "@type": "HowToTool", "name": "SmolLM2-135M-Instruct (or alternative small base model)" }
+        ],
+        "step": [
+          { "@type": "HowToStep", "name": "Choose your dataset", "url": "https://brewslm.com/academy/tutorials/legal-contracts-domain-pack.html#choose-dataset" },
+          { "@type": "HowToStep", "name": "Ingest and map", "url": "https://brewslm.com/academy/tutorials/legal-contracts-domain-pack.html#ingest-map" },
+          { "@type": "HowToStep", "name": "Cleanup for legal text", "url": "https://brewslm.com/academy/tutorials/legal-contracts-domain-pack.html#cleanup" },
+          { "@type": "HowToStep", "name": "Pick the recipe", "url": "https://brewslm.com/academy/tutorials/legal-contracts-domain-pack.html#pick-recipe" },
+          { "@type": "HowToStep", "name": "Build a custom legal domain pack", "url": "https://brewslm.com/academy/tutorials/legal-contracts-domain-pack.html#domain-packs" },
+          { "@type": "HowToStep", "name": "Build the gold set", "url": "https://brewslm.com/academy/tutorials/legal-contracts-domain-pack.html#gold-set" },
+          { "@type": "HowToStep", "name": "Split train, validation, test", "url": "https://brewslm.com/academy/tutorials/legal-contracts-domain-pack.html#split" },
+          { "@type": "HowToStep", "name": "Generate synthetic drills", "url": "https://brewslm.com/academy/tutorials/legal-contracts-domain-pack.html#synthetic" },
+          { "@type": "HowToStep", "name": "Review the synth queue", "url": "https://brewslm.com/academy/tutorials/legal-contracts-domain-pack.html#review-queue" },
+          { "@type": "HowToStep", "name": "Train", "url": "https://brewslm.com/academy/tutorials/legal-contracts-domain-pack.html#train" },
+          { "@type": "HowToStep", "name": "Evaluate against the tightened gates", "url": "https://brewslm.com/academy/tutorials/legal-contracts-domain-pack.html#evaluate" },
+          { "@type": "HowToStep", "name": "Ship behind a privileged /ask microservice", "url": "https://brewslm.com/academy/tutorials/legal-contracts-domain-pack.html#ship" }
+        ],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+          { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+          { "@type": "ListItem", "position": 3, "name": "Tutorials", "item": "https://brewslm.com/academy/tutorials/" },
+          { "@type": "ListItem", "position": 4, "name": "Legal contract QA with a custom domain pack", "item": "https://brewslm.com/academy/tutorials/legal-contracts-domain-pack.html" }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="tutorials/legal-contracts-domain-pack">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home">
+        <img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" />
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+        <a href="index.html" aria-current="page">Tutorials</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="../index.html">Academy</a></li>
+        <li><a href="index.html">Tutorials</a></li>
+        <li>Legal contract QA with a custom domain pack</li>
+      </ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page">
+        <p class="lesson-toc__title">On this page</p>
+        <ol data-toc></ol>
+      </aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Tutorial 8 · End-to-end · Domain pack</span>
+          <h1>Build a legal-contract QA assistant with a custom domain pack</h1>
+          <p class="lesson-header__outcome">By the end of this tutorial you'll have a small language model that answers questions about clauses inside a body of commercial contracts, cites the clause it pulled, and refuses cleanly with a <em>legal-appropriate</em> refusal phrase ("I can't provide legal advice; consult counsel") when context is insufficient. The interesting part is not the model — it's the <strong>custom legal domain pack</strong> that overlays the platform defaults with tighter registry gates and legal-text hook plumbing. You'll build that pack from scratch, because BrewSLM doesn't ship a legal one.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Time:</strong> ~2.5 hours total (most of it pack design + gold curation)</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="setup-brewslm.html">Tutorial 0 (Setup BrewSLM)</a>. Strongly recommended companion: <a class="inline-link" href="support-faq-rag-protocol.html">Tutorial 1 (Support FAQ with rag-protocol)</a> — this tutorial uses the same recipe and assumes you've seen the rag-protocol shape once already.</span>
+          </div>
+        </header>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Before you start</p>
+          <p>This tutorial assumes BrewSLM is running locally at <code>http://localhost:5173</code> with an admin user signed in. If you haven't done that yet, complete <a class="inline-link" href="setup-brewslm.html"><strong>Tutorial 0 — Set up BrewSLM and your first project</strong></a> first.</p>
+          <p>This tutorial is the <strong>natural follow-up to <a class="inline-link" href="support-faq-rag-protocol.html">Tutorial 1 — Support FAQ with rag-protocol</a></strong>. T1 walks the rag-protocol recipe with platform defaults; T8 walks the same recipe with a <em>custom domain pack</em> on top. You can follow this one cold — the recipe is reintroduced — but the focus is the pack layer.</p>
+          <p>You'll want <strong>~80 (clause, question, answer-with-citation) triples</strong> from public corpora (CUAD is easiest) or your own contract archive.</p>
+        </div>
+
+        <details class="tutorial-glossary">
+          <summary><strong>Terms you'll see in this tutorial</strong> (click to expand)</summary>
+          <dl>
+            <dt>Recipe</dt><dd>The training-plan template you pick when creating a project. For this tutorial: <code>rag-protocol</code>. Defines base model + adapter + default eval pack.</dd>
+            <dt>Domain pack</dt><dd>A typed configuration bundle that overlays defaults on top of the recipe — dataset split, training defaults, registry gates, plus hook references (normalizer / validator / evaluator). The platform seeds one default pack (<code>general-pack-v1</code>); vertical packs are user-built.</dd>
+            <dt>Overlay</dt><dd>The fields inside a pack contract that override platform defaults: <code>dataset_split</code>, <code>training_defaults</code>, <code>registry_gates</code>. Merged at pack-assignment time, not reapplied at runtime.</dd>
+            <dt>Registry gates</dt><dd>The thresholds the pack imposes for promotion from training to staging or staging to production (min F1, min llm_judge_pass_rate, min safety_pass_rate, max regression vs prod). Independent of the eval pack but stack with it.</dd>
+            <dt>Eval pack</dt><dd>The gates your trained model is scored against. For rag-protocol the default is <code>evalpack.rag_protocol.discipline</code> — four required gates (citation rate ≥ 0.75, hallucination rate ≤ 0.15, appropriate refusal rate ≥ 0.80, F1 ≥ 0.55) plus two optional ones.</dd>
+            <dt>Adapter</dt><dd>The mapping layer that converts your rows into training-ready fields. For rag-protocol the adapter is <code>rag-grounded</code> — it reads (context, question, answer) triples.</dd>
+            <dt>Citation marker</dt><dd>The <code>[#1]</code> token in an answer that points at the source clause. The training signal the model imprints from gold + synth.</dd>
+            <dt>Canonical refusal phrase</dt><dd>The recognisable refusal shape. Platform default: "I don't have enough context to answer that." For legal we swap it via gold + synth (not via the pack — see the synth section).</dd>
+          </dl>
+        </details>
+
+        <p>Legal QA is the vertical where the recipe-and-pack split earns its keep. The recipe (rag-protocol) handles the protocol-level discipline every legal QA system needs — cite the clause, refuse cleanly, hold format. The domain pack carries the legal-specific overlays compliance will insist on — tighter registry gates, the hooks that normalise legal text. Derive those conventions once, store them in a typed contract, assign at project-create time. The end state is a contract-clause QA model that runs entirely on the legal team's own hardware (privileged material doesn't leave the VPC), pulls the right clause from a 200-page agreement, and refuses with "consult counsel" rather than extemporise legal advice.</p>
+
+        <h2 id="what-youll-build">What you'll build</h2>
+        <p>A contract-clause QA assistant with tighter-than-default citation discipline. Concretely:</p>
+        <ul>
+          <li><strong>"What is the limitation of liability cap under the MSA?"</strong> → "The MSA caps each party's aggregate liability at twelve months of fees paid under the agreement, except for breaches of confidentiality or indemnification obligations <code>[#1]</code>."</li>
+          <li><strong>"Can my counterparty assign this contract to a competitor?"</strong> (clause does not address competitor restrictions) → "I can't provide legal advice; consult counsel. The retrieved clause governs assignment generally but does not explicitly address assignment to competitors."</li>
+          <li><strong>"What's the change-of-control termination notice period?"</strong> → "Either party may terminate within sixty (60) days of a change of control by delivering written notice <code>[#1]</code>."</li>
+        </ul>
+        <p>The model is a fine-tuned LoRA adapter on top of <code>SmolLM2-135M-Instruct</code>, sub-500ms latency on a single GPU, BM25 retrieval over your archive sitting next to the adapter. Inference is entirely on your hardware — contracts never leave the network.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>The rag-protocol recipe trains the protocol; the legal pack tightens the registry gates and the hook plumbing. Same trained adapter could in principle work for employment law, IP licensing, or M&amp;A — different pack and different retrieval index per vertical, treated as siblings of the same recipe family.</p>
+        </div>
+
+        <h2 id="why-small">Why a small model + custom pack (not regex, not a frontier API, not qa-sft)</h2>
+        <dl>
+          <dt>Regex / template extractors</dt>
+          <dd>Lawyers don't write template English. "Notwithstanding the foregoing", "subject to Section 7.2", "in no event shall either party be liable for…" — paraphrased across firms, jurisdictions, and decades of drafting fashion. Regex catches structurally familiar clauses; it misses everything else. Useful as a coarse pre-filter, not the QA engine.</dd>
+          <dt>Frontier LLM via API</dt>
+          <dd>Quality is good; architecture is not. Contracts are <em>privileged material</em>; many carry NDA restrictions that prohibit sending text to third-party APIs at all. Per-call cost compounds fast in legal volumes (an M&amp;A diligence run is tens of thousands of clauses). You're also importing a foreign jurisdiction's data-residency assumptions into your compliance posture.</dd>
+          <dt>qa-sft (memorise the answers in weights)</dt>
+          <dd>Wrong recipe. Legal facts change with jurisdiction, statutory amendments, and contract version. A model that memorised the cap in the v3 MSA will confidently quote that number after v4 renegotiated it. Quarterly retrains, with the model still silent about which version it learned from.</dd>
+          <dt><strong>rag-protocol + custom legal pack (this tutorial)</strong></dd>
+          <dd>The protocol stays the same regardless of which contract is being asked about. Facts live in the BM25 index over your archive — refresh on every new contract, no retrain. The pack carries tighter registry gates and the legal-text hook plumbing. The model hosts on the legal team's own machines. Audit trails fall out: every answer cites a clause, every refusal cites the same phrase, every retrieval is loggable.</dd>
+        </dl>
+
+        <h2 id="choose-dataset">Choose your dataset</h2>
+        <p>You need <strong>(clause, question, answer-with-citation)</strong> triples — same shape as T1, but the "context" is a contract clause. Four sources:</p>
+        <dl>
+          <dt>CUAD — the canonical legal-NLP spine</dt>
+          <dd><a class="inline-link" href="https://www.atticusprojectai.org/cuad" target="_blank" rel="noopener noreferrer">Contract Understanding Atticus Dataset (CUAD)</a> ships 500+ commercial contracts hand-annotated by attorneys across 41 clause categories — change-of-control, governing law, indemnification, limitation of liability, IP assignment, non-compete. Annotations are spans-with-types; template them into question/answer pairs. 80-150 templated rows is a healthy gold-set spine.</dd>
+          <dt>LexGLUE — the multi-task legal benchmark</dt>
+          <dd><a class="inline-link" href="https://huggingface.co/datasets/lex_glue" target="_blank" rel="noopener noreferrer">LexGLUE</a> packages seven legal-NLP sub-tasks across multiple jurisdictions. Good warm-up exposure to legal-text shapes; don't ship it as gold (task framing too varied).</dd>
+          <dt>ContractNLI</dt>
+          <dd>NLI-style annotations over contracts: clauses paired with hypotheses labelled entailed / contradicted / undetermined. The shape isn't directly QA, but indeterminate rows are natural seeds for the REFUSALS playbook.</dd>
+          <dt>Your in-house contract archive (production data)</dt>
+          <dd>Pair your team's standing interpretive notes with the clauses they reference. This is the dataset that matters at deployment — your drafting conventions, your customer base, your jurisdiction. Most in-house archives carry NDA-style restrictions and some text may be attorney-client-privileged.</dd>
+        </dl>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Privilege is not a stylistic concern</p>
+          <p>If any data touches attorney-client privileged material, the platform's synthetic playbooks default to calling out to a teacher model (Ollama localhost, OpenAI / Anthropic / DeepSeek via API). The localhost path is fine; third-party APIs are not. Switch the playbook backend to your local Ollama before running synth over anything privileged. If unsure whether a contract is privileged, treat it as if it is.</p>
+        </div>
+
+        <h2 id="ingest-map">Ingest and map</h2>
+        <p>Create a new project: <strong>Projects → New Project → rag-protocol recipe</strong>. The recipe pre-fills the adapter (<code>rag-grounded</code>), task profile (<code>rag_qa</code>), scoring mode (<code>field_match</code>), and default eval pack (<code>evalpack.rag_protocol.discipline</code>). The project gets the platform's default pack (<code>general-pack-v1</code>) at create time; we'll swap it for our custom legal pack in the next section.</p>
+        <p>Then <strong>Data Studio → Import</strong>. Drop your JSONL. The mapping picker proposes:</p>
+        <pre class="code-block"><code>{
+  "context": "Notwithstanding any other provision of this Agreement, in no event shall either party's aggregate liability under this Agreement exceed an amount equal to twelve (12) months of fees paid by Customer hereunder, except for liability arising from a party's breach of its confidentiality obligations under Section 8 or its indemnification obligations under Section 11.",
+  "question": "What is the limitation of liability cap under this Agreement?",
+  "answer": "The Agreement caps each party's aggregate liability at twelve (12) months of fees paid by Customer, except for breaches of the confidentiality obligations (Section 8) or indemnification obligations (Section 11) [#1]."
+}</code></pre>
+        <p>The mapping panel shows a confidence-scored preview of 3-5 rows mapped through the adapter. Click <strong>Apply mapping</strong> when it looks right.</p>
+
+        <p><strong>✓ Checkpoint:</strong> the Data Studio Overview now shows your imported row count and a per-clause-category breakdown if your source carried category tags (CUAD does). The breakdown surfaces which categories are starving — those are the ones synth will need to backfill.</p>
+
+        <h2 id="cleanup">Cleanup for legal text</h2>
+        <p>Open Data Studio's <strong>Quality &amp; Safety</strong> panel. Legal-text cleanup is different from a support FAQ — the noise is different and the things to preserve are different:</p>
+        <ul>
+          <li><strong>Jurisdictional citations stay, footnote markers go.</strong> "Subject to <em>29 U.S.C. § 158</em>" — preserve the statutory citation verbatim. "[3]", "†", "<sup>1</sup>" footnote markers must be stripped <em>before</em> they collide with your <code>[#N]</code> citation marker; leave them in and the model learns "[3]" is a valid citation shape, and downstream consumers can't tell real citations from leftover footnotes.</li>
+          <li><strong>Contract clause numbering normalised, not stripped.</strong> "Section 7.2(a)(iii)" inside an answer is signal — the model is pointing the human at a precise sub-clause. Normalise format (Roman vs Arabic, parens vs brackets) so the model sees one shape.</li>
+          <li><strong>Signatory names are PII.</strong> Quality &amp; Safety surfaces them. Redact or replace with role descriptors ("Customer", "Provider", "Licensor"). The platform won't auto-redact; review each explicitly.</li>
+          <li><strong>Unicode normalisation.</strong> Legal text loves smart quotes, em-dashes, non-breaking spaces in section references, and full-width punctuation from PDF extractors. Normalise to NFC.</li>
+          <li><strong>Near-duplicate clauses.</strong> Many MSAs use near-identical limitation-of-liability language. Quality &amp; Safety flags near-dupes; keep one canonical version per cluster — near-dupes bleed train/test signal and inflate F1.</li>
+        </ul>
+        <p>Clean the rows you're about to promote to gold — those are the ones the eval pack scores against and that synth seeds from. A 30-minute pass over the first 50 candidates buys weeks of debugging time later.</p>
+
+        <h2 id="pick-recipe">Pick the recipe: rag-protocol or qa-sft?</h2>
+        <p>BrewSLM ships two recipes that could plausibly do legal QA. Use this decision tree:</p>
+        <table class="comparison-table">
+          <thead>
+            <tr><th>Question</th><th>rag-protocol</th><th>qa-sft</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Contracts amend, statutes change, new jurisdictions arrive?</td><td>✓ (index lives outside weights; re-ingest, not retrain)</td><td>✗ (every amendment is a re-training)</td></tr>
+            <tr><td>Need an explicit citation in every answer for audit?</td><td>✓ (recipe imprints the <code>[#N]</code> marker)</td><td>✗ (no citation discipline)</td></tr>
+            <tr><td>Need a recognisable refusal phrase compliance can detect?</td><td>✓ (recipe imprints a canonical refusal)</td><td>✗ (model will guess freely)</td></tr>
+            <tr><td>Many contracts, same shape (MSA, NDA, SOW)?</td><td>✓ (one model, swap indexes per matter)</td><td>✗ (one model per corpus)</td></tr>
+            <tr><td>Tiny static body of clauses you'll never amend?</td><td>(over-engineering)</td><td>✓ (memorisation works)</td></tr>
+          </tbody>
+        </table>
+        <p>For any legal QA where the corpus is non-trivial and the facts change — which is essentially all production legal QA — <strong>rag-protocol wins</strong>. Per-amendment retraining is a non-starter in a regulated environment; the audit team wants to see a citation in the answer, not a "trust me" from the model. Sticking with rag-protocol for the rest of this tutorial.</p>
+
+        <h2 id="domain-packs">Build a custom legal domain pack</h2>
+        <p>This is the section that distinguishes this tutorial from T1. T1 walks the recipe with platform defaults; T8 walks the same recipe with a custom pack overlaying the defaults.</p>
+
+        <h3 id="what-a-pack-is">What a domain pack is (and isn't)</h3>
+        <p>A domain pack is a <strong>typed configuration bundle</strong> persisted as a JSON contract against the <code>slm.domain-pack/v1</code> schema. It carries identity fields (<code>pack_id</code>, <code>version</code>, <code>display_name</code>, <code>owner</code>, <code>status</code>), a <code>default_profile_id</code> pointing at a domain profile, three hook references (<code>normalizer</code>, <code>validator</code>, <code>evaluator</code>) picked from the platform's plugin catalog, and an <code>overlay</code> block with three keys: <code>dataset_split</code>, <code>training_defaults</code>, and <code>registry_gates</code>. The overlay is what gets merged into the project's manifest at pack-assignment time.</p>
+        <p>Three things a domain pack is <em>not</em>:</p>
+        <ul>
+          <li><strong>Not an auto-tuner.</strong> The pack writes its overlay into the project manifest at assignment time. Updating the pack later does not retroactively change projects already assigned to it; bump the version, reassign, and the new overlay lands.</li>
+          <li><strong>Not a runtime modifier of playbook prompts.</strong> Synthetic playbooks read prompt text from the project's synth config. The pack does not rewrite playbook prompts — see the synthetic section for how the refusal phrase gets customised.</li>
+          <li><strong>Not an eval-pack editor.</strong> Eval packs and domain packs are siblings: eval packs gate the trained model; domain packs gate the dataset / training / registry transitions. To tighten eval thresholds, copy the scaffolded eval-pack JSON, edit, register, select from the project's eval-pack picker.</li>
+        </ul>
+
+        <h3 id="what-ships">What the platform ships today</h3>
+        <p>Out of the box, BrewSLM seeds exactly one domain pack: <code>general-pack-v1</code>, a safe-baseline fallback. There is no <em>legal</em>, <em>healthcare</em>, or <em>support</em> pack pre-installed. Vertical packs are user-built; that's the gap this tutorial closes.</p>
+
+        <h3 id="build-pack">Build the legal pack in the manager</h3>
+        <p>Open <strong>Project → Domain → Pack</strong>. The Domain Pack Manager shows the list of installed packs, a JSON editor, hook-catalog dropdowns, and assignment controls. To create a legal pack:</p>
+        <ol>
+          <li><strong>Click "New pack".</strong> The editor populates with a template. Drop in your identity fields:
+            <pre class="code-block"><code>{
+  "$schema": "slm.domain-pack/v1",
+  "pack_id": "legal-contracts-v1",
+  "version": "1.0.0",
+  "display_name": "Legal Contracts",
+  "description": "Overlay for commercial-contract QA: tightened registry gates, default-hook plumbing, intended for the rag-protocol recipe.",
+  "owner": "legal-eng",
+  "status": "active",
+  "default_profile_id": "generic-domain-v1",
+  "tags": ["legal", "contracts", "rag-protocol"]
+}</code></pre>
+          </li>
+          <li><strong>Pick your hooks from the catalog dropdowns.</strong> Three selectors — normalizer, validator, evaluator — populated from the installed plugin catalog. For a starter pack, leave the defaults (<code>default-normalizer</code>, <code>default-validator</code>, <code>default-evaluator</code>). Ship a custom <code>legal-normalizer</code> plugin later (jurisdictional-citation regex, footnote-marker stripping, signatory-redaction primitives) and re-point the pack at it.</li>
+          <li><strong>Tighten the registry gates.</strong> Edit the overlay JSON:
+            <pre class="code-block"><code>"overlay": {
+  "dataset_split": { "train": 0.8, "val": 0.1, "test": 0.1, "seed": 42 },
+  "training_defaults": {
+    "training_mode": "sft",
+    "chat_template": "llama3",
+    "num_epochs": 3,
+    "batch_size": 4,
+    "learning_rate": 0.0002,
+    "use_lora": true
+  },
+  "registry_gates": {
+    "to_staging":    { "min_metrics": { "f1": 0.70, "llm_judge_pass_rate": 0.80 } },
+    "to_production": {
+      "min_metrics": { "f1": 0.75, "llm_judge_pass_rate": 0.85, "safety_pass_rate": 0.95 },
+      "max_regression_vs_prod": { "f1": 0.02, "exact_match": 0.02 }
+    }
+  }
+}</code></pre>
+            Vs the platform default (staging F1 0.65, production F1 0.70, regression cap 0.03), the legal pack tightens every gate. Promoting a regression — even small — into production legal-QA is exactly the decision an auditor will ask about; raising the bar at the pack layer puts it through review by default.
+          </li>
+          <li><strong>Save.</strong> The manager validates against the <code>slm.domain-pack/v1</code> schema. Common errors: typo'd hook IDs, missing <code>default_profile_id</code>, non-semver <code>version</code>.</li>
+          <li><strong>Assign to your project.</strong> Pick <code>legal-contracts-v1</code> from the assignment dropdown and confirm. The platform writes the overlay into the project manifest, replacing the general-pack overlay.</li>
+        </ol>
+
+        <p><strong>✓ Checkpoint:</strong> the Domain Pack Manager lists <code>legal-contracts-v1</code> alongside the seeded general pack, the project header labels the project with the new pack, and the goal ledger reflects the tightened registry gates on its promotion-readiness rows. If the pack is listed but the header still shows the general pack, the assignment didn't land — re-pick from the dropdown.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">What the pack does <em>not</em> override</p>
+          <p>Eval pack thresholds (citation rate, hallucination rate, refusal rate, F1) live in the eval pack, not the domain pack — see the Evaluation section. Synthetic-playbook prompts (including the refusal phrase) are also outside the pack's scope. The pack handles training defaults, dataset-split, registry gates, and hook plumbing; eval thresholds and playbook prompts are separate concerns at separate layers.</p>
+        </div>
+
+        <h2 id="gold-set">Build the gold set</h2>
+        <p>The gold set carries the legal-specific behaviour the model inherits. Two complementary paths.</p>
+
+        <h3 id="gold-manual">Path A — manual seeding from standing interpretations</h3>
+        <p>Your legal team maintains "standing interpretations" of common clauses: how they read limitation-of-liability, how they evaluate change-of-control language, how they apply indemnification scopes. These are gold. Open <strong>Data Studio → Gold Set</strong> and for each clause category:</p>
+        <ol>
+          <li>Paste the clause text into <code>context</code> verbatim.</li>
+          <li>Write the question a partner or in-house counsel would actually ask. "What is the limitation-of-liability cap, and does it carve out indemnification?" forces the model to find both pieces.</li>
+          <li>Write the answer your team's standing interpretation gives, ending with the <code>[#1]</code> citation marker. Use the contract's own section numbering inside the answer.</li>
+        </ol>
+        <p>60-80 hand-seeded rows across the categories you'll see most (limitation-of-liability, indemnification, change-of-control, governing law, IP ownership, confidentiality, term and termination) anchors the model in your team's voice.</p>
+
+        <h3 id="gold-llm-assisted">Path B — LLM-assisted promotion from CUAD</h3>
+        <p>For broader coverage, use CUAD as a seed source:</p>
+        <ol>
+          <li>Bulk-import CUAD clauses as context blocks.</li>
+          <li>Open <strong>Data Studio → Synthetic → Playbook Center</strong>, run <code>rag_protocol_paraphrase</code> with your CUAD-derived gold seeds as the source — passing the contract clauses as the gold-row context expands a small senior-attorney-curated set into a richer training corpus. Use local Ollama for anything privileged; CUAD itself is public.</li>
+          <li>Every generated triple lands in the synth review queue. Review one clause category at a time; accept the good triples.</li>
+        </ol>
+        <p>The teacher will mis-quote clause numbers, conflate "Customer" with "either party", and hallucinate cross-references — read every row before accepting.</p>
+
+        <p><strong>✓ Checkpoint:</strong> the Data Studio Overview's <strong>Gold Set ready</strong> row should be green or amber; the clause-category breakdown should show no category with fewer than 8 rows. If one category (say "non-compete") is starving, hand-seed more or run a focused synth round at that category before training.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Refusal examples carry the legal phrasing</p>
+          <p>Your gold set must contain rows where the right answer is your legal refusal phrase ("I can't provide legal advice; consult counsel. The retrieved clause [does not address X / is silent on Y / is ambiguous on Z]."). Add 8-12 manually. <strong>This is how the legal refusal phrase gets imprinted on the model.</strong> The pack doesn't change the refusal phrase; gold + synth carry the signal. Without these examples your model falls back to the platform default "I don't have enough context" — fine for support FAQ, inappropriate for legal output.</p>
+        </div>
+
+        <h2 id="split">Splitting train, validation, test</h2>
+        <p>BrewSLM auto-splits when you click <strong>Run prepare now</strong> on the Prepare Dataset panel. Ratios come from the pack's <code>dataset_split</code> overlay — 80/10/10 with seed 42 for our legal pack. The split is deterministic so the manifest hash is reproducible.</p>
+        <p>Override the ratios from the Prepare panel when your gold set is under 80 rows (use 70/15/15 so val/test get at least 10), when one clause category is overrepresented (shift to stratified splitting via the eval-shape config), or when you want a strict held-out test set (bump test to 20%, score against val for iteration rounds).</p>
+        <p>Prepared splits land in <code>data/projects/&lt;id&gt;/datasets/</code>, pinned in the manifest with row counts and content hash. If anything drifts later, the goal ledger flags the version mismatch and offers a one-click re-prepare.</p>
+
+        <h2 id="synthetic">Generate synthetic drills</h2>
+        <p>The rag-protocol recipe ships three playbooks. The legal flavour shows up in the prompts you customise, not in the pack itself:</p>
+        <dl>
+          <dt>rag_protocol_paraphrase — citation-discipline drill</dt>
+          <dd>Holds clause and answer constant; varies the question wording. "What's the LoL cap?", "How much can each party be liable for?", "Does the contract limit damages?" — same answer, same <code>[#1]</code> citation. Generate ~50 rows.</dd>
+          <dt>rag_protocol_refusals — context-insufficient drill</dt>
+          <dd>Questions the retrieved clause genuinely cannot answer, paired with the refusal phrase. Two flavours: questions whose answer is in a different clause, and questions about something the contract doesn't address at all. Generate ~30 rows.</dd>
+          <dt>rag_protocol_format — register-invariance drill</dt>
+          <dd>Same question in different registers — partner-formal ("Could you indicate the limitation-of-liability cap, including any carve-outs?"), in-house terse ("LoL cap?"), client-informal ("how much can they sue us for"). Same clause, same answer, same citation. Generate ~30 rows.</dd>
+        </dl>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Known gap: the pack does not swap playbook prompts</p>
+          <p>Per-pack refusal-phrase customisation would, in principle, be a great fit for the domain pack — it is not implemented today. Packs are applied at project-create time as a typed config bundle; synthetic playbooks read prompt text from the project's synth config separately. To get the legal refusal phrase into synth output, customise the <code>rag_protocol_refusals</code> playbook's prompt text in the synth config before running it, or hand-edit a few generated rows in the review queue before accepting. Both are fine stopgaps; lifting the refusal phrase into the pack contract would be a natural future enhancement.</p>
+        </div>
+
+        <p>Open <strong>Data Studio → Synthetic → Playbook Center</strong>. Click each card, set target count, pick a backend (<strong>Ollama for anything privileged</strong>; OpenAI / Anthropic / DeepSeek are fine for CUAD-seeded rows). Generation runs as a background Job; the bell tracks progress.</p>
+
+        <h2 id="review-queue">Review the synth queue</h2>
+        <p>Every generated row lands in the <strong>Synthetic Review Queue</strong> with <code>review_status="pending"</code>, grouped by source playbook. Per-row inspection is slower for legal than for support FAQ — verify the citation points at the right sub-clause, the language doesn't soften a hard cap, the refusal phrase matches your approved wording. Three per-row actions:</p>
+        <ul>
+          <li><strong>Accept</strong> — the row joins training on the next dataset prep.</li>
+          <li><strong>Reject</strong> — soft-reject with a reason tag. Legal-specific: <code>missing-citation</code> (no <code>[#N]</code>), <code>wrong-jurisdiction</code> (federal vs state confusion), <code>over-claims</code> (asserts more than the clause supports).</li>
+          <li><strong>Purge</strong> — reason-grouped bulk delete. Rejected rows are selectable and bulk-droppable; never an all-or-nothing call.</li>
+        </ul>
+        <p>Per-row confidence scores surface too. Rows under 50% confidence usually have a hallucinated cross-reference or invented section number — exactly the failure mode to catch before training.</p>
+
+        <h2 id="train">Training configuration</h2>
+        <p>Open <strong>Training → New Experiment</strong>. The recipe defaults plus the pack overlay give you a sensible starting point:</p>
+        <dl>
+          <dt>Base model</dt>
+          <dd><code>HuggingFaceTB/SmolLM2-135M-Instruct</code>. Alternative: <code>Qwen/Qwen2.5-0.5B-Instruct</code> for clauses over ~400 tokens.</dd>
+          <dt>Adapter</dt>
+          <dd>LoRA, rank 16, alpha 32, target modules <code>q_proj,k_proj,v_proj,o_proj</code>.</dd>
+          <dt>Learning rate / epochs</dt>
+          <dd>2e-4, 3 epochs — both from the pack's <code>training_defaults</code>. The protocol is what's being learned, not the facts.</dd>
+          <dt>Batch + grad accumulation</dt>
+          <dd>Batch 4, accumulate 4 → effective 16. Long clauses (300-500 tokens) push memory higher than support-FAQ; on 8 GB drop batch to 2 with accumulate 8.</dd>
+        </dl>
+        <p>Expected runtime: 8-20 minutes on a single GPU (RTX 3060+), 20-45 minutes on CPU. The training panel shows live loss + sparkline; if loss isn't dropping after ~50 steps, kill and check the data.</p>
+
+        <p><strong>✓ Checkpoint:</strong> the experiment row shows a sparkline dropping from ~2-3 to ~0.3-0.5; bell shows a "training" notification. When done the row turns green and the experiment detail page shows final loss + a "Run evaluation" button.</p>
+
+        <h2 id="forecast">Read the trainability forecast</h2>
+        <p>Before training, the platform pre-computes a <strong>trainability forecast</strong>: given current data + gold + base model, what's the predicted pass rate against the eval gates? The goal ledger shows it as the <code>predicted_pass</code> row.</p>
+        <p>With the legal pack's tightened registry gates AND the tightened eval pack, predicted-pass lands lower than T1's would — the gates are stricter, harder to clear, intentionally. For a healthy legal project you want predicted pass <strong>≥ 60%</strong> (T1's was 65%; the legal pack pulls this band down), gold set readiness <strong>≥ 100%</strong> (typically ≥100 rows because the clause vocabulary is wider than support FAQ), and data ready <strong>= met</strong>.</p>
+        <p>If the forecast is below 50%, training will fail the gates. <strong>Add data before training</strong> — the blockers panel tells you which component is weakest and which clause category is starving.</p>
+
+        <h2 id="evaluate">Evaluation: tightened gates via a custom eval pack</h2>
+        <p>The default rag-protocol eval pack (<code>evalpack.rag_protocol.discipline</code>) gates four required behaviours: F1 ≥ 0.55, citation rate ≥ 0.75, hallucination rate ≤ 0.15, refusal rate ≥ 0.80; plus two optional (format consistency, safety pass rate). For legal, the citation and hallucination thresholds are too loose — every uncited answer is a potential malpractice exposure.</p>
+
+        <p>There's no per-gate UI editor; the flow is copy-edit-register-select:</p>
+
+        <ol>
+          <li><strong>Export the discipline pack as a template.</strong> The eval-pack export surface gives you the JSON; save it locally.</li>
+          <li><strong>Edit the thresholds.</strong> Bump <code>min_citation_rate</code> from 0.75 to <strong>0.85</strong>. Tighten <code>max_hallucination_rate</code> from 0.15 to <strong>0.10</strong>. Leave F1 and refusal floors as-is — the legal pack's bite is on citation and hallucination. Rename to <code>evalpack.legal_contracts.discipline_v1</code> and bump the version.</li>
+          <li><strong>Register the custom eval pack.</strong> Drop the JSON into the eval-pack registry surface; the validator runs it through the <code>slm.evaluation-pack/v1</code> schema and surfaces errors.</li>
+          <li><strong>Assign it to your project.</strong> In the project's eval-pack picker, switch from the default discipline pack to <code>evalpack.legal_contracts.discipline_v1</code>. The tightened gates apply next eval run.</li>
+        </ol>
+
+        <p>The goal ledger's <code>eval_pass_rate</code> row expands into a per-gate breakdown — "citation 0.82 / ≥ 0.85 FAILED, hallucination 0.08 / ≤ 0.10 passed, refusal 0.87 / ≥ 0.80 passed, F1 0.61 / ≥ 0.55 passed." That tells you which playbook to re-run.</p>
+
+        <h2 id="fix">When the eval fails</h2>
+        <table class="comparison-table">
+          <thead>
+            <tr><th>Symptom</th><th>Root cause</th><th>Fix</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Citation rate &lt; 0.85</td><td>Too few citation drills with legal-style citation formats (statutory cites, section refs)</td><td>Run another <code>rag_protocol_paraphrase</code> round (50+ rows). Customise the prompt to nudge the teacher toward statutory and section-reference citations rather than bare <code>[#1]</code>.</td></tr>
+            <tr><td>Hallucination &gt; 0.10</td><td>Gold set thin in the failing clause category</td><td>Add 20-30 gold rows in the category, retrain.</td></tr>
+            <tr><td>Refusal rate &lt; 0.80, model answering everything</td><td>Too few refusal rows; phrase didn't imprint</td><td>Run <code>rag_protocol_refusals</code> with 30+ rows. Customise the prompt so the teacher's refusal phrase matches your team's approved phrase exactly — otherwise the model imprints a near-miss.</td></tr>
+            <tr><td>Refusal rate &gt; 0.95, model refusing everything</td><td>Too aggressive refusal training; gold's answer-cases didn't outnumber refusal-cases enough</td><td>Add more positive answer-with-citation rows to gold and re-balance.</td></tr>
+            <tr><td>Wrong jurisdiction cited (federal where contract specifies state, California where Delaware is the governing law)</td><td>Gold didn't expose multi-jurisdiction clauses; model anchors on the most common in your archive</td><td>Hand-seed gold rows from contracts with explicit alternative governing-law clauses. The governing-law clause should sit alongside the asked-about clause as context.</td></tr>
+            <tr><td>Every gate fails by 10+ points</td><td>Task is knowledge-bound, not behaviour-bound</td><td>Accept the reroute-to-RAG recommendation. The reroute clones the project as a RAG-first sibling (base + retrieval, no LoRA); often that's enough when the task is "find the clause and quote it."</td></tr>
+          </tbody>
+        </table>
+        <p>When the post-eval decision engine surfaces a failure cluster, expand the <strong>"Why this fired?"</strong> disclosure. You'll see actual example failures rather than just the recommendation verb — use the cluster to seed the next synth round.</p>
+
+        <h2 id="ship">Ship the model (privileged-data-aware)</h2>
+        <p>Once the custom eval pack passes, ship in three steps:</p>
+        <ol>
+          <li><strong>Export the LoRA adapter.</strong> <strong>Models → Export</strong> writes the adapter weights, tokenizer config, and deploy manifest into <code>data/projects/&lt;id&gt;/exports/</code>. Adapter is ~5-15 MB.</li>
+          <li><strong>Deploy via vLLM (or Ollama).</strong> Both expose a chat-completions endpoint:
+            <pre class="code-block"><code>cd data/projects/&lt;id&gt;/exports/run-2026-06-04
+./deploy-vllm.sh
+# Serves base model + LoRA adapter on localhost:8000 via the OpenAI-compatible chat-completions API.
+# Auto-RAG BM25 index loaded from data/projects/&lt;id&gt;/auto_rag/</code></pre>
+            Ollama variant: <code>./deploy-ollama.sh</code>. Both host entirely on your hardware.
+          </li>
+          <li><strong>Wrap the chat-completions endpoint in your own <code>/ask</code> microservice.</strong> Don't expose vLLM directly to legal-team callers. The microservice owns three things vLLM doesn't: privilege-aware logging (questions, retrieved context, and answers redacted or stored in a privileged-data tier rather than "log everything to ELK"), authorisation against the legal team's roster (not every employee should be able to query the model — the act of consulting it may itself be discoverable), and the audit trail (who asked, when, which retrieval index version was active, which adapter version answered, and what the answer was).</li>
+        </ol>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Legal output is not casual output</p>
+          <p>The platform's playground is fine for smoke-testing. <em>Do not</em> point the legal team at the playground as their interface — it's a debugging surface, no authorisation, no audit logging, no privilege markers. The <code>/ask</code> microservice is what the team consumes.</p>
+        </div>
+
+        <p><strong>Smoke-test in the playground first.</strong> Ask 10 real questions; check each answer cites the right clause and the obvious "I shouldn't answer that" cases return the legal-refusal phrase verbatim. The per-turn provenance footer (which adapter, which chunks, what latency) is your sanity check before promoting to the <code>/ask</code> wrapper.</p>
+
+        <h2 id="whats-next">What's next</h2>
+        <p>You have a deployed contract-clause QA model with tightened citation discipline, a legal refusal phrase, and a custom domain pack that captures the conventions. Three next moves:</p>
+        <dl>
+          <dt>Extend the pack to other legal verticals</dt>
+          <dd>Employment law, IP licensing, M&amp;A, regulatory compliance — each has its own clause vocabulary and refuse-or-answer calculus. Clone <code>legal-contracts-v1</code> via the manager's duplicate flow (it bumps the patch version automatically), edit identity + overlay, save under a new <code>pack_id</code>. Hooks usually stay the same; the thresholds and the eval pack alongside it shift.</dd>
+          <dt>Per-jurisdiction sub-packs</dt>
+          <dd>GDPR vs CCPA vs HIPAA, or Delaware vs California vs New York — each regime carries different statutes and precedential weight. Per-jurisdiction packs encode the differences: same recipe, same base adapter, different pack + different retrieval index per regime. The pack's <code>tags</code> field is the natural place to label which jurisdiction applies.</dd>
+          <dt>Contribute the pack upstream</dt>
+          <dd>If your conventions turn out to generalise — citation discipline at 0.85, hallucination cap at 0.10, default-hook plumbing, the legal-refusal pattern — they may be worth contributing back as a platform-shipped pack. The manager surfaces an export flow; submitting the JSON contract to the platform repo is the rest.</dd>
+        </dl>
+
+        <p>For more end-to-end tutorials covering other recipes, head back to the <strong><a class="inline-link" href="index.html">tutorials hub</a></strong>.</p>
+
+        <section class="key-terms">
+          <h2 id="key-terms">Key terms</h2>
+          <dl>
+            <dt>rag-protocol recipe</dt><dd>BrewSLM recipe that trains a small model to cite the retrieved context, refuse cleanly, and hold output format. Domain-agnostic — facts live in the retrieval index, not the weights. Same recipe powers T1 (support FAQ) and T8 (legal contract QA); the difference is the pack on top.</dd>
+            <dt>Domain pack</dt><dd>Typed configuration bundle persisted as JSON against the <code>slm.domain-pack/v1</code> schema. Carries identity, hook references, and overlays for dataset split, training defaults, and registry gates. The platform seeds <code>general-pack-v1</code> as a safe default; vertical packs (like the legal one in this tutorial) are user-built.</dd>
+            <dt>Overlay</dt><dd>The fields inside a pack contract that override platform defaults. Merged into the project manifest at pack-assignment time; not dynamically reapplied at runtime.</dd>
+            <dt>Registry gates</dt><dd>The promotion thresholds the pack imposes for training → staging → production. Separate from eval-pack gates but stack with them.</dd>
+            <dt>Eval pack</dt><dd>The gates the trained model is scored against. Tightening eval gates is a separate flow: copy the scaffolded JSON, edit, register, and select your custom pack from the project's eval-pack picker. The domain pack does not override eval thresholds.</dd>
+            <dt>Citation marker</dt><dd>The <code>[#N]</code> token in an answer that points at the source clause. The training signal the model learns to emit when grounded in a retrieved passage; raised to a 0.85 floor by the legal eval pack.</dd>
+            <dt>Legal refusal phrase</dt><dd>"I can't provide legal advice; consult counsel." The recognisable refusal shape this tutorial imprints via gold + synth (not via the pack itself — packs don't currently customise playbook prompts).</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Tutorial quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "Which platform layer carries the tightened citation rate floor (0.85) and hallucination cap (0.10) for the legal project?",
+    "options": [
+      "The domain pack — its overlay block overrides the eval thresholds directly",
+      "A custom eval pack (copied from evalpack.rag_protocol.discipline, edited, registered, and selected from the project's eval-pack picker)",
+      "The recipe — picking rag-protocol pulls in legal thresholds",
+      "The retrieval index — the BM25 settings determine the gates"
+    ],
+    "answer": 1,
+    "explanation": "Eval pack thresholds live in the eval pack, not the domain pack. Tightening the floors is a copy-edit-register-select flow against the eval-pack registry; the domain pack handles training defaults, dataset split, and registry gates instead."
+  },
+  {
+    "q": "Why doesn't the domain pack itself swap the canonical refusal phrase from 'I don't have enough context' to 'I can't provide legal advice; consult counsel'?",
+    "options": [
+      "Refusal phrases are immutable in the platform",
+      "Synthetic playbooks read prompt text from the project's synth config, not from the pack; per-pack refusal customisation is a current gap, so the refusal phrase has to be imprinted via gold + synth playbook-prompt edits",
+      "Refusal phrases come from the recipe, not the pack",
+      "The pack overlay does change the phrase, but only at inference time"
+    ],
+    "answer": 1,
+    "explanation": "Domain packs are typed config bundles applied at project-create time; playbook prompts are customised separately. The legal-refusal phrase gets imprinted on the model via the gold set's refusal examples plus playbook-prompt edits in the synth config. If pack-level refusal-phrase customisation becomes widespread enough it'd be a natural future enhancement — but today, the imprint happens through gold and synth."
+  },
+  {
+    "q": "Why is rag-protocol the right recipe for legal-contract QA rather than qa-sft?",
+    "options": [
+      "rag-protocol is a bigger model",
+      "Contract terms change with amendments and the model needs an audit-visible citation; qa-sft would bake facts into the weights and require retraining every time a clause is renegotiated",
+      "qa-sft can't run on small GPUs",
+      "rag-protocol has access to a frontier API"
+    ],
+    "answer": 1,
+    "explanation": "Legal facts shift with amendments and jurisdiction; rag-protocol keeps facts in the retrieval index and trains the protocol (cite, refuse, hold format). qa-sft would require a full retrain on every amendment, and the audit team wants to see a citation in every answer."
+  },
+  {
+    "q": "What ships out of the box as a BrewSLM domain pack today?",
+    "options": [
+      "A legal pack, a support pack, a healthcare pack, and an ecommerce pack",
+      "Only general-pack-v1, a safe-baseline fallback; vertical packs (including the legal pack this tutorial builds) are user-created and assigned from the Domain Pack Manager",
+      "Nothing — packs must always be installed separately",
+      "A pack per recipe (rag-protocol pack, span-extraction pack, etc.)"
+    ],
+    "answer": 1,
+    "explanation": "The platform seeds a single default fallback pack (general-pack-v1). The Domain Pack Manager is where you build vertical packs from the template; assignment writes the overlay into the project manifest. This tutorial walks you through building the legal pack from the manager."
+  }
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2 id="related">Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="setup-brewslm.html">Tutorial 0 — Set up BrewSLM and your first project</a><span class="related-lessons__track">Tutorials</span></li>
+            <li><a class="inline-link" href="support-faq-rag-protocol.html">Tutorial 1 — Support FAQ with rag-protocol (companion: same recipe, no pack)</a><span class="related-lessons__track">Tutorials</span></li>
+            <li><a class="inline-link" href="pii-span-tagging.html">Tutorial 7 — PII span tagging</a><span class="related-lessons__track">Tutorials</span></li>
+            <li><a class="inline-link" href="../with-brewslm/eval-packs-and-failure-clusters.html">Eval packs, gates & failure clusters</a><span class="related-lessons__track">Track 3</span></li>
+            <li><a class="inline-link" href="../with-brewslm/auto-rag-and-reroute.html">Auto-RAG & reroute-to-RAG</a><span class="related-lessons__track">Track 3</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/gold-sets.html">Gold sets — what they are, how to build one</a><span class="related-lessons__track">Track 1B</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-actions">
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark tutorial complete</button>
+          <a class="btn btn-outline" href="index.html">← All tutorials</a>
+        </div>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>© <span id="footer-year">2026</span> BrewSLM Academy. <a class="inline-link" href="../glossary.html">Glossary</a> · <a class="inline-link" href="../certificate.html">Certificate</a> · <a class="inline-link" href="../small-language-model-roadmap.html">Roadmap</a></p>
+    </footer>
+    <script src="../../academy.js"></script>
+    <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
+  </body>
+</html>

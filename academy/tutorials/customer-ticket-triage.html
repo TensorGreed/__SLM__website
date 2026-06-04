@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>End-to-end tutorial: customer ticket triage (multi-class with class imbalance) — BrewSLM Academy</title>
+    <meta
+      name="description"
+      content="A complete BrewSLM walkthrough: train a multi-class classifier that routes incoming support tickets to the right team — billing, technical, account, feature_request, bug_report, cancellation — at ~10ms per ticket. Covers public starter datasets (bitext, clinc150, banking77), historical ticket-to-team gold labels, the CLASS_BALANCE_FILL playbook for fixing class imbalance, Shannon-entropy diagnostics, per-class F1 floors, and confidence-thresholded routing."
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/tutorials/customer-ticket-triage.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Build a customer ticket triage classifier with class-imbalance drills — end-to-end tutorial" />
+    <meta property="og:description" content="Route incoming tickets to the right team automatically with a small fine-tuned classifier. CLASS_BALANCE_FILL drills, per-class F1 floors, confidence-thresholded routing." />
+    <meta property="og:url" content="https://brewslm.com/academy/tutorials/customer-ticket-triage.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Customer ticket triage with class-imbalance drills — end-to-end tutorial" />
+    <meta name="twitter:description" content="Route incoming tickets to the right team with a small fine-tuned classifier. CLASS_BALANCE_FILL, per-class F1 floors, confidence-thresholded routing." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YDPSHSVE1K"></script>
+    <script src="../../assets/analytics.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "Build a customer ticket triage classifier with BrewSLM",
+        "description": "End-to-end walkthrough: public starter datasets plus your historical ticket archive, manual + LLM-assisted gold curation from senior agents' routing decisions, the CLASS_BALANCE_FILL playbook for fixing class imbalance, classification eval gates with per-class F1 floors, and confidence-thresholded deployment.",
+        "url": "https://brewslm.com/academy/tutorials/customer-ticket-triage.html",
+        "inLanguage": "en",
+        "totalTime": "PT2H30M",
+        "estimatedCost": { "@type": "MonetaryAmount", "currency": "USD", "value": "0" },
+        "supply": [
+          { "@type": "HowToSupply", "name": "BrewSLM running locally or on a GPU host" },
+          { "@type": "HowToSupply", "name": "1,000+ historical tickets paired with the team they were routed to (export from Zendesk / Intercom / Salesforce / Freshdesk as CSV)" },
+          { "@type": "HowToSupply", "name": "Optional: public starter corpora (bitext customer support, clinc150, banking77) for warmup and edge-case coverage" }
+        ],
+        "tool": [
+          { "@type": "HowToTool", "name": "BrewSLM" },
+          { "@type": "HowToTool", "name": "SmolLM2-135M-Instruct (or alternative small base model)" }
+        ],
+        "step": [
+          { "@type": "HowToStep", "name": "Choose your dataset", "url": "https://brewslm.com/academy/tutorials/customer-ticket-triage.html#choose-dataset" },
+          { "@type": "HowToStep", "name": "Ingest and map", "url": "https://brewslm.com/academy/tutorials/customer-ticket-triage.html#ingest-map" },
+          { "@type": "HowToStep", "name": "Cleanup and Shannon-entropy diagnostic", "url": "https://brewslm.com/academy/tutorials/customer-ticket-triage.html#cleanup" },
+          { "@type": "HowToStep", "name": "Pick the recipe", "url": "https://brewslm.com/academy/tutorials/customer-ticket-triage.html#pick-recipe" },
+          { "@type": "HowToStep", "name": "Build the gold set from senior agents' routing", "url": "https://brewslm.com/academy/tutorials/customer-ticket-triage.html#gold-set" },
+          { "@type": "HowToStep", "name": "Pre-partition the stratified split", "url": "https://brewslm.com/academy/tutorials/customer-ticket-triage.html#split" },
+          { "@type": "HowToStep", "name": "Generate CLASS_BALANCE_FILL + paraphrase + hard-negative drills", "url": "https://brewslm.com/academy/tutorials/customer-ticket-triage.html#synthetic" },
+          { "@type": "HowToStep", "name": "Review the synth queue by class", "url": "https://brewslm.com/academy/tutorials/customer-ticket-triage.html#review-queue" },
+          { "@type": "HowToStep", "name": "Train", "url": "https://brewslm.com/academy/tutorials/customer-ticket-triage.html#train" },
+          { "@type": "HowToStep", "name": "Evaluate with macro_f1 + per-class F1 floor", "url": "https://brewslm.com/academy/tutorials/customer-ticket-triage.html#evaluate" },
+          { "@type": "HowToStep", "name": "Ship with confidence thresholds", "url": "https://brewslm.com/academy/tutorials/customer-ticket-triage.html#ship" }
+        ],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+          { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+          { "@type": "ListItem", "position": 3, "name": "Tutorials", "item": "https://brewslm.com/academy/tutorials/" },
+          { "@type": "ListItem", "position": 4, "name": "Customer ticket triage", "item": "https://brewslm.com/academy/tutorials/customer-ticket-triage.html" }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="tutorials/customer-ticket-triage">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home">
+        <img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" />
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+        <a href="index.html" aria-current="page">Tutorials</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="../index.html">Academy</a></li>
+        <li><a href="index.html">Tutorials</a></li>
+        <li>Customer ticket triage</li>
+      </ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page">
+        <p class="lesson-toc__title">On this page</p>
+        <ol data-toc></ol>
+      </aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Tutorial 4 · End-to-end · Support / Customer Success</span>
+          <h1>Customer ticket triage with multi-class classification and class imbalance</h1>
+          <p class="lesson-header__outcome">By the end of this tutorial you'll have a multi-class classifier that takes the body text of an incoming support ticket and emits the right team label — <code>billing</code>, <code>technical</code>, <code>account</code>, <code>feature_request</code>, <code>bug_report</code>, <code>cancellation</code> — with a confidence score. It runs at ~10ms per ticket on a single small GPU, doesn't ship customer data to a third-party API, and is honest enough about its uncertainty that mid-confidence tickets get shadow-routed for review instead of straight-routed and forgotten.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Time:</strong> ~2.5 hours total (the bulk is gold-set curation from senior agents' routing decisions — the work that matters)</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="setup-brewslm.html">Tutorial 0 (Setup BrewSLM)</a>. Optional context: <a class="inline-link" href="sql-injection-classifier.html">Tutorial 2 (SQL injection classifier)</a> for the binary-classification shape this tutorial extends, <a class="inline-link" href="../sft-fundamentals/data-quality-splits.html">Data quality + splits + class imbalance</a> for the entropy framing.</span>
+          </div>
+        </header>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Before you start</p>
+          <p>This tutorial assumes BrewSLM is running locally at <code>http://localhost:5173</code> with an admin user signed in. If you haven't done that yet, complete <a class="inline-link" href="setup-brewslm.html"><strong>Tutorial 0 — Set up BrewSLM and your first project</strong></a> first. It takes ~15 minutes and is the prerequisite for every tutorial in this track.</p>
+          <p>You'll also want, before you start: <strong>~1,000 historical tickets paired with the team that actually resolved them</strong> (export from Zendesk / Intercom / Salesforce / Freshdesk as CSV — most ticketing systems ship this in a few clicks). The team-routing labels are the highest-signal training data you have; everything else in this tutorial is about making the most of them.</p>
+        </div>
+
+        <details class="tutorial-glossary">
+          <summary><strong>Terms you'll see in this tutorial</strong> (click to expand)</summary>
+          <dl>
+            <dt>Recipe</dt><dd>The training-plan template you pick when creating a project. For this tutorial: <code>classification</code> — the same recipe as Tutorial 2's binary SQLi classifier, used here for a 6-way (multi-class) label vocabulary instead.</dd>
+            <dt>Multi-class classification</dt><dd>One label per row, drawn from a fixed vocabulary of more than two classes. Distinct from binary classification (yes/no) and from multi-label (a single ticket might carry two labels at once — not what we're doing here; one ticket, one routing team).</dd>
+            <dt>Class imbalance</dt><dd>The natural ratio of classes in real-world ticket archives is skewed. Most tickets are <code>technical</code> or <code>billing</code>; <code>feature_request</code> and <code>cancellation</code> are typically &lt;5% of volume each. A naive split + train produces a model that always predicts the majority class.</dd>
+            <dt>Shannon entropy (normalised)</dt><dd>A single number summarising how balanced your class distribution is. 1.0 = perfectly balanced; 0.0 = a single class dominates. The platform's data-health diagnostic reports both the raw entropy (in nats) and a normalised version factored into the trainability forecast.</dd>
+            <dt>CLASS_BALANCE_FILL playbook</dt><dd>BrewSLM's synth generator for fixing class imbalance. Auto-detects the under-represented class in your gold set (or you pin it) and generates more examples of that class. Distinct from <code>POSITIVES_PARAPHRASE</code>, which paraphrases existing rows in proportion to current counts.</dd>
+            <dt>macro_f1</dt><dd>Average of per-class F1 scores, weighted equally regardless of class size. The headline classification eval metric — catches the imbalance bug where the model is great at the majority class and silently bad at the rest.</dd>
+            <dt>Per-class F1 floor</dt><dd>Eval gate that requires every individual class's F1 to clear a threshold. Catches the failure mode where one class is starved of training signal and macro_f1 is dragged down by it.</dd>
+            <dt>Confidence threshold</dt><dd>A floor on the model's predicted probability below which the deployed router declines to auto-route. The two-threshold pattern: high-confidence routes auto, mid-confidence shadow-routes (predicted team, flagged for review), low-confidence goes to a triage-manager queue.</dd>
+          </dl>
+        </details>
+
+        <p>This is BrewSLM's canonical workflow for a <strong>multi-class text classifier deployed on a routing path with natural class imbalance</strong>. The use case is customer ticket triage but the recipe shape generalises: bug-report categorisation, internal helpdesk routing, document type classification on a scanner ingest, alert-to-team routing in an SRE pipeline — anything where one piece of text needs one label drawn from a finite vocabulary, and the natural distribution isn't uniform. The bones are the same; only your label vocabulary and your historical-labels source change.</p>
+
+        <p>The end state is the model a support-ops team would actually run in production: small enough to run on the queue worker that already pulls tickets off your ingest, accurate enough on the busy classes to remove a measurable load from human triage, and well-calibrated enough on the rare classes that <code>cancellation</code> and <code>feature_request</code> tickets stop getting buried in the <code>technical</code> queue.</p>
+
+        <h2 id="what-youll-build">What you'll build</h2>
+        <p>A six-way text classifier. Given the body text of an incoming ticket, it emits one label plus a confidence score. Sample inputs and outputs:</p>
+        <pre class="code-block"><code>INPUT:  "My credit card was charged twice for this month's subscription —
+         can you refund the duplicate?"
+OUTPUT: { "label": "billing", "confidence": 0.97 }
+
+INPUT:  "The desktop app crashes on launch after the latest update.
+         Logs attached."
+OUTPUT: { "label": "bug_report", "confidence": 0.91 }
+
+INPUT:  "Please cancel my account effective immediately. I don't want
+         to be billed for next month."
+OUTPUT: { "label": "cancellation", "confidence": 0.94 }
+
+INPUT:  "Would love a dark mode in the mobile app — any plans?"
+OUTPUT: { "label": "feature_request", "confidence": 0.88 }
+
+INPUT:  "I can't log in. Forgot my password and the reset email
+         never arrived."
+OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
+        <p>The model is a fine-tuned LoRA adapter on top of <code>SmolLM2-135M-Instruct</code> running at typical 5-15ms per ticket on a single GPU, 30-60ms on CPU. Latency-friendly enough to sit inline on the ticket-ingest path; small enough to deploy onto the same machine that already runs your queue workers.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>Multi-class triage on a natural ticket stream lives or dies on the <strong>rare classes</strong>. Macro_f1 — the headline metric — averages per-class F1 equally regardless of class size, so a model that aces <code>technical</code> and <code>billing</code> but never predicts <code>cancellation</code> scores around 0.65 and fails the gate. The training drill that matters most is the <strong><code>CLASS_BALANCE_FILL</code> playbook</strong>: generate examples for under-represented classes until the Shannon entropy of your gold set crosses a healthy threshold. Get this right and macro_f1 takes care of itself.</p>
+        </div>
+
+        <h2 id="why-small">Why a small model (not rules, not a frontier API)</h2>
+        <p>Three options exist for ticket triage. Use this comparison:</p>
+        <table class="comparison-table">
+          <thead>
+            <tr><th>Approach</th><th>Routing quality</th><th>Latency</th><th>Cost at 50k tickets/month</th><th>Privacy</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Keyword rules ("refund" → billing, "crash" → bug)</td><td>Brittle — fails on intent overlap ("the technical team should refund this") and on tickets that don't surface the keyword at all</td><td>&lt;1ms</td><td>Free (but a full-time PM to maintain the keyword list as labels evolve)</td><td>Self-hosted</td></tr>
+            <tr><td>Frontier LLM via API</td><td>Excellent on novel phrasing</td><td>1-3 seconds per ticket</td><td>$150-$1,500/month plus per-token costs; multiplies fast at higher volumes</td><td>Every ticket — with customer names, account numbers, sometimes attached PII — leaves your network</td></tr>
+            <tr><td><strong>Small fine-tuned classifier (this tutorial)</strong></td><td>Good on novel phrasing if you curate balanced gold</td><td>5-60ms</td><td>~$30/month (one shared GPU, amortised across all your small models)</td><td>Self-hosted</td></tr>
+          </tbody>
+        </table>
+        <p>Keyword rules were how every support team did this in 2018. They still work for the top-of-funnel obvious cases — but the moment a customer writes <em>"the technical team should fix the billing on my account"</em>, the rule stack picks the wrong team. Intent overlap is the rule-stack killer; small fine-tuned models read the semantics, not just the keywords.</p>
+        <p>Frontier-LLM-via-API solves the semantics problem but ships every ticket — names, account identifiers, sometimes financial details — to a third-party. For most B2B SaaS support orgs that's a compliance non-starter even before the cost. Small fine-tuned models occupy the gap: semantics-aware like an LLM, fast and self-hosted like a keyword rule.</p>
+
+        <h2 id="choose-dataset">Choose your dataset</h2>
+        <p>You need two things: <strong>ticket text</strong> and <strong>the team that resolved it</strong>. Your historical ticket archive is the spine; public datasets are useful for warmup and for stretching template diversity.</p>
+        <dl>
+          <dt>Your own ticket archive (the spine)</dt>
+          <dd>Export 1,000-5,000 recent tickets from Zendesk / Intercom / Salesforce / Freshdesk as CSV: the ticket body and the team that resolved it. The resolving team is your gold label proxy — not perfect (mid-way reassignments are noisy), but the best signal available without manual relabeling.</dd>
+          <dt>Bitext customer-support corpus</dt>
+          <dd><a class="inline-link" href="https://huggingface.co/datasets/bitext/Bitext-customer-support-llm-chatbot-training-dataset" target="_blank" rel="noopener noreferrer"><code>bitext/Bitext-customer-support-llm-chatbot-training-dataset</code></a> ships 26,872 examples across 27 intents. Useful for warmup; labels won't map 1:1 to your team taxonomy but the phrasing variation is good signal.</dd>
+          <dt>CLINC150</dt>
+          <dd><a class="inline-link" href="https://huggingface.co/datasets/clinc_oos" target="_blank" rel="noopener noreferrer"><code>clinc150</code></a> ships 150 intents across 10 domains — useful for testing the end-to-end multi-class workflow before you commit real ticket data.</dd>
+          <dt>Banking77</dt>
+          <dd><a class="inline-link" href="https://huggingface.co/datasets/banking77" target="_blank" rel="noopener noreferrer"><code>banking77</code></a> is 13,083 customer-service queries across 77 banking-specific intents. Useful if your B2B product is in fintech and your <code>billing</code> class needs more variety.</dd>
+        </dl>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Public data is for diversity, not coverage</p>
+          <p>Your archive's tickets are what the model will see in production. Public corpora round out phrasing variety so the model doesn't memorise your top customer accounts' writing style. Treat them as a 10-20% supplement — never the spine. A model trained 100% on bitext will be brilliant at the phrases a synthetic-data team chose and useless on the weird, specific phrasings your real customers actually use.</p>
+        </div>
+
+        <h2 id="ingest-map">Ingest and map</h2>
+        <p>In BrewSLM, create a new project: <strong>Projects → New Project → classification recipe</strong>. The recipe pre-fills the adapter (<code>classification-label</code>), task profile (<code>classification</code>), scoring mode (<code>field_match</code>), and the eval pack (the classification scaffold — macro_f1, accuracy, per-class F1 floor, optional safety pass rate).</p>
+        <p>Open <strong>Data Studio → Import</strong>. Your CSV should look like:</p>
+        <pre class="code-block"><code>text,label
+"My card was charged twice this month — please refund the duplicate.",billing
+"App crashes on launch after today's update. Logs attached.",bug_report
+"Please cancel my account effective end of month.",cancellation
+"Can you add a dark mode to the mobile app?",feature_request
+"Forgot my password and the reset email isn't arriving.",account
+"The API is returning 502 on /v1/orders intermittently.",technical</code></pre>
+        <p>Two columns: <code>text</code> (the ticket body) and <code>label</code> (one of your six team labels). The mapping picker shows a confidence-scored preview of the column inference; click <strong>Apply mapping</strong> once the labels look right.</p>
+
+        <p><strong>✓ Checkpoint:</strong> the Data Studio Overview now shows your imported row count and the <strong>Quality &amp; Safety</strong> panel surfaces a per-class breakdown (e.g. "technical: 1,840, billing: 1,210, account: 480, bug_report: 380, feature_request: 92, cancellation: 64 — Shannon entropy 1.34 nats, normalised 0.57"). Anything below 0.7 normalised is meaningful imbalance; the goal ledger will surface this as a forecast penalty on the data-ready row, and <code>CLASS_BALANCE_FILL</code> becomes the priority before any training.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Label normalisation</p>
+          <p>Make sure your label vocabulary is exactly the six strings you want — not <code>billing</code> in some rows and <code>Billing</code> in others, not <code>tech</code> in one batch and <code>technical</code> in the next, not <code>cancel</code> alongside <code>cancellation</code>. The classifier emits the label string verbatim; capitalisation drift and synonyms during training show up as model "uncertainty" between near-identical classes and tank macro_f1 with nothing visible to fix in the eval gates. Run a quick spreadsheet sort + count before import.</p>
+        </div>
+
+        <h2 id="cleanup">Cleanup and Shannon-entropy diagnostic</h2>
+        <p>Open Data Studio's <strong>Quality &amp; Safety</strong> panel. Four common artefact families to clean:</p>
+        <ul>
+          <li><strong>Auto-reply signatures and quoted threads.</strong> Email-sourced tickets carry auto-responder banners and quoted earlier replies — high-frequency noise the model will memorise. Strip them before training.</li>
+          <li><strong>Near-duplicates.</strong> A customer who fires the same complaint three times generates three near-identical rows. Train on one; drop the rest. The dedup signal catches these.</li>
+          <li><strong>Whitespace + encoding.</strong> Strip BOMs, collapse whitespace, normalise smart-quotes. Free quality improvement.</li>
+          <li><strong>PII.</strong> Customer names, emails, account numbers leak into ticket bodies. Decide your policy: redact, drop, or hash. The platform doesn't auto-redact; every row is an explicit decision. For routing, redaction is usually right — the team choice shouldn't depend on the customer's actual name.</li>
+        </ul>
+
+        <p>Then look at the diagnostic driving everything else: <strong>Shannon entropy</strong>. The platform reports both raw entropy (in nats) and a normalised form (0.0-1.0, where 1.0 is perfectly balanced). Reading the number:</p>
+        <ul>
+          <li>Normalised <strong>≥ 0.85</strong> — well-balanced; no action.</li>
+          <li>Normalised <strong>0.70-0.84</strong> — modest imbalance; a single <code>CLASS_BALANCE_FILL</code> pass on the bottom one or two classes.</li>
+          <li>Normalised <strong>0.50-0.69</strong> — meaningful imbalance; the trainability forecast will discount your predicted_pass. Run <code>CLASS_BALANCE_FILL</code> until ≥ 0.7 before training.</li>
+          <li>Normalised <strong>&lt; 0.50</strong> — severe; don't train yet. Gather more data or run aggressive balance-fill until you cross 0.7.</li>
+        </ul>
+        <p>Normalised entropy is the single most informative number on a multi-class triage dataset. If it's healthy, the model probably trains well. If it's not, no training config will save you.</p>
+
+        <h2 id="pick-recipe">Pick the recipe: classification or something else?</h2>
+        <p>The decision tree for ticket triage:</p>
+        <table class="comparison-table">
+          <thead>
+            <tr><th>You want…</th><th>Use</th><th>Why</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>A single team label per ticket, with confidence</td><td><strong>classification</strong></td><td>Multi-class label with a fixed vocabulary; the eval pack scores macro_f1 + per-class F1; downstream router consumes the (label, confidence) pair</td></tr>
+            <tr><td>To highlight WHICH tokens drove the routing decision</td><td>span-extraction</td><td>Per-token spans labeled with the team they pointed at; useful for SOC-style analyst dashboards (see Tutorial 3)</td></tr>
+            <tr><td>A free-text explanation alongside the routing decision</td><td>qa-sft</td><td>"This should go to billing because…"; useful for analyst-tooling, not for queue dispatchers</td></tr>
+            <tr><td>Multiple labels per ticket (one ticket routes to two teams)</td><td>Not directly supported — split each multi-label ticket into N single-label rows during ingest, or model the joint vocab as a synthetic compound label (e.g. <code>billing+technical</code>)</td><td>The classification recipe expects one label per row from a fixed vocab</td></tr>
+            <tr><td>Hierarchical routing (top-level team, then sub-team)</td><td>Two classifiers chained — see "What's next"</td><td>One model for the parent label, a second model conditional on the parent — cleaner than a flat 50-way vocabulary</td></tr>
+          </tbody>
+        </table>
+        <p>For the canonical six-team triage use case: <strong>classification</strong>. Sticking with it for the rest of this tutorial.</p>
+
+        <h2 id="domain-packs">Domain packs (the support gap)</h2>
+        <p>BrewSLM doesn't currently ship a support-domain pack tuned for triage out of the box. There is a generic platform fallback pack that any project inherits if you don't pin one, and there's a separate workflow shape for support FAQ generation (covered in Tutorial 1) — but that's a different shape (free-text answer over a retrieval index), not a label classifier. For this tutorial you're operating on the recipe-level defaults plus your own gold set, which is fine for a first project.</p>
+        <p>Building a custom <code>support-triage</code> domain pack is a worthwhile follow-up project that this tutorial intentionally doesn't cover. It would bundle: stricter per-class F1 floors on revenue-protective labels (<code>cancellation</code>, <code>billing</code>), curated phrasing seeds for the long-tail intents your team specifically sees, a glossary linking eval gates to support-org SLO language, and an Academy tag pointing at this tutorial. If your customer-success org is shipping multiple triage classifiers (consumer vs B2B, free-tier vs enterprise), packaging the conventions as a domain pack pays back fast.</p>
+
+        <h2 id="gold-set">Build the gold set — your senior agents are the oracle</h2>
+        <p>For ticket triage you have a higher-signal oracle than any other tutorial in this series: <strong>your senior support agents have already routed tens of thousands of tickets correctly</strong>. Their dispositions are your gold labels for free.</p>
+
+        <h3 id="gold-from-archive">Path A — bootstrap from your ticket archive</h3>
+        <p>For each historical ticket, pair the body text with the team that ultimately resolved it. Usually a one-time CSV export from Zendesk / Intercom / Salesforce / Freshdesk under analytics → tickets. Two caveats:</p>
+        <ul>
+          <li><strong>Mid-ticket reassignments.</strong> A ticket that started in <code>technical</code> and was bounced to <code>billing</code> has noisy gold. Simplest filter: only include tickets whose first-assigned team equals their final-resolved team. You lose ~10-15% of volume; you gain confidence that the label is right.</li>
+          <li><strong>Stale labels.</strong> Your team taxonomy probably evolved. Restrict your gold pull to the last 12 months unless the taxonomy has been stable longer.</li>
+        </ul>
+        <p>Aim for 1,500-3,000 gold rows from your archive — at least 50 examples of every class.</p>
+
+        <h3 id="gold-manual">Path B — manual seed from senior agents</h3>
+        <p>For the rare classes your archive doesn't cover well, ask senior agents to hand-label 30-50 fresh examples each. Their muscle memory is the strongest signal on the ambiguous cases newer agents would have routed wrong. The Gold Set workbench (<strong>Data Studio → Gold Set</strong>) supports per-row manual entry with a label dropdown.</p>
+
+        <h3 id="gold-llm">Path C — LLM-assisted promotion</h3>
+        <p>For tickets whose archive label is missing or suspect, use the standard "promote from raw" flow: bulk-import a few thousand candidate rows, run a teacher model (Ollama / OpenAI / Anthropic) via the platform's synth-backend with a prompt that takes your six-label vocabulary as input and asks the teacher to pick one per row, then review by class in the synth queue. A 30-minute teacher run plus an hour of grouped review produces 300-500 labelled rows.</p>
+
+        <p><strong>✓ Checkpoint:</strong> the Data Studio Overview's <strong>Gold Set ready</strong> row should now be green ("2,400 gold rows ready · 100 recommended"). Check the per-class breakdown: <strong>every class should have ≥ 50 examples</strong>. If <code>cancellation</code> sits at 12 rows because cancellations are rare, manual seed + <code>CLASS_BALANCE_FILL</code> have to fix that gap before training.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Don't skip the "ambiguous" examples</p>
+          <p>Your gold must contain rows where the routing decision was genuinely hard — tickets that legitimately span two teams. Mark them with the team that actually got the ticket and let the model learn your org's tie-breaking convention. Without them, the model learns a clean separation production doesn't exhibit.</p>
+        </div>
+
+        <h2 id="split">Stratified split — pre-partition into three files</h2>
+        <p>The platform's <strong>Prepare Dataset</strong> panel runs a uniform random split off the ratios + a seed you set. For multi-class with imbalance, a uniform random split is fragile: with 64 <code>cancellation</code> rows in a 2,400-row dataset, an unlucky seed will put 4 of them in val and 6 in test, and your per-class F1 on <code>cancellation</code> becomes essentially noise. You want a <strong>stratified</strong> split — train, val, and test each carry the same per-class ratio as the whole — but the Prepare Dataset panel doesn't surface a "stratify by column" knob today.</p>
+        <p>The practical pattern: <strong>pre-partition into three files before import</strong>. In whatever scripting environment you're comfortable with, do a stratified split locally (Python's <code>sklearn.model_selection.train_test_split</code> with <code>stratify=labels</code>, or pandas group-by-label sample-fraction) producing three CSVs — <code>tickets-train.csv</code>, <code>tickets-val.csv</code>, <code>tickets-test.csv</code> — each carrying the same class proportions. Import each as a separate dataset in Data Studio and tag it as train / val / test in the dataset metadata.</p>
+        <p>For a 2,400-row gold set with the imbalanced distribution from earlier, an 80/10/10 stratified split produces approximately 1,920 train / 240 val / 240 test where every class has at least 6-7 examples in val + test even on the rarest classes. That's enough for the eval handler to compute a meaningful per-class F1 instead of a noisy one.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">If you can't pre-partition</p>
+          <p>If you have to use the platform's random-split flow, set the split ratio higher on val + test (say 70/15/15) to give rare classes more cushion against bad-seed roulette. Fix the seed across runs so your eval numbers are comparable between training experiments. This is a fallback — pre-partition is the right answer.</p>
+        </div>
+
+        <h2 id="synthetic">Generate CLASS_BALANCE_FILL + paraphrase + hard-negative drills</h2>
+        <p>The classification recipe ships four playbooks in the Playbook Center: <code>classification_paraphrase</code>, <code>classification_hard_negatives</code>, <code>classification_class_balance_fill</code>, and <code>classification_cluster_targeted</code>. For ticket triage, run them in this order:</p>
+        <dl>
+          <dt><code>CLASS_BALANCE_FILL</code> — the headline drill</dt>
+          <dd>Auto-detects the under-represented class in your gold set (or pin one via <code>target_class</code>) and generates more examples for it. Goal: pull your gold's normalised Shannon entropy to ≥ 0.7 (ideally ≥ 0.85). Turns a 30-row <code>cancellation</code> class into 120 trainable examples without hand-writing 90 more tickets. Generate ~50-80 rows per under-represented class.</dd>
+          <dt><code>POSITIVES_PARAPHRASE</code> — coverage extender</dt>
+          <dd>Vary the wording of existing gold rows while keeping the label fixed. The model learns that "could you refund the double charge" and "I want a refund on the duplicate billing" are the same intent. Generate ~50 rows per major class.</dd>
+          <dt><code>HARD_NEGATIVES</code> — class-boundary disambiguation</dt>
+          <dd>For triage the most useful hard negatives are tickets that <em>mention</em> a different team but should route elsewhere: <em>"the technical team should fix this billing bug"</em> (mentions technical, is billing); <em>"I'm cancelling because the app keeps crashing"</em> (mentions cancelling, is a bug-report). Generate ~40 rows.</dd>
+          <dt><code>CLUSTER_TARGETED</code> — post-eval drill</dt>
+          <dd>After a first training pass, the Evaluation tab's <strong>FailureClustersPanel</strong> groups failures into clusters with a representative example each. The cluster-targeted playbook seeds new training rows from the worst cluster. Don't run this on the first pass — it needs an eval result to operate on.</dd>
+        </dl>
+        <p>Open <strong>Data Studio → Synthetic → Playbook Center</strong>. The classification recipe surfaces four playbook cards. Click <code>CLASS_BALANCE_FILL</code> first; pick your lowest-count class; set target count to 60; pick a backend (Ollama is the free default). Generation runs as a background Job.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Run CLASS_BALANCE_FILL before paraphrase</p>
+          <p>For an imbalanced multi-class dataset, balance-fill is the precondition for everything else. Paraphrase amplifies whatever shape your gold has — if <code>technical</code> outnumbers <code>cancellation</code> 30:1, paraphrasing the whole gold set preserves that 30:1 ratio (which is exactly what you don't want). Run balance-fill until entropy is healthy, THEN run paraphrase across the now-balanced gold, THEN run hard-negatives on the high-confusion class boundaries you've identified. Order matters more than volume.</p>
+        </div>
+
+        <h2 id="review-queue">Review the synth queue (bulk by class)</h2>
+        <p>Every generated row lands in the <strong>Synthetic Review Queue</strong> with <code>review_status="pending"</code>. The queue groups rows by source playbook; within each you can filter by class — useful after running balance-fill across multiple classes.</p>
+        <p>Per-row actions:</p>
+        <ul>
+          <li><strong>Accept</strong> — the row joins training on the next dataset-prep run. For balance-fill specifically: check the generated example actually fits the target class. A teacher asked for 60 <code>cancellation</code> examples will sometimes produce a good <code>billing</code> complaint mis-labelled <code>cancellation</code> because the prompt anchored on the wrong word.</li>
+          <li><strong>Reject (soft)</strong> — marked rejected with an optional reason tag. The useful tags for triage:
+            <ul>
+              <li><code>actually-class-X</code> — reads cleanly as a different class than generated for. Common on balance-fill for rarer classes.</li>
+              <li><code>too-short</code> — one- or three-word "tickets" with no signal. ("Refund please." teaches nothing even if the label is right.)</li>
+              <li><code>mixed-intent</code> — the row legitimately spans two classes. Reject — but reflect on whether your label vocabulary is missing a category.</li>
+              <li><code>label-drift</code> — right intent but the teacher used a synonym (<code>cancel</code> instead of <code>cancellation</code>). Reject; the label vocabulary must be exact.</li>
+            </ul>
+          </li>
+          <li><strong>Purge</strong> — section-level action filtered by reason. Use once you're confident a reason-bucket is bad data. Never drop <code>mixed-intent</code> without thinking — those rows may reveal a real label-vocab gap.</li>
+        </ul>
+        <p>Expect to reject 25-40% of balance-fill rows on first pass for the rarest classes — the teacher has fewest anchors to learn from. Acceptance rate climbs as you tune the prompt and the gold set grows.</p>
+
+        <p><strong>✓ Checkpoint:</strong> after a review pass, the synth panel should show "accepted: 220 · rejected: 80 · pending: 0" or similar. Run the Shannon-entropy diagnostic again — your normalised entropy should now be ≥ 0.7. If it's not, run another balance-fill pass on the still-rarest class.</p>
+
+        <h2 id="train">Training configuration</h2>
+        <p>Open <strong>Training → New Experiment</strong>. Recipe defaults are sensible — for a first run, accept all of them:</p>
+        <dl>
+          <dt>Base model</dt>
+          <dd><code>HuggingFaceTB/SmolLM2-135M-Instruct</code>. The recipe trains the model to emit the label as a token sequence; the eval handler does a field-match comparison against gold. Alternatives: <code>Qwen/Qwen2.5-0.5B-Instruct</code> for marginally better accuracy at 4x the size; <code>distilbert-base-uncased</code> for an encoder-only baseline.</dd>
+          <dt>Adapter</dt>
+          <dd><code>classification-label</code>. Wraps each row's text + label into a prompt + reference-completion pair.</dd>
+          <dt>Epochs</dt>
+          <dd>5-6. Multi-class with 2,000-3,000 gold rows needs slightly more epochs than binary — less per-class signal per epoch because rare classes are seen less. Three underfits the long tail; seven starts to overfit.</dd>
+          <dt>Batch size</dt>
+          <dd>Batch 8, no accumulation. Tickets are short (50-300 tokens) so memory isn't the constraint.</dd>
+        </dl>
+        <p>Expected runtime: 8-20 minutes on a single GPU, 25-50 minutes on CPU. The training panel shows live loss + validation macro_f1; if macro_f1 plateaus below 0.55 by epoch 3, kill the run — it's almost always a class-balance or labelling-consistency problem.</p>
+
+        <p><strong>✓ Checkpoint:</strong> the experiment row shows loss trending down and validation macro_f1 trending up. By end of epoch 4-5 you should see val macro_f1 ≥ 0.70 and per-class F1 ≥ 0.55 on the rarest class. When training completes the bell pings; the detail page surfaces the per-class precision/recall/F1 grid.</p>
+
+        <h2 id="forecast">Read the trainability forecast</h2>
+        <p>Before training, the goal ledger's <code>predicted_pass</code> row forecasts based on row count, normalised class entropy, and base model size. For imbalanced multi-class:</p>
+        <ul>
+          <li>Predicted pass probability <strong>≥ 65%</strong>. Lower usually means entropy penalty — fix balance first.</li>
+          <li>Normalised class entropy <strong>≥ 0.7</strong>. The forecast multiplies data-quality by entropy; 0.5 cuts the forecast roughly in half.</li>
+          <li>Every class has <strong>≥ 50 gold rows</strong>. Below that the rare class under-trains and the per-class F1 floor fails.</li>
+        </ul>
+        <p>One nuance: the forecast sometimes <strong>over-estimates</strong> macro_f1 when the per-class floor is the binding constraint. It knows row count and entropy; it doesn't know that 50 rows of <code>cancellation</code> won't quite teach the model enough to clear F1 ≥ 0.50 on that class. Treat predicted_pass as a green/yellow/red light, not a precise prediction. Green with entropy 0.55 still warrants a balance-fill pass.</p>
+
+        <h2 id="evaluate">Evaluation: macro_f1, accuracy, and the per-class F1 floor</h2>
+        <p>After training, the platform automatically evaluates against the project's eval pack. The classification scaffold ships four gates:</p>
+        <dl>
+          <dt><code>min_macro_f1</code> ≥ 0.65 (required)</dt>
+          <dd>The headline. Average of per-class F1, weighted equally. The metric that catches the imbalance bug where the model is great at majority classes and silently bad at minority ones — flat accuracy alone won't surface this on a 30:1 distribution.</dd>
+          <dt><code>min_accuracy</code> ≥ 0.70 (required)</dt>
+          <dd>Coarse sanity check. Pairs informatively with macro_f1: <strong>high accuracy + low macro_f1 = imbalance bug</strong> (the model gets the common classes right and gives up on the rare ones); <strong>low accuracy + reasonable macro_f1 = bad model</strong> (no class is doing well, retrain).</dd>
+          <dt><code>min_per_class_f1</code> ≥ 0.50 (required)</dt>
+          <dd>Every individual class's F1 must clear 0.50. This is the class-starvation tripwire. A model that scores 0.85 macro_f1 but has <code>cancellation</code> F1 at 0.30 fails this gate even though the average looks healthy. For triage this is exactly the gate you want: it refuses to ship a model that quietly drops the rare classes.</dd>
+          <dt><code>min_safety_pass_rate</code> ≥ 0.93 (optional)</dt>
+          <dd>Catches refusal / off-topic / adversarial inputs that should be flagged through a different path. Useful when the classifier sits behind a customer-facing UI; not strictly required for an internal routing service.</dd>
+        </dl>
+        <p>The goal ledger's <code>eval_pass_rate</code> row expands into the per-gate breakdown so you see exactly which dimension is failing — <em>"macro_f1 0.71 ≥ 0.65 passed; min_per_class_f1 0.42 &lt; 0.50 failed on class <code>cancellation</code>."</em></p>
+
+        <h3>Reading the per-class grid</h3>
+        <p>The experiment detail page shows the per-class precision / recall / F1 grid. Three patterns to look for:</p>
+        <ul>
+          <li><strong>One class starves.</strong> Five classes at 0.80+ F1, one at 0.25. Almost always under-training on the rare class. Fix: more <code>CLASS_BALANCE_FILL</code> rows, then retrain.</li>
+          <li><strong>Two classes collapse.</strong> The model rarely distinguishes <code>bug_report</code> from <code>technical</code>. The label vocabulary has a boundary problem — either the classes overlap semantically (consider merging) or your gold is inconsistent across them (have a second reviewer relabel 50 random rows from both and reconcile).</li>
+          <li><strong>Rare classes get zero predictions.</strong> The model never emits <code>cancellation</code>; precision is undefined. The model learned that always-predicting-something-else is the lowest-loss policy. Run <code>CLASS_BALANCE_FILL</code> until that class has 100+ training rows.</li>
+        </ul>
+
+        <p>If you want per-class precision/recall floors (e.g. <code>cancellation</code> recall ≥ 0.80 because missing a cancellation has direct revenue impact), the platform doesn't ship a UI editor for per-class gate authoring today. The path: copy the scaffolded eval pack JSON, add the per-class metric gates you need (referencing the per-class metric IDs the eval handler emits), save it under a custom pack ID, and select your custom pack from <strong>Project → Eval Pack</strong> in place of the default scaffold.</p>
+
+        <h2 id="fix">When the eval fails (common failure modes)</h2>
+        <p>Multi-class triage failures concentrate around imbalance. Common patterns and fixes:</p>
+        <table class="comparison-table">
+          <thead>
+            <tr><th>Symptom</th><th>Root cause</th><th>Fix</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Accuracy 0.82, macro_f1 0.51, per-class F1 fails on the rare class</td><td>Class imbalance — the model defaults to majority classes</td><td>Run <code>CLASS_BALANCE_FILL</code> on the under-represented class until normalised entropy ≥ 0.85. Retrain.</td></tr>
+            <tr><td>Two classes blur (low precision on both)</td><td>Class boundary is genuinely ambiguous in the gold</td><td>Sample 40 random rows from each class; have a second senior agent relabel blind. Disagreement &gt; 20% = the classes overlap semantically. Either merge them in the label vocab or document a tie-breaking convention and re-label gold against it.</td></tr>
+            <tr><td>Rare class precision/recall = 0 across the test set</td><td>Too little training signal; model learned never to emit it</td><td>Aggressive <code>CLASS_BALANCE_FILL</code> plus 30+ manually-seeded rows from senior agents. More epochs amplifies the bias toward majority classes; that's NOT the fix.</td></tr>
+            <tr><td>Macro_f1 strong on val (0.78) but tanks on test (0.55)</td><td>Random split drew an unlucky distribution</td><td>Re-split with stratification (pre-partition; see the Split section).</td></tr>
+            <tr><td>Mixed-intent tickets get bounced between predictions</td><td>Label vocab doesn't fit hybrid intents</td><td>Inspect the <code>mixed-intent</code> rejection bucket from the synth queue. If persistent: add a compound label or document a tie-breaking convention.</td></tr>
+            <tr><td>Post-eval decision engine recommends a different recipe</td><td>Engine sees signals your task shape is wrong</td><td>Read "Why this fired?". qa-sft → you may need free-text explanations; span-extraction → routing may depend on which tokens triggered the choice. Investigate.</td></tr>
+          </tbody>
+        </table>
+        <p>The <strong>FailureClustersPanel</strong> groups failures into clusters with a representative example each. Reading 5-10 examples from a cluster usually surfaces the failure shape in 30 seconds. The panel also offers a one-click launch of <code>CLUSTER_TARGETED</code> seeded from that cluster — the most efficient drill for a specific failure mode.</p>
+
+        <h2 id="ship">Ship with confidence thresholds</h2>
+        <p>Once the eval pack passes — and especially once the per-class F1 floor passes on the revenue-protective classes — ship in three steps:</p>
+        <ol>
+          <li><strong>Export the LoRA adapter.</strong> Open <strong>Models → Export</strong>. The platform writes adapter weights, tokenizer config, and a deploy manifest into <code>data/projects/&lt;id&gt;/exports/</code>. The adapter is ~5-15 MB; the base model loads fresh at deploy time.</li>
+          <li><strong>Deploy via vLLM or Ollama.</strong> The export bundle includes a launch script:
+            <pre class="code-block"><code>cd data/projects/&lt;id&gt;/exports/run-2026-06-05
+./deploy-vllm.sh
+# Serves the base + LoRA adapter on localhost:8000 via standard
+# chat-completions. The model emits the label as its response. You'll
+# typically wrap this in a thin /triage microservice that parses the
+# response, extracts the top-token log-prob as a confidence proxy, and
+# returns a (label, confidence) pair to your caller.
+# Latency: 5-15ms per ticket on a single GPU, 30-60ms on CPU.</code></pre>
+            Ollama variant: <code>./deploy-ollama.sh</code>.
+          </li>
+          <li><strong>Wire the two-threshold router.</strong> Your ingest pipeline POSTs each new ticket to your <code>/triage</code> microservice, gets back (label, confidence), and routes:
+            <ul>
+              <li><strong>High-confidence</strong> (≥ 0.85): auto-route to the predicted team.</li>
+              <li><strong>Mid-confidence</strong> (0.60-0.84): shadow-route to the predicted team but flag for human confirmation. Corrections are high-signal training data.</li>
+              <li><strong>Low-confidence</strong> (&lt; 0.60): triage-manager queue. The model's prediction is suggested but not pre-selected.</li>
+            </ul>
+          </li>
+        </ol>
+        <p>The thresholds above are a starting point — calibrate on YOUR traffic. Shadow-mode for two weeks before turning auto-route on: log the model's prediction and confidence alongside the team the human triager actually picked; compute precision per confidence band; set the high-confidence threshold where per-class precision exceeds 0.95.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Calibrate, don't trust the eval-set confidence</p>
+          <p>The confidence score from the model is well-calibrated on the test-set distribution. Your production traffic is not your test-set distribution — it shifts over time, accounts evolve, support tooling changes the way tickets get phrased. <strong>Always shadow-mode before turning the auto-route on</strong>, and re-calibrate the thresholds at least quarterly. The default thresholds above are starting points, not destinations.</p>
+        </div>
+
+        <h2 id="whats-next">What's next</h2>
+        <p>You have a deployed multi-class triage classifier with calibrated thresholds, a human-review fallback for mid- and low-confidence cases, and a per-class F1 floor that refuses to ship a model that drops the rare classes. Three next moves:</p>
+        <dl>
+          <dt>Hierarchical routing</dt>
+          <dd>If your org has sub-team specialisations (billing → refunds vs invoicing; technical → API vs infra), a flat 20-way classifier struggles. Chain two: the first emits the top-level team (the model you just shipped); a second, conditional on the parent, emits the sub-team. Same recipe + workflow, run twice.</dd>
+          <dt>Active learning from disposition signals</dt>
+          <dd>The highest-signal training data is in your shadow-routed and human-overridden queue. Every reviewer correction is a row proving the model didn't generalise. Capture corrections; promote the confident ones; retrain when the corrected pile crosses ~100 rows. Over a quarter the model gets sharper on the tickets your org actually sees.</dd>
+          <dt>Expand the label vocabulary as new categories emerge</dt>
+          <dd>Six labels today won't be six in two years. New product surface areas and new revenue motions create categories that didn't exist before. Retraining cost is low; the hard part is governance — every label-vocab change invalidates eval-comparable historical runs, so lean conservative.</dd>
+        </dl>
+
+        <p>Same recipe, different shape: <strong><a class="inline-link" href="sql-injection-classifier.html">Tutorial 2 — SQL injection classifier</a></strong> uses the same classification recipe for a binary problem with hard-negatives as the headline drill. The decision-tree: binary with balanced classes → hard-negatives is the spine; multi-class with imbalance → balance-fill is the spine.</p>
+
+        <p>From there, the <a class="inline-link" href="index.html">tutorials hub</a> links to other recipe shapes and the deeper Academy tracks.</p>
+
+        <section class="key-terms">
+          <h2 id="key-terms">Key terms</h2>
+          <dl>
+            <dt>Multi-class classification</dt><dd>One label per row drawn from a fixed vocabulary of more than two classes. Distinct from binary (yes/no) and from multi-label (one row, multiple labels).</dd>
+            <dt>Class imbalance</dt><dd>The natural ratio of classes in real-world data is skewed. A model trained on imbalanced data defaults to majority-class predictions unless the gold set is balanced (via more data or via <code>CLASS_BALANCE_FILL</code>) and the eval gates require per-class minimums.</dd>
+            <dt>Shannon entropy (normalised)</dt><dd>A single number summarising how balanced your class distribution is — 1.0 perfectly balanced, 0.0 dominated by one class. Surfaced in Data Studio's Quality &amp; Safety panel and factored into the trainability forecast.</dd>
+            <dt><code>CLASS_BALANCE_FILL</code> playbook</dt><dd>BrewSLM's synth generator for fixing imbalance. Generates more examples of the under-represented class until entropy is healthy. Distinct from <code>POSITIVES_PARAPHRASE</code>, which paraphrases in proportion to existing counts.</dd>
+            <dt>macro_f1</dt><dd>Average of per-class F1 scores weighted equally regardless of class size. The headline gate in the classification eval pack; catches imbalance bugs flat accuracy misses.</dd>
+            <dt>Per-class F1 floor (<code>min_per_class_f1</code>)</dt><dd>Required gate that every individual class's F1 must clear a threshold. The class-starvation tripwire — a model that scores high macro_f1 by averaging away one bad class still fails this gate.</dd>
+            <dt>Confidence-thresholded routing</dt><dd>Deployment pattern where the model's predicted probability decides whether the router acts on the prediction (auto-route), shadow-routes for human confirmation, or punts to a triage-manager queue. The thresholds are calibrated against real production traffic, not the test set.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Tutorial quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "Your model scores 0.83 accuracy but 0.49 macro_f1, with the per-class F1 gate failing on cancellation. What's the most likely fix?",
+    "options": [
+      "Train for more epochs",
+      "Switch to a larger base model",
+      "Run CLASS_BALANCE_FILL on the under-represented classes until normalised entropy ≥ 0.85, then retrain",
+      "Lower the macro_f1 gate threshold"
+    ],
+    "answer": 2,
+    "explanation": "High accuracy + low macro_f1 = the model is acing the majority classes and starving the rare ones. More epochs amplifies the bias; a larger model doesn't fix imbalance. The right fix is to balance the training distribution with CLASS_BALANCE_FILL until the rare class has enough signal to clear the per-class F1 floor."
+  },
+  {
+    "q": "Why pre-partition into three CSVs before importing instead of using the Prepare Dataset panel's random split?",
+    "options": [
+      "The platform's random split is slower",
+      "Random split on an imbalanced dataset can put 4 cancellation examples in val and 6 in test — making per-class F1 essentially noise",
+      "Pre-partitioning trains faster",
+      "The platform requires three separate datasets"
+    ],
+    "answer": 1,
+    "explanation": "The Prepare Dataset panel does uniform random splits off ratios + seed; it doesn't currently stratify by class. With rare classes that's risky — an unlucky seed produces val/test sets with too few rare-class examples to compute meaningful per-class F1. Pre-partitioning into three CSVs with the right per-class proportions sidesteps the issue."
+  },
+  {
+    "q": "What does it mean if you see high accuracy AND high macro_f1 but the post-eval decision engine recommends switching to qa-sft?",
+    "options": [
+      "The eval pack is broken",
+      "The engine sees signals suggesting your business need may actually be free-text explanations rather than labels — read the 'Why this fired?' disclosure to see exactly what matched",
+      "The model needs to be retrained from scratch",
+      "Classification can't be deployed when macro_f1 is too high"
+    ],
+    "answer": 1,
+    "explanation": "The post-eval decision engine watches signals across your project shape and surfaces recipe-mismatch recommendations. Expand the 'Why this fired?' disclosure to see the matched_keywords and threshold deltas — if it's pointing at qa-sft, the signals (e.g. ticket bodies that contain rationale-like text in gold) suggest the user wants explanations, not just labels. Investigate; act if right."
+  },
+  {
+    "q": "You're shipping the triage model. What's the right deployment sequence?",
+    "options": [
+      "Auto-route everything immediately to maximise the value",
+      "Shadow-mode for two weeks, log model verdict vs human triager's pick, calibrate the high-confidence threshold to where per-class precision ≥ 0.95, only then turn auto-route on for high-confidence predictions and keep mid/low-confidence on human review",
+      "Block all tickets until a human approves the model's prediction",
+      "Skip shadow mode if the test-set macro_f1 is high enough"
+    ],
+    "answer": 1,
+    "explanation": "Test-set metrics don't reflect production traffic distribution. Shadow-mode lets you measure real-world per-band precision before any auto-routing happens. Calibrate thresholds against the band where precision actually exceeds your target. Mid- and low-confidence predictions always go to a human review path — that's the cost of honest uncertainty handling."
+  }
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2 id="related">Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="setup-brewslm.html">Tutorial 0 — Set up BrewSLM and your first project</a><span class="related-lessons__track">Tutorials</span></li>
+            <li><a class="inline-link" href="sql-injection-classifier.html">Tutorial 2 — SQL injection classifier</a><span class="related-lessons__track">Tutorials</span></li>
+            <li><a class="inline-link" href="invoice-field-extraction.html">Tutorial 3 — Invoice field extraction</a><span class="related-lessons__track">Tutorials</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/data-quality-splits.html">Data quality + splits + class imbalance</a><span class="related-lessons__track">Track 1B</span></li>
+            <li><a class="inline-link" href="../with-brewslm/synthetic-data-and-review.html">Synthetic data + review queue (deep dive)</a><span class="related-lessons__track">Track 3</span></li>
+            <li><a class="inline-link" href="../with-brewslm/eval-packs-and-failure-clusters.html">Eval packs, gates & failure clusters</a><span class="related-lessons__track">Track 3</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-actions">
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark tutorial complete</button>
+          <a class="btn btn-outline" href="index.html">← All tutorials</a>
+        </div>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>© <span id="footer-year">2026</span> BrewSLM Academy. <a class="inline-link" href="../glossary.html">Glossary</a> · <a class="inline-link" href="../certificate.html">Certificate</a> · <a class="inline-link" href="../small-language-model-roadmap.html">Roadmap</a></p>
+    </footer>
+    <script src="../../academy.js"></script>
+    <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
+  </body>
+</html>
