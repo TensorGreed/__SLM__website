@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>End-to-end tutorial: PII span tagging with span-extraction — BrewSLM Academy</title>
+    <meta
+      name="description"
+      content="A complete BrewSLM walkthrough: train a small language model that finds and labels PII spans (emails, phone numbers, names, SSNs, credit cards, addresses) inside free-form text so a downstream redactor can scrub them before logs and transcripts hit a third-party API. Covers safe synthetic data with Faker, hard-negative drills for common-name false-positives, per-class recall floors for rare PII types, and an explicit-review redaction pattern with audit logging."
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/tutorials/pii-span-tagging.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Build a PII span tagger with the span-extraction recipe — end-to-end tutorial" />
+    <meta property="og:description" content="Train a small, private PII tagger you can run before logs and transcripts leave your network. Per-entity recall floors, Faker-synthesised drills, and an explicit-review redaction pattern." />
+    <meta property="og:url" content="https://brewslm.com/academy/tutorials/pii-span-tagging.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Build a PII span tagger with a small language model" />
+    <meta name="twitter:description" content="Private PII tagging with per-entity recall floors and explicit-review redaction. End-to-end BrewSLM walkthrough." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YDPSHSVE1K"></script>
+    <script src="../../assets/analytics.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "Build a PII span tagger with BrewSLM",
+        "description": "End-to-end walkthrough: dataset selection (OntoNotes, CoNLL-2003, Presidio synthetic), Faker-driven synthetic PII for safe training, hard-negative drills for common-name false-positives, per-entity recall floors, and an explicit-review redaction pipeline with audit logging.",
+        "url": "https://brewslm.com/academy/tutorials/pii-span-tagging.html",
+        "inLanguage": "en",
+        "totalTime": "PT2H30M",
+        "estimatedCost": { "@type": "MonetaryAmount", "currency": "USD", "value": "0" },
+        "supply": [
+          { "@type": "HowToSupply", "name": "BrewSLM running locally or on a GPU host" },
+          { "@type": "HowToSupply", "name": "200+ rows of free-form text with annotated PII spans (synthetic, not real)" },
+          { "@type": "HowToSupply", "name": "Faker (or another synthetic-PII library) for generating training data" }
+        ],
+        "tool": [
+          { "@type": "HowToTool", "name": "BrewSLM" },
+          { "@type": "HowToTool", "name": "SmolLM2-135M-Instruct (or alternative small base model)" }
+        ],
+        "step": [
+          { "@type": "HowToStep", "name": "Choose your dataset", "url": "https://brewslm.com/academy/tutorials/pii-span-tagging.html#choose-dataset" },
+          { "@type": "HowToStep", "name": "Ingest and map", "url": "https://brewslm.com/academy/tutorials/pii-span-tagging.html#ingest-map" },
+          { "@type": "HowToStep", "name": "Cleanup and normalisation", "url": "https://brewslm.com/academy/tutorials/pii-span-tagging.html#cleanup" },
+          { "@type": "HowToStep", "name": "Pick the recipe", "url": "https://brewslm.com/academy/tutorials/pii-span-tagging.html#pick-recipe" },
+          { "@type": "HowToStep", "name": "Build the gold set", "url": "https://brewslm.com/academy/tutorials/pii-span-tagging.html#gold-set" },
+          { "@type": "HowToStep", "name": "Stratified split by document type", "url": "https://brewslm.com/academy/tutorials/pii-span-tagging.html#split" },
+          { "@type": "HowToStep", "name": "Generate hard-negative + paraphrase drills", "url": "https://brewslm.com/academy/tutorials/pii-span-tagging.html#synthetic" },
+          { "@type": "HowToStep", "name": "Review the synth queue", "url": "https://brewslm.com/academy/tutorials/pii-span-tagging.html#review-queue" },
+          { "@type": "HowToStep", "name": "Train", "url": "https://brewslm.com/academy/tutorials/pii-span-tagging.html#train" },
+          { "@type": "HowToStep", "name": "Evaluate with per-entity recall floors", "url": "https://brewslm.com/academy/tutorials/pii-span-tagging.html#evaluate" },
+          { "@type": "HowToStep", "name": "Ship as a pre-API redactor with audit logging", "url": "https://brewslm.com/academy/tutorials/pii-span-tagging.html#ship" }
+        ],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+          { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+          { "@type": "ListItem", "position": 3, "name": "Tutorials", "item": "https://brewslm.com/academy/tutorials/" },
+          { "@type": "ListItem", "position": 4, "name": "PII span tagging with span-extraction", "item": "https://brewslm.com/academy/tutorials/pii-span-tagging.html" }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="tutorials/pii-span-tagging">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home">
+        <img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" />
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+        <a href="index.html" aria-current="page">Tutorials</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="../index.html">Academy</a></li>
+        <li><a href="index.html">Tutorials</a></li>
+        <li>PII span tagging with span-extraction</li>
+      </ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page">
+        <p class="lesson-toc__title">On this page</p>
+        <ol data-toc></ol>
+      </aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Tutorial 7 · End-to-end · Safety</span>
+          <h1>Build a PII span tagger with the span-extraction recipe</h1>
+          <p class="lesson-header__outcome">By the end of this tutorial you'll have a small language model that takes a piece of free-form text — a support transcript, a chat log, an internal email, a training-data row — and emits a list of every PII span it contains, each tagged with its type. A downstream redactor uses that list to scrub, hash, or pseudonymise the spans before the text leaves your network. The tagger runs on a single small GPU (or CPU), costs nothing per call at inference, and unlike sending PII to a frontier API to "redact it for you", it never leaks the data it's trying to protect.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Time:</strong> ~2.5 hours total (most of it gold-set curation + per-entity recall tuning)</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="setup-brewslm.html">Tutorial 0 (Setup BrewSLM)</a>. Optional sibling: <a class="inline-link" href="invoice-field-extraction.html">Tutorial 3</a> (same recipe, closed-set extraction). Optional context: <a class="inline-link" href="../sft-fundamentals/task-shapes.html">Task shapes</a> for span vs classification.</span>
+          </div>
+        </header>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Before you start</p>
+          <p>This tutorial assumes BrewSLM is running locally at <code>http://localhost:5173</code> with an admin user signed in. If you haven't done that yet, complete <a class="inline-link" href="setup-brewslm.html"><strong>Tutorial 0 — Set up BrewSLM and your first project</strong></a> first. It takes ~15 minutes and is the prerequisite for every tutorial in this track.</p>
+          <p>This tutorial is the <strong>natural companion to <a class="inline-link" href="invoice-field-extraction.html">Tutorial 3 — Invoice field extraction</a></strong>. Both use the <code>span-extraction</code> recipe. If you've done T3 the shape will feel familiar; the new work is per-entity recall tuning and the explicit-review redaction pattern. If you haven't done T3, you can still follow this one cold — the recipe is reintroduced from scratch.</p>
+          <p>You'll also want, before you start: <strong>~200 rows of text with annotated PII spans</strong>. Crucially these should be <em>synthetic</em>, not real — Faker-generated names, addresses, emails, etc. embedded inside realistic carrier sentences. The "don't train on real PII" callout below is not a stylistic note; it's the rule.</p>
+        </div>
+
+        <details class="tutorial-glossary">
+          <summary><strong>Terms you'll see in this tutorial</strong> (click to expand)</summary>
+          <dl>
+            <dt>Recipe</dt><dd>The training-plan template you pick when creating a project. For this tutorial: <code>span-extraction</code>. Defines the base model + adapter + eval pack defaults for structured-span tagging.</dd>
+            <dt>Span</dt><dd>A contiguous slice of the input text identified by <code>(label, span_start, span_end, value)</code>. <em>"alice@example.com"</em> in a 240-character message is one span; if there are three more emails further down, there are four spans total.</dd>
+            <dt>Open-set tagging</dt><dd>The number of spans per input is unbounded — zero, one, or thirty all valid. Distinct from T3's closed-set extraction (exactly one "total" per invoice). Open-set tagging puts the weight on <em>recall</em>; closed-set puts it on <em>precision</em>.</dd>
+            <dt>Entity type</dt><dd>The label attached to a span: <code>EMAIL</code>, <code>PHONE</code>, <code>PERSON</code>, <code>ADDRESS</code>, <code>SSN</code>, <code>CREDIT_CARD</code>, <code>DOB</code>. The choice of vocabulary is your call; pick what your downstream redactor needs to differentiate.</dd>
+            <dt>span_set scoring</dt><dd>The scoring_mode the span-extraction recipe uses. Treats each row's prediction and gold as <em>sets</em> of spans, computes intersection (true positives), reports span-F1, span-precision, span-recall. The same scorer drives invoice extraction and PII tagging.</dd>
+            <dt>Per-entity recall floor</dt><dd>An eval gate that requires recall on each entity type to meet a minimum threshold individually. For PII: SSN and credit-card recall floors are tightened to 0.98 because missing one is a compliance incident; PERSON and DOB floors sit at 0.85 because the FP cost on those classes is higher.</dd>
+            <dt>Hard negative (PII flavour)</dt><dd>A string that <em>looks</em> like a PII span but isn't. <em>"May"</em> in "May 2024" is not a PERSON. <em>"555"</em> in "555 5th Avenue" is not a PHONE. <em>"Pat"</em> in "Pat the dog" is not a PERSON. Hard negatives teach the model to use context, not pattern matching.</dd>
+            <dt>Explicit-review redaction</dt><dd>The deployment pattern this tutorial recommends: tagger emits spans, downstream pipeline produces a redacted copy AND keeps the original alongside an audit log, redaction is approved by a human (or by policy) before either copy is destroyed. The platform's safety rule is the same: no auto-redaction without an audit trail.</dd>
+            <dt>Faker</dt><dd><a class="inline-link" href="https://faker.readthedocs.io/" target="_blank" rel="noopener noreferrer">Faker</a> is a Python library that generates realistic-looking but entirely synthetic names, addresses, phone numbers, emails, SSNs, credit-card numbers, dates of birth. It is the canonical source-of-truth for "PII-shaped strings I can legally train on."</dd>
+          </dl>
+        </details>
+
+        <p>This is BrewSLM's canonical workflow for an <strong>open-set, multi-occurrence span tagger</strong> deployed as a pre-API safety control. The use case is PII detection but the recipe shape generalises: secret-key detection in code, internal-identifier scrubbing in logs, controlled-substance mentions in clinical notes, named-entity tagging for any policy that needs to know <em>where</em> in the text the sensitive content sits. The bones are the same; the entity vocabulary changes.</p>
+
+        <p>The end state is a tagger you'd actually deploy at a B2B SaaS company: small enough to sit inline before every outbound API call, accurate enough that the compliance team trusts its output, and honest enough about its limits that nothing gets auto-redacted without leaving a paper trail.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Do not train on real PII. Ever.</p>
+          <p>This is the recurring compliance trap. The training pipeline persists your data to disk, ships it through synthetic playbooks (which call out to teacher models), and writes evaluation reports that quote rows verbatim. Every one of those steps is a leak surface for real PII. <strong>Use Faker-generated synthetic names, addresses, phone numbers, emails, SSNs, and credit cards embedded inside real-shape carrier text.</strong> The tagger will learn the shapes just fine; nothing real ever lands in <code>data/projects/</code>. Live testing against your own corpus is fine — but only with a deployed adapter, never as a training input.</p>
+        </div>
+
+        <h2 id="what-youll-build">What you'll build</h2>
+        <p>An open-set PII tagger. Input is free-form text; output is a JSON array of span objects:</p>
+        <pre class="code-block"><code>{
+  "text": "Hi Sarah, please confirm — alice@example.com asked us to wire $1,200 to her on 03/14. Her phone is (415) 555-0142 and SSN ends in 4419. Best, Marco",
+  "entities": [
+    { "label": "PERSON",      "span_start": 3,   "span_end": 8,   "value": "Sarah" },
+    { "label": "EMAIL",       "span_start": 27,  "span_end": 44,  "value": "alice@example.com" },
+    { "label": "DOB",         "span_start": 82,  "span_end": 87,  "value": "03/14" },
+    { "label": "PHONE",       "span_start": 101, "span_end": 115, "value": "(415) 555-0142" },
+    { "label": "PERSON",      "span_start": 152, "span_end": 157, "value": "Marco" }
+  ]
+}</code></pre>
+        <p>The model is a fine-tuned LoRA adapter on top of <code>SmolLM2-135M-Instruct</code> running at typical 20-80ms per piece of text on a single GPU, ~100-300ms on CPU. The output is a strict JSON array — your downstream redactor consumes it as-is, masks the spans (replace with <code>[EMAIL]</code>, hash, or pseudonymise via Faker), and writes both the redacted and the original alongside an audit log entry. No PII leaves the network until somebody approves the redaction.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>PII tagging cares about <strong>recall on the rare classes</strong>. Missing one of three emails is a small problem; missing one SSN is a compliance incident. The eval pack you ship with overrides the default uniform thresholds with per-entity recall floors that are <em>tightest on the rarest, costliest entity types</em>. SSN and credit-card recall floors sit at 0.98; PERSON and DOB at 0.85. That asymmetry is the deployment-readiness signal that matters.</p>
+        </div>
+
+        <h2 id="why-small">Why a small model (not regex, not a frontier LLM)</h2>
+        <p>Three options exist for PII tagging. Use this comparison:</p>
+        <table class="comparison-table">
+          <thead>
+            <tr><th>Approach</th><th>Detection quality</th><th>Latency</th><th>Cost</th><th>Privacy</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Regex stack (presidio, custom rules)</td><td>Catches well-formed emails / phones / SSNs; misses obfuscation ("alice at example dot com", "fifteen oh three") and over-flags name-shaped words ("May", "Pat", "Will")</td><td>&lt;5ms</td><td>Free</td><td>Self-hosted</td></tr>
+            <tr><td>Frontier LLM via API</td><td>Excellent on obfuscation and context</td><td>1.5-3 seconds + queue</td><td>$0.003-0.02 per call</td><td><strong>You are sending the PII you want to redact to the API. This is the privacy paradox — the cure leaks the disease.</strong></td></tr>
+            <tr><td><strong>Small fine-tuned span tagger (this tutorial)</strong></td><td>Good on obfuscation + low FP on common names if you curate hard negatives</td><td>20-80ms</td><td>~$30/month at 10k/hour (one GPU)</td><td>Self-hosted. The PII never leaves your network.</td></tr>
+          </tbody>
+        </table>
+        <p>Regex catches <em>well-formed</em> PII but misses the obfuscation any agent who's used a chat product knows about — <em>"my email is alice at example dot com"</em>, <em>"phone five five five oh one four two"</em>. Worse, regex over-flags: a strict name-list flags <em>"May"</em> in "May 2024", <em>"Pat"</em> in "Pat the dog", <em>"Will"</em> in "Will do." Frontier LLMs handle context well but require you to ship every byte of the data you're trying to protect to a third-party API — the privacy paradox. Small fine-tuned span taggers occupy the gap: they learn the linguistic context that distinguishes <em>"Pat"</em>-the-name from <em>"Pat"</em>-the-verb, and they run on your hardware.</p>
+
+        <h2 id="choose-dataset">Choose your dataset</h2>
+        <p>You need <strong>text with annotated PII spans</strong>. Critically: synthetic PII, real carrier text. Three sources to mix:</p>
+        <dl>
+          <dt>Faker-generated synthetic PII (the spine)</dt>
+          <dd><a class="inline-link" href="https://faker.readthedocs.io/" target="_blank" rel="noopener noreferrer">Faker</a> generates names, emails, phones, addresses, SSNs, credit cards, dates of birth that look real but aren't. Write a short Python script that takes real-shape carrier sentences ("Hi {name}, please confirm — {email} asked us to wire $1,200 to {pronoun} on {dob}…") and slots Faker outputs into the placeholders. You know exactly where every span starts and ends because <em>you wrote the template</em>. 100+ Faker-templated rows is the easiest, safest gold-set spine you can build.</dd>
+          <dt>Public NER corpora (warm-up for general types)</dt>
+          <dd><a class="inline-link" href="https://catalog.ldc.upenn.edu/LDC2013T19" target="_blank" rel="noopener noreferrer">OntoNotes 5.0</a> ships PERSON, LOC, ORG, DATE tags over news, broadcast, and web text — useful for learning the linguistic context around names and dates without any real-PII exposure. <a class="inline-link" href="https://www.clips.uantwerpen.be/conll2003/ner/" target="_blank" rel="noopener noreferrer">CoNLL-2003</a> is the canonical NER baseline if you want a 4-class warm-up (PER / LOC / ORG / MISC). WikiNER is a Wikipedia-derived public NER corpus in many languages — useful for multilingual coverage. Map their tag vocabularies into your project's: OntoNotes PERSON → your PERSON, DATE → your DOB or drop.</dd>
+          <dt>Presidio's synthetic test corpus</dt>
+          <dd>Microsoft's <a class="inline-link" href="https://github.com/microsoft/presidio" target="_blank" rel="noopener noreferrer">Presidio</a> ships a synthetic PII test corpus with realistic carrier text and annotations for 20+ entity types. It's released for exactly the "I can't ship real PII into a training pipeline" reason. Useful as a second seed alongside your Faker spine.</dd>
+        </dl>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Do not use real customer data, even partially redacted</p>
+          <p>"I'll just remove the last four digits of the SSN before training" leaks the prefix bytes — and the prefix is geographically identifying. "I'll just keep names but anonymise emails" leaks the names. Half-measures do not solve the problem; they only hide it from your future self when the audit comes. <strong>Use synthetic PII. Period.</strong> Live testing against your own corpus is fine, but only with a trained adapter loaded for inference — never as a training input.</p>
+        </div>
+
+        <h2 id="ingest-map">Ingest and map</h2>
+        <p>In BrewSLM, create a new project: <strong>Projects → New Project → span-extraction recipe</strong>. The recipe pre-fills the adapter (<code>default-canonical</code>), task profile (<code>structured_extraction</code>), scoring mode (<code>span_set</code>), and the eval pack scaffold with span-F1, span-precision, span-recall gates.</p>
+        <p>Open <strong>Data Studio → Import</strong>. Your JSONL should look like this — one row per piece of text, entities encoded as a JSON array:</p>
+        <pre class="code-block"><code>{"text": "Hi Sarah, please confirm — alice@example.com asked us to wire $1,200 to her on 03/14.", "entities": [{"label": "PERSON", "span_start": 3, "span_end": 8, "value": "Sarah"}, {"label": "EMAIL", "span_start": 27, "span_end": 44, "value": "alice@example.com"}, {"label": "DOB", "span_start": 82, "span_end": 87, "value": "03/14"}]}
+{"text": "Customer 4532-1289-4419-8821 was charged twice on 2024-03-14. Refund issued to marco.rossi@example.org.", "entities": [{"label": "CREDIT_CARD", "span_start": 9, "span_end": 28, "value": "4532-1289-4419-8821"}, {"label": "DOB", "span_start": 50, "span_end": 60, "value": "2024-03-14"}, {"label": "EMAIL", "span_start": 80, "span_end": 103, "value": "marco.rossi@example.org"}]}
+{"text": "Please confirm the export menu doesn't include any sensitive fields — May is fine to handle this.", "entities": []}</code></pre>
+        <p>Note the third row: <code>"entities": []</code> is a perfectly valid label. Empty-span rows teach the model that not every piece of text has PII, and that "May" in "May is fine to handle this" is not a PERSON. These are the open-set negative rows; they're as important as the positive rows.</p>
+        <p>The Data Studio mapping panel shows you a confidence-scored preview of the spans pulled out of three to five rows. Click <strong>Apply mapping</strong> when the preview looks right.</p>
+
+        <p><strong>✓ Checkpoint:</strong> the Data Studio Overview now shows your imported row count plus a per-entity-type breakdown ("PERSON: 240 spans across 180 rows, EMAIL: 95 spans across 80 rows, SSN: 18 spans across 18 rows"). The breakdown surfaces immediately whether your gold set is starving any entity type — the rare classes are exactly the ones you'll need to backfill via synth.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Same recipe as the invoice tutorial — different annotation density</p>
+          <p>If you did <a class="inline-link" href="invoice-field-extraction.html">Tutorial 3 (Invoice field extraction)</a>, this ingestion shape is identical. T3 is <strong>closed-set, structured extraction</strong> — every invoice has exactly one <code>total</code>, one <code>vendor</code>, one <code>invoice_date</code>; the model's job is to find which span is which. T7 (this tutorial) is <strong>open-set, multi-occurrence tagging</strong> — a single message can contain zero emails, three emails, or thirty emails, all valid. Same JSON shape, same <code>span_set</code> scorer, but the failure modes look completely different. T3 cares most about <em>precision</em> on the single right answer; T7 cares most about <em>recall on the rare classes</em>.</p>
+        </div>
+
+        <h2 id="cleanup">Cleanup and normalisation</h2>
+        <p>Open Data Studio's <strong>Quality &amp; Safety</strong> panel. For a span-tagging project the cleanup checks are different from a classification or QA project:</p>
+        <ul>
+          <li><strong>Unicode normalisation.</strong> Smart quotes vs straight quotes, curly apostrophes inside names (<em>"D'Arcy"</em> vs <em>"D'Arcy"</em>), full-width characters from CJK-mixed text. Normalise to NFC before training. If <em>"alice@example.com"</em> is encoded as ASCII in row 1 and as full-width-at <em>"alice＠example.com"</em> in row 50, the model sees two different shapes and you halve your effective email-class data.</li>
+          <li><strong>Span offset integrity.</strong> Every <code>(span_start, span_end)</code> pair must slice into the canonical <code>text</code> field and equal the <code>value</code>. The platform validates this on import; any row where the slice doesn't match its value gets flagged. Fix by re-tokenising or by editing the offsets — never silently drop the row.</li>
+          <li><strong>Partial redactions in the source.</strong> Text that's <em>already been partially redacted</em> ("Customer [REDACTED] called about order #4419") is poisonous. Either the redaction marker is a span you want tagged (in which case label it consistently), or you exclude those rows. A model trained on text where some PII is real and some is <code>[REDACTED]</code> learns to predict the literal string <code>[REDACTED]</code> as the answer — useless on fresh inputs.</li>
+          <li><strong>Encoding hygiene.</strong> Strip BOMs, normalise whitespace (tabs vs spaces inside addresses), collapse trailing punctuation onto the preceding token where reasonable. Clean text = stable span offsets.</li>
+        </ul>
+        <p>You don't have to clean everything before training, but you <em>do</em> have to clean the rows you're about to promote to gold. The eval pack scores against those rows; the synthetic playbooks seed from them.</p>
+
+        <h2 id="pick-recipe">Pick the recipe: span-extraction vs classification vs qa-sft</h2>
+        <p>BrewSLM ships three recipes that could plausibly do PII detection. Use this decision tree:</p>
+        <table class="comparison-table">
+          <thead>
+            <tr><th>You want…</th><th>Use</th><th>Why</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Per-PII-type spans with offsets, so a redactor can mask them</td><td><strong>span-extraction</strong></td><td>Open-set, multi-occurrence span output; downstream consumer slices the text by offsets</td></tr>
+            <tr><td>A yes/no "this message contains PII"</td><td>classification</td><td>If you only need a routing flag (PII or not), not the locations, classification is simpler</td></tr>
+            <tr><td>A natural-language explanation of what was found and why</td><td>qa-sft</td><td>Free-text generation; useful for SOC tooling but not for inline redaction</td></tr>
+            <tr><td>Structured extraction of a fixed-shape document (one total, one vendor)</td><td>span-extraction (closed-set)</td><td>Same recipe; closed-set just means there's one of each type per row instead of zero-or-many</td></tr>
+          </tbody>
+        </table>
+        <p>For pre-API redaction: <strong>span-extraction</strong>. If you did the <a class="inline-link" href="invoice-field-extraction.html">invoice tutorial</a>, this recipe will feel familiar — same shape, different annotation density. Sticking with span-extraction for the rest of this tutorial.</p>
+
+        <h2 id="domain-packs">Domain packs (the safety gap)</h2>
+        <p>BrewSLM doesn't ship a PII or safety domain pack out of the box today — the platform's curated packs (legal, support, ecommerce, healthcare) are around content domains, not safety controls. For PII tagging you're operating on platform defaults.</p>
+        <p>The existing <strong>safety eval handler</strong> still complements this work. When you wire the tagger into a chat or support surface, the safety handler scores per-turn refusal behaviour and policy compliance independently of the span output. That gives you two distinct guards: the span tagger catches PII inside the text; the safety handler catches policy violations in the surrounding conversation flow.</p>
+        <p>Building a custom <code>privacy</code> domain pack is a worthwhile follow-up that this tutorial intentionally doesn't cover. It would bundle: tighter per-entity recall floors for SSN/credit-card, an explicit-review redaction policy as a default eval gate, a glossary linking each PII type to the relevant compliance regime (GDPR Art. 4, CCPA §1798.140, HIPAA §164.514), and an Academy tag pointing at this tutorial. If you're shipping span taggers across many projects (PII, secret-key scrubbing, controlled-substance tagging), packaging the conventions as a pack pays back fast.</p>
+
+        <h2 id="gold-set">Build the gold set</h2>
+        <p>The gold set is where the work happens for any span project, but for PII tagging two things make it different from <a href="invoice-field-extraction.html">T3 (invoice)</a>:</p>
+        <ol>
+          <li>The PII distribution per row is <strong>highly variable</strong> — one row has zero PII, the next has fifteen. T3 has exactly one of each type per row.</li>
+          <li>Some entity types are <strong>much rarer</strong> than others. EMAIL and PERSON show up in nearly every row; SSN and credit-card show up in maybe one in fifteen. You need to oversample the rare classes during gold curation.</li>
+        </ol>
+
+        <h3 id="gold-manual">Path A — manual annotation in the Gold Set workbench</h3>
+        <p>Open <strong>Data Studio → Gold Set</strong>. The span-tagging mode is the same UI as T3: click-drag to select a span in the text, pick a label from the drop-down, hit save. For each row you add:</p>
+        <ol>
+          <li>Paste a piece of synthetic-PII-bearing text into the <code>text</code> field. Use carrier sentences that look like real chat / email / support data; Faker-fill the PII placeholders.</li>
+          <li>Click-drag every PII span. Label each one with the entity type from your vocabulary.</li>
+          <li>Save. The workbench re-renders the text with the annotated spans highlighted; verify the slice matches the value before moving on.</li>
+        </ol>
+        <p>Spend the first 60 minutes hand-annotating ~80 rows. Make sure every entity type shows up at least 10 times in this batch — if SSN only shows up once, the model never learns the linguistic context around SSNs.</p>
+
+        <h3 id="gold-llm-assisted">Path B — LLM-assisted promotion using Presidio as the teacher</h3>
+        <p>For larger imports, run Presidio out-of-band as a span pre-labeller and import the results as candidate rows — Presidio is a separate library, not a BrewSLM teacher backend, but its regex engine catches the well-formed cases reliably and that's a great starting point:</p>
+        <ol>
+          <li>Bulk-import a few hundred unlabeled text rows (synthetic carrier text with Faker-filled PII).</li>
+          <li>Run <a class="inline-link" href="https://github.com/microsoft/presidio" target="_blank" rel="noopener noreferrer">Presidio</a> on each row in a separate Python script. Take its <code>(entity_type, start, end)</code> tuples and write them out as candidate rows in the platform's canonical entity-JSON shape.</li>
+          <li>Re-import those candidate rows as a fresh dataset. They land with normal pending status; review one entity-type cluster at a time. The Quality &amp; Safety panel's per-entity-type breakdown groups them so you can rip through all the EMAIL candidates in one pass, then all the PHONE candidates, etc.</li>
+        </ol>
+        <p>This compresses 4 hours of manual annotation into ~45 minutes of review. The trade-off is the one the platform's safety rule names: Presidio will mis-label obfuscated PII, will miss novel phone formats, will mistakenly flag dates as DOBs when they're invoice dates. You have to actually look at every row before accepting it.</p>
+
+        <p><strong>✓ Checkpoint:</strong> the Data Studio Overview's <strong>Gold Set ready</strong> row should now show your gold count with a per-entity breakdown ("200 gold rows · EMAIL ×140, PERSON ×210, PHONE ×95, ADDRESS ×52, SSN ×24, CREDIT_CARD ×18, DOB ×120"). The amber state on the rare classes is the signal — SSN and credit-card at 18-24 spans is too thin; the synth step will backfill those.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Don't skip the empty-entities rows</p>
+          <p>Your gold set must contain rows where the answer is <code>"entities": []</code>. Add ~20% of your gold as empty-entity rows — text that obviously contains no PII, plus text that contains <em>hard-negative</em> tokens that look like PII but aren't (May/Pat/Will-as-words, 555 in non-phone context, dates-that-aren't-DOBs). Without empty-entity rows the model never learns when NOT to tag, and your false-positive rate climbs into the unusable range.</p>
+        </div>
+
+        <h2 id="split">Stratified split by document type</h2>
+        <p>BrewSLM's Prepare Dataset panel produces a random split off the canonical config (train_ratio / val_ratio / test_ratio / seed). For PII tagging, random splitting can starve a rare entity type entirely from val/test (a 0.95 SSN-recall claim is meaningless if test has no SSN spans). Two things to do <em>before</em> import to get a sensible split:</p>
+        <ul>
+          <li><strong>Pre-partition by document type.</strong> Chat messages, internal emails, support transcripts, and ticket comments all have different PII densities. Sort your rows by document_type and break them into train.jsonl / val.jsonl / test.jsonl so each split contains a proportional mix of types, then import the three files as three datasets.</li>
+          <li><strong>Verify rare-class coverage per split.</strong> Count SSN / CREDIT_CARD spans in each split before training. If your val.jsonl has zero SSNs, hand-move a few rows over from train.jsonl. The Quality &amp; Safety panel surfaces the per-entity counts once you've imported — eyeball them before you click Run prepare.</li>
+        </ul>
+        <p>The default ratios are 80% train / 10% validation / 10% test. For 300 gold rows that's 240 train / 30 val / 30 test, which is enough to detect the obvious failure modes provided rare classes appear in every split. For deployment-readiness you'll also want a separate <strong>realistic eval set</strong> — see the Evaluate section for how this differs from the random-split test.</p>
+
+        <h2 id="synthetic">Generate synthetic drills</h2>
+        <p>The span-extraction recipe ships three playbooks. For PII tagging all three matter, but the order is non-obvious:</p>
+        <dl>
+          <dt>span_extraction_hard_negatives — the precision-defender drill</dt>
+          <dd>Generates rows where the carrier text contains <em>look-alike strings</em> that <strong>should not be tagged</strong>. The model is forced to use linguistic context to discriminate. Examples this playbook produces:
+            <ul>
+              <li><em>"May 2024 revenue was up 12%"</em> — "May" is not a PERSON</li>
+              <li><em>"555 5th Avenue, suite 12"</em> — "555" is not a PHONE</li>
+              <li><em>"Pat the dog, then check the file"</em> — "Pat" is not a PERSON</li>
+              <li><em>"Will do — see you tomorrow"</em> — "Will" is not a PERSON</li>
+              <li><em>"Customer ID 4532-1289-4419-8821 was charged"</em> — the digits look like a credit card BUT the carrier sentence labels it as a customer ID, not a card; the right answer depends on your policy. Decide once and be consistent.</li>
+            </ul>
+            Generate ~60 rows. This playbook is THE precision-defender for PII tagging.</dd>
+          <dt>span_extraction_paraphrase — the carrier-text variation drill</dt>
+          <dd>Holds the PII spans constant and varies the surrounding carrier text. <em>"Hi {name}, please email {email}"</em> becomes <em>"Could you reach out to {name} at {email}?"</em> becomes <em>"Forward this to {name} ({email})."</em> Same PII, different registers, different punctuation. Goal: the tagger learns to find PII regardless of how the sentence around it is phrased. Generate ~50 rows seeded from your hand-curated gold.</dd>
+          <dt>span_extraction_cluster_targeted — the gap-filler</dt>
+          <dd>If the failure-clusters panel after a first eval round shows the model dropping a specific shape (e.g. "missed obfuscated emails" or "missed phones in 555-555-5555 format"), this playbook generates more examples targeted at that cluster. Generate ~30 rows per cluster you want to backfill. Optional — run only after you've seen the eval failure modes.</dd>
+        </dl>
+        <p>Open <strong>Data Studio → Synthetic → Playbook Center</strong>. The span-extraction recipe surfaces three playbook cards; click <code>span_extraction_hard_negatives</code> first, set target count to 60, pick a backend (Ollama is the free default; OpenAI / Anthropic also work if you have keys). Generation runs as a background Job; the notification bell tracks progress.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Hard negatives first, paraphrase second, cluster-targeted last</p>
+          <p>Run <code>span_extraction_hard_negatives</code> first — that's where your precision lives. Review the output, then run <code>span_extraction_paraphrase</code> as a recall extender. Hold <code>span_extraction_cluster_targeted</code> in reserve for the second training round, once the eval has surfaced which entity type or carrier-shape is failing. Doing them in the wrong order means you'll be reviewing easy paraphrases while the hard negatives that actually move precision haven't been generated yet.</p>
+        </div>
+
+        <p>Faker stays in the loop for the synth step too. The platform's hard-negatives playbook ships a generic prompt — for PII work specifically, customise the prompt (the playbook's prompt text lives in the project's synth config) to tell the teacher to slot <em>Faker-generated</em> name/email/phone strings into the look-alike carrier text rather than inventing strings. That keeps the synth data PII-free at the source even when the teacher is a third-party API.</p>
+
+        <h2 id="review-queue">Review the synth queue</h2>
+        <p>Every generated row lands in the <strong>Synthetic Review Queue</strong> with <code>review_status="pending"</code>. For span-tagging the per-row action is more nuanced than for classification — each row has zero-or-many spans, and any one of them can be wrong. The platform groups rejected rows by reason; use these tags:</p>
+        <ul>
+          <li><strong><code>false-positive</code></strong> — the synth produced a span that <em>shouldn't</em> be tagged at all (e.g. tagged "May" as PERSON). Soft-reject; useful as a hard-negative seed for the next playbook round.</li>
+          <li><strong><code>false-negative</code></strong> — the synth row contains a PII span that wasn't tagged (e.g. an email in the carrier text that the teacher missed). Soft-reject; flag for hand-fixup.</li>
+          <li><strong><code>wrong-label</code></strong> — the span was found, but tagged as the wrong entity type (e.g. an email got tagged as PERSON because the carrier sentence said "Email Sarah at sarah@example.com" and the teacher conflated). Soft-reject; tag for review.</li>
+          <li><strong><code>offset-drift</code></strong> — the span's start/end don't match its value (e.g. span_start is off by one because the teacher counted a leading space). Soft-reject; the platform's import validator usually catches this but synth output sometimes slips through.</li>
+        </ul>
+        <p>Per-row actions:</p>
+        <ul>
+          <li><strong>Accept</strong> — the row joins training on the next dataset prep run. For PII specifically: only accept if you've eyeballed every span in the row. A row with three correct spans and one wrong-label span is a poisoned row; either fix the wrong label inline or soft-reject the whole row.</li>
+          <li><strong>Reject (soft)</strong> — the row stays on disk with the reason tag, available for audit.</li>
+          <li><strong>Purge</strong> — a reason-grouped bulk delete. Once a category is genuinely bad (say all 12 <code>offset-drift</code> rows are wrong), select the reason group and bulk-purge. The platform's "rejected rows are selectable + bulk-droppable" pattern matters here — never all-or-nothing.</li>
+        </ul>
+        <p>Expect to reject 30-50% of generated hard-negative rows on the first pass. The acceptance rate climbs as you tune the playbook prompt and the teacher learns the conventions.</p>
+
+        <h2 id="train">Training configuration</h2>
+        <p>Open <strong>Training → New Experiment</strong>. The span-extraction recipe defaults are sensible:</p>
+        <dl>
+          <dt>Base model</dt>
+          <dd><code>HuggingFaceTB/SmolLM2-135M-Instruct</code>. Small, instruction-tuned, runs on consumer hardware and emits the JSON-array output cleanly. Alternative: <code>Qwen/Qwen2.5-0.5B-Instruct</code> for slightly better quality on longer carrier text (chats over ~200 tokens).</dd>
+          <dt>Adapter</dt>
+          <dd>LoRA, rank 16, alpha 32, target modules <code>q_proj,k_proj,v_proj,o_proj</code>. Standard for SmolLM2 on structured-output tasks.</dd>
+          <dt>Learning rate</dt>
+          <dd>2e-4. Same as T1/T2; LoRA tolerates this rate.</dd>
+          <dt>Epochs</dt>
+          <dd>4. Span tagging usually needs one more epoch than classification because the model is learning a structured JSON output, not a single label.</dd>
+          <dt>Batch size + gradient accumulation</dt>
+          <dd>Batch 4, accumulate 4 → effective batch 16. PII carrier text tends to be 100-300 tokens; the per-step memory footprint fits well under 8 GB.</dd>
+        </dl>
+        <p>Expected runtime: 8-20 minutes on a single GPU (RTX 3060 or better), 20-45 minutes on CPU. The training panel shows live loss + a sparkline + the kill switch; if loss isn't dropping after the first 100 steps, kill the run and check your data — usually it's a span-offset integrity issue that the import validator didn't catch.</p>
+
+        <p><strong>✓ Checkpoint:</strong> in the Training tab, your experiment row shows a live sparkline that drops from ~2-3 in the first few steps down to ~0.4-0.6 by the end. The bell shows a "training" notification with a percentage. When complete, the experiment row turns green and the experiment detail page shows the final loss + span-F1 on the validation set + a "Run evaluation" button.</p>
+
+        <h2 id="forecast">Read the trainability forecast</h2>
+        <p>Before kicking off a real training run, the platform pre-computes a <strong>trainability forecast</strong>: given your current data + gold set + base model, what's the predicted F1 / pass rate? The goal ledger on the Data Studio overview shows it as the <code>predicted_pass</code> row.</p>
+        <p>For PII tagging — a high-recall use case — you want:</p>
+        <ul>
+          <li>Predicted pass probability <strong>≥ 70%</strong>. Lower means your rare-class data is too thin; back-fill SSN / credit-card / DOB before training.</li>
+          <li>Data ready <strong>= met</strong> with every entity type ≥ 30 spans in the gold set. Below that, the model can't learn the linguistic context for the starving class.</li>
+          <li>Goal ledger's <code>gold_set</code> row at <strong>≥ 100%</strong>. The span-extraction scaffold defaults to 100 gold rows; for PII with 6-7 entity types you'll want 200-300 to give the rare classes enough signal.</li>
+        </ul>
+        <p>If the forecast is below 50%, the eval is almost certainly going to fail the per-entity recall floors. <strong>Spend the extra hour back-filling rare-class rows instead of training.</strong> The single biggest predictor of a successful PII tagger is per-entity coverage in the gold set, not the training hyperparameters.</p>
+
+        <h2 id="evaluate">Evaluation: per-entity recall floors are the point</h2>
+        <p>After training, the platform automatically evaluates against the project's eval pack. The span-extraction scaffold ships with these default gates:</p>
+        <dl>
+          <dt>min_span_set_f1 ≥ 0.65</dt>
+          <dd>Headline F1 averaged across all entity types and rows. The starting threshold for a usable tagger; below this the model is broken at the basic shape.</dd>
+          <dt>min_span_set_precision ≥ 0.70</dt>
+          <dd>Across all entity types, fraction of predicted spans that match a gold span (with exact offset + label).</dd>
+          <dt>min_span_set_recall ≥ 0.60</dt>
+          <dd>Across all entity types, fraction of gold spans that the model recovered. The starting threshold; for PII you'll override this per-entity (see below).</dd>
+          <dt>safety pass rate (optional)</dt>
+          <dd>Hooks the existing safety eval handler; useful when the tagger is deployed alongside a chat surface where the safety handler also runs.</dd>
+        </dl>
+        <p>For PII tagging, <strong>override the uniform recall floor with per-entity floors</strong> via a custom eval pack — copy the scaffolded pack JSON, add gates that reference per-entity recall/precision values from the span-extraction eval handler (e.g. <code>recall.SSN</code>, <code>precision.PERSON</code>), and select your custom pack from the project's eval pack picker. A starting policy:</p>
+        <table class="comparison-table">
+          <thead>
+            <tr><th>Entity type</th><th>Min recall</th><th>Min precision</th><th>Why</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>SSN</td><td><strong>0.98</strong></td><td>0.90</td><td>Missing one SSN is a compliance incident; false-positives are cheap (one false flag, one human reviews, easy)</td></tr>
+            <tr><td>CREDIT_CARD</td><td><strong>0.98</strong></td><td>0.90</td><td>PCI scope. Same reasoning.</td></tr>
+            <tr><td>EMAIL</td><td>0.92</td><td>0.92</td><td>High frequency, well-formed; both sides should be tight</td></tr>
+            <tr><td>PHONE</td><td>0.90</td><td>0.85</td><td>Format variation hurts recall; OK to err on the side of over-flagging "555" strings</td></tr>
+            <tr><td>ADDRESS</td><td>0.85</td><td>0.80</td><td>Span boundaries are inherently fuzzy ("123 Main St" vs "123 Main St, Apt 4B"); allow more slack</td></tr>
+            <tr><td>PERSON</td><td>0.85</td><td>0.85</td><td>High false-positive cost (May / Pat / Will as words); precision floor matters more than recall here</td></tr>
+            <tr><td>DOB</td><td>0.85</td><td>0.80</td><td>Date format ambiguity (is "03/14" a DOB or an invoice date?) limits achievable precision</td></tr>
+          </tbody>
+        </table>
+        <p>The goal ledger's <code>eval_pass_rate</code> row expands into the per-gate breakdown so you can see exactly which entity type is failing which floor — "EMAIL recall 0.94 / ≥ 0.92 passed, SSN recall 0.91 / ≥ 0.98 FAILED, PERSON precision 0.81 / ≥ 0.85 FAILED."</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Why recall matters more than precision for PII</p>
+          <p>If your tagger has 0.95 recall on SSNs and 0.95 precision, you miss 5% of SSNs and you falsely flag 5% of non-SSN strings as SSNs. <strong>Those are not equally bad.</strong> The 5% false-positives just send a non-SSN to the redactor's review queue — one human glances at it and approves. The 5% false-negatives let real SSNs through to the third-party API — that's a compliance incident, a breach notification, a hit on your trust report. For PII tagging the asymmetry is real and large; bias your gates toward recall, especially on the rarest, costliest entity types.</p>
+        </div>
+
+        <h2 id="fix">When the eval fails</h2>
+        <p>Common PII-specific failure patterns and the fix for each:</p>
+        <table class="comparison-table">
+          <thead>
+            <tr><th>Symptom</th><th>Root cause</th><th>Fix</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>EMAIL recall 0.94 on well-formed emails, 0.20 on obfuscated ones ("alice at example dot com")</td><td>Gold set is dominated by well-formed Faker emails; the model never learned obfuscation</td><td>Generate 30+ obfuscated-email rows via <code>span_extraction_cluster_targeted</code>. Phrasings: "at … dot …", "[at]", "(at)", spaces around the @, full-words ("at gmail dot com").</td></tr>
+            <tr><td>PERSON precision 0.78 — model flags May, Pat, Will, Iris in non-name contexts</td><td>Hard negatives too few — model treats every Title-Case word as a PERSON</td><td>Run <code>span_extraction_hard_negatives</code> with 80+ rows targeting common-name-as-word cases. Each generated row puts a name-shaped token in a non-name context.</td></tr>
+            <tr><td>PHONE recall 0.92, DOB recall 0.55</td><td>Date format ambiguity — the model is confident on phones but DOBs are everywhere and look like other dates</td><td>Add more DOB-disambiguating context to gold. "born on 03/14/1989" → DOB; "invoice dated 03/14/2024" → not DOB. The carrier sentence shape is the signal.</td></tr>
+            <tr><td>Model conflates ORG and PERSON ("Acme Corp" tagged as PERSON)</td><td>Title-case proper-noun bias; ORG was not in your label vocabulary so the model overloads PERSON</td><td>Either add ORG to your vocabulary explicitly OR add hard-negative gold rows that pair organisation names with the empty-entity label.</td></tr>
+            <tr><td>F1 strong on test set, recall drops on the realistic eval set</td><td>Train/test data is Faker-templated and looks too uniform; production text has more noise</td><td>Capture realistic-shape unlabeled rows from your sanitised corpus, hand-label 30, evaluate against that as a separate held-out set BEFORE shipping</td></tr>
+            <tr><td>Every entity type fails the recall floor by 5-10 points</td><td>Gold set too small overall; per-entity row counts under 30</td><td>Back-fill with more Faker-templated gold across all types before running another training round. The forecast row in the goal ledger flagged this — the eval is just confirming.</td></tr>
+          </tbody>
+        </table>
+        <p>When the platform's post-eval decision engine surfaces a failure cluster, expand the <strong>"Why this fired?"</strong> disclosure on each signal. You'll see the actual span examples ("PERSON-precision: 18 false positives, sample tokens: May, Pat, Will, Iris, Hope") rather than just the recommendation verb. Use that cluster to seed the next round of <code>span_extraction_cluster_targeted</code>.</p>
+
+        <h2 id="ship">Ship as a pre-API redactor — explicit review required</h2>
+        <p>Once the eval pack passes (with the per-entity recall floors satisfied), ship the tagger inside an <strong>explicit-review redaction pipeline</strong>. Three steps:</p>
+        <ol>
+          <li><strong>Export the LoRA adapter.</strong> Open <strong>Models → Export</strong>. The platform writes the adapter weights, the tokenizer config, and a deploy manifest into <code>data/projects/&lt;id&gt;/exports/</code>. The adapter is ~5-15 MB.</li>
+          <li><strong>Deploy via vLLM (or Ollama).</strong> The recipe's <code>target_profile</code> is <code>vllm_server</code>:
+            <pre class="code-block"><code>cd data/projects/&lt;id&gt;/exports/run-2026-06-04
+./deploy-vllm.sh
+# Loads the tagger on localhost:8000.
+# POST /tag with { "text": "..." } returns { "entities": [ { "label": "...", "span_start": ..., "span_end": ..., "value": "..." } ] }
+# Latency: 20-80ms on a single GPU, 100-300ms on CPU.</code></pre>
+            Ollama variant: <code>./deploy-ollama.sh</code>.
+          </li>
+          <li><strong>Wire it as a pre-API redactor with audit logging.</strong> The tagger's output drives a downstream redactor that:
+            <ul>
+              <li>Produces a redacted copy of the text — spans replaced with type-named placeholders (<code>[EMAIL_1]</code>, <code>[PERSON_1]</code>, <code>[SSN_1]</code>) or hashed / Faker-pseudonymised.</li>
+              <li><strong>Keeps the original alongside the redacted copy</strong>, with an audit-log entry that records: timestamp, source surface, entity-type counts, the redacted token map, and the operator/policy that authorised the redaction.</li>
+              <li><strong>Never auto-destroys the original</strong> without a human or a policy gate having reviewed the audit entry. The retention window for originals is your compliance team's call (typically 30-90 days); after that, the originals are purged but the audit entries persist.</li>
+            </ul>
+          </li>
+        </ol>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Auto-redaction without an audit log is the anti-pattern</p>
+          <p>The temptation, especially when this ships, is to wire the tagger directly into the outbound pipeline and have it redact-and-destroy in one step. <strong>Don't.</strong> Every false-positive your tagger emits permanently corrupts a piece of text that may have been important — a customer's name in a support ticket gets replaced with <code>[PERSON_1]</code> and the original is gone. Worse, every false-negative is silent; you never know the tagger missed a span until somebody downstream finds it. The audit log is what makes the system <em>auditable</em>: when the compliance team asks "what did you redact last quarter?", you can answer with examples. When they ask "are you sure you didn't miss anything?", you can answer with the false-negative rate from your held-out realistic eval set. This pattern is the platform's safety rule for this surface — explicit review before destruction.</p>
+        </div>
+
+        <p><strong>Smoke-test in the playground.</strong> Open <strong>Playground</strong> in the platform. Paste 10 realistic-shape (but synthetic) text samples; check that each PII span gets the right label and the right offsets, and that the empty-entity rows return empty. The per-turn provenance footer (which adapter served the reply, the latency, the per-entity confidence breakdown) is your sanity check before you wire the tagger into a production redaction pipeline.</p>
+
+        <h2 id="whats-next">What's next</h2>
+        <p>You have a deployed PII tagger sitting in front of your outbound API surface, with per-entity recall floors that match the cost of each entity type, and an explicit-review redaction pipeline that never destroys an original without an audit trail. Three obvious next moves:</p>
+        <dl>
+          <dt>Extend the entity vocabulary</dt>
+          <dd>Add passport numbers, IBAN, bank routing numbers, custom enterprise IDs (employee IDs, account numbers, internal customer IDs). Faker generates many of these directly; for the enterprise-specific ones, write a small synthetic generator that mirrors your real ID format and use it as a Faker substitute.</dd>
+          <dt>Tune per-compliance-regime</dt>
+          <dd>GDPR, CCPA, and HIPAA have different definitions of PII / PHI. GDPR considers IP addresses personal data; CCPA scopes "personal information" more broadly than GDPR; HIPAA adds the 18 HIPAA Safe Harbor identifiers. Build one trained adapter per regime if you serve customers under different jurisdictions, OR build one adapter with the union of all entity types and apply per-regime filtering at the redactor layer. The latter is cheaper to maintain.</dd>
+          <dt>Retrain quarterly as new PII shapes emerge</dt>
+          <dd>New chat-style obfuscations, new phone formats (international expansion), new internal identifier shapes. Capture failure-cluster examples from production (audit log review surfaces these for free), promote them into the gold set, retrain when gold grows by ~100 rows. The post-eval decision engine will flag when the new data has shifted the optimal architecture; usually it hasn't — span-extraction is the right shape for the long run.</dd>
+        </dl>
+
+        <p>That's the tutorials series mainline — recipe-grounded, end-to-end, deployment-ready. For more tutorials covering other recipes (code review, summarisation, generic SFT), head back to the <strong><a class="inline-link" href="index.html">tutorials hub</a></strong>.</p>
+
+        <section class="key-terms">
+          <h2 id="key-terms">Key terms</h2>
+          <dl>
+            <dt>span-extraction recipe</dt><dd>BrewSLM recipe that trains a small model to find and label spans inside text. Output is a JSON array of <code>(label, span_start, span_end, value)</code> objects. Same recipe powers invoice extraction (closed-set, one of each type) and PII tagging (open-set, zero-or-many of each type).</dd>
+            <dt>Open-set vs closed-set tagging</dt><dd>Open-set: the number of spans per row is unbounded (PII). Closed-set: a fixed shape of one-of-each-type (invoice extraction). Same scorer; different failure-mode profile.</dd>
+            <dt>Per-entity recall floor</dt><dd>An eval gate that requires recall on each entity type to meet a minimum threshold individually. For PII: SSN and credit-card sit at 0.98 because missing one is a compliance incident; PERSON and DOB at 0.85 because the FP cost on those classes is higher.</dd>
+            <dt>Hard negative (PII flavour)</dt><dd>A string that looks like a PII span but isn't. "May" in "May 2024", "555" in "555 5th Avenue", "Pat" in "Pat the dog". Hard negatives teach the model linguistic context, not just pattern matching.</dd>
+            <dt>Explicit-review redaction</dt><dd>The deployment pattern this tutorial recommends: tagger emits spans, downstream pipeline produces both a redacted copy and an audit log, no original is destroyed without a human or policy gate having reviewed the audit entry. Auto-redaction without an audit log is the anti-pattern.</dd>
+            <dt>Faker</dt><dd>Python library that generates realistic-looking but synthetic PII. The canonical source-of-truth for "I need PII-shaped strings I can legally train on."</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Tutorial quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "Why does the PII span tagger's eval pack tighten the recall floor on SSN and credit-card to 0.98 while leaving PERSON at 0.85?",
+    "options": [
+      "SSNs are easier for the model to learn",
+      "Missing one SSN is a compliance incident; missing one PERSON of three is a smaller failure, and the FP cost on PERSON is higher because of common-name false-positives",
+      "Credit-card recall is computed differently",
+      "The 0.98 floor is the platform default"
+    ],
+    "answer": 1,
+    "explanation": "The recall floor is asymmetric on purpose — missed SSNs are real compliance incidents, while missed common-name PERSONs in noisy text are cheap. PERSON precision is the harder constraint because every May/Pat/Will/Iris-as-word is a potential FP."
+  },
+  {
+    "q": "Why is sending raw text to a frontier-LLM API to 'redact PII for me' the wrong architecture?",
+    "options": [
+      "Frontier LLMs are too slow",
+      "It's the privacy paradox — to redact the PII you ship the PII to a third-party API, leaking the data you're trying to protect",
+      "Frontier LLMs can't extract spans accurately",
+      "It costs too much"
+    ],
+    "answer": 1,
+    "explanation": "The whole point of PII tagging is to keep sensitive data inside your network. Routing every byte of raw text through a third-party API defeats the purpose before redaction even runs. A self-hosted small model is the only architecture that doesn't leak the data it's protecting."
+  },
+  {
+    "q": "What makes a good hard negative for PII tagging?",
+    "options": [
+      "A string with no PII at all",
+      "A string that LOOKS like a PII span (a name-shaped word, a number that resembles a phone, a date) but is not PII in its carrier context — e.g. 'May 2024 revenue', '555 5th Avenue', 'Will do'",
+      "An obfuscated email like 'alice at example dot com'",
+      "A row with two emails in it"
+    ],
+    "answer": 1,
+    "explanation": "Hard negatives are the precision-defenders: confusable strings that the model must learn to use context to discriminate. 'May' is a PERSON sometimes and a month other times — the carrier sentence is the signal. Obfuscated emails are positives the model should still recall; they go in the paraphrase / cluster-targeted playbooks, not in the hard-negative pile."
+  },
+  {
+    "q": "Why does the deployed pipeline keep the original text alongside the redacted copy and an audit log instead of redacting-and-destroying in one step?",
+    "options": [
+      "It's a regulatory requirement everywhere",
+      "Every false-positive permanently corrupts text that may have been important, every false-negative is silent without an audit, and the compliance team needs to be able to answer 'what did you redact?' with examples — auto-redaction without a paper trail is unauditable",
+      "It makes the redactor faster",
+      "It reduces the storage footprint"
+    ],
+    "answer": 1,
+    "explanation": "Auto-redaction without an audit log is the anti-pattern. The audit log makes the system auditable: false-positives are recoverable from the original, false-negatives are measurable from the held-out eval set, and the compliance team can review what got redacted on demand. The retention policy on the originals is a separate decision the compliance team owns."
+  }
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2 id="related">Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="setup-brewslm.html">Tutorial 0 — Set up BrewSLM and your first project</a><span class="related-lessons__track">Tutorials</span></li>
+            <li><a class="inline-link" href="support-faq-rag-protocol.html">Tutorial 1 — Support FAQ assistant with rag-protocol</a><span class="related-lessons__track">Tutorials</span></li>
+            <li><a class="inline-link" href="sql-injection-classifier.html">Tutorial 2 — SQL injection classifier</a><span class="related-lessons__track">Tutorials</span></li>
+            <li><a class="inline-link" href="invoice-field-extraction.html">Tutorial 3 — Invoice field extraction (sibling: same recipe, closed-set)</a><span class="related-lessons__track">Tutorials</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/task-shapes.html">Task shapes — classification vs QA vs span vs RAG</a><span class="related-lessons__track">Track 1B</span></li>
+            <li><a class="inline-link" href="../with-brewslm/eval-packs-and-failure-clusters.html">Eval packs, gates & failure clusters</a><span class="related-lessons__track">Track 3</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-actions">
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark tutorial complete</button>
+          <a class="btn btn-outline" href="index.html">← All tutorials</a>
+        </div>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>© <span id="footer-year">2026</span> BrewSLM Academy. <a class="inline-link" href="../glossary.html">Glossary</a> · <a class="inline-link" href="../certificate.html">Certificate</a> · <a class="inline-link" href="../small-language-model-roadmap.html">Roadmap</a></p>
+    </footer>
+    <script src="../../academy.js"></script>
+    <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
+  </body>
+</html>

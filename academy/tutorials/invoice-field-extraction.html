@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>End-to-end tutorial: invoice field extraction with span-extraction — BrewSLM Academy</title>
+    <meta
+      name="description"
+      content="A complete BrewSLM walkthrough: train a small language model to extract vendor, total, line items, invoice date, and due date from free-form invoice text. Emits a JSON object you can deploy as an inline microservice. Covers FUNSD / CORD / DocBank starting points, span-tagging gold sets, paraphrase + hard-negative drills, the span-set eval handler, and per-entity-type precision floors."
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/tutorials/invoice-field-extraction.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Invoice field extraction with the span-extraction recipe — end-to-end tutorial" />
+    <meta property="og:description" content="Replace your regex-based invoice extractor with a small fine-tuned model that survives layout changes. Span-set eval, per-entity precision floors, inline microservice deployment." />
+    <meta property="og:url" content="https://brewslm.com/academy/tutorials/invoice-field-extraction.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Invoice field extraction with span-extraction — end-to-end tutorial" />
+    <meta name="twitter:description" content="From free-form invoice text to a JSON extractor deployable as an inline microservice. Span-set scoring with per-entity precision floors." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YDPSHSVE1K"></script>
+    <script src="../../assets/analytics.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "Build an invoice field extractor with the span-extraction recipe in BrewSLM",
+        "description": "End-to-end walkthrough: dataset selection (FUNSD / CORD / DocBank plus your own AP scans), span-tagging gold-set curation, paraphrase + hard-negative synth playbooks, span-set eval gates with per-entity-type precision floors, and inline microservice deployment behind your AP automation.",
+        "url": "https://brewslm.com/academy/tutorials/invoice-field-extraction.html",
+        "inLanguage": "en",
+        "totalTime": "PT2H30M",
+        "estimatedCost": { "@type": "MonetaryAmount", "currency": "USD", "value": "0" },
+        "supply": [
+          { "@type": "HowToSupply", "name": "BrewSLM running locally or on a GPU host" },
+          { "@type": "HowToSupply", "name": "100+ invoice texts (OCR'd PDFs or plain-text exports from your AP system)" },
+          { "@type": "HowToSupply", "name": "Matching ERP entries — vendor, total, dates — to bootstrap the gold spans" }
+        ],
+        "tool": [
+          { "@type": "HowToTool", "name": "BrewSLM" },
+          { "@type": "HowToTool", "name": "SmolLM2-135M-Instruct (or alternative small base model)" }
+        ],
+        "step": [
+          { "@type": "HowToStep", "name": "Choose your dataset", "url": "https://brewslm.com/academy/tutorials/invoice-field-extraction.html#choose-dataset" },
+          { "@type": "HowToStep", "name": "Ingest and map", "url": "https://brewslm.com/academy/tutorials/invoice-field-extraction.html#ingest-map" },
+          { "@type": "HowToStep", "name": "Cleanup OCR artefacts", "url": "https://brewslm.com/academy/tutorials/invoice-field-extraction.html#cleanup" },
+          { "@type": "HowToStep", "name": "Pick the recipe", "url": "https://brewslm.com/academy/tutorials/invoice-field-extraction.html#pick-recipe" },
+          { "@type": "HowToStep", "name": "Build the gold set with span tagging", "url": "https://brewslm.com/academy/tutorials/invoice-field-extraction.html#gold-set" },
+          { "@type": "HowToStep", "name": "Stratify the split by template", "url": "https://brewslm.com/academy/tutorials/invoice-field-extraction.html#split" },
+          { "@type": "HowToStep", "name": "Generate paraphrase + hard-negative drills", "url": "https://brewslm.com/academy/tutorials/invoice-field-extraction.html#synthetic" },
+          { "@type": "HowToStep", "name": "Review the synth queue", "url": "https://brewslm.com/academy/tutorials/invoice-field-extraction.html#review-queue" },
+          { "@type": "HowToStep", "name": "Train", "url": "https://brewslm.com/academy/tutorials/invoice-field-extraction.html#train" },
+          { "@type": "HowToStep", "name": "Evaluate with span-set F1 + per-entity precision floors", "url": "https://brewslm.com/academy/tutorials/invoice-field-extraction.html#evaluate" },
+          { "@type": "HowToStep", "name": "Ship as an inline microservice", "url": "https://brewslm.com/academy/tutorials/invoice-field-extraction.html#ship" }
+        ],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+          { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+          { "@type": "ListItem", "position": 3, "name": "Tutorials", "item": "https://brewslm.com/academy/tutorials/" },
+          { "@type": "ListItem", "position": 4, "name": "Invoice field extraction", "item": "https://brewslm.com/academy/tutorials/invoice-field-extraction.html" }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="tutorials/invoice-field-extraction">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home">
+        <img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" />
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+        <a href="index.html" aria-current="page">Tutorials</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="../index.html">Academy</a></li>
+        <li><a href="index.html">Tutorials</a></li>
+        <li>Invoice field extraction</li>
+      </ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page">
+        <p class="lesson-toc__title">On this page</p>
+        <ol data-toc></ol>
+      </aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Tutorial 3 · End-to-end · Finance / Operations</span>
+          <h1>Invoice field extraction with the span-extraction recipe</h1>
+          <p class="lesson-header__outcome">By the end of this tutorial you'll have a small language model that takes free-form invoice text and emits a JSON object naming the vendor, total, line items, invoice date, and due date — with character offsets for every span so your downstream system can audit exactly which tokens produced each value. It runs on a single small GPU (or CPU), survives layout changes that would break a regex, and deploys as an inline microservice on every invoice ingest.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Time:</strong> ~2.5 hours total (most of it gold-set span tagging, which is the work that matters)</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="setup-brewslm.html">Tutorial 0 (Setup BrewSLM)</a>. Optional context: <a class="inline-link" href="sql-injection-classifier.html">Tutorial 2</a> for per-class-floor framing, <a class="inline-link" href="../sft-fundamentals/task-shapes.html">Task shapes</a> for span-extraction vs classification.</span>
+          </div>
+        </header>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Before you start</p>
+          <p>This tutorial assumes BrewSLM is running locally at <code>http://localhost:5173</code> with an admin user signed in. If you haven't done that yet, complete <a class="inline-link" href="setup-brewslm.html"><strong>Tutorial 0 — Set up BrewSLM and your first project</strong></a> first. It takes ~15 minutes and is the prerequisite for every tutorial in this track.</p>
+          <p>You'll also want, before you start: <strong>~100 invoice texts</strong> (OCR'd from your AP scans, exported from your ERP, or sampled from FUNSD / CORD — see below) plus <strong>the corresponding ERP entries</strong> for vendor, total, and dates. The ERP entries are what bootstrap your gold spans so you're not annotating from scratch.</p>
+        </div>
+
+        <details class="tutorial-glossary">
+          <summary><strong>Terms you'll see in this tutorial</strong> (click to expand)</summary>
+          <dl>
+            <dt>Recipe</dt><dd>The training-plan template you pick when creating a project. For this tutorial: <code>span-extraction</code>. Defines the base model + adapter + eval pack defaults for structured-extraction tasks.</dd>
+            <dt>Adapter</dt><dd>The mapping layer that converts your CSV/JSONL rows into training-ready fields. For span-extraction the adapter is <code>default-canonical</code> — it reads <code>text</code> plus a JSON list of <code>{type, start, end, text}</code> entity objects.</dd>
+            <dt>Task profile</dt><dd>The shape category the platform uses to pick eval handlers + synth playbooks. Span-extraction's task profile is <code>structured_extraction</code> — different from <code>classification</code> (one label per row) and from <code>rag_qa</code> (free-text answer).</dd>
+            <dt>Scoring mode</dt><dd>How the eval handler compares prediction to gold. Span-extraction uses <code>span_set</code> — the prediction and gold are each sets of <code>(type, start, end)</code> tuples, and the score is the F1 of set overlap. This is NOT the same as <code>field_match</code> (which would require an exact-string match on a single field).</dd>
+            <dt>Entity</dt><dd>One tagged span in a row. For invoices: <code>vendor</code>, <code>total</code>, <code>line_item</code>, <code>invoice_date</code>, <code>due_date</code>. Every entity is a tuple of (type, character-start-offset, character-end-offset, raw-text).</dd>
+            <dt>Span-set F1</dt><dd>The headline metric. Precision = correctly-predicted entities / total predicted; recall = correctly-predicted entities / total in gold; F1 = harmonic mean. An entity is "correct" only when type AND offsets both match.</dd>
+            <dt>Per-entity-type precision</dt><dd>The same precision metric, sliced per entity type. For invoice extraction you'll set a tighter precision floor on <code>total</code> (a wrong total causes a wrong payment) than on <code>line_item</code> (one missed line item is recoverable downstream).</dd>
+            <dt>Stratified-by-template split</dt><dd>Train/val/test split where each split contains different invoice templates (vendors, layouts). Prevents the model from memorising a specific layout and pretending it generalises.</dd>
+          </dl>
+        </details>
+
+        <p>This is BrewSLM's canonical workflow for <strong>structured extraction from free-form text</strong> — pulling named fields out of documents where the position, formatting, and surrounding context all vary. Invoice extraction is the headline use case but the recipe shape generalises: pulling named-entity offsets from contracts, statements, receipts, purchase orders, expense reports, ID documents. The model learns which tokens carry each field; you don't have to re-write your regex stack every time a vendor changes their template.</p>
+
+        <p>The end state is the small model you'd actually run in production at a B2B finance team: small enough to deploy as middleware on the ingest path, accurate enough that AP staff stop double-checking every extraction, and honest enough about its uncertainty that low-confidence rows route to a human reviewer instead of straight into the ERP.</p>
+
+        <h2 id="what-youll-build">What you'll build</h2>
+        <p>A span-extraction model that takes invoice text and returns a JSON object with five entity types and their character offsets. Concretely, given an input like:</p>
+        <pre class="code-block"><code>ACME Office Supplies Co
+Invoice #INV-2026-00471
+Bill Date: 2026-05-12   Due: 2026-06-11
+
+Item                  Qty   Unit    Total
+Premium copy paper     20   12.00   240.00
+Stapler — heavy duty    3   18.00    54.00
+Box of ballpoint pens   8    4.50    36.00
+
+                                     ------
+                            TOTAL:  $330.00</code></pre>
+        <p>… the model emits:</p>
+        <pre class="code-block"><code>{
+  "entities": [
+    {"type": "vendor",       "start": 0,   "end": 23,  "text": "ACME Office Supplies Co"},
+    {"type": "invoice_date", "start": 67,  "end": 77,  "text": "2026-05-12"},
+    {"type": "due_date",     "start": 84,  "end": 94,  "text": "2026-06-11"},
+    {"type": "line_item",    "start": 140, "end": 178, "text": "Premium copy paper     20   12.00   240.00"},
+    {"type": "line_item",    "start": 179, "end": 217, "text": "Stapler — heavy duty    3   18.00    54.00"},
+    {"type": "line_item",    "start": 218, "end": 257, "text": "Box of ballpoint pens   8    4.50    36.00"},
+    {"type": "total",        "start": 311, "end": 318, "text": "$330.00"}
+  ]
+}</code></pre>
+        <p>The model is a fine-tuned LoRA adapter on top of <code>SmolLM2-135M-Instruct</code> running at typical 20-80ms per invoice on a single GPU. The output is a clean JSON object — your AP automation calls the microservice, gets back the structured fields, posts them straight to the ERP for any invoice it's confident about, and routes the rest to a human queue.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>A span-extraction model knows <strong>which tokens</strong> are the value, not just <em>that</em> a value exists. That's why character offsets are first-class — your downstream system can highlight the exact bytes that produced "$330.00" in the original document, audit trails get cheap, and a bad extraction is a fixable bad extraction rather than a black box.</p>
+        </div>
+
+        <h2 id="why-small">Why not regex (and why not a frontier LLM API)</h2>
+        <p>Three options exist for invoice field extraction. Use this comparison:</p>
+        <table class="comparison-table">
+          <thead>
+            <tr><th>Approach</th><th>Layout robustness</th><th>Latency</th><th>Cost at 10k invoices/day</th><th>Privacy</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Regex / rule-based extractors</td><td>Breaks every time a vendor changes template; rules accrete forever</td><td>&lt;5ms</td><td>Free (but a full-time eng to maintain)</td><td>Self-hosted</td></tr>
+            <tr><td>Frontier LLM via API</td><td>Excellent — handles novel layouts</td><td>1.5-4 seconds per invoice</td><td>~$300-$2,000/month per 10k invoices/day, depending on token volume</td><td>Every invoice (with PII + financial data) leaves your network</td></tr>
+            <tr><td><strong>Small fine-tuned span extractor (this tutorial)</strong></td><td>Good across templates if you train on layout diversity</td><td>20-80ms per invoice</td><td>~$30/month (one GPU, amortised)</td><td>Self-hosted, audit-ready</td></tr>
+          </tbody>
+        </table>
+        <p>Regex was the right answer in 2015. It stopped being the right answer the day your sixth vendor sent an invoice that put the total in a top-right corner instead of a bottom-right one, and your seventh vendor decided that "Bill Date" meant something different from "Invoice Date". Every new template adds a rule; every rule rots when the vendor tweaks their template; the regex stack grows monotonically until nobody on the team can change it without breaking three things.</p>
+        <p>Frontier-LLM-via-API solves the layout problem but costs money per call, adds 1-4 seconds of latency to every ingest, and ships your customers' invoice data (vendor names, line items, totals — material non-public financial info) to a third-party. For most finance teams that's a regulatory non-starter even before the cost shows up on the bill.</p>
+        <p>Small fine-tuned models occupy the gap: layout-robust like an LLM, fast and self-hosted like a regex.</p>
+
+        <h3>Why span-extraction, not classification or QA?</h3>
+        <p>Within BrewSLM you have three obvious recipes you could point at this problem. Pick the one that matches the question you actually need answered:</p>
+        <ul>
+          <li><strong>classification</strong> would tell you <em>"is this a valid invoice?"</em> — one label per document. Useful for triage; doesn't extract any fields.</li>
+          <li><strong>qa-sft</strong> would let you ask <em>"what's the total?"</em> in free text and get a free-text answer back. Useful for analyst tooling; not structured enough for a downstream system to consume without parsing the answer.</li>
+          <li><strong>span-extraction</strong> tells you <em>which tokens</em> in the document are the vendor, the total, each line item, the dates — with character offsets. That's the shape an AP automation system actually wants.</li>
+        </ul>
+        <p>You need WHICH tokens, not just IS this an invoice. That's the span-extraction signature.</p>
+
+        <h2 id="choose-dataset">Choose your dataset</h2>
+        <p>You need invoice text paired with the entity spans you want extracted. Four common starting points; mix and match:</p>
+        <dl>
+          <dt>Your own AP system (the spine)</dt>
+          <dd>The highest-signal data you can get. Export 100-300 recent invoices as plain text (PDF → OCR if you have to) paired with the ERP entries that captured vendor / total / dates. Your gold spans bootstrap from those ERP entries — see the gold-set section. This is the work that actually matters; everything else is volume.</dd>
+          <dt>FUNSD — Form Understanding in Noisy Scanned Documents</dt>
+          <dd><a class="inline-link" href="https://guillaumejaume.github.io/FUNSD/" target="_blank" rel="noopener noreferrer">FUNSD</a> ships 199 fully-annotated scanned forms with per-token labels and bounding boxes. Small but high-quality — useful for validating the workflow and for diversifying your gold set with non-invoice form layouts.</dd>
+          <dt>CORD — Consolidated Receipt Dataset</dt>
+          <dd><a class="inline-link" href="https://github.com/clovaai/cord" target="_blank" rel="noopener noreferrer">CORD</a> has 1,000 receipt images with structured-field annotations (menu items, totals, sub-totals, taxes). Closer to your invoice domain than FUNSD; use it to seed line-item examples.</dd>
+          <dt>DocBank — large-scale document layout</dt>
+          <dd><a class="inline-link" href="https://github.com/doc-analysis/DocBank" target="_blank" rel="noopener noreferrer">DocBank</a> is 500K+ documents with token-level layout annotations. Overkill for an invoice extractor, but useful as a pre-training corpus if you decide to swap to a larger base model later.</dd>
+        </dl>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Public data is for diversity, not coverage</p>
+          <p>Your AP system's invoices are what your model will see in production. FUNSD and CORD round out template diversity so the model doesn't memorise your top three vendors. Treat them as a 20-30% supplement to your own data — never the spine. A model trained 100% on CORD receipts will be brilliant at coffee shop receipts and useless at your actual vendor invoices.</p>
+        </div>
+
+        <h2 id="ingest-map">Ingest and map</h2>
+        <p>In BrewSLM, create a new project: <strong>Projects → New Project → span-extraction recipe</strong>. The recipe pre-fills the adapter (<code>default-canonical</code>), task profile (<code>structured_extraction</code>), and the eval pack (the span-set scaffold with span-set F1 + precision + recall gates).</p>
+        <p>Open <strong>Data Studio → Import</strong>. Drop your JSONL. The canonical span-extraction shape is:</p>
+        <pre class="code-block"><code>{
+  "text": "ACME Office Supplies Co\nInvoice #INV-2026-00471\nBill Date: 2026-05-12   Due: 2026-06-11\n\nTOTAL: $330.00",
+  "entities": [
+    {"type": "vendor",       "start": 0,   "end": 23,  "text": "ACME Office Supplies Co"},
+    {"type": "invoice_date", "start": 41,  "end": 51,  "text": "2026-05-12"},
+    {"type": "due_date",     "start": 58,  "end": 68,  "text": "2026-06-11"},
+    {"type": "total",        "start": 78,  "end": 85,  "text": "$330.00"}
+  ],
+  "rationale": "Standard layout; date label is 'Bill Date' rather than 'Invoice Date'."
+}</code></pre>
+        <p>Two required fields: <code>text</code> (the full invoice text) and <code>entities</code> (a JSON array of <code>{type, start, end, text}</code> objects). The optional <code>rationale</code> is a free-text note about what edge case this row exercises — useful for you as a reviewer, ignored by the trainer.</p>
+        <p>The mapping picker in Data Studio scans your file's columns and proposes the mapping. For JSONL with the canonical shape it usually picks the right fields automatically. Click <strong>Apply mapping</strong> when the preview looks right.</p>
+
+        <p><strong>✓ Checkpoint:</strong> the Data Studio Overview now shows your imported row count (e.g. "147 trainable rows") and the <strong>Sources</strong> panel lists your imported JSONL with a green status badge. The Quality &amp; Safety panel surfaces a per-entity-type breakdown — how many rows have at least one <code>vendor</code> span, how many have a <code>total</code>, etc. If any entity type has under 30 rows, you'll need more gold for that type before training; the goal ledger will surface this as a blocker on the data-ready component.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Character offsets must match the text exactly</p>
+          <p>The <code>start</code> and <code>end</code> values are byte (well, codepoint) offsets into the <code>text</code> field. If you copy-paste an invoice from a PDF into your gold-set workbench and the PDF inserted U+00A0 (non-breaking space) where you expected a regular space, your offsets will be off by some N and the eval handler will score every prediction wrong. The Data Studio cleanup step (next section) normalises whitespace; do it before you annotate, not after.</p>
+        </div>
+
+        <h2 id="cleanup">Cleanup: OCR artefacts and currency normalisation</h2>
+        <p>Open Data Studio's <strong>Quality &amp; Safety</strong> panel. For invoice text you're cleaning four common artefact families:</p>
+        <ul>
+          <li><strong>OCR ligatures and stray characters.</strong> "fi" → "ﬁ", "rn" → "m", "0" → "O". The platform's deterministic scan flags rows containing common OCR-failure substrings. Review the candidates; the cleanup recipe applies a normalisation pass that's safe to auto-run on the whole corpus.</li>
+          <li><strong>Currency formatting.</strong> "$1,234.56" vs "USD 1234.56" vs "1.234,56 €" (European notation) vs "Rs 1,234/-". Pick one normalised form (the platform default is "$1234.56" with no thousand separators) and apply it across your corpus. If you don't normalise, every variant becomes a distinct token sequence the model has to learn separately.</li>
+          <li><strong>Multi-page invoices.</strong> If your AP scans produce multi-page PDFs joined into one OCR'd text blob, split them at page-break markers. Each page becomes its own row. The model handles ~2,000 tokens of context comfortably; a 12-page invoice with 9,000 tokens will get truncated mid-document and your line-item recall will tank.</li>
+          <li><strong>Header / footer noise.</strong> "Page 1 of 3", scanner-generated timestamps, the URL of the form you downloaded the invoice template from. Strip these. They contain dates and numbers that look like invoice dates and totals — and they are the single biggest source of label-drift you'll see in production.</li>
+        </ul>
+        <p>You don't have to clean everything before training. You <em>do</em> have to clean the rows you're about to promote to gold — those are the rows the eval pack scores against, and their offsets need to be exact.</p>
+
+        <h2 id="pick-recipe">Pick the recipe: span-extraction or something else?</h2>
+        <p>The decision tree for invoice extraction:</p>
+        <table class="comparison-table">
+          <thead>
+            <tr><th>You want…</th><th>Use</th><th>Why</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Character offsets for every extracted field</td><td><strong>span-extraction</strong></td><td>JSON list of <code>{type, start, end, text}</code>; downstream system can audit + highlight</td></tr>
+            <tr><td>A yes/no flag on whether a document is an invoice at all</td><td>classification</td><td>One label per document; useful for ingest triage, not extraction</td></tr>
+            <tr><td>A free-text answer to "what's the total on this invoice?"</td><td>qa-sft or rag-protocol</td><td>Conversational; not structured enough for an ERP integration</td></tr>
+            <tr><td>An executive summary of each invoice</td><td>summarization</td><td>Different shape entirely</td></tr>
+            <tr><td>Extract fields + flag fraud risk in one pass</td><td>span-extraction first, then a small classifier downstream</td><td>Two narrow models compose better than one wide one</td></tr>
+          </tbody>
+        </table>
+        <p>For the canonical AP-automation use case: <strong>span-extraction</strong>. Sticking with it for the rest of this tutorial.</p>
+
+        <h2 id="domain-packs">Domain packs (the finance gap)</h2>
+        <p>BrewSLM doesn't ship a finance-domain pack out of the box today — the platform's curated packs (support, ecommerce, legal, healthcare) are around content domains, not finance/AP workflows. For invoice extraction you're operating on the generic cleaning recipe defaults plus the span-extraction recipe defaults, which is fine for a first project.</p>
+        <p>Building a custom <code>finance</code> pack is a worthwhile follow-up that this tutorial intentionally doesn't cover. It would bundle: stricter precision floors on <code>total</code> and <code>due_date</code> (the entities whose errors cause real-world payment failures), currency normalisation recipes for your operating regions, a glossary linking eval gates to SOX / regulatory-control language, and an Academy tag pointing at this tutorial. If your team is shipping multiple AP extractors (invoices, purchase orders, statements), packaging the conventions as a domain pack pays back fast.</p>
+
+        <h2 id="gold-set">Build the gold set — manual spans + LLM-assisted promotion</h2>
+        <p>The gold set is where this tutorial diverges most from tutorial 2. Classification gold is a yes/no label per row; span-extraction gold is a list of typed spans per row, each with exact character offsets. Two complementary paths:</p>
+
+        <h3 id="gold-manual">Path A — manual span tagging</h3>
+        <p>Open the Gold Set workbench (<strong>Data Studio → Gold Set</strong>) and switch the workbench into span-tagging mode. For each row:</p>
+        <ol>
+          <li>Paste the invoice text into the <code>text</code> field — verbatim, already cleaned of OCR artefacts.</li>
+          <li>For each field you want extracted, drag-select the span in the text panel and assign a type (<code>vendor</code> / <code>total</code> / <code>line_item</code> / <code>invoice_date</code> / <code>due_date</code>). The workbench writes the character offsets for you.</li>
+          <li>Add a one-line <code>rationale</code> if the row covers a weird edge case ("Date label is 'Bill Date' not 'Invoice Date'", "Total is split across two lines"). The rationale isn't used for training but it's invaluable when a future you is debugging an eval failure six weeks from now.</li>
+        </ol>
+        <p>Spend an hour here. Aim for 150 gold rows minimum — invoices vary more than classification inputs, and the model needs diversity across templates to generalise. Quality beats volume but coverage of edge cases beats quality on a single template.</p>
+
+        <h3 id="gold-llm-assisted">Path B — LLM-assisted promotion from ERP records</h3>
+        <p>This is the highest-leverage path if you have an existing ERP. Your AP system already knows the vendor, total, and dates for every paid invoice — those are the gold values for three of the five entity types. The platform's "promote from raw" flow turns this into a 30-minute job:</p>
+        <ol>
+          <li>Bulk-import your invoice texts as raw rows.</li>
+          <li>Join each row with its ERP entry — supply (vendor_name, total_amount, invoice_date, due_date) alongside the invoice text in your import file.</li>
+          <li>Run a teacher model (Ollama / OpenAI / Anthropic) via a small script that feeds it each (invoice text, ERP values) pair and asks the teacher to locate each ERP value inside the invoice text and emit the corresponding span offsets in the platform's canonical entity-JSON shape. Use the platform's API key + a quick script — there's no built-in "seed-from-metadata" UI for this flow today; it's straight backend scripting against the synth backend you've configured. (Line items, which the ERP usually doesn't itemise, you still tag by hand.)</li>
+          <li>Import the teacher's output as candidate rows. Every row lands in the synth review queue with <code>review_status="pending"</code>. Accept the good ones; they're promoted to gold.</li>
+        </ol>
+        <p>This trades 4-6 hours of manual offset-tagging for 30 minutes of review. The trade-off is the same as in tutorial 1: you have to actually review the rows. The platform will not auto-accept LLM-generated gold; every promotion is an explicit decision.</p>
+
+        <p><strong>✓ Checkpoint:</strong> the Data Studio Overview's <strong>Gold Set ready</strong> row should now be green ("150 gold rows ready · 150 recommended") or amber ("60 gold rows · 150 recommended"). The amber state is fine for now — you'll grow it with synth in the next sections. Check the per-entity-type breakdown in the Quality &amp; Safety panel: every entity type should have at least 30 examples in the gold set. If <code>due_date</code> is sitting at 8 rows because half your invoices have "Net 30" instead of an explicit due date, that's signal — you need more rows with explicit due dates AND a few rows with "Net 30" labeled correctly.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Don't skip the "no due date" examples</p>
+          <p>Your gold set must contain rows where some fields are <em>legitimately absent</em> — invoices with no due date, invoices with no itemised line items, statements with no single "total" line. The model needs to learn that absence is a valid output (an empty entity list for that type), not a hallucination cue. Without these rows in gold, the model will invent a due date for every invoice and your span-set precision tanks.</p>
+        </div>
+
+        <h2 id="split">Stratified split by invoice template</h2>
+        <p>BrewSLM auto-splits when you click <strong>Run prepare now</strong> on the Data Studio Prepare Dataset panel. For span-extraction on invoices, one override is non-negotiable:</p>
+        <ul>
+          <li><strong>Stratify by template, not by row.</strong> Random splitting puts the same vendor's invoices into both train and test, and a 95% F1 on the test set just means the model memorised that vendor's layout. If you have a vendor column in your import file, sort your rows by vendor before importing and configure the split to draw consecutive vendors into different splits — the platform doesn't currently surface a one-click "stratify by column" knob, so the practical pattern is to pre-sort + pick the seed accordingly, OR to maintain three parallel CSVs (train.csv / val.csv / test.csv) with the right vendor mix and import them as three separate datasets.</li>
+          <li><strong>Reserve a held-out new-template test set if you can.</strong> Set aside 20-30 invoices from vendors that appear nowhere else in the corpus. Tag them as a separate test dataset. Per-vendor F1 on the random-split test answers <em>"did the model learn each vendor's layout?"</em>; per-row F1 on the new-template held-out set answers <em>"will the model survive your next new vendor?"</em>. Those are different questions and you need both.</li>
+        </ul>
+        <p>For a 250-row gold set with 12 vendors, an 80/10/10 stratified split produces 200 train / 25 val / 25 test where every split has a representative mix of vendor templates. The 20-row new-vendor held-out set lives separately and is your tripwire for template generalisation.</p>
+
+        <h2 id="synthetic">Generate paraphrase + hard-negative drills</h2>
+        <p>The span-extraction recipe ships three playbooks in the Playbook Center. For invoice extraction the headline ones are paraphrase and hard-negatives:</p>
+        <dl>
+          <dt>span_extraction_paraphrase — coverage extender</dt>
+          <dd>Vary the <em>surrounding text</em> of a gold row while keeping every entity span verbatim. New header, different vendor address line, a re-ordered set of preamble fields, but "$330.00" still appears in the same form and gets re-tagged at its new offset. Goal: the model learns to find the entity regardless of what surrounds it. Generate ~80 rows seeded from your manually-curated gold.</dd>
+          <dt>span_extraction_hard_negatives — the precision-defender drill</dt>
+          <dd>Look-alike strings that AREN'T the target entity. The most useful hard-negative class for invoices is <strong>dates in headers vs the invoice date</strong>: scanner output that includes a "downloaded on 2026-04-02" timestamp at the top of the page, OR an order date elsewhere in the document, where the model needs to learn that those are not the invoice_date. Same for totals — "subtotal", "tax", "shipping", "amount due", and "total" all look like total candidates. The hard-negatives playbook generates rows where these look-alikes are present but the correct entity is somewhere else. Generate ~50 rows.</dd>
+          <dt>span_extraction_cluster_targeted — fill the under-performing slice</dt>
+          <dd>After a first round of eval surfaces failure clusters, the cluster-targeted playbook seeds new examples from rows in the worst-performing cluster. Optional — only run after your first training pass produces an eval result with non-trivial failure clusters. The Evaluation tab's <strong>FailureClustersPanel</strong> launches this directly.</dd>
+        </dl>
+        <p>Open <strong>Data Studio → Synthetic → Playbook Center</strong>. The span-extraction recipe surfaces three playbook cards. Click <code>span_extraction_paraphrase</code> first, set target count to 80, pick a backend (Ollama is the free default). Generation runs as a background Job; the notification bell tracks progress and pings when it finishes.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Run paraphrase before hard-negatives</p>
+          <p>Unlike the classification tutorial — where hard-negatives are the precision spine and run first — span-extraction starts with paraphrase because the model has to learn <em>where</em> entities live across layouts before it can learn what NOT to grab. Run paraphrase to ~80 rows, review them, train a quick baseline. Then run hard-negatives, review, retrain. Two cycles, not one giant generation pass.</p>
+        </div>
+
+        <h2 id="review-queue">Review the synth queue</h2>
+        <p>Every generated row lands in the <strong>Synthetic Review Queue</strong> with <code>review_status="pending"</code>. The queue groups rows by source playbook so you can review one category at a time. Per-row actions:</p>
+        <ul>
+          <li><strong>Accept</strong> — the row joins the training corpus on the next dataset prep run. For span-extraction specifically: check the offsets render the correct text. The workbench shows the highlighted spans inline so you can spot label-drift in seconds.</li>
+          <li><strong>Reject (soft)</strong> — the row is soft-rejected with an optional reason. The platform supports reason tags; for span-extraction the most useful ones are <code>offset-drift</code> (offsets don't match the text), <code>missing-entity</code> (gold should have tagged a span but didn't), <code>wrong-type</code> (the right span tagged with the wrong type), <code>not-an-invoice</code> (the teacher generated a non-invoice). The row stays on disk for audit.</li>
+          <li><strong>Purge</strong> — section-level action that physically deletes rejected rows, optionally filtered by reason. Use it once you're confident the rejected pile under that reason is genuinely bad data. The queue surfaces a reason-grouped summary so you can purge "offset-drift" rows without touching "wrong-type" rows.</li>
+        </ul>
+        <p>Expect to reject 20-30% of paraphrase rows and 30-50% of hard-negative rows on first pass. Hard negatives are harder for the teacher to get right — that's not a bug, it's why you're reviewing them.</p>
+
+        <p><strong>✓ Checkpoint:</strong> after a review pass, the Data Studio overview's synth row should show "accepted: 120 · rejected: 40 · pending: 0" or similar. If you see lingering pending rows the next dataset-prep run will silently skip them; clear the queue before training.</p>
+
+        <h2 id="train">Training configuration</h2>
+        <p>Open <strong>Training → New Experiment</strong>. The recipe defaults are sensible — for a first run, accept all of them:</p>
+        <dl>
+          <dt>Base model</dt>
+          <dd><code>HuggingFaceTB/SmolLM2-135M-Instruct</code>. Small, instruction-tuned, runs on consumer hardware. The recipe trains the model to <em>emit</em> a JSON entity array as its output — the same LM head produces the structured output token-by-token, no separate extractive head is wired in. Alternative: <code>Qwen/Qwen2.5-0.5B-Instruct</code> for slightly better quality at 4x the size.</dd>
+          <dt>Adapter</dt>
+          <dd>LoRA, rank 16, alpha 32, target modules <code>q_proj,k_proj,v_proj,o_proj</code>. Standard for small models. The structured-extraction adapter wraps each row's text + entities into a prompt + reference-completion pair so the model learns to generate well-formed JSON as its answer.</dd>
+          <dt>Learning rate</dt>
+          <dd>2e-4 for the LoRA. Standard for SmolLM2 on structured-output tasks; the model's small parameter count tolerates the higher rate.</dd>
+          <dt>Epochs</dt>
+          <dd>4. Span-extraction needs slightly more epochs than QA SFT because there are more output decisions per row (one per entity) and the head is fresh. Five epochs starts to overfit on small gold sets; three usually under-fits.</dd>
+          <dt>Batch size + gradient accumulation</dt>
+          <dd>Batch 4, accumulate 4 → effective batch 16. Invoices can be 800-2,000 tokens, longer than classification inputs, so memory is more of a constraint. Adjust down on GPUs under 8 GB.</dd>
+        </dl>
+        <p>Expected runtime: 10-25 minutes on a single GPU (RTX 3060 or better), 30-60 minutes on CPU. The training panel shows live loss + the validation span-set F1 in the live signals sparkline; if F1 plateaus below 0.50 by epoch 2, kill the run via the kill switch and check the gold set — it's almost always offset-drift in the gold, not a model problem.</p>
+
+        <p><strong>✓ Checkpoint:</strong> in the Training tab, your experiment row shows a live loss sparkline that drops from ~3-4 in the first few steps down to ~0.4-0.7 by the end. The validation span-set F1 climbs to ~0.70-0.85 by epoch 3. The bell shows a "training" notification with a percentage. When complete, the experiment row turns green and the experiment detail page shows the final per-entity-type precision/recall/F1 grid.</p>
+
+        <h2 id="forecast">Read the trainability forecast</h2>
+        <p>Before kicking off training, the goal ledger's <code>predicted_pass</code> row gives you a forecast based on row count, per-entity coverage, and base model size. For span-extraction specifically:</p>
+        <ul>
+          <li>Predicted pass probability <strong>≥ 65%</strong>. Lower means your gold set is too thin in one or more entity types — usually <code>due_date</code> or <code>line_item</code>.</li>
+          <li>Gold set readiness <strong>≥ 100% (≥150 gold rows)</strong> AND every entity type has ≥ 30 examples. Below that, expect one or two entity types to under-train and drag down the overall span-set F1.</li>
+          <li>Template diversity. The goal ledger doesn't directly report this number, but the synth quality analytics panel does — if 80% of your gold comes from your top 3 vendors, your forecast is optimistic. Add diversity before you train.</li>
+        </ul>
+        <p>If the forecast is below 50%, training will pass the basic gates on the random-split test set but fail on the new-template held-out set. <strong>Spend the extra hour curating template-diverse gold instead of training.</strong> The single biggest predictor of a successful span extractor is template coverage, not model size.</p>
+
+        <h2 id="evaluate">Evaluation: span-set F1 + per-entity-type precision floors</h2>
+        <p>After training, the platform automatically evaluates against the project's eval pack. The span-extraction scaffold ships four gates:</p>
+        <dl>
+          <dt>Span-set F1 ≥ 0.65</dt>
+          <dd>The headline. Precision = correctly-predicted entities / total predicted; recall = correctly-predicted entities / total in gold; F1 is the harmonic mean. An entity counts as "correct" only when type AND offsets both match the gold.</dd>
+          <dt>Span-set precision ≥ 0.70</dt>
+          <dd>Bias the model away from over-eager extraction. A model that predicts every numeric token as a candidate "total" scores high recall but low precision — and downstream that means human reviewers triaging false positives forever.</dd>
+          <dt>Span-set recall ≥ 0.60</dt>
+          <dd>Bias the model away from under-extraction. A model that only emits high-confidence vendor and total but skips line items scores high precision but low recall — and downstream that means line-item reconciliation breaks.</dd>
+          <dt>Safety pass rate (optional)</dt>
+          <dd>Catches refusal / off-topic / adversarial inputs that should be flagged through a different path. Useful when you wire the extractor behind a UI that surfaces uncertain extractions to a human.</dd>
+        </dl>
+        <p>The goal ledger's <code>eval_pass_rate</code> row expands into the per-gate breakdown so you see exactly which dimension is failing — <em>"span-set F1 0.71 ≥ 0.65 passed, span-set precision 0.65 &lt; 0.70 failed."</em></p>
+
+        <h3>Why per-entity-type precision matters</h3>
+        <p>The default span-set gates score the whole entity set in aggregate. For invoice extraction that's the wrong abstraction. Consider:</p>
+        <ul>
+          <li><strong>Total</strong> precision must be near-perfect. A wrong total means a wrong payment. Aim for ≥ 0.95.</li>
+          <li><strong>Invoice date</strong> and <strong>due date</strong> precision must be tight — wrong dates cause cash-flow errors and missed early-payment discounts. Aim for ≥ 0.90.</li>
+          <li><strong>Vendor</strong> precision matters but slightly less — wrong vendor usually fails an ERP lookup and triggers a human review automatically. ≥ 0.85 is fine.</li>
+          <li><strong>Line item</strong> precision can be looser. Each invoice has 3-30 line items; a missed one is recoverable downstream; a duplicated one is annoying but not catastrophic. ≥ 0.75 is fine.</li>
+        </ul>
+        <p>The platform's default scaffold ships a single uniform <code>min_span_set_precision</code> across all entity types. For invoice extraction you want tighter floors on <em>specific</em> entities — that requires a custom eval pack. The straightforward path: copy the scaffolded pack JSON, add per-entity metric gates that reference the per-entity precision values the span-extraction eval handler emits (<code>precision.total</code>, <code>precision.invoice_date</code>, etc.), and select your custom pack from <strong>Project → Eval Pack</strong> in place of the default scaffold. Use the platform's <code>/api/projects/&lt;id&gt;/evaluation/gates/&lt;experiment_id&gt;</code> endpoint (visible in the API docs at <code>http://localhost:8000/docs</code>) to verify the new gates resolve against the eval result's metrics dict before you commit to them.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Don't gate every entity type at 0.95</p>
+          <p>It's tempting to set every per-entity-type precision floor to the strictest value. Don't. Tight floors on line items mean the goal ledger will refuse to ship a model that's perfectly good for the entities that matter, just because line items are inherently noisier. Set the floor where the downstream cost of a false-positive lives, not at the global maximum.</p>
+        </div>
+
+        <h2 id="fix">When the eval fails (common failure modes)</h2>
+        <p>Span-extraction failure modes are different from classification or RAG failures. Common patterns and the fix for each:</p>
+        <table class="comparison-table">
+          <thead>
+            <tr><th>Symptom</th><th>Root cause</th><th>Fix</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Low recall on a rare entity type (e.g. <code>due_date</code> recall 0.40)</td><td>Not enough gold examples for that type — model never learned the pattern</td><td>Add 20+ gold rows that exercise the rare entity. Run <code>span_extraction_paraphrase</code> seeded only from those rows.</td></tr>
+            <tr><td>Random-split test F1 strong (0.85) but new-template held-out F1 low (0.55)</td><td>Label drift across templates — model memorised your top vendors' layouts</td><td>Add gold from 3-5 new vendor templates. Re-stratify the split by template. Consider switching to a larger base model.</td></tr>
+            <tr><td>Overlapping spans in the prediction (one token tagged as both <code>vendor</code> and <code>line_item</code>)</td><td>Ambiguous gold — same token tagged differently in different rows</td><td>Sample 30 random gold rows; have a second reviewer re-tag without seeing the original. Disagreement &gt; 15% on a single entity type = labeling problem. Reconcile and re-train.</td></tr>
+            <tr><td>Model emits a <code>total</code> for every invoice even when there isn't one</td><td>No "no-total" examples in gold; model thinks every invoice must have a total</td><td>Add 10-20 rows where the document is a statement / quote / partial invoice with no single total line. Use an empty <code>total</code> entity list (NOT a missing entry — explicit absence).</td></tr>
+            <tr><td>Span-set precision passes but the platform's decision engine recommends a different recipe</td><td>The post-eval decision engine sees signals that suggest your task is shape-mismatched</td><td>Read the reroute trace under "Why this fired?". If it points at "qa-sft", you may be using span-extraction where a simpler answer-extraction would do.</td></tr>
+            <tr><td>Per-entity precision on <code>total</code> below 0.95 even after retraining</td><td>Hard negatives in training: "subtotal", "tax", "shipping" not distinguished from "total"</td><td>Run the <code>span_extraction_hard_negatives</code> playbook with a prompt targeting total-vs-subtotal look-alikes specifically. Review carefully — every accepted row teaches the model what NOT to grab as the total.</td></tr>
+          </tbody>
+        </table>
+        <p>When the platform's post-eval decision engine recommends an action, expand the <strong>"Why this fired?"</strong> disclosure on each signal. You'll see the actual numbers (matched_keywords, threshold deltas, per-entity-type scores) rather than just the recommendation verb. If the trace looks right, take the recommended action. If it looks wrong, the disclosure tells you exactly what the engine was matching on — file a bug and move on.</p>
+
+        <h2 id="ship">Ship as an inline microservice</h2>
+        <p>Once the eval pack passes (and you're happy with the per-entity-type precision on the entities that matter), ship in three steps:</p>
+        <ol>
+          <li><strong>Export the LoRA adapter.</strong> Open <strong>Models → Export</strong>. The platform writes the adapter weights, the span-head weights, the tokenizer config, and a deploy manifest into <code>data/projects/&lt;id&gt;/exports/</code>. The adapter + head are ~5-20 MB; the base model is loaded fresh at deploy time.</li>
+          <li><strong>Deploy via vLLM (or Ollama).</strong> The recipe's <code>target_profile</code> is <code>vllm_server</code> by default. The export bundle includes a launch script:
+            <pre class="code-block"><code>cd data/projects/&lt;id&gt;/exports/run-2026-06-05
+./deploy-vllm.sh
+# Serves the base model + LoRA adapter on localhost:8000.
+# Send the invoice text via the standard chat-completions API; the
+# trained model emits the entity JSON as its response. You'll typically
+# wrap this in a thin /extract microservice that parses the JSON and
+# enforces a schema before returning to the caller.
+# Latency: 20-80ms per invoice on a single GPU, 80-200ms on CPU.</code></pre>
+            Ollama variant: <code>./deploy-ollama.sh</code>.
+          </li>
+          <li><strong>Wire it into AP automation.</strong> Your AP ingest pipeline POSTs each new invoice text to the extractor microservice, gets back the entity JSON, and routes:
+            <ul>
+              <li>High-confidence extractions (all entities present, no entity-level confidence below the threshold you set) post straight to the ERP.</li>
+              <li>Mid-confidence extractions (a missing or low-confidence field) go to a human review queue with the highlighted spans pre-filled — your reviewer confirms or fixes, then posts.</li>
+              <li>Low-confidence or empty extractions (likely not an invoice, or an OCR failure) route to manual triage.</li>
+            </ul>
+          </li>
+        </ol>
+        <p>Smoke-test in the platform's <strong>Playground</strong> first. Paste 10 real invoices from production; check that each entity highlights correctly and that the JSON output is well-formed. The per-turn provenance footer (which adapter served the reply, the latency, the per-entity confidence) is your sanity check before the model touches production traffic.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Inline doesn't mean autonomous</p>
+          <p>Even at 0.95 precision on <code>total</code>, a model will get one in twenty totals wrong. For a B2B finance team processing 10,000 invoices a month that's 500 wrong totals a month if every extraction posts straight through. <strong>Always wire a confidence threshold and a human review queue.</strong> Auto-post the high-confidence ones; review the rest. The extractor's job is to make AP staff faster, not to replace them.</p>
+        </div>
+
+        <h2 id="whats-next">What's next</h2>
+        <p>You have a deployed invoice field extractor with per-entity precision floors and a sane human-review fallback. Three obvious next moves:</p>
+        <dl>
+          <dt>Extend to adjacent document types</dt>
+          <dd>The same recipe + workflow works for: purchase orders (extract vendor, PO number, line items, delivery date), contracts (parties, effective date, term length, governing law), bank statements (account, period, opening / closing balance, transaction rows), expense reports (employee, category, amount, date). New gold set; same training pipeline. The span-extraction recipe is more general-purpose than its name suggests — invoices are just the most common entry point.</dd>
+          <dt>Active-learning loop from the review queue</dt>
+          <dd>Every time a human reviewer corrects an extraction, that's a high-signal training example. Capture the corrections; promote the confident ones into the gold set; retrain when gold grows by ~50 rows. Over a quarter the model gets noticeably sharper on the templates your team actually receives, not the templates the public datasets happened to have.</dd>
+          <dt>Build a finance domain pack</dt>
+          <dd>Package the conventions you've established here — per-entity-type precision floors, currency normalisation rules, the "explicit absence" gold convention — into a custom <code>finance</code> domain pack. Future extractor projects (POs, contracts, statements) inherit the conventions instead of re-establishing them each time.</dd>
+        </dl>
+
+        <p>Same recipe, different shape: <strong><a class="inline-link" href="pii-span-tagging.html">Tutorial 7 — PII span tagging</a></strong> uses the same span-extraction machinery for open-set tagging instead of closed-set extraction (many PII spans per text, not exactly one of each entity type). The decision-tree differences are spelled out in T7's introduction; if you've made it here, T7 is the most natural follow-on.</p>
+
+        <p>From there, the <a class="inline-link" href="index.html">tutorials hub</a> links to other recipe shapes (classification, code review, RAG-protocol) and to the deeper Academy tracks — eval pack internals, synthetic-data tuning, the distillation workflow for shrinking your model further once the extraction quality is locked in.</p>
+
+        <section class="key-terms">
+          <h2 id="key-terms">Key terms</h2>
+          <dl>
+            <dt>span-extraction recipe</dt><dd>BrewSLM recipe that trains a small model to emit a JSON list of typed, offset-tagged spans from free-form text. Adapter <code>default-canonical</code>, task profile <code>structured_extraction</code>, scoring mode <code>span_set</code>.</dd>
+            <dt>Entity</dt><dd>One tagged span: a tuple of (type, character-start-offset, character-end-offset, raw-text). For invoices: <code>vendor</code> / <code>total</code> / <code>line_item</code> / <code>invoice_date</code> / <code>due_date</code>.</dd>
+            <dt>Span-set scoring</dt><dd>The eval handler compares prediction and gold as SETS of entities — F1 over (type, start, end) tuples. NOT field-match (which would require a single canonical field value per row). Per-entity-type precision and recall reported alongside the headline numbers.</dd>
+            <dt>Per-entity-type precision floor</dt><dd>An eval gate that requires precision on a specific entity type to meet a minimum threshold. For invoice extraction, set tighter floors on entities whose errors cost money downstream (<code>total</code>, dates) and looser floors on noisy entities (<code>line_item</code>).</dd>
+            <dt>Stratified-by-template split</dt><dd>Train/val/test split that puts different invoice templates (vendors, layouts) in each split. Random splitting overstates F1 because the model memorises layouts; stratified splitting forces the model to generalise.</dd>
+            <dt>Label drift</dt><dd>The same string tagged differently in different gold rows, usually because two reviewers disagreed or a single reviewer's standards drifted over the annotation session. The single biggest source of training-data noise in span-extraction projects.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Tutorial quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "Why does span-extraction beat classification for invoice field extraction?",
+    "options": [
+      "Span-extraction is a bigger model",
+      "You need to know WHICH tokens are the value (with offsets), not just IS this an invoice",
+      "Classification has no eval pack",
+      "Span-extraction is faster at inference"
+    ],
+    "answer": 1,
+      "explanation": "Classification gives you one label per document (\"this is an invoice\"). Span-extraction gives you the character offsets for every extracted field, so your AP automation can audit which tokens produced each value and a human reviewer can highlight the source on the original document."
+  },
+  {
+    "q": "Why set per-entity-type precision floors with different thresholds (e.g. 0.95 on total vs 0.75 on line_item)?",
+    "options": [
+      "Higher thresholds always mean better models",
+      "Different entity types have different downstream costs when wrong — a wrong total causes a wrong payment, a missed line item is recoverable",
+      "The eval handler can only score one entity at a time",
+      "Line items are easier so they need lower thresholds"
+    ],
+    "answer": 1,
+    "explanation": "The gate threshold should reflect the downstream cost of a false-positive. Wrong total = wrong payment to a vendor; missed line item = annoying but reconcilable downstream. Setting every floor to 0.95 means the goal ledger will refuse to ship a model that's perfectly good for the entities that matter."
+  },
+  {
+    "q": "What does a stratified-by-template split prevent?",
+    "options": [
+      "Class imbalance in the labels",
+      "OCR artefacts in the text",
+      "The model memorising specific vendor layouts and pretending the result generalises",
+      "Slow training"
+    ],
+    "answer": 2,
+    "explanation": "Random splitting puts the same vendor's invoices in train and test, so a high test F1 just means the model memorised that vendor's layout. Stratifying by template forces train and test to contain different vendor templates — the only way to know whether the model generalises to a new vendor."
+  },
+  {
+    "q": "A synth row lands in the Synthetic Review Queue with label-drift on the due_date offsets. What's the platform-native handling?",
+    "options": [
+      "The platform auto-rejects it silently",
+      "Use soft-reject with the offset-drift reason; the row stays on disk for audit; later bulk-purge filtered by reason if you're confident",
+      "Manually edit the database",
+      "There is no way to handle label drift"
+    ],
+    "answer": 1,
+    "explanation": "Every synth row lands as pending. Soft-reject with a reason tag (offset-drift, wrong-type, missing-entity, not-an-invoice) preserves the row on disk for later auditing. Purging is a separate, reason-grouped section-level action you take once you're confident a whole reason-bucket is bad data — never all-or-nothing."
+  }
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2 id="related">Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="setup-brewslm.html">Tutorial 0 — Set up BrewSLM and your first project</a><span class="related-lessons__track">Tutorials</span></li>
+            <li><a class="inline-link" href="support-faq-rag-protocol.html">Tutorial 1 — Support FAQ assistant with rag-protocol</a><span class="related-lessons__track">Tutorials</span></li>
+            <li><a class="inline-link" href="sql-injection-classifier.html">Tutorial 2 — SQL injection classifier</a><span class="related-lessons__track">Tutorials</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/task-shapes.html">Task shapes — classification vs QA vs span vs RAG</a><span class="related-lessons__track">Track 1B</span></li>
+            <li><a class="inline-link" href="../with-brewslm/eval-packs-and-failure-clusters.html">Eval packs, gates & failure clusters</a><span class="related-lessons__track">Track 3</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-actions">
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark tutorial complete</button>
+          <a class="btn btn-outline" href="index.html">← All tutorials</a>
+        </div>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>© <span id="footer-year">2026</span> BrewSLM Academy. <a class="inline-link" href="../glossary.html">Glossary</a> · <a class="inline-link" href="../certificate.html">Certificate</a> · <a class="inline-link" href="../small-language-model-roadmap.html">Roadmap</a></p>
+    </footer>
+    <script src="../../academy.js"></script>
+    <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
+  </body>
+</html>
