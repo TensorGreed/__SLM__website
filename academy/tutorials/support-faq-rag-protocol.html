@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>End-to-end tutorial: build a support FAQ assistant with rag-protocol — BrewSLM Academy</title>
+    <meta
+      name="description"
+      content="A complete, hands-on walkthrough: train a protocol-aware small language model in BrewSLM that grounds answers in your FAQ, cites the source chunk, and refuses cleanly when the context is insufficient. Covers dataset selection, ingestion, gold set, synthetic data, training, evaluation against the discipline pack, and shipping."
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/academy/tutorials/support-faq-rag-protocol.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Build a support FAQ assistant with rag-protocol — end-to-end tutorial" />
+    <meta property="og:description" content="A full BrewSLM walkthrough: from FAQ CSV to a deployed retrieval-grounded assistant that cites its sources and refuses cleanly off-topic." />
+    <meta property="og:url" content="https://brewslm.com/academy/tutorials/support-faq-rag-protocol.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Build a support FAQ assistant with rag-protocol — end-to-end tutorial" />
+    <meta name="twitter:description" content="A complete BrewSLM walkthrough from FAQ CSV to a deployed retrieval-grounded assistant." />
+    <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YDPSHSVE1K"></script>
+    <script src="../../assets/analytics.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "Build a support FAQ assistant with rag-protocol in BrewSLM",
+        "description": "End-to-end walkthrough: dataset selection, ingestion, cleanup, gold set, synthetic drills (refusal/citation/format), training, evaluation against the discipline pack, and shipping.",
+        "url": "https://brewslm.com/academy/tutorials/support-faq-rag-protocol.html",
+        "inLanguage": "en",
+        "totalTime": "PT2H",
+        "estimatedCost": { "@type": "MonetaryAmount", "currency": "USD", "value": "0" },
+        "supply": [
+          { "@type": "HowToSupply", "name": "BrewSLM running locally or on a GPU host" },
+          { "@type": "HowToSupply", "name": "60+ FAQ rows (question + answer + source paragraph)" },
+          { "@type": "HowToSupply", "name": "A small GPU (8 GB+) or CPU-only for the 135M base model" }
+        ],
+        "tool": [
+          { "@type": "HowToTool", "name": "BrewSLM" },
+          { "@type": "HowToTool", "name": "SmolLM2-135M-Instruct (or alternative small base model)" }
+        ],
+        "step": [
+          { "@type": "HowToStep", "name": "Choose a dataset", "url": "https://brewslm.com/academy/tutorials/support-faq-rag-protocol.html#choose-dataset" },
+          { "@type": "HowToStep", "name": "Ingest and map", "url": "https://brewslm.com/academy/tutorials/support-faq-rag-protocol.html#ingest-map" },
+          { "@type": "HowToStep", "name": "Cleanup and PII review", "url": "https://brewslm.com/academy/tutorials/support-faq-rag-protocol.html#cleanup" },
+          { "@type": "HowToStep", "name": "Pick the recipe", "url": "https://brewslm.com/academy/tutorials/support-faq-rag-protocol.html#pick-recipe" },
+          { "@type": "HowToStep", "name": "Build the gold set", "url": "https://brewslm.com/academy/tutorials/support-faq-rag-protocol.html#gold-set" },
+          { "@type": "HowToStep", "name": "Generate synthetic drills", "url": "https://brewslm.com/academy/tutorials/support-faq-rag-protocol.html#synthetic" },
+          { "@type": "HowToStep", "name": "Review the synth queue", "url": "https://brewslm.com/academy/tutorials/support-faq-rag-protocol.html#review-queue" },
+          { "@type": "HowToStep", "name": "Train", "url": "https://brewslm.com/academy/tutorials/support-faq-rag-protocol.html#train" },
+          { "@type": "HowToStep", "name": "Evaluate against the discipline pack", "url": "https://brewslm.com/academy/tutorials/support-faq-rag-protocol.html#evaluate" },
+          { "@type": "HowToStep", "name": "Ship", "url": "https://brewslm.com/academy/tutorials/support-faq-rag-protocol.html#ship" }
+        ],
+        "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
+        "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://brewslm.com/" },
+          { "@type": "ListItem", "position": 2, "name": "Academy", "item": "https://brewslm.com/academy/" },
+          { "@type": "ListItem", "position": 3, "name": "Tutorials", "item": "https://brewslm.com/academy/tutorials/" },
+          { "@type": "ListItem", "position": 4, "name": "Support FAQ with rag-protocol", "item": "https://brewslm.com/academy/tutorials/support-faq-rag-protocol.html" }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="../../academy.css" />
+  </head>
+  <body data-lesson-id="tutorials/support-faq-rag-protocol">
+    <header class="site-header">
+      <a class="brand" href="../../index.html" aria-label="BrewSLM Home">
+        <img class="brand-logo" src="../../assets/brewslm-logo.svg" alt="BrewSLM" />
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../index.html" aria-current="page">Academy</a>
+        <a href="../../creation-paths.html">Creation Paths</a>
+        <a href="../../workflow.html">Workflow</a>
+        <a href="../../capabilities.html">Capabilities</a>
+        <a href="../../blog.html">Blog</a>
+        <a href="../../faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="https://github.com/TensorGreed/__SLM__" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </header>
+
+    <nav class="academy-subnav" aria-label="Academy tracks">
+      <div class="academy-subnav__inner">
+        <a href="../index.html">Overview</a>
+        <a href="../foundations/index.html">Foundations</a>
+        <a href="../sft-fundamentals/index.html">SFT fundamentals</a>
+        <a href="../hands-on/index.html">Hands-on</a>
+        <a href="../with-brewslm/index.html">With BrewSLM</a>
+        <a href="../advanced/index.html">Advanced</a>
+        <a href="index.html" aria-current="page">Tutorials</a>
+      </div>
+    </nav>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="../index.html">Academy</a></li>
+        <li><a href="index.html">Tutorials</a></li>
+        <li>Support FAQ with rag-protocol</li>
+      </ol>
+    </nav>
+
+    <div class="lesson-layout">
+      <aside class="lesson-toc" aria-label="On this page">
+        <p class="lesson-toc__title">On this page</p>
+        <ol data-toc></ol>
+      </aside>
+
+      <article class="lesson-article">
+        <header class="lesson-header">
+          <span class="lesson-header__badge">Tutorial 1 · End-to-end · Support FAQ</span>
+          <h1>Build a support FAQ assistant with the rag-protocol recipe</h1>
+          <p class="lesson-header__outcome">By the end of this tutorial you'll have a small language model that answers questions from your FAQ corpus, cites the source chunk it pulled, refuses cleanly when the context can't answer the question, and ships behind a vLLM endpoint. The whole thing runs on a single small GPU (or CPU) and costs roughly nothing per query at inference time.</p>
+          <div class="lesson-meta">
+            <span><strong>Level:</strong> intermediate</span>
+            <span><strong>Time:</strong> ~2 hours total (most of it training + eval)</span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="../foundations/pretraining-vs-finetuning-vs-rag.html">Pretraining vs fine-tuning vs RAG</a>, <a class="inline-link" href="../with-brewslm/auto-rag-and-reroute.html">Auto-RAG & reroute</a></span>
+          </div>
+        </header>
+
+        <p>This is the canonical BrewSLM workflow for any project where the model needs to <strong>answer questions grounded in a body of text</strong> — customer FAQ, internal knowledge base, support transcripts, legal QA, product docs. The recipe stays the same; only your corpus changes. The platform learns the protocol; the index supplies the facts.</p>
+
+        <p>The end state is the model you'd actually deploy at a B2B SaaS company: small enough to host yourself, accurate enough to answer in production, honest enough to refuse when it shouldn't guess.</p>
+
+        <h2 id="what-youll-build">What you'll build</h2>
+        <p>A protocol-aware support FAQ assistant. Concretely:</p>
+        <ul>
+          <li><strong>"How long do I have to return an item?"</strong> → "You have 30 days from delivery to return unused items in their original packaging <code>[#1]</code>."</li>
+          <li><strong>"What time does your store close?"</strong> (off-topic — context is about refunds) → "I don't have enough context to answer that."</li>
+          <li><strong>"How LONG do I HAVE to RETURN?"</strong> (same question, different register) → Same answer, same citation marker, same format. The model is invariant under input register.</li>
+        </ul>
+        <p>The model is a fine-tuned LoRA adapter on top of <code>SmolLM2-135M-Instruct</code> (or any small instruction-tuned model). Inference runs at sub-500ms latency on a single GPU; the BM25 retrieval index lives next to the adapter and gets refreshed whenever your FAQ changes — <strong>no retraining needed when you update content</strong>.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Key idea</p>
+          <p>The rag-protocol recipe teaches the model <em>how to use</em> a retrieval index — cite, refuse, format. The FACTS live in the index. That separation is why the same trained model works for ecom FAQ, legal QA, internal IT, and healthcare support without retraining for each.</p>
+        </div>
+
+        <h2 id="why-small-rag">Why a small model with RAG (and not a big LLM)</h2>
+        <p>Three reasons enterprise teams pick a small fine-tuned model over a frontier model for narrow QA:</p>
+        <dl>
+          <dt>Cost per query</dt>
+          <dd>Frontier models charge per token; a 135M LoRA on your own GPU is roughly free at inference. For a support funnel doing 10,000 questions a day, that's the difference between a $300/month bill and a $30,000/month one.</dd>
+          <dt>Latency</dt>
+          <dd>Network hop + frontier-model queue is usually 1.5-3 seconds; a small model on local hardware is 200-500ms. For chat surfaces, latency below 500ms feels instant.</dd>
+          <dt>Privacy + control</dt>
+          <dd>Your customers' questions stay on your hardware. You control when the model updates. You can audit every weight and every retrieved chunk.</dd>
+        </dl>
+        <p>The trade-off is <em>scope</em>. A small model is not a general assistant. It's good at one bounded task — answering questions from one corpus, in one format. That's exactly the support-FAQ use case.</p>
+
+        <h2 id="choose-dataset">Choose your dataset</h2>
+        <p>You need <strong>question / answer / source-paragraph</strong> triples. The source paragraph is the chunk of text the answer is grounded in; the citation marker <code>[#1]</code> in the answer points at it. Three common starting points:</p>
+        <dl>
+          <dt>Your own help center</dt>
+          <dd>Most companies already have FAQ pages with implicit (question → answer) linkage. Walk the page, extract the question (the H3/H4), the answer (the paragraph below), and the URL or section name as the citation. 60+ rows is the minimum useful gold set.</dd>
+          <dt>Support transcripts</dt>
+          <dd>Resolved tickets where the agent cited a KB article. The customer's question, the agent's answer, and the KB article's relevant paragraph become your triple. Export from Zendesk / Intercom / Salesforce as CSV.</dd>
+          <dt>Public starting points</dt>
+          <dd><a class="inline-link" href="https://huggingface.co/datasets/squad" target="_blank" rel="noopener noreferrer">SQuAD</a> for general-domain QA practice; <a class="inline-link" href="https://huggingface.co/datasets/ms_marco" target="_blank" rel="noopener noreferrer">MS MARCO</a> for passage retrieval. Use these to validate the workflow before pointing at your own data.</dd>
+        </dl>
+
+        <div class="callout callout--note">
+          <p class="callout__label">How many rows do you need?</p>
+          <p>60 high-quality rows beats 600 noisy ones. The synthetic playbooks will multiply your seed 3-5x; the eval pack scores quality, not volume. Aim for 60 gold rows that cover every category of question you expect in production.</p>
+        </div>
+
+        <h2 id="ingest-map">Ingest and map</h2>
+        <p>In BrewSLM, create a new project: <strong>Projects → New Project → rag-protocol recipe</strong>. The recipe pre-fills the adapter pick (<code>rag-grounded</code>), the task profile (<code>rag_qa</code>), and the eval pack (<code>evalpack.rag_protocol.discipline</code>). You can override any of these later, but the defaults are what we want.</p>
+        <p>Then <strong>Data Studio → Import</strong>. Drop your CSV or JSONL. The mapping picker will scan the columns and propose:</p>
+        <pre class="code-block"><code>{
+  "context": "Our refund policy allows returns within 30 days of delivery for unused items in original packaging.",
+  "question": "How long do I have to return an item?",
+  "answer": "You have 30 days from delivery to return unused items in their original packaging [#1]."
+}</code></pre>
+        <p>The Data Studio mapping panel shows you a confidence-scored preview of three to five rows mapped through the adapter. Click <strong>Apply mapping</strong> when the preview looks right.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Citation marker format</p>
+          <p>The marker <code>[#N]</code> is what the model trains on. If your data uses a different convention (footnote numbers, document IDs, source URLs), normalize it during the cleanup step before training — the platform's discipline pack scores answers by token overlap with the context, not the marker format, but the model needs <em>one</em> consistent marker shape to learn.</p>
+        </div>
+
+        <h2 id="cleanup">Cleanup and PII review</h2>
+        <p>Open Data Studio's <strong>Quality & Safety</strong> panel. It runs a deterministic scan over your imported rows and flags:</p>
+        <ul>
+          <li><strong>PII signals</strong> — email addresses, phone numbers, credit-card-shaped strings inside the context or answers. Review each one; the platform will not auto-redact (per the project's safety rule).</li>
+          <li><strong>Near-duplicates</strong> — questions that paraphrase each other. Decide whether to keep one or both; for FAQ data, keeping near-dupes can hurt eval F1 because they bleed signal between train and test splits.</li>
+          <li><strong>Markdown / HTML artefacts</strong> in the context. Strip <code>&lt;p&gt;</code> tags, leftover bullet markers, etc. Clean context = honest faithfulness scores at eval time.</li>
+        </ul>
+        <p>You don't have to clean everything before training. You <em>do</em> have to clean the rows you're about to promote to gold — those are the rows the eval pack scores against, and they're the rows the synthetic playbooks seed from.</p>
+
+        <h2 id="pick-recipe">Pick the recipe: rag-protocol or qa-sft?</h2>
+        <p>BrewSLM ships two recipes that look similar on the surface. Use this decision tree:</p>
+        <table class="comparison-table">
+          <thead>
+            <tr><th>Question</th><th>rag-protocol</th><th>qa-sft</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Facts change frequently?</td><td>✓ (index lives outside weights)</td><td>✗ (model memorises facts at train time)</td></tr>
+            <tr><td>Many domains, same shape?</td><td>✓ (one model, swap indexes per customer)</td><td>✗ (one model per domain)</td></tr>
+            <tr><td>Need explicit citation in output?</td><td>✓ (recipe trains <code>[#N]</code> marker)</td><td>✗ (no citation discipline)</td></tr>
+            <tr><td>Need clean refusals?</td><td>✓ (recipe trains canonical refusal phrase)</td><td>✗ (model will guess)</td></tr>
+            <tr><td>Tiny stable corpus (under 30 facts)?</td><td>(over-engineering)</td><td>✓ (memorisation works fine)</td></tr>
+            <tr><td>Fast iteration on a one-off?</td><td>(more pieces to wire)</td><td>✓ (less ceremony)</td></tr>
+          </tbody>
+        </table>
+        <p>For an ecom FAQ that updates monthly, an internal support KB that grows weekly, or a legal QA system that touches new statutes regularly — <strong>rag-protocol wins</strong>. For a stable 20-row FAQ that hasn't changed in years, qa-sft is simpler.</p>
+
+        <h2 id="domain-packs">Domain packs (when and why)</h2>
+        <p>A <strong>domain pack</strong> is a bundle of cleaning rules, gold-seed criteria, eval thresholds, and Academy lesson tags scoped to one vertical. For our support FAQ use case, the platform ships a <code>support</code> pack and an <code>ecommerce</code> pack; legal teams use the <code>legal</code> pack.</p>
+        <p>Applying a domain pack is optional but compounding:</p>
+        <ul>
+          <li><strong>Cleaning recipe</strong> — the support pack pre-loads PII patterns common to ticket data (customer email regexes, order ID redaction).</li>
+          <li><strong>Eval thresholds</strong> — the legal pack tightens citation-rate to 0.85 (the discipline pack defaults to 0.75) because legal needs higher faithfulness.</li>
+          <li><strong>Synthetic recipe constraints</strong> — the support pack tells the refusal playbook to include "I'll escalate to a human agent" as an acceptable refusal variant.</li>
+        </ul>
+        <p>If a pack matches your vertical, apply it from <strong>Project → Domain → Pack</strong>. If your vertical isn't covered, the platform defaults work fine and you can build a custom pack later — domain pack is a refinement, not a prerequisite.</p>
+
+        <h2 id="gold-set">Build the gold set (manual + LLM-assisted)</h2>
+        <p>The <strong>gold set</strong> is the trusted reference your model is trained and evaluated against. Aim for 60 rows minimum, 100+ ideal. Two complementary paths:</p>
+
+        <h3 id="gold-manual">Path A — manual seeding</h3>
+        <p>Open the Gold Set workbench (<strong>Data Studio → Gold Set</strong>). For each row you add:</p>
+        <ol>
+          <li>Paste the source paragraph into <code>context</code> — verbatim from your KB or FAQ page.</li>
+          <li>Write the question a real customer would ask. Use the actual wording you see in tickets, not a sanitised paraphrase.</li>
+          <li>Write the answer. Make it short, factual, and end with the citation marker <code>[#1]</code> pointing at the chunk.</li>
+        </ol>
+        <p>Spend 30 minutes here. The model trains on signals you imprint with these rows — your gold set's tone, format, and refusal style are what the model will inherit.</p>
+
+        <h3 id="gold-llm-assisted">Path B — LLM-assisted promotion</h3>
+        <p>For larger imports (a few hundred FAQ pages), use the platform's "promote from raw" flow:</p>
+        <ol>
+          <li>Bulk-import your raw FAQ pages as context blocks.</li>
+          <li>Open the synthetic generation surface, run the <code>POSITIVES_PARAPHRASE</code> playbook in <strong>seed mode</strong> — it asks a teacher model (Ollama or your own deployed model) to extract (question, answer, citation) triples from each context block.</li>
+          <li>Every generated triple lands in the synth review queue with <code>review_status="pending"</code>. Accept the good ones; they're promoted to gold.</li>
+        </ol>
+        <p>This compresses 4 hours of manual gold-writing into 30 minutes of review. The trade-off: you have to actually review the rows. The platform will not auto-accept LLM-generated gold (per the safety rule); every promotion is an explicit decision.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Don't skip refusal examples</p>
+          <p>Your gold set must contain rows where the right answer is the canonical refusal phrase ("I don't have enough context to answer that."). Add 5-10 of these manually — questions that are obviously off-topic for your domain. Without refusal examples in gold, the model never learns to refuse, and the discipline pack's <code>appropriate_refusal_rate</code> gate will fail.</p>
+        </div>
+
+        <h2 id="split">Splitting train, validation, test</h2>
+        <p>BrewSLM auto-splits when you click <strong>Run prepare now</strong> on the Data Studio Prepare Dataset panel. The default ratios are 80% train / 10% validation / 10% test, with a deterministic seed so the splits are reproducible.</p>
+        <p>Override the ratios from the Dataset Prep panel when:</p>
+        <ul>
+          <li>Your gold set is small (under 80 rows): use 70/15/15 so the val/test splits have at least 10 rows each.</li>
+          <li>You're working with class imbalance (some question categories rare): use stratified splitting via the eval-shape config.</li>
+          <li>You want a held-out test set you'll only score against at the very end: bump test to 20% and run repeated rounds against val only.</li>
+        </ul>
+        <p>The prepared splits land as JSONL files in <code>data/projects/&lt;id&gt;/datasets/</code> and get pinned in the project's manifest with row counts and a content hash. If anything drifts later (you re-imported, you ran another cleanup), the goal ledger flags the version mismatch and offers a one-click re-prepare.</p>
+
+        <h2 id="synthetic">Generate synthetic drills</h2>
+        <p>This is where the rag-protocol recipe earns its name. Three playbooks ship with the recipe, each drilling a different protocol behaviour:</p>
+        <dl>
+          <dt>POSITIVES_PARAPHRASE — citation drill</dt>
+          <dd>Vary the wording of the question; keep the answer and citation marker verbatim. Goal: the model learns that the same fact answers many phrasings. Generate ~50 rows from your 60-row gold seed.</dd>
+          <dt>REFUSALS — context-insufficient drill</dt>
+          <dd>Generate questions that the provided context can't answer, paired with the canonical refusal phrase. Two flavours: off-topic context (real context but unrelated to the question) and no-context (empty context). Goal: the model learns to refuse on structural absence, not just on hard questions. Generate ~30 rows.</dd>
+          <dt>FORMAT_ROBUSTNESS — register-invariance drill</dt>
+          <dd>Same semantic question, different REGISTERS — terse ("Return window?"), verbose ("Could you please tell me how many days I have to return an item?"), formal, polite, imperative. Same answer, same format. Goal: the model holds its output format regardless of how the input is phrased. Generate ~40 rows.</dd>
+        </dl>
+        <p>Open <strong>Data Studio → Synthetic → Playbook Center</strong>. The rag-protocol recipe shows three playbook cards. Click each, set the target count, pick a backend (Ollama is the free default; OpenAI / Anthropic / DeepSeek work if you have keys). Generation runs as a background job — the bell surfaces progress.</p>
+
+        <div class="callout callout--warning">
+          <p class="callout__label">Don't generate everything before reviewing</p>
+          <p>Run the citation playbook first, generate 20 rows, review them, fix any prompt issues. Then run the refusal playbook with 20 rows. Then format. Generating 200 rows up front and reviewing all of them after the fact is harder than three quick cycles.</p>
+        </div>
+
+        <h2 id="review-queue">Review the synth queue</h2>
+        <p>Every generated row lands in the <strong>Synthetic Review Queue</strong> with <code>review_status="pending"</code>. The queue groups rows by source playbook so you can review one category at a time. For each row you have three actions:</p>
+        <ul>
+          <li><strong>Accept</strong> — the row joins the training corpus on the next dataset prep run.</li>
+          <li><strong>Reject</strong> — the row is soft-rejected with an optional reason ("hallucinated answer", "missing citation", "wrong refusal phrase"). The row stays on disk so you can audit later.</li>
+          <li><strong>Purge</strong> — a section-level action that physically deletes all rejected rows (optionally filtered by reason). Use this once you're confident the rejected pile is genuinely bad data.</li>
+        </ul>
+        <p>The review queue is also where the platform's per-row confidence score shows. Rows scoring under 50% confidence are highlighted — those usually correlate with playbook validation failures (missing citation marker, no canonical refusal phrase, answer drift from the gold seed).</p>
+
+        <h2 id="train">Training configuration</h2>
+        <p>Open <strong>Training → New Experiment</strong>. The recipe defaults are sensible — for a first run, accept all of them:</p>
+        <dl>
+          <dt>Base model</dt>
+          <dd><code>HuggingFaceTB/SmolLM2-135M-Instruct</code>. Small, instruction-tuned, runs on consumer hardware. Alternative: <code>Qwen/Qwen2.5-0.5B-Instruct</code> for slightly better quality at 4x the size.</dd>
+          <dt>Adapter</dt>
+          <dd>LoRA, rank 16, alpha 32, target modules <code>q_proj,k_proj,v_proj,o_proj</code>. Standard for small models.</dd>
+          <dt>Learning rate</dt>
+          <dd>2e-4. Higher than full fine-tuning because LoRA has fewer trainable parameters.</dd>
+          <dt>Epochs</dt>
+          <dd>3. For 200-row training sets, 3 epochs typically hits the loss plateau; 5+ overfits.</dd>
+          <dt>Batch size + gradient accumulation</dt>
+          <dd>Batch 4, accumulate 4 → effective batch 16. Adjust down on GPUs under 8 GB.</dd>
+        </dl>
+        <p>Expected runtime: 5-15 minutes on a single GPU (RTX 3060 or better). The training panel shows live loss + a sparkline; if loss isn't dropping after the first 50 steps, kill the run and check your data — the dataset is probably misshapen.</p>
+
+        <h2 id="forecast">Read the trainability forecast</h2>
+        <p>Before kicking off a real training run, the platform pre-computes a <strong>trainability forecast</strong>: given your current data + gold set + base model, what's the predicted F1 / pass rate? The goal ledger on the Data Studio overview shows it as the <code>predicted_pass</code> row.</p>
+        <p>For a healthy support FAQ project you want:</p>
+        <ul>
+          <li>Predicted pass probability <strong>≥ 65%</strong>. Below that means the data is genuinely too thin or imbalanced — add more gold, run more synth, or pick a stronger base model.</li>
+          <li>Gold set readiness <strong>≥ 100% (i.e. ≥100 gold rows)</strong>. Below that the forecast becomes noisy.</li>
+          <li>Data ready <strong>= met</strong> (training rows + mapping + splits all green).</li>
+        </ul>
+        <p>If the forecast is below 50%, training will almost certainly fail the eval gates. <strong>Add data before you train</strong> — the goal ledger's blockers panel tells you which component is weakest.</p>
+
+        <h2 id="evaluate">Evaluation: the discipline gates</h2>
+        <p>After training, the platform automatically evaluates against the project's eval pack. For rag-protocol projects that's <code>evalpack.rag_protocol.discipline</code>, which gates four behaviours:</p>
+        <dl>
+          <dt>Citation rate ≥ 75%</dt>
+          <dd>Share of answers whose token overlap with the retrieved context meets the faithfulness threshold. A low score means the model is answering without grounding in the passages — the citation drills didn't take.</dd>
+          <dt>Hallucination rate ≤ 15%</dt>
+          <dd>Mean fraction of answer tokens NOT supported by the context. High score = the model is filling in facts that aren't in the passages.</dd>
+          <dt>Appropriate refusal rate ≥ 80%</dt>
+          <dd>The model's refusal behaviour matches the gold's — refuses when gold refuses, answers when gold answers. NOT a blanket-refusal incentive: a model that refuses every question scores 0 here because it never matches the answer-cases.</dd>
+          <dt>F1 ≥ 0.55</dt>
+          <dd>Standard SQuAD F1 over the answer span. The legacy QA-shape gate that lets you compare the rag-protocol score to your old qa-sft baseline.</dd>
+        </dl>
+        <p>The goal ledger on the overview expands the <code>eval_pass_rate</code> row into a per-gate breakdown so you see exactly which discipline is failing — "citation 72%/≥75% failed, hallucination 18%/≤15% failed, refusal 85%/≥80% passed."</p>
+
+        <h2 id="fix">When the eval fails (reroute trace)</h2>
+        <p>Common failure patterns and the fix for each:</p>
+        <table class="comparison-table">
+          <thead>
+            <tr><th>Symptom</th><th>Root cause</th><th>Fix</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Citation rate &lt; 60%</td><td>Not enough citation drills in training</td><td>Run another POSITIVES_PARAPHRASE round (50+ rows), retrain</td></tr>
+            <tr><td>Hallucination rate &gt; 30%</td><td>Gold set too thin; model has no grounded examples to imitate</td><td>Add 30+ gold rows, focus on contexts the current model gets wrong</td></tr>
+            <tr><td>Refusal rate &lt; 50%</td><td>Not enough REFUSALS playbook rows in training</td><td>Run the refusal playbook for 30+ rows, retrain</td></tr>
+            <tr><td>F1 strong but all discipline gates fail</td><td>Model memorised answers without learning the protocol</td><td>Stronger refusal/citation drills; consider switching to a larger base model</td></tr>
+            <tr><td>Every gate fails by 20+ points</td><td>Task is knowledge-bound, not behaviour-bound</td><td>Accept the platform's reroute-to-RAG recommendation — base model + retrieval may be enough</td></tr>
+          </tbody>
+        </table>
+        <p>When the platform's post-eval decision engine recommends a reroute, expand the <strong>"Why this fired?"</strong> disclosure on each signal. You'll see the actual numbers ("Jaccard 0.18 &lt; 0.20 threshold", "matched_keywords: ['answer questions about']") rather than just the recommendation verb. If the trace looks right, click <strong>"Switch to RAG (keeps your gold set)"</strong> — the platform clones the project as a RAG-first sibling and you can compare both side by side.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">The honest move</p>
+          <p>Knowing when NOT to fine-tune is as valuable as knowing how. If the discipline pack flags hallucination at 35% and the reroute trace says your task is knowledge-bound, more training won't help. Take the reroute, run the base-model-plus-retrieval comparison, ship whichever wins. The platform refusing to let you grind epochs against a problem training can't solve is a feature.</p>
+        </div>
+
+        <h2 id="ship">Ship the model</h2>
+        <p>Once the eval pack passes, ship in three steps:</p>
+        <ol>
+          <li><strong>Export the LoRA adapter</strong>. Open <strong>Models → Export</strong>. The platform writes the adapter weights, the tokenizer config, and a deploy manifest into <code>data/projects/&lt;id&gt;/exports/</code>. The adapter is ~5-15 MB; the base model is loaded fresh at deploy time.</li>
+          <li><strong>Deploy via vLLM (or Ollama).</strong> The recipe's <code>target_profile</code> is <code>vllm_server</code> by default. The export bundle includes a vLLM launch script:
+            <pre class="code-block"><code>cd data/projects/1/exports/run-2026-06-04
+./deploy-vllm.sh
+# Serves the base model + LoRA adapter on localhost:8000
+# Auto-RAG BM25 index loaded from data/projects/1/auto_rag/</code></pre>
+            Ollama variant: <code>./deploy-ollama.sh</code>. Either way the BM25 retrieval index is loaded at process start; new FAQ entries refresh the index without restarting the server.
+          </li>
+          <li><strong>Smoke-test in the playground.</strong> Open <strong>Playground</strong> in the platform. Ask 10 real customer questions; check that each answer cites a chunk and that off-topic questions get the canonical refusal. The per-turn provenance footer (which adapter served the reply, which chunks were retrieved, the latency) is your sanity check.</li>
+        </ol>
+
+        <h2 id="whats-next">What's next</h2>
+        <p>You have a deployed protocol-aware support assistant. Three obvious next moves:</p>
+        <dl>
+          <dt>Swap the corpus</dt>
+          <dd>The same trained adapter works for legal QA, healthcare support, internal IT, ecommerce returns — anywhere you have a (context, question, answer) shape. Build a new index over the new corpus; no retraining needed. This is the protocol-over-domain payoff.</dd>
+          <dt>Refresh the index monthly</dt>
+          <dd>FAQ content changes. Schedule a periodic re-ingest of your help center; the BM25 index rebuilds in seconds. The trained adapter doesn't care which facts are in the index — it cares that they're cited.</dd>
+          <dt>Active learning loop</dt>
+          <dd>Capture real customer questions that produced low-confidence answers. Promote the best ones into the gold set; retrain when gold grows by ~50 rows. Over a quarter, the model gets noticeably sharper on the questions your customers actually ask.</dd>
+        </dl>
+
+        <p>The next tutorial in this series picks a different recipe: <strong><a class="inline-link" href="index.html">SQL injection classifier</a></strong> — same end-to-end shape, classification recipe, hard-negative drills, security-grade refusal handling. Same workflow, different shape.</p>
+
+        <section class="key-terms">
+          <h2 id="key-terms">Key terms</h2>
+          <dl>
+            <dt>rag-protocol recipe</dt><dd>BrewSLM recipe that trains a small model to cite the retrieved chunk, refuse cleanly, and hold output format. Domain-agnostic — facts live in the retrieval index, not the weights.</dd>
+            <dt>Citation marker</dt><dd>The <code>[#N]</code> token in an answer that points at the source chunk. The training signal the model imprints from the gold + synth data.</dd>
+            <dt>Canonical refusal phrase</dt><dd>"I don't have enough context to answer that." The single recognisable shape the model emits when the retrieval is insufficient; downstream consumers can detect it.</dd>
+            <dt>Discipline gates</dt><dd>The four protocol-specific gates in <code>evalpack.rag_protocol.discipline</code>: citation rate, hallucination rate, appropriate refusal rate, F1.</dd>
+            <dt>Goal ledger</dt><dd>The single "% toward your stated goal" widget on the Data Studio overview, expanding into per-component readiness (data, gold, predicted pass, eval pass rate with per-gate breakdown).</dd>
+            <dt>Reroute-to-RAG</dt><dd>One-click clone that creates a RAG-first sibling project (base model + retrieval, no LoRA). The "task is knowledge-bound, not behaviour-bound" escape hatch.</dd>
+          </dl>
+        </section>
+
+        <section class="quiz" data-quiz aria-label="Tutorial quiz">
+          <h2 class="quiz__title">Check yourself</h2>
+          <p class="quiz__intro">Answers are saved to this browser.</p>
+          <script type="application/json">
+[
+  {
+    "q": "What does the citation marker [#1] in a rag-protocol answer represent?",
+    "options": [
+      "A footnote pointing the human reader to a source",
+      "The training signal the model learns to emit when grounded in a retrieved chunk",
+      "The chunk's hash in the BM25 index",
+      "A placeholder the deploy script replaces at runtime"
+    ],
+    "answer": 1,
+    "explanation": "The marker is the discipline signal — the model is trained to emit it whenever its answer is grounded in a specific chunk, so downstream consumers can verify the citation."
+  },
+  {
+    "q": "Why does the rag-protocol recipe outperform qa-sft for an ecommerce FAQ that updates monthly?",
+    "options": [
+      "It's a bigger model",
+      "Facts live in the retrieval index, so the corpus can update without retraining",
+      "It uses larger LoRA rank",
+      "It runs faster at inference"
+    ],
+    "answer": 1,
+    "explanation": "rag-protocol trains the protocol once and lets the index supply the facts; qa-sft bakes facts into the weights and requires retraining when the corpus changes."
+  },
+  {
+    "q": "The discipline pack scores appropriate_refusal_rate at 0.05 after training. What does this mean?",
+    "options": [
+      "The model is refusing on every question, even ones with sufficient context",
+      "The model is answering on every question, even ones with insufficient context",
+      "The model is well-calibrated and refusing only when appropriate",
+      "It could be either — the metric rewards matching the gold's refusal behaviour, so a blanket-refuser AND a blanket-answerer both score 0"
+    ],
+    "answer": 3,
+    "explanation": "The metric is the rate at which the model's refusal/answer behaviour matches the gold's. Both failure modes score low. Look at gold vs prediction labels to disambiguate."
+  },
+  {
+    "q": "When the post-eval decision engine recommends reroute-to-RAG, what is it telling you?",
+    "options": [
+      "The model needs more training",
+      "The failure is knowledge-bound — base model + retrieval may outperform more fine-tuning",
+      "The base model is too small",
+      "The gold set is mislabeled"
+    ],
+    "answer": 1,
+    "explanation": "When failures correlate with retrieval-shape signals (hallucination, low context recall), the platform recommends the retrieval-first architecture instead of more training cycles."
+  }
+]
+          </script>
+        </section>
+
+        <section class="related-lessons" aria-label="Related lessons">
+          <h2 id="related">Related lessons</h2>
+          <ul>
+            <li><a class="inline-link" href="../with-brewslm/synthetic-data-and-review.html">Synthetic data + review queue (deep dive)</a><span class="related-lessons__track">Track 3</span></li>
+            <li><a class="inline-link" href="../with-brewslm/eval-packs-and-failure-clusters.html">Eval packs, gates & failure clusters</a><span class="related-lessons__track">Track 3</span></li>
+            <li><a class="inline-link" href="../with-brewslm/auto-rag-and-reroute.html">Auto-RAG & reroute-to-RAG</a><span class="related-lessons__track">Track 3</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/gold-sets.html">Gold sets — what they are, how to build one</a><span class="related-lessons__track">Track 1B</span></li>
+            <li><a class="inline-link" href="../foundations/pretraining-vs-finetuning-vs-rag.html">Pretraining vs fine-tuning vs RAG</a><span class="related-lessons__track">Track 0</span></li>
+          </ul>
+        </section>
+
+        <div class="lesson-actions">
+          <button type="button" class="btn btn-solid" data-mark-complete>Mark tutorial complete</button>
+          <a class="btn btn-outline" href="index.html">← All tutorials</a>
+        </div>
+      </article>
+    </div>
+
+    <footer class="site-footer">
+      <p>© <span id="footer-year">2026</span> BrewSLM Academy. <a class="inline-link" href="../glossary.html">Glossary</a> · <a class="inline-link" href="../certificate.html">Certificate</a> · <a class="inline-link" href="../small-language-model-roadmap.html">Roadmap</a></p>
+    </footer>
+    <script src="../../academy.js"></script>
+    <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
+  </body>
+</html>
