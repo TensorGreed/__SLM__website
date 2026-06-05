@@ -360,7 +360,7 @@
           <dt>Per-class F1 floor ≥ 0.70</dt>
           <dd>Every class must hit at least 0.70 F1 individually. For SQLi: <code>injection</code> F1 ≥ 0.70 AND <code>benign</code> F1 ≥ 0.70 — neither class is allowed to starve.</dd>
           <dt>Benign-class precision ≥ 0.95 (override the default)</dt>
-          <dd>The default classification pack scores macro F1; for SQLi specifically you want to OVERRIDE the per-class precision floor on the benign class to 0.95+. Edit the eval pack from <strong>Eval Packs → Edit</strong> and add a <code>min_precision_benign</code> gate. A model with 0.92 benign precision blocks 8% of legitimate traffic at the false-positive rate — usually unacceptable.</dd>
+          <dd>The default classification pack scores macro F1; for SQLi specifically you want to OVERRIDE the per-class precision floor on the benign class to 0.95+. Open the eval pack editor under <strong>Project → Eval Pack → Edit</strong>, click <strong>+ Add gate</strong>, and in the Metric dropdown pick <strong>Per-class · benign → Precision</strong> (the optgroup populates from your latest classification eval; if it's empty, run an eval first to discover classes). Set operator <code>≥</code>, threshold <code>0.95</code>, mark it Required, and Save. A model with 0.92 benign precision blocks 8% of legitimate traffic at the false-positive rate — usually unacceptable.</dd>
           <dt>Safety pass rate ≥ 0.93</dt>
           <dd>Catches refusal / off-topic / adversarial inputs that should be flagged through a different path. Optional gate but useful when you wire the model behind a SOC dashboard.</dd>
         </dl>
