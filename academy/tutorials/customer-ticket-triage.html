@@ -298,14 +298,14 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
           <p>Your gold must contain rows where the routing decision was genuinely hard — tickets that legitimately span two teams. Mark them with the team that actually got the ticket and let the model learn your org's tie-breaking convention. Without them, the model learns a clean separation production doesn't exhibit.</p>
         </div>
 
-        <h2 id="split">Stratified split — pre-partition into three files</h2>
-        <p>The platform's <strong>Prepare Dataset</strong> panel runs a uniform random split off the ratios + a seed you set. For multi-class with imbalance, a uniform random split is fragile: with 64 <code>cancellation</code> rows in a 2,400-row dataset, an unlucky seed will put 4 of them in val and 6 in test, and your per-class F1 on <code>cancellation</code> becomes essentially noise. You want a <strong>stratified</strong> split — train, val, and test each carry the same per-class ratio as the whole — but the Prepare Dataset panel doesn't surface a "stratify by column" knob today.</p>
-        <p>The practical pattern: <strong>pre-partition into three files before import</strong>. In whatever scripting environment you're comfortable with, do a stratified split locally (Python's <code>sklearn.model_selection.train_test_split</code> with <code>stratify=labels</code>, or pandas group-by-label sample-fraction) producing three CSVs — <code>tickets-train.csv</code>, <code>tickets-val.csv</code>, <code>tickets-test.csv</code> — each carrying the same class proportions. Import each as a separate dataset in Data Studio and tag it as train / val / test in the dataset metadata.</p>
-        <p>For a 2,400-row gold set with the imbalanced distribution from earlier, an 80/10/10 stratified split produces approximately 1,920 train / 240 val / 240 test where every class has at least 6-7 examples in val + test even on the rarest classes. That's enough for the eval handler to compute a meaningful per-class F1 instead of a noisy one.</p>
+        <h2 id="split">Stratified split by class label</h2>
+        <p>The platform's <strong>Prepare Dataset</strong> panel runs uniform random off the ratios + a seed you set by default. For multi-class with imbalance, uniform random is fragile: with 64 <code>cancellation</code> rows in a 2,400-row dataset, an unlucky seed will put 4 of them in val and 6 in test, and your per-class F1 on <code>cancellation</code> becomes essentially noise. You want a <strong>stratified</strong> split — train, val, and test each carry the same per-class ratio as the whole.</p>
+        <p>Open the Prepare Dataset panel and set the <strong>Stratify By Field</strong> input to the column holding your team label (e.g. <code>team</code>). The split runs as before (80/10/10 default) but groups rows by that field's value first and splits each group at the same ratios independently — the rare <code>cancellation</code> class gets the same ~10% / ~10% slice into val/test that the dominant <code>technical</code> class does. After Run Split, the manifest's "Stratified by" panel shows a per-class breakdown: value, total, train, val, test row counts for each class so you can verify rare classes survived.</p>
+        <p>For a 2,400-row gold set with the imbalanced distribution from earlier, an 80/10/10 stratified split produces approximately 1,920 train / 240 val / 240 test where every class has at least 6-7 examples in val + test even on the rarest classes — enough for the eval handler to compute a meaningful per-class F1 instead of a noisy one. Classes with fewer than 3 rows in total get a small-group warning in the report and go entirely to train (can't split &lt; 3 into all three buckets); merge or seed more rows for those classes before relying on their per-class gates.</p>
 
         <div class="callout callout--note">
-          <p class="callout__label">If you can't pre-partition</p>
-          <p>If you have to use the platform's random-split flow, set the split ratio higher on val + test (say 70/15/15) to give rare classes more cushion against bad-seed roulette. Fix the seed across runs so your eval numbers are comparable between training experiments. This is a fallback — pre-partition is the right answer.</p>
+          <p class="callout__label">If your label column isn't a top-level field</p>
+          <p>The Stratify By Field input reads a top-level key on the adapted training record. If your label lives nested under a JSON path (e.g. <code>fields.team</code>), flatten it during the Adapter Lab mapping step before splitting, or pre-partition into three CSVs as the fallback. The split manifest's report explicitly flags rows whose stratify value is missing or empty — they bucket as <code>__missing__</code> so you can spot data hygiene issues immediately.</p>
         </div>
 
         <h2 id="synthetic">Generate CLASS_BALANCE_FILL + paraphrase + hard-negative drills</h2>
@@ -487,15 +487,15 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
     "explanation": "High accuracy + low macro_f1 = the model is acing the majority classes and starving the rare ones. More epochs amplifies the bias; a larger model doesn't fix imbalance. The right fix is to balance the training distribution with CLASS_BALANCE_FILL until the rare class has enough signal to clear the per-class F1 floor."
   },
   {
-    "q": "Why pre-partition into three CSVs before importing instead of using the Prepare Dataset panel's random split?",
+    "q": "Why set Stratify By Field instead of using the Prepare Dataset panel's default uniform random split?",
     "options": [
-      "The platform's random split is slower",
+      "The stratified split is faster",
       "Random split on an imbalanced dataset can put 4 cancellation examples in val and 6 in test — making per-class F1 essentially noise",
-      "Pre-partitioning trains faster",
+      "Stratification trains faster",
       "The platform requires three separate datasets"
     ],
     "answer": 1,
-    "explanation": "The Prepare Dataset panel does uniform random splits off ratios + seed; it doesn't currently stratify by class. With rare classes that's risky — an unlucky seed produces val/test sets with too few rare-class examples to compute meaningful per-class F1. Pre-partitioning into three CSVs with the right per-class proportions sidesteps the issue."
+    "explanation": "Uniform random splits an imbalanced dataset by row, which is risky for rare classes — an unlucky seed produces val/test sets with too few rare-class examples to compute meaningful per-class F1. Setting Stratify By Field to your label column groups rows by class and splits each group at the same ratios, so every split carries the same per-class proportion as the whole. The post-split manifest's per-class breakdown lets you verify it."
   },
   {
     "q": "What does it mean if you see high accuracy AND high macro_f1 but the post-eval decision engine recommends switching to qa-sft?",
