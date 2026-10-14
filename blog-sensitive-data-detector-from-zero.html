@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Build a sensitive-data detector from zero, with no labelled data | BrewSLM Blog</title>
+    <meta
+      name="description"
+      content="A step-by-step build of a model that finds, classifies and locates PCI, GDPR, HIPAA and custom sensitive data with exact character offsets — starting from an empty BrewSLM project, a local Ollama and no labelled data. Every number is real, including the ones that went down."
+    />
+    <meta
+      name="robots"
+      content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
+    />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/blog-sensitive-data-detector-from-zero.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Build a sensitive-data detector from zero, with no labelled data | BrewSLM Blog" />
+    <meta
+      property="og:description"
+      content="From an empty project to a Hugging Face model that tags PCI / GDPR / HIPAA / custom data with exact offsets — local teacher, a second-opinion answer key, and every number including the ones that went down."
+    />
+    <meta property="og:url" content="https://brewslm.com/blog-sensitive-data-detector-from-zero.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/blog/sensitive-data/02-synthetic-span-tools.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Build a sensitive-data detector from zero, with no labelled data | BrewSLM Blog" />
+    <meta
+      name="twitter:description"
+      content="From an empty project to a Hugging Face model that tags PCI / GDPR / HIPAA / custom data with exact offsets — every step in BrewSLM, every number real."
+    />
+    <meta property="article:published_time" content="2026-10-14" />
+    <meta property="article:modified_time" content="2026-10-14" />
+    <meta name="twitter:image" content="https://brewslm.com/assets/blog/sensitive-data/02-synthetic-span-tools.png" />
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YDPSHSVE1K"></script>
+    <script src="./assets/analytics.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Build a sensitive-data detector from zero, with no labelled data",
+        "description": "A step-by-step build of a model that finds, classifies and locates PCI, GDPR, HIPAA and custom sensitive data with exact character offsets, starting from an empty BrewSLM project and a local Ollama.",
+        "datePublished": "2026-10-14",
+        "dateModified": "2026-10-14",
+        "author": { "@type": "Person", "name": "TensorGreed", "url": "https://github.com/TensorGreed" },
+        "publisher": {
+          "@type": "Organization",
+          "name": "TensorGreed",
+          "url": "https://github.com/TensorGreed",
+          "logo": { "@type": "ImageObject", "url": "https://brewslm.com/assets/brewslm-logo.svg" }
+        },
+        "mainEntityOfPage": "https://brewslm.com/blog-sensitive-data-detector-from-zero.html",
+        "image": "https://brewslm.com/assets/blog/sensitive-data/02-synthetic-span-tools.png"
+      }
+    </script>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./index.html" aria-label="BrewSLM Home">
+        <img class="brand-logo" src="./assets/brewslm-logo.svg" alt="BrewSLM" />
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="./academy/index.html">Academy</a>
+        <a href="./creation-paths.html">Creation Paths</a>
+        <a href="./workflow.html">Workflow</a>
+        <a href="./capabilities.html">Capabilities</a>
+        <a href="./blog.html" aria-current="page">Blog</a>
+        <a href="./faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="./index.html#quickstart">Quickstart</a>
+    </header>
+
+    <main>
+      <!-- Not .reveal: the reveal observer needs 14% of an element on screen,
+           which a post this long can never reach, so it would stay invisible. -->
+      <article class="section blog-post">
+        <header class="blog-post-head reveal">
+          <p class="eyebrow">Walkthrough · Span extraction · Compliance</p>
+          <h1>Build a sensitive-data detector from zero, with no labelled data</h1>
+          <p class="blog-post-meta"><time datetime="2026-10-14">October 14, 2026</time> · By <a class="inline-link" href="https://github.com/TensorGreed" target="_blank" rel="noopener noreferrer">TensorGreed</a> · BrewSLM engineering blog</p>
+          <p class="page-sub">
+            You want a model that reads a message, a ticket or a clinical note and returns every
+            piece of sensitive data in it — <em>what</em> it is (a card number, a date of birth, a
+            medical record number, your own employee ids) and <em>exactly where</em> it is
+            (character start and end). You have no labelled data, a GPU or a patient CPU, a local
+            <a class="inline-link" href="https://ollama.com" target="_blank" rel="noopener noreferrer">Ollama</a>
+            and, optionally, an Anthropic API key. This is the whole build in BrewSLM, one screen at
+            a time, with every number from a real run — including the ones that went down.
+          </p>
+        </header>
+
+        <h2 id="result">Where it ends up</h2>
+        <p>
+          The model is a 184M-parameter DeBERTa-v3 token classifier, exported as a plain Hugging
+          Face model. It tags 23 entity types across three regimes plus custom ones: card number,
+          expiry, CVV, bank account and IBAN (PCI); person name, email, phone, address, date of
+          birth, national id, passport, IP address (GDPR); medical record number, health-plan id,
+          diagnosis, medication, provider, visit date (HIPAA); and employee ids, API keys and ticket
+          ids (custom). Training takes about a minute.
+        </p>
+        <p>
+          The honest headline is two numbers, not one, because of who wrote the answer key:
+        </p>
+        <div class="table-wrap">
+          <table class="compare-table">
+            <thead>
+              <tr><th>Scored against</th><th>Precision</th><th>Recall</th><th>F1</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Labels written by the same local model that wrote the training data</td><td>0.87</td><td>0.92</td><td>0.89</td></tr>
+              <tr><td><strong>An independent answer key written by a second model (Claude Haiku 4.5)</strong></td><td><strong>0.83</strong></td><td><strong>0.85</strong></td><td><strong>0.84</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Both are on the same 44 held-out texts, with strict matching: type, start and end must
+          all be exact. The second number is the one to believe. Most of this post is about how it
+          got from 0.74 to 0.84, because that is where the craft is. Spoiler: almost none of it was
+          training.
+        </p>
+
+        <h2 id="you-need">What you need</h2>
+        <ul>
+          <li>
+            <strong>BrewSLM</strong> running locally — backend, frontend and a Celery worker for
+            training. The <a class="inline-link" href="./index.html#quickstart">Quickstart</a> covers it.
+          </li>
+          <li>
+            <strong>Ollama</strong> with a mid-size instruction model. We used
+            <code>gemma4</code> (12B). It writes the sample documents and the training labels, and
+            it costs nothing per call.
+          </li>
+          <li>
+            <strong>Optional:</strong> an Anthropic API key for the second-opinion answer key.
+            Every key in this post cost a few cents (estimated; see <a class="inline-link" href="#cost">cost</a>).
+          </li>
+          <li>
+            <strong>Hardware:</strong> we ran on an NVIDIA GB10. The labelled data takes the
+            longest — about 45 minutes of local generation. Training is about a minute on a GPU;
+            on a CPU, expect tens of minutes.
+          </li>
+        </ul>
+        <p>
+          If you already have a labelled PII dataset, the
+          <a class="inline-link" href="./academy/tutorials/pii-span-tagging.html">PII span tagger tutorial</a>
+          in the Academy is the shorter path. This post is for when you have nothing.
+        </p>
+
+        <h2 id="step-1">Step 1 · Create the project</h2>
+        <p>
+          Use <strong>+ New Project</strong> and write a brief in plain words: <em>"Finds,
+          classifies and locates sensitive data in text: card numbers, personal data, health data
+          and our own identifiers, with exact character offsets."</em> The brief only seeds the
+          plan; nothing below depends on its wording.
+        </p>
+
+        <h2 id="step-2">Step 2 · No documents yet? Write sample documents</h2>
+        <p>
+          A span model learns from text that contains the things it should find. If you can't
+          share real tickets or clinical notes — usually the case for exactly this kind of model —
+          let a model write realistic, <em>invented</em> ones. The first card on the
+          <strong>Data</strong> tab does this.
+        </p>
+        <figure class="blog-figure">
+          <img src="./assets/blog/sensitive-data/01-seed-documents.png" alt="The Write sample documents card on the Data tab: what the documents must contain, genres one per line, document count and length" loading="lazy" />
+          <figcaption>Data tab → <em>No documents yet? Write sample documents</em>. Your local model runs first; a cloud model is used only if you pin one.</figcaption>
+        </figure>
+        <ul>
+          <li>
+            <strong>What the documents must contain</strong> — the kinds of data, in your own
+            words. We used: <em>"PCI: card numbers, expiry dates, CVV, IBANs; GDPR: names, emails,
+            phones, addresses, dates of birth, national ids; HIPAA: MRNs, plan ids, diagnoses,
+            medications; custom: EMP-##### employee ids, TCK-#### ticket ids"</em>.
+          </li>
+          <li>
+            <strong>Genres</strong>, one per line — where this data actually turns up. We used ten:
+            card-payment support tickets, billing emails, clinical visit notes, insurance claims,
+            HR onboarding emails, GDPR access requests, IT incident reports, bank chat transcripts,
+            travel bookings and pharmacy messages.
+          </li>
+          <li><strong>Documents</strong> and <strong>words each</strong>: we used 80 × 170.</li>
+        </ul>
+        <p>
+          The Job ran in the bell: <strong>80 documents in 8.4 minutes</strong>, 0 failures,
+          ingested as one text file and cleaned into <strong>106 passages</strong>. Cleaning cuts on
+          sentence boundaries, so no passage starts mid-word.
+        </p>
+        <p>
+          Two things happen that you don't see. The model is told every person, number and id
+          must be invented but realistic in format, and to vary surface forms: numbers with
+          spaces, dashes or none; each locale's own id formats; names inside greetings as well as
+          in the body. And the seed documents are cleaned <em>without</em> PII redaction. Ordinary
+          cleaning masks emails and phones, which is right for real documents and fatal here — our
+          first attempt fed <code>[REDACTED_EMAIL]</code> to the labeller.
+        </p>
+
+        <h2 id="step-3">Step 3 · Pick the span-extraction recipe</h2>
+        <p>
+          From the recipe picker choose <strong>Structured Span Extractor</strong>
+          (<code>span-extraction</code>). A row is <code>{text, entities: [{type, start, end,
+          text}]}</code>, and evaluation uses the strict <code>span_set</code> scorer: a hit needs the
+          same type, start and end. The Synthetic tab switches to span mode on its own.
+        </p>
+
+        <h2 id="step-4">Step 4 · Write down your labelling conventions — before you label anything</h2>
+        <p>
+          We learned this one last, and it should come first. Two labellers can both be right and
+          still disagree:
+        </p>
+        <ul>
+          <li>Is a date in a clinical note a date of birth or a visit date?</li>
+          <li>Is <code>GB29 NWBK 6016…</code> a bank account or an IBAN?</li>
+          <li>Is "Dr. Chen" a person or a provider?</li>
+          <li>Does "Ms. Olivia Reed" include the "Ms."?</li>
+        </ul>
+        <p>
+          Without a written rule, each model picks its own. The disagreement then shows up later as
+          "model error" when one model's labels train and another's score.
+        </p>
+        <figure class="blog-figure">
+          <img src="./assets/blog/sensitive-data/02-synthetic-span-tools.png" alt="Synthetic tab in span mode: the entity type list, the Refine weak types / Write answer key / Relabel training rows buttons, and the labelling conventions editor" loading="lazy" />
+          <figcaption>Synthetic tab, span mode: the entity-type list, the three span tools, and <em>Labelling conventions</em> — one line per type.</figcaption>
+        </figure>
+        <p>
+          Open <strong>Labelling conventions</strong> and write one line per type: what counts
+          <em>and what doesn't</em>. <strong>Add suggested wording</strong> fills starting text for
+          common type names; you edit it. Two of ours:
+        </p>
+        <pre class="code-block"><code>date_of_birth: a person's birth date, only when the text says or clearly implies it is the birth date
+               (DOB, born on, date of birth); any other date is not a date_of_birth
+person_name:   a private individual's name, including in greetings and signatures — the name only,
+               without a title (Mr., Ms., Dr.); a clinician named in their professional role is provider_name</code></pre>
+        <p>
+          Every model that labels your spans gets the lines for the types it labels: the one that
+          writes the training data, and the one that writes the answer key in
+          <a class="inline-link" href="#step-10">Step 10</a>. Fix the <em>edges</em> of a span, not
+          just its category. The last disagreements in our run were all about whether "Ms." belongs
+          to the name.
+        </p>
+
+        <h2 id="step-5">Step 5 · Generate the labelled rows</h2>
+        <p>Still on the Synthetic tab, span mode:</p>
+        <ul>
+          <li>
+            <strong>Provider</strong>: Local (Ollama). Labelling runs through BrewSLM's synth
+            backend, which turns a thinking model's thinking off. Through the plain
+            OpenAI-compatible URL, gemma spent its whole budget reasoning and returned nothing.
+          </li>
+          <li>
+            <strong>Entity types</strong>: your full vocabulary, comma-separated. Custom types are
+            just names: <code>employee_id</code>, <code>ticket_id</code>, whatever your data has.
+          </li>
+          <li>
+            <strong>Sample randomly from all cleaned chunks</strong> on, and
+            <strong>Rows to generate</strong> 400.
+          </li>
+        </ul>
+        <p>
+          For each batch, the model rewrites a sampled passage with <em>different</em> invented
+          values and returns every entity with its text. BrewSLM then makes the labels trustworthy
+          before anything trains on them:
+        </p>
+        <ul>
+          <li>
+            <strong>Offsets are verified, not trusted.</strong> A model counts characters badly but
+            copies text well. When <code>text[start:end]</code> doesn't match, the entity is
+            located by its text and the offsets repaired. It is dropped only if its text isn't in
+            the snippet at all.
+          </li>
+          <li>
+            <strong>A regex pass</strong> adds the well-defined types the model skipped (emails,
+            phones, cards, IPs) wherever they don't overlap an existing entity.
+          </li>
+          <li>
+            <strong>Empty rows are capped</strong> (one negative per ten positives), and one-line
+            fragments are dropped. A local model asked for 50 rows at once writes the texts and
+            skips the labels, so a local teacher gets 12 rows per call.
+          </li>
+          <li>
+            <strong>No silent fallback.</strong> A batch that validates to nothing yields nothing
+            and logs which rule emptied it. The task's row count tells the truth.
+          </li>
+        </ul>
+        <p>
+          Our run: <strong>295 rows and ~1,950 entities in 42 minutes</strong>. Rows auto-save to
+          the review queue grouped by source; accept them in bulk or reject what you don't like.
+        </p>
+
+        <h2 id="step-6">Step 6 · Split</h2>
+        <p>
+          <strong>Dataset Prep → split</strong> 80 / 10 / 10. Ours came out 228 / 28 / 29. The test
+          examples are what every score in this post is measured on.
+        </p>
+
+        <h2 id="step-7">Step 7 · Train for exact offsets: token classification</h2>
+        <p>
+          The span recipe's default trains a language model to <em>write</em> the entities as JSON,
+          offsets included. A small model gets the offsets wrong for the same reason the teacher
+          did: it has to count characters. For a detector, train an <strong>encoder with a
+          token-classification head</strong> instead. Offsets then come from the tokenizer's offset
+          mapping and are exact by construction.
+        </p>
+        <figure class="blog-figure">
+          <img src="./assets/blog/sensitive-data/04-training-task-type.png" alt="Task Type set to Token classification (spans with exact offsets)" loading="lazy" />
+          <figcaption>Training config → <em>Advanced</em> → <em>Power Tools</em> → <strong>Task Type: Token classification</strong>.</figcaption>
+        </figure>
+        <ul>
+          <li>
+            <strong>Base model</strong>: <code>microsoft/deberta-v3-base</code> — strong on NER,
+            with a fast tokenizer. <code>bert-base-cased</code> also works. The preflight check
+            accepts encoder models for this task type.
+          </li>
+          <li>
+            Leave <strong>auto epochs</strong> on. The head starts from random weights over 47 BIO
+            labels and needs a few hundred optimizer steps whatever the row count, so BrewSLM
+            targets about 400. Our first run used a flat 3 epochs, which was 45 steps, and scored
+            span F1 0.11. With epochs sized to ~400 steps, the same data scored 0.91.
+          </li>
+        </ul>
+        <p>
+          Training takes <strong>46–61 seconds</strong> on the GB10. The run saves a plain Hugging
+          Face model (<code>model/</code> + tokenizer + <code>label_space.json</code>) and reports
+          per-epoch span precision, recall and F1, plus a per-type breakdown.
+        </p>
+
+        <h2 id="step-8">Step 8 · Evaluate on the test examples</h2>
+        <p>
+          On the <strong>Eval</strong> tab, evaluate the run on the test examples. BrewSLM
+          recognises a token-classification checkpoint, tags the raw text with its head (no
+          generation), and scores with <code>span_set</code>. You get overall precision, recall
+          and F1, F1 per type, and for every row the entities matched, missed and invented, with
+          the model's output beside the key.
+        </p>
+        <figure class="blog-figure">
+          <img src="./assets/blog/sensitive-data/05a-eval-summary.png" alt="Eval summary: where the model still fails, with each test text, the expected entities and the predicted entities" loading="lazy" />
+          <figcaption>"Where it still fails": the first failure is a card's last four digits, <code>4242</code>, split into a 1-digit card number and a 3-digit bank account. That is a real miss, kept in the screenshot on purpose.</figcaption>
+        </figure>
+        <p>
+          The first run (#53) scored <strong>P 0.88 / R 0.92 / F1 0.90</strong>. It was perfect on
+          email, phone, IBAN, IP and the ids, and weak on passport (0 of 3), medication (0.60),
+          API key and provider name (0.67), and national id (0.76).
+        </p>
+
+        <h2 id="step-9">Step 9 · Refine the weak types — one button</h2>
+        <p>
+          <strong>Refine weak types</strong> reads the latest span evaluation and finds every type
+          under F1 0.8. It generates rows that <em>must contain</em> those types while still
+          labelling every other type in your list, sampling from all passages, with a row count
+          sized to how many types are weak. Two refine passes moved passport from 0.00 to 0.62,
+          medication from 0.60 to 0.79, provider name from 0.67 to 0.83 and bank account from 0.00
+          to 0.71.
+        </p>
+        <p>
+          A word on "while still labelling every other type". Our first refine passes
+          <em>narrowed</em> the type list to the weak types, and both the model and the regex pass
+          obeyed. Refine rows came back with their phones, emails and names unlabelled, and after
+          the re-split the model learned that a phone number is nothing. The button now keeps the
+          full list and marks the weak types as <em>focus</em>. Keep reading, because this one
+          only surfaced in Step 10.
+        </p>
+
+        <h2 id="step-10">Step 10 · Get a second opinion on your answer key</h2>
+        <p>
+          Every number so far scored the model against labels written by <em>the same model that
+          wrote its training data</em>. That measures how well the student copies its teacher, not
+          how right either of them is. <strong>Write answer key with</strong> (provider Anthropic,
+          model <code>claude-haiku-4-5</code>) hands the test texts — unchanged — to a second model.
+          It asks only for the entities, under your conventions, and verifies every offset. The
+          result is kept as the project's <code>gold_test</code> set. Your API key is stored as a
+          project secret; BrewSLM never shows it back.
+        </p>
+        <p>
+          It took 45 seconds for all 44 texts. The bell reports the <strong>agreement between the
+          two labellers</strong>: strict span F1 of the old labels against the new key. Ours was
+          <strong>0.74</strong>. Scored against Haiku's key, run #56 dropped from 0.88 to
+          <strong>0.74</strong>.
+        </p>
+        <p>
+          That drop is the most useful number in this post. It was not the model getting worse; it
+          was the old answer key being wrong in a consistent way. Haiku had found 14 phones, 12
+          emails and 13 names the local labels didn't have. Every one of those phones and emails
+          matched BrewSLM's own regex. They were missing because of the narrowed refine passes from
+          Step 9.
+        </p>
+
+        <h2 id="step-11">Step 11 · Fix the labels, not the model</h2>
+        <p>Three label fixes, each measured on the same 44 texts against the second-opinion key:</p>
+        <div class="table-wrap">
+          <table class="compare-table">
+            <thead>
+              <tr><th>Fix</th><th>What changed</th><th>F1 vs Haiku key</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>— (run #56)</td>
+                <td>Labels from a single local teacher, refine passes with a narrowed type list</td>
+                <td>0.74</td>
+              </tr>
+              <tr>
+                <td><strong>Regex pass over saved rows</strong> → retrain (run #57)</td>
+                <td>Added 438 missing entities (210 phones, 208 emails) to 254 of 874 rows</td>
+                <td><strong>0.79</strong> — phone 0.61 → 0.96, email 0.71 → 1.00</td>
+              </tr>
+              <tr>
+                <td>Re-key the test set under the <strong>conventions</strong> (model unchanged)</td>
+                <td>Same run #57, new key</td>
+                <td>0.79 — so the gap is in the training labels</td>
+              </tr>
+              <tr>
+                <td><strong>Relabel training rows</strong> under the conventions → retrain (run #58)</td>
+                <td>All 874 rows relabelled by the local model in 39 min; labeller agreement 0.74 → 0.85</td>
+                <td><strong>0.84</strong> — date of birth 0.52 → 0.78, national id 0.69 → 0.92, visit date 0.69 → 0.87, diagnosis 0.74 → 0.96</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          The model and its hyperparameters never changed. Only what it was taught and what it was
+          measured against did.
+        </p>
+        <p>
+          Two types didn't move: person name (0.65) and bank account (0.21). Both are about the
+          span's <em>edges</em>. All 12 remaining person-name disagreements are one labeller
+          including "Ms." and the other not, and one labeller tags "Account XXXX-3344, routing
+          number 99001122" as one span where the other tags two. The suggested wording now pins
+          those edges down. Re-running both labellers on it is the next step.
+        </p>
+
+        <h2 id="step-12">Step 12 · Export and use it</h2>
+        <p>
+          <strong>Export → Hugging Face</strong> packages the run's <code>model/</code> folder as
+          is (there is no adapter to merge). It is 744 MB in fp32 and runs anywhere Transformers
+          runs:
+        </p>
+        <pre class="code-block"><code>from transformers import pipeline
+
+tagger = pipeline("token-classification", model="path/to/model", aggregation_strategy="simple")
+
+text = "Hi, Priya Natarajan here (DOB 14/03/1987). Refund £42 to IBAN GB29 NWBK 6016 1331 9268 19 " \
+       "or reach me at priya.n@example.org / +44 7700 900123 — ticket TCK-5531."
+for ent in tagger(text):
+    start, end = ent["start"], ent["end"]
+    while start &lt; end and text[start].isspace():  # DeBERTa's tokenizer counts the leading space
+        start += 1
+    print(f"{ent['entity_group']:15s} {start:4d}-{end:&lt;4d} {ent['score']:.2f}  {text[start:end]!r}")</code></pre>
+        <p>Run #58's export on that text, verbatim — a text it has never seen, in a UK format:</p>
+        <pre class="terminal-block"><code>person_name        4-19   0.90  'Priya Natarajan'
+date_of_birth     30-40   0.99  '14/03/1987'
+iban              62-89   0.97  'GB29 NWBK 6016 1331 9268 19'
+email            105-124  1.00  'priya.n@example.org'
+phone            127-142  0.88  '+44 7700 900123'
+ticket_id        152-160  0.98  'TCK-5531'</code></pre>
+        <p>
+          <code>start</code> and <code>end</code> are character offsets into the string you
+          passed. <code>entity_group</code> is your type name, custom types included. The two-line
+          trim is needed because DeBERTa's tokenizer attaches the preceding space to a word, so the
+          pipeline's start can sit one character early. BrewSLM's own evaluation does the same
+          trim.
+        </p>
+
+        <h2 id="scoreboard">The whole scoreboard</h2>
+        <div class="table-wrap">
+          <table class="compare-table">
+            <thead>
+              <tr><th>Run</th><th>What it was trained on</th><th>vs local labels</th><th>vs second-opinion key (44 texts)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>#52</td><td>228 training rows, 3 epochs (45 steps)</td><td>0.11 (validation)</td><td>—</td></tr>
+              <tr><td>#53</td><td>Same rows, epochs sized to ~400 steps</td><td>0.90 (29 test texts)</td><td>—</td></tr>
+              <tr><td>#55</td><td>+87 refine rows for weak types</td><td>0.90 (38 test texts)</td><td>—</td></tr>
+              <tr><td>#56</td><td>+55 rows from <em>Refine weak types</em></td><td>0.88 (44)</td><td>0.74</td></tr>
+              <tr><td>#57</td><td>+ regex pass over saved rows (438 entities)</td><td>0.89 (44)</td><td>0.79</td></tr>
+              <tr><td><strong>#58</strong></td><td>+ all rows relabelled under the conventions</td><td><strong>0.89</strong> (44)</td><td><strong>0.84</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Read the right-hand column. The left-hand one hardly moved while the model got much
+          better, because a key written by the teacher can't see what the teacher gets wrong. The
+          test split grew as refine rows were added, so the early left-hand numbers are on fewer
+          texts. With 44 test texts, a type with 3 gold spans moves in steps of 0.33, so treat
+          per-type numbers on rare types as directional.
+        </p>
+
+        <h2 id="cost">Time and cost</h2>
+        <div class="table-wrap">
+          <table class="compare-table">
+            <thead><tr><th>Step</th><th>Time</th><th>Cost</th></tr></thead>
+            <tbody>
+              <tr><td>80 sample documents (local gemma4)</td><td>8.4 min</td><td>local</td></tr>
+              <tr><td>295 labelled rows (local)</td><td>42 min</td><td>local</td></tr>
+              <tr><td>Refine pass, 55 rows (local)</td><td>5 min</td><td>local</td></tr>
+              <tr><td>Training one run (GB10)</td><td>46–63 s</td><td>local</td></tr>
+              <tr><td>Evaluation, 44 texts</td><td>seconds</td><td>local</td></tr>
+              <tr><td>Answer key, 44 texts (Haiku 4.5)</td><td>45–60 s</td><td>8 calls — a few cents (estimated)</td></tr>
+              <tr><td>Relabel 874 training rows under conventions (local)</td><td>39 min</td><td>local</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 id="what-broke">What broke on the way</h2>
+        <p>
+          Each of these was found by this build, fixed in BrewSLM rather than worked around, and
+          is now covered by a test:
+        </p>
+        <ul>
+          <li>Cleaning redacted the "PII" in the invented seed documents.</li>
+          <li>The labeller dropped entities whose offsets were wrong instead of locating them by their text.</li>
+          <li>An unusable teacher reply fell back to regex-tagged sentence fragments that looked like data.</li>
+          <li>A thinking model through the OpenAI-compatible URL returned empty content.</li>
+          <li>Fifty rows per call made the local model skip the labels.</li>
+          <li>The first token-classification run had 45 optimizer steps.</li>
+          <li>The held-out eval measured perplexity, because the span recipe's adapter didn't declare its task profile.</li>
+          <li>Refine passes narrowed the type list, leaving phones and emails unlabelled.</li>
+          <li>The second-opinion key lost batches to replies cut off mid-JSON. Replies are now compact, and a failed batch is split rather than re-sent.</li>
+        </ul>
+
+        <h2 id="limits">Limits, and what's next</h2>
+        <ul>
+          <li>
+            <strong>Long documents.</strong> Inference and evaluation currently see the first 512
+            tokens of a text. Sliding windows with span merging are the first item on the product
+            roadmap. Until then, pass the pipeline's <code>stride</code> argument or split long
+            documents yourself.
+          </li>
+          <li>
+            <strong>English only so far.</strong> Multilingual encoders, sample documents per
+            language and an evaluation slice per language come next.
+          </li>
+          <li>
+            <strong>Compliance as data.</strong> Named bundles of types, conventions and regime
+            tags (PCI-DSS, GDPR, HIPAA, CCPA, your own), with recall per regime in the eval report.
+          </li>
+          <li>
+            <strong>Custom patterns.</strong> Project-level regexes for your own id formats, fed
+            into the same regex pass.
+          </li>
+          <li>
+            <strong>Recall over precision.</strong> For redaction, a missed span is worse than an
+            extra one. Per-type confidence thresholds for a high-recall mode are planned. Until
+            then, keep a human in the loop for anything that leaves your perimeter.
+          </li>
+        </ul>
+
+        <h2 id="api">The same build from a script</h2>
+        <p>Every button above is an API call. The core path, against a running BrewSLM:</p>
+        <pre class="terminal-block"><code># sample documents → passages
+POST /api/projects/{id}/flows/seed-documents          {"kinds": "...", "genres": [...], "count": 80, "words": 170, "backend": "ollama"}
+# conventions
+PUT  /api/projects/{id}/synthetic/type-definitions    {"definitions": {"date_of_birth": "...", ...}}
+# labelled rows (auto-saved when the task finishes)
+POST /api/projects/{id}/synthetic/generate-spans-async {"target_rows": 400, "entity_types": [...], "backend": "ollama", "use_all_chunks": true}
+POST /api/projects/{id}/dataset/split                 {"include_types": ["synthetic"], "task_profile": "structured_extraction"}
+POST /api/projects/{id}/training/experiments          {"name": "...", "config": {"base_model": "microsoft/deberta-v3-base", "task_type": "token_classification"}}
+POST /api/projects/{id}/training/experiments/{exp}/start
+POST /api/projects/{id}/evaluation/run-heldout?async_job=true  {"experiment_id": exp, "dataset_name": "test", "eval_type": "f1"}
+# refine, second opinion, label repair
+GET  /api/projects/{id}/synthetic/weak-types?threshold=0.8
+POST /api/projects/{id}/synthetic/relabel-answer-key  {"split": "test", "backend": "cloud:anthropic:claude-haiku-4-5-20251001"}
+POST /api/projects/{id}/synthetic/relabel-answer-key  {"target": "training", "backend": "ollama"}
+POST /api/projects/{id}/synthetic/spans/regex-augment
+# ship
+POST /api/projects/{id}/export/create                 {"experiment_id": exp, "export_format": "huggingface"}</code></pre>
+        <p>
+          The lesson that generalises beyond PII: <strong>get a second opinion on your answer key
+          before you trust a score, and write down your labelling conventions before you label
+          anything.</strong> The model here was the easy part.
+        </p>
+
+        <div class="blog-post-footer">
+          <a class="btn btn-solid" href="./blog.html">Back to blog</a>
+          <a class="btn btn-ghost" href="./academy/tutorials/pii-span-tagging.html">PII tagging with a labelled dataset</a>
+        </div>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p>
+        <a
+          class="footer-link"
+          href="https://github.com/TensorGreed/__SLM__/issues"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Support &amp; questions: GitHub Issues</a
+        >
+      </p>
+    </footer>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
