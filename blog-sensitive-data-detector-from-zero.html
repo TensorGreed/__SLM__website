@@ -102,10 +102,12 @@
           expiry, CVV, bank account and IBAN (PCI); person name, email, phone, address, date of
           birth, national id, passport, IP address (GDPR); medical record number, health-plan id,
           diagnosis, medication, provider, visit date (HIPAA); and employee ids, API keys and ticket
-          ids (custom). Training takes about a minute.
+          ids (custom). Training takes about a minute and a half. It reads documents of any
+          length, page headers and footers included.
         </p>
         <p>
-          The honest headline is two numbers, not one, because of who wrote the answer key:
+          The honest headline is two numbers, not one, because of who wrote the answer key
+          (run #62, the last in this post):
         </p>
         <div class="table-wrap">
           <table class="compare-table">
@@ -113,16 +115,33 @@
               <tr><th>Scored against</th><th>Precision</th><th>Recall</th><th>F1</th></tr>
             </thead>
             <tbody>
-              <tr><td>Labels written by the same local model that wrote the training data</td><td>0.87</td><td>0.92</td><td>0.89</td></tr>
-              <tr><td><strong>An independent answer key written by a second model (Claude Haiku 4.5)</strong></td><td><strong>0.83</strong></td><td><strong>0.85</strong></td><td><strong>0.84</strong></td></tr>
+              <tr><td>Labels written by the same local model that wrote the training data</td><td>0.91</td><td>0.93</td><td>0.92</td></tr>
+              <tr><td><strong>An independent answer key written by a second model (Claude Haiku 4.5)</strong></td><td><strong>0.85</strong></td><td><strong>0.85</strong></td><td><strong>0.85</strong></td></tr>
             </tbody>
           </table>
         </div>
         <p>
           Both are on the same 44 held-out texts, with strict matching: type, start and end must
-          all be exact. The second number is the one to believe. Most of this post is about how it
-          got from 0.74 to 0.84, because that is where the craft is. Spoiler: almost none of it was
-          training.
+          all be exact. <strong>Precision</strong> is the share of the spans the model found that
+          are right; <strong>recall</strong> is the share of the real spans it found; F1 balances
+          the two. For redaction, recall is the one that hurts when it is low: a missed card number
+          leaks.
+        </p>
+        <p>
+          The second number is the one to believe. Most of this post is about how it got from 0.74
+          to 0.85, because that is where the craft is. Spoiler: almost none of it was training.
+        </p>
+        <p>
+          <strong>One caveat up front.</strong> Every text in this build — training and test — was
+          written by a model. 0.84 says how well the detector reads text like its training data,
+          not how it does on your real tickets. Checking it on a few dozen of your own texts is the
+          step before relying on it (see <a class="inline-link" href="#limits">limits</a>).
+        </p>
+        <p>
+          <strong>Following along today</strong> is shorter than our run was. Steps 1–8, 12 and 13
+          are the path. Steps 9–11 are what happened to us: two of the problems they describe (refine passes
+          that dropped labels, labellers with no shared conventions) are fixed in BrewSLM now, so you
+          won't see the 0.74 drop. The second opinion in Step 10 still matters — do it.
         </p>
 
         <h2 id="you-need">What you need</h2>
@@ -169,7 +188,7 @@
         </p>
         <figure class="blog-figure">
           <img src="./assets/blog/sensitive-data/01-seed-documents.png" alt="The Write sample documents card on the Data tab: what the documents must contain, genres one per line, document count and length" loading="lazy" />
-          <figcaption>Data tab → <em>No documents yet? Write sample documents</em>. Your local model runs first; a cloud model is used only if you pin one.</figcaption>
+          <figcaption>Data tab → <em>No documents yet? Write sample documents</em>, with <em>Multi-page, with headers and footers</em> ticked. Your local model runs first; a cloud model is used only if you pin one.</figcaption>
         </figure>
         <ul>
           <li>
@@ -185,6 +204,12 @@
             travel bookings and pharmacy messages.
           </li>
           <li><strong>Documents</strong> and <strong>words each</strong>: we used 80 × 170.</li>
+          <li>
+            <strong>Multi-page, with headers and footers</strong>: tick it if your real documents
+            have page furniture (letterheads, "Page 2 of 5", confidentiality lines). We added a
+            paged batch later — see <a class="inline-link" href="#step-12">Step 12</a> — and you
+            can tick it from the start.
+          </li>
         </ul>
         <p>
           The Job ran in the bell: <strong>80 documents in 8.4 minutes</strong>, 0 failures,
@@ -205,7 +230,9 @@
           From the recipe picker choose <strong>Structured Span Extractor</strong>
           (<code>span-extraction</code>). A row is <code>{text, entities: [{type, start, end,
           text}]}</code>, and evaluation uses the strict <code>span_set</code> scorer: a hit needs the
-          same type, start and end. The Synthetic tab switches to span mode on its own.
+          same type, start and end. On the <strong>Synthetic</strong> tab, set <strong>Generation mode</strong>
+          to <em>PII / NER span extraction</em>. (Once the project has a split, the tab opens in span
+          mode by itself.)
         </p>
 
         <h2 id="step-4">Step 4 · Write down your labelling conventions — before you label anything</h2>
@@ -288,7 +315,8 @@ person_name:   a private individual's name, including in greetings and signature
           </li>
         </ul>
         <p>
-          Our run: <strong>295 rows and ~1,950 entities in 42 minutes</strong>. Rows auto-save to
+          Our run asked for 400 rows and kept <strong>295, with ~1,950 entities, in 42 minutes</strong> —
+          the rest failed validation (no text, or no entity that could be found in its own text). Rows auto-save to
           the review queue grouped by source; accept them in bulk or reject what you don't like.
         </p>
 
@@ -296,6 +324,13 @@ person_name:   a private individual's name, including in greetings and signature
         <p>
           <strong>Dataset Prep → split</strong> 80 / 10 / 10. Ours came out 228 / 28 / 29. The test
           examples are what every score in this post is measured on.
+        </p>
+        <p>
+          Every later split, after you add rows, should tick <strong>Keep the current test
+          examples</strong>: the test rows stay exactly as they are and only train and validation
+          are re-divided, so the new run is scored on the same rows as the last one. (We didn't
+          have it for the early refine passes, which is why the early runs below were scored on
+          29 and 38 texts.)
         </p>
 
         <h2 id="step-7">Step 7 · Train for exact offsets: token classification</h2>
@@ -329,22 +364,23 @@ person_name:   a private individual's name, including in greetings and signature
           per-epoch span precision, recall and F1, plus a per-type breakdown.
         </p>
 
-        <h2 id="step-8">Step 8 · Evaluate on the test examples</h2>
+        <h2 id="step-8">Step 8 · Evaluate this run</h2>
         <p>
-          On the <strong>Eval</strong> tab, evaluate the run on the test examples. BrewSLM
-          recognises a token-classification checkpoint, tags the raw text with its head (no
-          generation), and scores with <code>span_set</code>. You get overall precision, recall
-          and F1, F1 per type, and for every row the entities matched, missed and invented, with
-          the model's output beside the key.
+          On the <strong>Eval</strong> tab, click <strong>Evaluate this run</strong> (it also runs by
+          itself when training finishes; the bell reports it). A token-classification run is scored
+          on its own: there is no "better than the base model" here, because its base is an encoder
+          with an untrained head. BrewSLM tags the raw test texts with the head (no generation) and
+          scores with <code>span_set</code>: precision, recall and F1 overall, the weakest types,
+          and for every failing text the entities expected and found, side by side.
         </p>
         <figure class="blog-figure">
-          <img src="./assets/blog/sensitive-data/05a-eval-summary.png" alt="Eval summary: where the model still fails, with each test text, the expected entities and the predicted entities" loading="lazy" />
-          <figcaption>"Where it still fails": the first failure is a card's last four digits, <code>4242</code>, split into a 1-digit card number and a 3-digit bank account. That is a real miss, kept in the screenshot on purpose.</figcaption>
+          <img src="./assets/blog/sensitive-data/05-eval-span.png" alt="Eval card: Span F1 0.85 against the answer key, written by Claude Haiku 4.5; test examples F1 0.92; weakest types; where it still fails" loading="lazy" />
+          <figcaption>Run #62 after Step 12. Once a second-opinion answer key exists (Step 10) the card leads with it. The first failure is the title convention from Step 11: the key says "Ms. Olivia Reed", the model "Olivia Reed".</figcaption>
         </figure>
         <p>
-          The first run (#53) scored <strong>P 0.88 / R 0.92 / F1 0.90</strong>. It was perfect on
-          email, phone, IBAN, IP and the ids, and weak on passport (0 of 3), medication (0.60),
-          API key and provider name (0.67), and national id (0.76).
+          The first run (#53) scored <strong>P 0.88 / R 0.92 / F1 0.90</strong> on its 29 test
+          texts. It was perfect on email, phone, IBAN, IP and the ids, and weak on passport (0 of 3),
+          medication (0.60), API key and provider name (0.67), and national id (0.76).
         </p>
 
         <h2 id="step-9">Step 9 · Refine the weak types — one button</h2>
@@ -372,8 +408,19 @@ person_name:   a private individual's name, including in greetings and signature
           how right either of them is. <strong>Write answer key with</strong> (provider Anthropic,
           model <code>claude-haiku-4-5</code>) hands the test texts — unchanged — to a second model.
           It asks only for the entities, under your conventions, and verifies every offset. The
-          result is kept as the project's <code>gold_test</code> set. Your API key is stored as a
-          project secret; BrewSLM never shows it back.
+          result is kept as the project's <code>gold_test</code> set.
+        </p>
+        <p>
+          <strong>Giving BrewSLM the key:</strong> on the Synthetic tab set <strong>Provider</strong> to
+          Anthropic, paste the key into <strong>API Key</strong> and click <strong>Save key to this
+          project</strong>. It is stored encrypted on the project, the field shows "✓ saved on
+          project", and the key is never shown back. Don't paste it into a chat or a ticket.
+        </p>
+        <figure class="blog-figure">
+          <img src="./assets/blog/sensitive-data/03-save-key.png" alt="Synthetic tab provider row: Anthropic selected, model claude-haiku-4-5, the API key field marked saved on project, and a Replace the saved key button" loading="lazy" />
+          <figcaption>Provider Anthropic, key saved on the project. With a fresh key the button reads <em>Save key to this project</em>.</figcaption>
+        </figure>
+        <p>
         </p>
         <p>
           It took 45 seconds for all 44 texts. The bell reports the <strong>agreement between the
@@ -432,7 +479,68 @@ person_name:   a private individual's name, including in greetings and signature
           those edges down. Re-running both labellers on it is the next step.
         </p>
 
-        <h2 id="step-12">Step 12 · Export and use it</h2>
+        <h2 id="step-12">Step 12 · Long documents and page furniture</h2>
+        <p>
+          An encoder reads 512 tokens at a time — a page or two. BrewSLM trains, validates, predicts
+          and evaluates anything longer in <strong>overlapping windows</strong> (128 tokens shared
+          between neighbours; each token's label comes from the window where it sits furthest from an
+          edge), so a document of any length is tagged end to end. You don't switch it on.
+        </p>
+        <p>
+          We measured it by joining the 44 test texts into four multi-page documents of 780–915
+          tokens and scoring them against the Haiku key. Before windowing, nothing after token 512
+          was found:
+        </p>
+        <div class="table-wrap">
+          <table class="compare-table">
+            <thead><tr><th>Run #58 reading whole documents</th><th>F1</th><th>Entities after token 512 found</th></tr></thead>
+            <tbody>
+              <tr><td>Each text alone (the reference)</td><td>0.84</td><td>—</td></tr>
+              <tr><td>Before windowing: cut at 512 tokens</td><td>0.59</td><td>0 of 126</td></tr>
+              <tr><td>Windowed</td><td><strong>0.82</strong></td><td>108 of 126</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Windows fixed length but not <em>layout</em>. With a "Page 3 of 11" footer between the
+          texts, precision fell to 0.65: the model had never seen page furniture and tagged it — a
+          page number as a diagnosis, a footer date as a visit date. The fix is data, three clicks:
+        </p>
+        <ol>
+          <li>
+            <strong>Write sample documents</strong> with <strong>Multi-page, with headers and
+            footers</strong> ticked. We wrote 40 more (7 minutes): 129 passages, 83 of them with
+            page lines.
+          </li>
+          <li>
+            <strong>Label document passages with</strong> your model (Synthetic tab). The span
+            generator in Step 5 rewrites passages into new snippets, which drops the layout; this
+            labels the passages <em>as they are</em>, under your conventions. 128 passages, 708
+            entities, 5 minutes. They land in the review queue as <code>passage_labels</code> —
+            accept them there (pending rows never train).
+          </li>
+          <li>
+            Split with <strong>Keep the current test examples</strong>, and train.
+          </li>
+        </ol>
+        <div class="table-wrap">
+          <table class="compare-table">
+            <thead><tr><th>Multi-page documents, F1 vs the Haiku key</th><th>Before (run #59)</th><th>Re-split only (run #60)</th><th>+ paged passages (run #62)</th></tr></thead>
+            <tbody>
+              <tr><td>Texts joined by blank lines</td><td>0.82</td><td>0.84</td><td>0.84</td></tr>
+              <tr><td>"Page n of 11" footers</td><td>0.74</td><td>0.73</td><td><strong>0.84</strong></td></tr>
+              <tr><td>A footer and letterhead style the generator never writes</td><td>0.69</td><td>0.65</td><td><strong>0.83</strong></td></tr>
+              <tr><td>The 44 test texts, one by one</td><td>0.84</td><td>0.83</td><td>0.85</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Run #60 is the control: the old training data, only re-split. It didn't move, so the
+          footer gain is the passages'. It held for a style the model never saw (<code>[3/11]</code>
+          plus a hospital letterhead), and short texts didn't get worse.
+        </p>
+
+        <h2 id="step-13">Step 13 · Export and use it</h2>
         <p>
           <strong>Export → Hugging Face</strong> packages the run's <code>model/</code> folder as
           is (there is no adapter to merge). It is 744 MB in fp32 and runs anywhere Transformers
@@ -440,7 +548,7 @@ person_name:   a private individual's name, including in greetings and signature
         </p>
         <pre class="code-block"><code>from transformers import pipeline
 
-tagger = pipeline("token-classification", model="path/to/model", aggregation_strategy="simple")
+tagger = pipeline("token-classification", model="path/to/model", aggregation_strategy="simple", stride=128)
 
 text = "Hi, Priya Natarajan here (DOB 14/03/1987). Refund £42 to IBAN GB29 NWBK 6016 1331 9268 19 " \
        "or reach me at priya.n@example.org / +44 7700 900123 — ticket TCK-5531."
@@ -449,19 +557,23 @@ for ent in tagger(text):
     while start &lt; end and text[start].isspace():  # DeBERTa's tokenizer counts the leading space
         start += 1
     print(f"{ent['entity_group']:15s} {start:4d}-{end:&lt;4d} {ent['score']:.2f}  {text[start:end]!r}")</code></pre>
-        <p>Run #58's export on that text, verbatim — a text it has never seen, in a UK format:</p>
-        <pre class="terminal-block"><code>person_name        4-19   0.90  'Priya Natarajan'
+        <p>
+          Run #62's export on that text, verbatim. We wrote the text for this post; it's one example
+          in a UK format the model never saw, not a benchmark — the tables are the measurement.
+        </p>
+        <pre class="terminal-block"><code>person_name        4-19   0.99  'Priya Natarajan'
 date_of_birth     30-40   0.99  '14/03/1987'
-iban              62-89   0.97  'GB29 NWBK 6016 1331 9268 19'
+iban              62-89   0.98  'GB29 NWBK 6016 1331 9268 19'
 email            105-124  1.00  'priya.n@example.org'
-phone            127-142  0.88  '+44 7700 900123'
-ticket_id        152-160  0.98  'TCK-5531'</code></pre>
+phone            127-142  0.98  '+44 7700 900123'
+ticket_id        152-160  0.95  'TCK-5531'</code></pre>
         <p>
           <code>start</code> and <code>end</code> are character offsets into the string you
           passed. <code>entity_group</code> is your type name, custom types included. The two-line
           trim is needed because DeBERTa's tokenizer attaches the preceding space to a word, so the
           pipeline's start can sit one character early. BrewSLM's own evaluation does the same
-          trim.
+          trim. <code>stride=128</code> makes the pipeline window long texts the way BrewSLM does;
+          <strong>without it, the pipeline stops at 512 tokens.</strong>
         </p>
 
         <h2 id="scoreboard">The whole scoreboard</h2>
@@ -476,7 +588,8 @@ ticket_id        152-160  0.98  'TCK-5531'</code></pre>
               <tr><td>#55</td><td>+87 refine rows for weak types</td><td>0.90 (38 test texts)</td><td>—</td></tr>
               <tr><td>#56</td><td>+55 rows from <em>Refine weak types</em></td><td>0.88 (44)</td><td>0.74</td></tr>
               <tr><td>#57</td><td>+ regex pass over saved rows (438 entities)</td><td>0.89 (44)</td><td>0.79</td></tr>
-              <tr><td><strong>#58</strong></td><td>+ all rows relabelled under the conventions</td><td><strong>0.89</strong> (44)</td><td><strong>0.84</strong></td></tr>
+              <tr><td>#58</td><td>+ all rows relabelled under the conventions</td><td>0.89 (44)</td><td>0.84</td></tr>
+              <tr><td><strong>#62</strong></td><td>+ 128 passages from paged documents, labelled as they are</td><td><strong>0.92</strong> (44)</td><td><strong>0.85</strong></td></tr>
             </tbody>
           </table>
         </div>
@@ -500,6 +613,7 @@ ticket_id        152-160  0.98  'TCK-5531'</code></pre>
               <tr><td>Evaluation, 44 texts</td><td>seconds</td><td>local</td></tr>
               <tr><td>Answer key, 44 texts (Haiku 4.5)</td><td>45–60 s</td><td>8 calls — a few cents (estimated)</td></tr>
               <tr><td>Relabel 874 training rows under conventions (local)</td><td>39 min</td><td>local</td></tr>
+              <tr><td>40 paged documents + labelling their 129 passages (local)</td><td>7 + 5 min</td><td>local</td></tr>
             </tbody>
           </table>
         </div>
@@ -519,15 +633,20 @@ ticket_id        152-160  0.98  'TCK-5531'</code></pre>
           <li>The held-out eval measured perplexity, because the span recipe's adapter didn't declare its task profile.</li>
           <li>Refine passes narrowed the type list, leaving phones and emails unlabelled.</li>
           <li>The second-opinion key lost batches to replies cut off mid-JSON. Replies are now compact, and a failed batch is split rather than re-sent.</li>
+          <li>Training, evaluation and the exported tokenizer all stopped at 512 tokens, and the export claimed an unlimited length, so <code>stride</code> did nothing.</li>
+          <li>"Evaluate this run" skipped token-classification runs; there was no UI to save the Anthropic key on the Synthetic tab; and rows written without an id could never be accepted from the review queue, so they silently never trained.</li>
         </ul>
 
         <h2 id="limits">Limits, and what's next</h2>
         <ul>
           <li>
-            <strong>Long documents.</strong> Inference and evaluation currently see the first 512
-            tokens of a text. Sliding windows with span merging are the first item on the product
-            roadmap. Until then, pass the pipeline's <code>stride</code> argument or split long
-            documents yourself.
+            <strong>No real-world score yet.</strong> All the text here is invented. Before you rely
+            on the detector, label a few dozen of your own texts (have a second model draft the
+            labels, then correct them by hand) and score it on those. Expect it to be lower.
+          </li>
+          <li>
+            <strong>Scanned documents.</strong> Long and paged text works (Step 12), but every page
+            here was clean text. OCR noise — broken words, stray characters — isn't tested yet.
           </li>
           <li>
             <strong>English only so far.</strong> Multilingual encoders, sample documents per
@@ -565,8 +684,19 @@ GET  /api/projects/{id}/synthetic/weak-types?threshold=0.8
 POST /api/projects/{id}/synthetic/relabel-answer-key  {"split": "test", "backend": "cloud:anthropic:claude-haiku-4-5-20251001"}
 POST /api/projects/{id}/synthetic/relabel-answer-key  {"target": "training", "backend": "ollama"}
 POST /api/projects/{id}/synthetic/spans/regex-augment
+# page furniture: paged documents → label passages as they are → accept → split keeping the test rows
+POST /api/projects/{id}/flows/seed-documents          {..., "layout": "paged"}
+POST /api/projects/{id}/synthetic/relabel-answer-key  {"target": "passages", "document_id": doc, "backend": "ollama"}
+POST /api/projects/{id}/synthetic/review-queue/bulk-update-by-source  {"source": "passage_labels:doc=&lt;doc&gt;", "action": "accept"}
+POST /api/projects/{id}/dataset/split                 {..., "keep_test": true}
+# evaluate (what "Evaluate this run" calls)
+POST /api/projects/{id}/evaluation/summary/lift-check {"experiment_id": exp}
 # ship
 POST /api/projects/{id}/export/create                 {"experiment_id": exp, "export_format": "huggingface"}</code></pre>
+        <p>
+          DeBERTa-v3 is MIT-licensed, and every person, card and record in the training data was
+          invented, so the exported model carries no one's real data.
+        </p>
         <p>
           The lesson that generalises beyond PII: <strong>get a second opinion on your answer key
           before you trust a score, and write down your labelling conventions before you label
