@@ -147,8 +147,8 @@
             question, the answer key and the model's answer, and grades the facts, not the wording.
           </li>
           <li>
-            <strong>Question writer:</strong> Claude Sonnet 5.5 through the project's saved
-            Anthropic key. The one paid step; the cost is below.
+            <strong>Question writer:</strong> a flagship cloud model through the project's
+            saved API key. The one paid step; the cost is below.
           </li>
           <li>
             <strong>Hardware:</strong> an NVIDIA GB10. Training took about 14 minutes; the
@@ -196,7 +196,7 @@
           from the passages, keep a separate answer key, split, run the pre-training check and,
           if that passes, train with your defaults and run the lift check. It has a
           <strong>Generation model</strong> picker: the local Ollama model by default, or a cloud
-          model through the key saved on the project. We picked Claude Sonnet 5.5 because the
+          model through the key saved on the project. We picked a flagship model because the
           answer key is the thing every later number is measured against, and this is the place
           to spend.
         </p>
@@ -456,7 +456,7 @@
 POST /api/projects/{id}/ingestion/upload                 multipart file=p17-2025.pdf
 POST /api/projects/{id}/cleaning/clean                   {"document_id": doc, "remove_page_furniture": true}
 # write pairs + answer key, split, run the pre-training check; stops when retrieval is ready
-POST /api/projects/{id}/flows/documents-to-qa            {"backend": "cloud:anthropic:claude-sonnet-5-5", "pairs_per_passage": 3}
+POST /api/projects/{id}/flows/documents-to-qa            {"backend": "cloud:&lt;provider&gt;:&lt;model&gt;", "pairs_per_passage": 3}
 # what the two buttons do
 POST /api/projects/{id}/flows/documents-to-qa            {"reuse_existing": true, "passages_check": false, "train_if_retrieval_ready": true}   # Train anyway
 POST /api/projects/{id}/reroute-to-rag?async_job=true     {}                                                   # Reroute to RAG
