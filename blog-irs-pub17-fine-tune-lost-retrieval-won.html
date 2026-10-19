@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The check said don't fine-tune. We did anyway. It was right. | BrewSLM Blog</title>
+    <meta
+      name="description"
+      content="A real BrewSLM run on IRS Publication 17: 1,064 passages, 405 generated training pairs, a judged pre-training check that scored the base model with and without passages on 41 held-out questions (0.17 vs 0.73) and stopped the flow, a fine-tune that scored 0.02 when we trained anyway, and a one-click reroute to retrieval. Every number measured; the failure shown in full."
+    />
+    <meta
+      name="robots"
+      content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
+    />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/blog-irs-pub17-fine-tune-lost-retrieval-won.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="The check said don't fine-tune. We did anyway. It was right. | BrewSLM Blog" />
+    <meta
+      property="og:description"
+      content="Building a tax Q&A assistant from IRS Publication 17 in BrewSLM: the pre-training check scored base + passages at 0.73 and stopped the flow; the fine-tune we ran anyway scored 0.02. What happened, with every number."
+    />
+    <meta property="og:url" content="https://brewslm.com/blog-irs-pub17-fine-tune-lost-retrieval-won.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/blog/irs-pub17/01-passages-check.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="The check said don't fine-tune. We did anyway. It was right. | BrewSLM Blog" />
+    <meta
+      name="twitter:description"
+      content="IRS Publication 17 in BrewSLM: base + passages 0.73, fine-tune 0.02, on the same 41 questions and the same judge. The check that called it before training."
+    />
+    <meta property="article:published_time" content="2026-10-19" />
+    <meta name="twitter:image" content="https://brewslm.com/assets/blog/irs-pub17/01-passages-check.png" />
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YDPSHSVE1K"></script>
+    <script src="./assets/analytics.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": "The check said don't fine-tune. We did anyway. It was right.",
+        "description": "A real BrewSLM run on IRS Publication 17: a judged pre-training check scored the base model with and without document passages on 41 held-out questions (0.17 vs 0.73) and stopped the flow; the fine-tune we ran anyway scored 0.02 on the same rows.",
+        "datePublished": "2026-10-19",
+        "dateModified": "2026-10-19",
+        "author": { "@type": "Person", "name": "TensorGreed", "url": "https://github.com/TensorGreed" },
+        "publisher": {
+          "@type": "Organization",
+          "name": "TensorGreed",
+          "url": "https://github.com/TensorGreed",
+          "logo": { "@type": "ImageObject", "url": "https://brewslm.com/assets/brewslm-logo.svg" }
+        },
+        "mainEntityOfPage": "https://brewslm.com/blog-irs-pub17-fine-tune-lost-retrieval-won.html",
+        "image": "https://brewslm.com/assets/blog/irs-pub17/01-passages-check.png"
+      }
+    </script>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./index.html" aria-label="BrewSLM Home">
+        <img class="brand-logo" src="./assets/brewslm-logo.svg" alt="BrewSLM" />
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="./academy/index.html">Academy</a>
+        <a href="./creation-paths.html">Creation Paths</a>
+        <a href="./workflow.html">Workflow</a>
+        <a href="./capabilities.html">Capabilities</a>
+        <a href="./blog.html" aria-current="page">Blog</a>
+        <a href="./faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="./index.html#quickstart">Quickstart</a>
+    </header>
+
+    <main>
+      <!-- Not .reveal: the reveal observer needs 14% of an element on screen,
+           which a post this long can never reach, so it would stay invisible. -->
+      <article class="section blog-post">
+        <header class="blog-post-head reveal">
+          <p class="eyebrow">Walkthrough · Documents → Q&amp;A · Retrieval vs fine-tuning</p>
+          <h1>The check said don't fine-tune. We did anyway. It was right.</h1>
+          <p class="blog-post-meta"><time datetime="2026-10-19">October 19, 2026</time> · By <a class="inline-link" href="https://github.com/TensorGreed" target="_blank" rel="noopener noreferrer">TensorGreed</a> · BrewSLM engineering blog</p>
+          <p class="page-sub">
+            We took IRS Publication 17, the 142-page guide to US individual income tax, and asked
+            BrewSLM to turn it into a question-answering assistant. Before any training ran, the
+            Documents → Q&amp;A flow scored the base model on 41 held-out questions with and
+            without the publication's own passages in front of it, judged the answers, and stopped:
+            retrieval already answered. We pressed <strong>Train anyway</strong> to see what a
+            fine-tune would do. It scored 0.02. This is the whole run, with every number as
+            measured, including the ones that make the fine-tune look bad, because it was.
+          </p>
+          <p class="form-note">
+            <strong>Not tax advice.</strong> The assistant in this post is a workflow demonstration
+            built from a public document. It got answers wrong on this page. Do not use it, or
+            anything like it, to prepare a return; the IRS publishes Publication 17 at IRS.gov.
+          </p>
+        </header>
+
+        <h2 id="result">The result, in one table</h2>
+        <p>
+          Three systems, the same 41 test examples, the same judge (<code>gemma4:12b</code>
+          running locally through Ollama, grading each answer against the answer key as correct /
+          partial / wrong = 1 / 0.5 / 0):
+        </p>
+        <div class="table-wrap">
+          <table class="compare-table">
+            <thead>
+              <tr><th>System</th><th>Correct / partial / wrong</th><th>Judge score</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Base model alone (Qwen2.5-3B-Instruct)</td><td>4 / 6 / 31</td><td>0.17</td></tr>
+              <tr><td><strong>Base model + retrieved passages from Pub 17</strong></td><td><strong>28 / 4 / 9</strong></td><td><strong>0.73</strong></td></tr>
+              <tr><td>Fine-tuned on 405 question → answer pairs from Pub 17 (run #148)</td><td>0 / 2 / 39</td><td>0.02</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          The base-alone number comes from the pre-training check. The automatic lift check that
+          ran after training scored the same base model on the same rows again and got 0.20
+          (0.195); the two readings bracket the real figure and the gap is what one re-run of a
+          judged eval looks like. Everything else in this post is how those three rows came to be,
+          and what the tool said at each step.
+        </p>
+        <p>
+          One caveat on the 0.73, up front: it is the best of nine retrieval settings picked on
+          the same 41 rows it is reported on, so it is optimistic by a few rows. The fine-tune was
+          scored once. The ordering does not depend on that, since the worst retrieval arm scored
+          0.52.
+        </p>
+
+        <h2 id="you-need">What this ran on</h2>
+        <ul>
+          <li>
+            <strong>Source:</strong> IRS Publication 17, <em>Your Federal Income Tax (For
+            Individuals)</em>, tax year 2025 edition, 142 pages, a US government work in the public
+            domain. One PDF.
+          </li>
+          <li>
+            <strong>Base model:</strong> <code>Qwen/Qwen2.5-3B-Instruct</code>, which is also the
+            model that answers with retrieval. Nothing larger is involved at answer time.
+          </li>
+          <li>
+            <strong>Judge:</strong> <code>gemma4:12b</code> through a local Ollama. It reads the
+            question, the answer key and the model's answer, and grades the facts, not the wording.
+          </li>
+          <li>
+            <strong>Question writer:</strong> Claude Sonnet 5.5 through the project's saved
+            Anthropic key. The one paid step; the cost is below.
+          </li>
+          <li>
+            <strong>Hardware:</strong> an NVIDIA GB10. Training took about 14 minutes; the
+            pre-training check, which runs the base model 41 × 10 times across its retrieval
+            sweep, took longer than the training did.
+          </li>
+        </ul>
+
+        <h2 id="step-1">Step 1 · Project from a brief</h2>
+        <p>
+          <strong>+ New Project</strong>, a one-paragraph brief ("I have IRS Publication 17, the
+          IRS guide to federal income tax for individuals. I want an assistant that answers
+          plain-language questions about it…"), and the base model typed in. The project opens on
+          its Overview with the Q&amp;A recipe applied. One fix landed here during this project: the
+          recipe's suggested base model used to overwrite the one you typed. Now it only fills an
+          empty field.
+        </p>
+
+        <h2 id="step-2">Step 2 · Data → Sources, then Data → Prepare</h2>
+        <p>
+          The PDF goes in on <strong>Data → Sources</strong>. Cleaning on <strong>Data →
+          Prepare</strong> extracts the text and cuts it into passages of about 1,000 characters at
+          sentence boundaries. The first clean produced 1,103 passages, and reading a sample showed
+          the problem any long PDF has: the publication repeats a header or footer on every page,
+          here lines like <code>Page 9 of 142 Fileid: … 13:47 - 20-Jan-2026</code>. 173 of the
+          1,103 passages carried one, sometimes fused onto the end of a sentence, which means the
+          question writer would see it, the retriever would index it and the fine-tune would learn
+          to produce it.
+        </p>
+        <p>
+          So the cleaning step grew a page-furniture detector, now the checkbox <strong>Remove
+          repeated page headers and footers</strong> on Data → Prepare, on by default. It keeps
+          the page breaks from the PDF parser and looks only at the first and last few lines of
+          each page for text that repeats across half the pages once the digits are normalised,
+          page-number patterns, and running heads whose words repeat while the numbers change. On
+          Pub 17 it removed 301 whole lines and trimmed 209 footers that had been fused onto body
+          text. Passages containing furniture went from 173 of 1,103 to 1 of 1,063. The final
+          corpus is 1,064 passages.
+        </p>
+
+        <h2 id="step-3">Step 3 · Train → the Documents → Q&amp;A card</h2>
+        <p>
+          On <strong>Train</strong>, above the training form, the card <strong>Turn your documents
+          into a Q&amp;A assistant</strong> does the rest in one job: write question → answer pairs
+          from the passages, keep a separate answer key, split, run the pre-training check and,
+          if that passes, train with your defaults and run the lift check. It has a
+          <strong>Generation model</strong> picker: the local Ollama model by default, or a cloud
+          model through the key saved on the project. We picked Claude Sonnet 5.5 because the
+          answer key is the thing every later number is measured against, and this is the place
+          to spend.
+        </p>
+        <p>
+          The flow sizes itself. It wants about 45 test examples so that a 0.15 difference in
+          judge score between two systems clears row-to-row noise, and works back from there: 150
+          passages at 3 pairs per passage with a 10% test share. The 150 are spread evenly over the
+          whole publication in document order (another fix made during this project; it used to
+          take the first 150, which on Pub 17 is the table of contents and "What's New"). For each
+          passage the writer produces training pairs plus one different question for the answer
+          key, held to a stricter standard: self-contained, and answered by something the passage
+          actually states.
+        </p>
+        <p>What came back:</p>
+        <ul>
+          <li>405 training pairs. 15 of the 150 passages produced none.</li>
+          <li>
+            119 practice answer-key questions. 16 more were dropped automatically: 13 had answers
+            the passage did not state, and 3 asked about "this passage" instead of naming the
+            thing they were asking about, which no retrieval or fine-tune could answer later.
+          </li>
+          <li>Split: 324 train / 40 val / 41 test examples.</li>
+          <li>Cost: 150 calls, 198k tokens, about $1.43 at list price.</li>
+        </ul>
+
+        <h2 id="step-4">Step 4 · The pre-training check stops the flow</h2>
+        <p>
+          Before training, the flow asks a question that most fine-tuning pipelines never ask:
+          <em>what does the base model already score on these 41 test examples, with and without
+          the document passages in front of it?</em> It answers the questions both ways, has the
+          judge grade both, and pairs the rows. It also runs a retrieval sweep inside the check,
+          so that the "with passages" arm is the best retrieval the project can serve rather than a
+          default top-3.
+        </p>
+        <figure class="blog-figure">
+          <img src="./assets/blog/irs-pub17/01-passages-check.png" alt="The Results → Verdict card on the RAG project: Better than the base model. Base model + your document passages vs the base model alone (Qwen/Qwen2.5-3B-Instruct), 41 test examples, no training run. judge: answer correct 0.171 (base) → 0.732 (base + your passages) +0.561. Gain on these rows: retrieval helped 28 rows, hurt 1 row, no change on 12; 95% range +0.415 to +0.707, a gain beyond row-to-row noise. Retrieval served: top-5 + reranker bge-reranker-v2-m3, pool 50, 600-char passages, with every tried arm and its score listed. Judged by ollama:gemma4:12b: 28 correct, 4 partial, 9 wrong of 41. Retrieval found the answer in 37 of 41 rows; of the 9 wrong answers, retrieval missed it in 4 and found it in 5." loading="lazy" width="1218" height="406" />
+          <figcaption>The check's verdict as Results → Verdict shows it. Base alone 0.17, base + passages 0.73, 28 rows better and 1 worse, with the retrieval that was served and every arm it tried.</figcaption>
+        </figure>
+        <p>
+          Without passages: 4 correct, 6 partial, 31 wrong, score 0.17. With passages: 28 / 4 / 9,
+          score 0.73. 28 rows better, 1 worse, 12 unchanged; the 95% interval on the mean per-row
+          change is +0.42 to +0.71, well clear of zero. The check has three tiers and this one hit
+          the top, <strong>retrieval ready</strong>: the evidence says better, the score is at
+          least 0.65, at least half the answers are correct and no more than a quarter are wrong.
+          So the flow stopped before training and the card offered two buttons: <strong>Reroute
+          to RAG</strong> and <strong>Train anyway</strong>.
+        </p>
+        <h3 id="sweep">What the retrieval sweep chose</h3>
+        <p>
+          The sweep runs in stages. First the number of passages and the reranker, then the BM25
+          candidate pool the reranker reads, then the passage size (the cleaned text re-cut at a
+          different length just for retrieval). Each arm is the same 41 questions, the same base
+          model, the same judge:
+        </p>
+        <div class="table-wrap">
+          <table class="compare-table">
+            <thead>
+              <tr><th>Retrieval</th><th>Judge score</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>top-3 (plain BM25)</td><td>0.52</td></tr>
+              <tr><td>top-5</td><td>0.61</td></tr>
+              <tr><td>top-3 + MiniLM reranker (ms-marco-MiniLM-L-6-v2)</td><td>0.59</td></tr>
+              <tr><td>top-5 + MiniLM reranker</td><td>0.55</td></tr>
+              <tr><td>top-3 + bge-reranker-v2-m3</td><td>0.63</td></tr>
+              <tr><td>top-5 + bge-reranker-v2-m3</td><td>0.67</td></tr>
+              <tr><td>top-5 + bge, reranking 50 BM25 candidates</td><td>0.68</td></tr>
+              <tr><td><strong>top-5 + bge, pool 50, passages re-cut to 600 characters</strong></td><td><strong>0.73</strong></td></tr>
+              <tr><td>top-5 + bge, pool 50, passages re-cut to 1,200 characters</td><td>0.57</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          The winner beat plain top-3 beyond noise (12 rows better, 5 worse). Most of the
+          neighbouring arms are within noise of each other on 41 rows, and the card says so
+          per arm rather than declaring a ranking. The caveat from the top applies here: nine
+          settings compared on the rows they are reported on will flatter the best one by a few
+          rows. The retrieval judge, a second prompt to the same model, also records whether the
+          right passage was among those retrieved: it was for 37 of 41. Of the 9 wrong answers,
+          4 were retrieval misses and 5 had the right passage in front of the model and it misread
+          it. That split matters for what comes next, so hold onto it.
+        </p>
+        <figure class="blog-figure">
+          <img src="./assets/blog/irs-pub17/04-retrieval-sweep.png" alt="The Base model + document passages card on Results → Compare: without RAG 0.1785 mean token-F1, with auto-RAG 0.5014, lift +181.0%; the judge line, 0.171 → 0.732 with retrieval found in 37 of 41 rows; and the retrieval sweep table with nine arms, each with its judge score and correct/partial/wrong counts, the share of rows where the passage was found, token F1, and its verdict against the current setting, with a Pin button per arm" loading="lazy" width="586" height="1567" />
+          <figcaption>The same sweep on Results → Compare, one row per arm, with the "passage found" share and a Pin button if you disagree with the choice.</figcaption>
+        </figure>
+
+        <h2 id="step-5">Step 5 · Train anyway</h2>
+        <p>
+          We wanted the comparison, so we pressed it. Run #148: Qwen2.5-3B-Instruct on the flow's default training configuration, 324
+          training rows, 243 optimizer steps, about 14 minutes on the GB10, final training loss
+          0.53. Nothing about the run looked wrong. Then the automatic lift check scored it on the
+          same 41 test examples with the same judge, against a fresh base-model baseline on the
+          same rows.
+        </p>
+        <figure class="blog-figure">
+          <img src="./assets/blog/irs-pub17/02-finetune-verdict.png" alt="The Results → Verdict card on the fine-tune project: Worse than the base model. Run #148, Q&A assistant from documents, 405 pairs vs base Qwen/Qwen2.5-3B-Instruct, 41 test examples. judge: answer correct 0.195 (base) → 0.024 (fine-tuned), −0.171. Drop on these rows: fine-tuning helped 2 rows, hurt 9 rows, no change on 30; 95% range −0.301 to −0.041, a drop beyond row-to-row noise. Judged by ollama:gemma4:12b: 0 correct, 2 partial, 39 wrong of 41. Where it still fails, 41 of 41 test examples, with five examples: where to go with a tax question, whether Treasury interest is taxable, the gambling index entry, a Tax Table row, and the dependent gross-income limit, each with the expected answer, the model's answer and the judge's reason." loading="lazy" width="1218" height="712" />
+          <figcaption>Run #148 on Results → Verdict. Base 0.20, fine-tuned 0.02; 9 rows worse, 2 better; the first five failures with the judge's reason for each.</figcaption>
+        </figure>
+        <p>
+          Base 0.20 → fine-tuned 0.02: 0 correct, 2 partial, 39 wrong of 41. Fine-tuning hurt 9
+          rows and helped 2; the mean per-row change is −0.17 with a 95% interval of −0.30 to
+          −0.04, so this is a loss beyond row-to-row noise, not an unlucky draw. Two of the
+          failures, verbatim from the card:
+        </p>
+        <ul>
+          <li>
+            <em>"Is interest on U.S. Treasury bills, notes, and bonds taxable for federal income tax
+            purposes?"</em> Pub 17: yes, taxable federally (and exempt from state and local tax).
+            Fine-tune: <em>"No. Interest on U.S. Treasury bills, notes, and bonds is not taxable
+            for federal income tax purposes."</em>
+          </li>
+          <li>
+            <em>"Where should you go if you have a tax question, need help preparing your return,
+            or want free publications, forms, or instructions?"</em> Pub 17: IRS.gov. Fine-tune:
+            <em>"…you should go to the instructions or instructions that give you the lowest
+            tax."</em>
+          </li>
+        </ul>
+        <p>
+          Confident, fluent, in the register of the publication, and wrong. Which brings up the
+          number that would have hidden all of this.
+        </p>
+        <h3 id="f1">Token F1 went up while correctness collapsed</h3>
+        <figure class="blog-figure">
+          <img src="./assets/blog/irs-pub17/03-did-sft-help.png" alt="The Did SFT help? panel: baseline Qwen2.5-3B-Instruct → trained run #148. judge: answer correct 0.20 → 0.02, −0.17 (−87%), beyond row noise, 2 rows better, 9 worse. f1 0.13 → 0.27, +0.14 (+107%), beyond row noise, 32 rows better, 9 worse. exact_match 0.00 → 0.00. Pass/fail rules from the default rule set: 0 cleared, 2 still failing, exact_match ≥ 0.40 and f1 ≥ 0.50 both still below threshold." loading="lazy" width="1218" height="421" />
+          <figcaption>Same run, two metrics in opposite directions. Token F1 rose 0.13 → 0.27 on 32 of 41 rows; the judged correctness fell 0.20 → 0.02.</figcaption>
+        </figure>
+        <p>
+          On the same 41 rows, token F1 (the overlap between the model's words and the answer
+          key's words) rose from 0.13 to 0.27, better on 32 rows and worse on 9, also beyond noise.
+          A pipeline whose headline metric is F1 would have called run #148 a success, a doubling.
+          What the model learned in 243 steps was how Pub 17 answers sound: the sentence shapes,
+          the "for federal income tax purposes", the section references. It did not learn which
+          way the facts point, and with 405 examples drawn from 150 of 1,064 passages, there was
+          no reasonable way it could have. This is why BrewSLM runs an answer judge on
+          long-answer tasks and puts <code>judge: answer correct</code> above F1 on the card: word
+          overlap measures style, and style is the easy part to learn.
+        </p>
+        <p>
+          The project's pass/fail rules failed the run too (<code>exact_match ≥ 0.40</code> and
+          <code>f1 ≥ 0.50</code> both still below threshold), but they would have failed the
+          retrieval system by the same rules; F1 is not the right bar for either. The judged lift
+          against the base model is the line that told the truth.
+        </p>
+
+        <h2 id="step-6">Step 6 · Results, and one click to retrieval</h2>
+        <p>
+          With both measurements in, <strong>Results</strong> on the fine-tune project states the
+          comparison directly: the passages run and the fine-tune were judged by the same model on
+          the same 41 rows, and passages win, 0.73 to 0.02. The Coach notice for it carries the same
+          <strong>Reroute to RAG</strong> action the flow card offered before training.
+        </p>
+        <p>
+          One click creates a sibling project, <em>US individual income tax Q&amp;A (IRS Pub 17)
+          (RAG)</em>, that serves the base model plus retrieved passages, with the cleaned corpus,
+          the answer key, the split and the retrieval setting from the sweep carried over. It ran
+          its own passages check on arrival and reproduced 0.17 → 0.73 exactly, keeping the
+          inherited setting since no arm beat it. Its Overview, Results and Ship pages describe a
+          retrieval system; nothing on it is trained.
+        </p>
+
+        <h2 id="step-7">Step 7 · Results → Try it, five questions of our own</h2>
+        <p>
+          The answer key was written by a model from passages it was shown, so the last check is
+          questions nobody generated. Five, typed into the RAG sibling's <strong>Try it</strong>
+          tab at temperature 0, about 4 seconds per answer on the GB10:
+        </p>
+        <div class="table-wrap">
+          <table class="compare-table">
+            <thead>
+              <tr><th>Question</th><th>Pub 17 says</th><th>RAG sibling said</th><th>Verdict</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Standard deduction for married filing jointly, 2025</td><td>$31,500</td><td>$34,700. It quoted a worked example for a couple both over 65; the "What's New" passage with $31,500 was not among the five retrieved.</td><td>Wrong</td></tr>
+              <tr><td>Child tax credit per child</td><td>$2,200</td><td>$2,200, and added the $1,700 additional child tax credit maximum.</td><td>Right</td></tr>
+              <tr><td>Due date of the 2025 Form 1040</td><td>April 15, 2026</td><td>April 15, 2026, plus the June 15 case for certain taxpayers abroad. True, and more than asked.</td><td>Right</td></tr>
+              <tr><td>Traditional IRA contribution limit at age 52</td><td>$8,000 (the $7,000 limit plus $1,000 at 50 or older)</td><td>Quoted "$7,000 ($8,000 if 50 or older)" without applying the age.</td><td>Partial</td></tr>
+              <tr><td>Is Treasury bond interest taxable federally?</td><td>Yes; exempt from state and local tax</td><td>Yes, and exempt from state and local tax.</td><td>Right</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          3 right, 1 partial, 1 wrong, which is in line with 28 / 4 / 9 on the answer key. The
+          last row is the question the fine-tune answered backwards. The first row is the same
+          kind of failure the retrieval judge counted during the check: the right passage exists,
+          and this time it was not among the five retrieved, so the model answered from the
+          nearest thing it had. Five questions prove nothing on their own; they are here so you
+          can see what 0.73 looks like in use.
+        </p>
+
+        <h2 id="pattern">This is a pattern, not a one-off</h2>
+        <p>
+          Six days before this run, the same shape played out on Canadian privacy-law documents
+          (projects 19–30 on the same machine, October 13): small fine-tunes scored at most 4 of
+          roughly 46 held-out questions correct, every time, across question writers, splits and
+          sizes; the base model with retrieved passages reached 0.53; the Coach rerouted to RAG.
+          Pub 17 is cleaner, longer and better written than those statutes, the question writer
+          was stronger and the retrieval sweep found a better setting, so retrieval did better.
+          The fine-tune did not.
+        </p>
+        <p>
+          The mechanism is not mysterious. A document-grounded Q&amp;A task asks the model to
+          return specific facts, numbers and page references from a 142-page source. A LoRA
+          fine-tune on a few hundred pairs sampled from a tenth of the passages teaches the
+          model what answers from this source look like; it does not install the other 900
+          passages, and it visibly degrades what the base model knew. Retrieval puts the relevant
+          600 characters in front of a model that can read. The pre-training check exists because
+          this outcome is common enough to be the default expectation for this task shape, and
+          cheap enough to measure before spending the GPU time: the question is never "can we
+          fine-tune this?" but "does fine-tuning beat the base model with its own documents?"
+        </p>
+
+        <h2 id="changed">What building this changed in BrewSLM</h2>
+        <p>Five fixes shipped during the project, all because this document surfaced them:</p>
+        <ul>
+          <li>
+            <strong>Cloud generation models with the project's saved key</strong> on the
+            Documents → Q&amp;A flow and the sample-documents writer (the Generation model picker).
+            The answer key is worth a better writer than the training pairs.
+          </li>
+          <li>
+            <strong>A new project from a brief keeps the base model you typed</strong>; the
+            recipe's suggestion only fills an empty field.
+          </li>
+          <li>
+            <strong>The flow spreads its passages over the whole document</strong>, evenly in
+            document order, instead of taking the first N.
+          </li>
+          <li>
+            <strong>Page-furniture removal in cleaning</strong> (Data → Prepare): 301 lines and
+            209 fused footers gone from Pub 17; 173 affected passages became 1.
+          </li>
+          <li>
+            <strong>Train anyway no longer re-runs the check</strong>. It used to repeat the whole
+            retrieval sweep, about an hour on a 41-row split, before training the same pairs on
+            the same split. It now trains.
+          </li>
+        </ul>
+
+        <h2 id="next">What's next</h2>
+        <p>
+          Look at the 9 wrong RAG answers again: 4 were retrieval misses, 5 had the right passage
+          in the prompt and the model misread it. The misses are reading errors more than
+          retrieval errors, and reading is something a fine-tune can plausibly teach. The next
+          attempt is to fine-tune the same small model <em>to read retrieved passages</em>: train
+          on prompts that include the passages, with the answer drawn from them, rather than on
+          bare question → answer pairs. It will be judged on the same 41 rows by the same judge,
+          with base + passages at 0.73 as the bar to clear. That run is in progress. If it clears
+          the bar we will say by how much; if it does not, we will say that.
+        </p>
+        <p>
+          The lesson that generalises: <strong>measure the base model with your documents before
+          you train on them, on held-out questions, with a judge that grades facts.</strong> A
+          doubling in F1 was sitting right there to be reported. It would have been a lie.
+        </p>
+
+        <h2 id="api">The same run from a script</h2>
+        <p>Every click above is an API call. Against a running BrewSLM:</p>
+        <pre class="terminal-block"><code># upload the PDF, clean it (page furniture removed by default)
+POST /api/projects/{id}/ingestion/upload                 multipart file=p17-2025.pdf
+POST /api/projects/{id}/cleaning/clean                   {"document_id": doc, "remove_page_furniture": true}
+# write pairs + answer key, split, run the pre-training check; stops when retrieval is ready
+POST /api/projects/{id}/flows/documents-to-qa            {"backend": "cloud:anthropic:claude-sonnet-5-5", "pairs_per_passage": 3}
+# what the two buttons do
+POST /api/projects/{id}/flows/documents-to-qa            {"reuse_existing": true, "passages_check": false, "train_if_retrieval_ready": true}   # Train anyway
+POST /api/projects/{id}/reroute-to-rag?async_job=true     {}                                                   # Reroute to RAG
+# the comparison the Results page reads
+GET  /api/projects/{id}/auto-rag/comparison
+GET  /api/projects/{id}/evaluation/summary</code></pre>
+        <p>
+          Publication 17 is a work of the United States government and in the public domain;
+          nothing in the project is anyone's personal data. The run ids in this post (#148 for the
+          fine-tune, #149 for its baseline) are the real ones, so the screenshots can be matched to
+          the numbers.
+        </p>
+
+        <div class="blog-post-footer">
+          <a class="btn btn-solid" href="./blog.html">Back to blog</a>
+          <a class="btn btn-ghost" href="./academy/with-brewslm/auto-rag-and-reroute.html">Auto-RAG and reroute, in the Academy</a>
+          <a class="btn btn-ghost" href="./academy/foundations/pretraining-vs-finetuning-vs-rag.html">Pretraining vs fine-tuning vs RAG</a>
+        </div>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p>
+        <a
+          class="footer-link"
+          href="https://github.com/TensorGreed/__SLM__/issues"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Support &amp; questions: GitHub Issues</a
+        >
+      </p>
+    </footer>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
