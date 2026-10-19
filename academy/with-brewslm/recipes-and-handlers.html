@@ -150,7 +150,7 @@
   batch: { per_device: 8, grad_accum: 2 }   # effective batch 16
   precision: bf16
   checkpoint_cadence: epoch</code></pre>
-        <p>Every field here is a concept you already own from Track 1 and built in Track 2: rank and alpha, target modules, the cosine schedule with warmup, effective batch size, bf16. The recipe just makes them a named, versioned, reusable object instead of inline arguments — so you can apply the same recipe across projects, or A/B two recipes on the same data.</p>
+        <p>Every field here is a concept you already own from Track 1 and built in Track 2: rank and alpha, target modules, the cosine schedule with warmup, effective batch size, bf16. The recipe just makes them a named, versioned, reusable object instead of inline arguments — so you can apply the same recipe across projects, or A/B two recipes on the same data. In the workspace the recipe is behind the <strong>Train</strong> form: the task shape is the read-only <em>Task</em> line (its <em>Change</em> link opens <strong>Train → More options → Task type</strong>), the knobs above live under <strong>More options → Model and hyperparameters</strong> and <strong>LoRA and advanced training</strong>, and whole-pipeline presets under <strong>More options → Pipeline presets</strong> (<code>/project/&lt;id&gt;/train?open=pipeline-presets</code>).</p>
 
         <div class="callout callout--note">
           <p class="callout__label">From Track 2</p>
@@ -167,7 +167,7 @@ AudioTranscriptHandler       SafetyHandler</code></pre>
         <p>Our sentiment task routes to the <code>ClassificationHandler</code>. Notice the design: handlers are named after <strong>task shapes</strong> (classification, extraction, alignment), never after one narrow domain. A new use case is "which existing shape is this, and what scoring mode?" — not "write a new handler." That generality is why the same eleven stages serve wildly different projects.</p>
 
         <h2>You choose the recipe; the handler does the rest</h2>
-        <p>So the division of labor is: <strong>the recipe</strong> carries the hyperparameters you tuned by hand, and <strong>the handler</strong> carries the tokenization, masking, and scoring you wrote by hand — selected automatically from the manifest. You pick a recipe (or accept the autopilot default) and the platform assembles a runnable train plan. Before it spends a GPU-hour on that plan, though, it runs preflight — the next lesson.</p>
+        <p>So the division of labor is: <strong>the recipe</strong> carries the hyperparameters you tuned by hand, and <strong>the handler</strong> carries the tokenization, masking, and scoring you wrote by hand — selected automatically from the manifest. You pick a recipe (or accept the default the Autopilot Planner proposes, under <strong>Settings → Tools</strong>) and the platform assembles a runnable train plan. Before it spends a GPU-hour on that plan, though, it runs preflight — the readiness line on the Train form and the <em>Checks</em> section under More options — the next lesson.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>

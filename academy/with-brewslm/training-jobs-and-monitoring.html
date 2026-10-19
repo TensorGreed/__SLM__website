@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Train: jobs, the bell, and the delta-from-baseline curve — BrewSLM Academy</title>
-    <meta name="description" content="Stage 08 runs your recipe as a watched background Job: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into a live curve plotted as delta from baseline, and named RunEvents capture completion or failure modes like training_oom and training_cancelled." />
+    <meta name="description" content="Stage 08 runs your recipe as a watched background Job from the Train form: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into each run's live dashboard (a warm-started run also gets a delta-from-baseline series), and named RunEvents capture completion or failure modes like training_oom and training_cancelled." />
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
     <meta name="author" content="TensorGreed" />
     <meta name="theme-color" content="#ffffff" />
@@ -12,12 +12,12 @@
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="BrewSLM" />
     <meta property="og:title" content="Train: jobs, the bell, and the delta-from-baseline curve — BrewSLM Academy" />
-    <meta property="og:description" content="Stage 08 runs your recipe as a watched background Job: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into a live curve plotted as delta from baseline, and named RunEvents capture completion or failure modes like training_oom and training_cancelled." />
+    <meta property="og:description" content="Stage 08 runs your recipe as a watched background Job from the Train form: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into each run's live dashboard (a warm-started run also gets a delta-from-baseline series), and named RunEvents capture completion or failure modes like training_oom and training_cancelled." />
     <meta property="og:url" content="https://brewslm.com/academy/with-brewslm/training-jobs-and-monitoring.html" />
     <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Train: jobs, the bell, and the delta-from-baseline curve — BrewSLM Academy" />
-    <meta name="twitter:description" content="Stage 08 runs your recipe as a watched background Job: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into a live curve plotted as delta from baseline, and named RunEvents capture completion or failure modes like training_oom and training_cancelled." />
+    <meta name="twitter:description" content="Stage 08 runs your recipe as a watched background Job from the Train form: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into each run's live dashboard (a warm-started run also gets a delta-from-baseline series), and named RunEvents capture completion or failure modes like training_oom and training_cancelled." />
     <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
     <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-YDPSHSVE1K"></script>
@@ -29,7 +29,7 @@
       {
         "@context": "https://schema.org", "@type": "LearningResource",
         "name": "Train: jobs, the bell, and the delta-from-baseline curve",
-        "description": "Stage 08 runs your recipe as a watched background Job: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into a live curve plotted as delta from baseline, and named RunEvents capture completion or failure modes like training_oom and training_cancelled.",
+        "description": "Stage 08 runs your recipe as a watched background Job from the Train form: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into each run's live dashboard (a warm-started run also gets a delta-from-baseline series), and named RunEvents capture completion or failure modes like training_oom and training_cancelled.",
         "url": "https://brewslm.com/academy/with-brewslm/training-jobs-and-monitoring.html",
         "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT9M", "isAccessibleForFree": true,
         "teaches": ["training Job", "NotificationBell", "delta-from-baseline curve", "training RunEvents"],
@@ -66,7 +66,7 @@
       "name": "What does the delta-from-baseline curve make explicit?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Whether and by how much you're beating the untuned base model"
+        "text": "Whether and by how much you're improving on the run's starting loss"
       }
     },
     {
@@ -127,7 +127,7 @@
         <header class="lesson-header">
           <span class="lesson-header__badge">Track 3 · With BrewSLM · Lesson 7</span>
           <h1>Train: jobs, the bell, and the delta-from-baseline curve</h1>
-          <p class="lesson-header__outcome">After this lesson you can launch training as a background Job, monitor it via the notification bell and the live loss curve, read the delta-from-baseline view, and recognize the named training failure events.</p>
+          <p class="lesson-header__outcome">After this lesson you can launch training from the <strong>Train</strong> form as a background Job, monitor it via the notification bell and the run's live dashboard, read the delta-from-baseline view, and recognize the named training failure events.</p>
           <div class="lesson-meta">
             <span><strong>Level:</strong> intermediate</span>
             <span><strong>Read time:</strong> ~9 min</span>
@@ -138,21 +138,28 @@
         <p>This is the stage you know best — it's <code>trainer.train()</code> from lesson 2.5. The difference is everything <em>around</em> the loop: it runs as a tracked Job, streams progress to a bell, and plots its loss against your baseline.</p>
 
         <h2>Launch — one click or one call</h2>
-        <p>From the Training Config page you launch with the chosen recipe; or scripted:</p>
-        <pre class="code-block"><code>$ curl -X POST localhost:8000/api/projects/1/training/run \
+        <p>In the workspace the launch is the <strong>Train</strong> page (<code>/project/&lt;id&gt;/train</code>): one form — base model, task, one run or three seeds, an optional run name, the readiness line — and the <strong>Train</strong> button, which opens a confirm dialog with the resolved config and an estimate before <em>Launch</em>. Everything else (epochs, LoRA, presets, cloud burst) waits under <em>More options</em>. Scripted, the same thing is two calls — create the experiment, then start it:</p>
+        <pre class="code-block"><code>$ curl -X POST localhost:8000/api/projects/1/training/experiments \
     -H 'Content-Type: application/json' \
-    -d '{"autopilot": true, "one_click": true}'</code></pre>
+    -d '{"name": "run-2026-10-18", "config": {}}'      # → {"id": 42, ...}
+$ curl -X POST localhost:8000/api/projects/1/training/experiments/42/start
+
+# or let the Autopilot pick the plan from plain-language intent:
+$ curl -X POST localhost:8000/api/projects/1/training/autopilot/one-click-run \
+    -H 'Content-Type: application/json' \
+    -d '{"intent": "classify support tickets by topic"}'</code></pre>
+        <figure class="academy-figure"><img src="../../assets/screens/workspace/train.png" alt="The Train page: two inline Coach warning notices above a form with Base model, Task, Seeds (One run / Three seeds), Run name, a readiness line reading Ready to train, 1 warning, and a Train button" loading="lazy" width="1600" height="1000" /><figcaption>Train — the one form. The runs list and each run's live dashboard sit below it.</figcaption></figure>
         <p>Training takes the prepared manifest + chosen recipe + checkpoint cadence, and produces checkpoints, per-step loss / eval traces, and a final adapter weights blob — the same outputs your Trainer wrote to <code>sft-out/</code>, now first-class records on the experiment.</p>
 
         <h2>It runs as a background Job</h2>
-        <p>Long-running work in BrewSLM is a <strong>Job</strong> persisted to a table. The top-bar <strong>notification bell</strong> polls <code>/api/jobs/active</code> every ~4 seconds and surfaces progress and outcome, so you don't sit watching a terminal. A watcher Job mirrors the experiment's progress into the bell, and the Job framework holds a strong reference to the running task so it can't be silently garbage-collected mid-run.</p>
+        <p>Long-running work in BrewSLM is a <strong>Job</strong> persisted to a table. The top-bar <strong>notification bell</strong> polls <code>/api/jobs/active</code> every ~4 seconds and surfaces progress and outcome, so you don't sit watching a terminal. A watcher Job mirrors the experiment's progress into the bell, and the Job framework holds a strong reference to the running task so it can't be silently garbage-collected mid-run. The run itself appears in the runs list under the Train form, with its live metrics; when it completes, the watcher starts the lift check that <strong>Results → Verdict</strong> reports.</p>
 
         <h2>The delta-from-baseline curve</h2>
-        <p>In Track 2 you read raw loss numbers scrolling past. BrewSLM plots the live loss curve as a <strong>delta from baseline</strong> — the untuned base model's loss on the same data is the zero line, and your run is drawn relative to it. That reframes the question from "is 0.58 good?" (which you can't judge in isolation) to "am I beating the baseline, and by how much?" — exactly the comparison Track 1's evaluation lesson insisted on, now live during training.</p>
+        <p>In Track 2 you read raw loss numbers scrolling past. On a run's dashboard BrewSLM plots the live loss curve, and for a <strong>warm-started</strong> run (one that continues from a checkpoint) it adds a <strong>delta from baseline</strong> series — the checkpoint's first recorded loss on your data is the zero line, and the run is drawn relative to it, so the marginal contribution of your rows is legible. That reframes the question from "is 0.58 good?" (which you can't judge in isolation) to "am I beating the starting point, and by how much?" — the comparison Track 1's evaluation lesson insisted on, now live during training. The base-model comparison proper comes after the run: the automatic lift check scores the base model and the fine-tune on the same test examples, and <strong>Results → Verdict</strong> (and the Overview's <em>Latest run</em> card) says whether the run beats its base and by how much.</p>
 
         <div class="callout callout--note">
           <p class="callout__label">From Track 2</p>
-          <p>Everything you learned about reading curves (lesson 2.6) applies here — falling-and-flattening is healthy, a rising eval trace is overfitting. The delta-from-baseline view just makes "better than doing nothing" the explicit y-axis.</p>
+          <p>Everything you learned about reading curves (lesson 2.6) applies here — falling-and-flattening is healthy, a rising eval trace is overfitting. The delta-from-baseline view just makes "better than where the checkpoint started" the explicit y-axis.</p>
         </div>
 
         <h2>Completion and failure are events</h2>
@@ -162,19 +169,19 @@ training_oom                   # ran out of GPU memory
 training_runtime_error         # crashed mid-run
 training_timeout               # exceeded the time budget
 training_cancelled             # you cancelled it</code></pre>
-        <p>Those map directly onto the failure modes you learned to diagnose by hand — but now they're typed, logged, and visible in the failure-cluster surface rather than buried in a stack trace. With a trained adapter and its traces recorded, the next stage asks the real question: is it good enough to ship? That's evaluation.</p>
+        <p>Those map directly onto the failure modes you learned to diagnose by hand — but now they're typed, logged, and visible in the run events and failure clusters under <strong>Ship → Monitor</strong> rather than buried in a stack trace. Cancelling a run from its row stops the training process itself. With a trained adapter and its traces recorded, the next stage asks the real question: is it good enough to ship? That's evaluation — <strong>Results</strong>.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>Stage 08 is your training loop, <strong>watched</strong>: a background Job with bell progress, a live <strong>delta-from-baseline</strong> curve that makes 'beating the base' the y-axis, and named RunEvents for completion and every failure mode.</p>
+          <p>Stage 08 is your training loop, <strong>watched</strong>: one Train form, a background Job with bell progress, a live dashboard per run (with a <strong>delta-from-baseline</strong> curve for warm starts), an automatic base-vs-fine-tune lift check on completion, and named RunEvents for completion and every failure mode.</p>
         </div>
 
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
-            <dt>training Job</dt><dd>The background, persisted task that runs stage 08; tracked so it can't be GC'd mid-run.</dd>
+            <dt>training Job</dt><dd>The background, persisted task that runs stage 08, launched from the Train form; tracked so it can't be GC'd mid-run.</dd>
             <dt>NotificationBell</dt><dd>Top-bar surface polling /api/jobs/active (~every 4s) for progress and outcome.</dd>
-            <dt>delta-from-baseline curve</dt><dd>The live loss plotted relative to the untuned base model's loss as the zero line.</dd>
+            <dt>delta-from-baseline curve</dt><dd>On a warm-started run's dashboard: the live loss plotted relative to the checkpoint's first recorded loss on your data as the zero line.</dd>
             <dt>training RunEvents</dt><dd>Named events: training (info) on completion; training_oom / _runtime_error / _timeout / _cancelled on failure.</dd>
           </dl>
         </section>
@@ -193,18 +200,18 @@ training_cancelled             # you cancelled it</code></pre>
       "It doesn't train"
     ],
     "answer": 1,
-    "explanation": "Training is a background Job; the bell polls /api/jobs/active for progress."
+    "explanation": "Training is a background Job launched from the Train form; the bell polls /api/jobs/active for progress."
   },
   {
     "q": "What does the delta-from-baseline curve make explicit?",
     "options": [
       "The GPU temperature",
-      "Whether and by how much you're beating the untuned base model",
+      "Whether and by how much you're improving on the run's starting loss",
       "The export format",
       "The token count"
     ],
     "answer": 1,
-    "explanation": "Baseline loss is the zero line; the curve shows lift over doing nothing."
+    "explanation": "The starting loss is the zero line; the curve shows the lift your rows add. The base-vs-fine-tune verdict itself is on Results → Verdict."
   },
   {
     "q": "A run exhausts GPU memory. Which RunEvent fires?",

@@ -31,7 +31,7 @@
       content="From an empty project to a Hugging Face model that tags PCI / GDPR / HIPAA / custom data with exact offsets — every step in BrewSLM, every number real."
     />
     <meta property="article:published_time" content="2026-10-14" />
-    <meta property="article:modified_time" content="2026-10-14" />
+    <meta property="article:modified_time" content="2026-10-18" />
     <meta name="twitter:image" content="https://brewslm.com/assets/blog/sensitive-data/02-synthetic-span-tools.png" />
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-YDPSHSVE1K"></script>
@@ -46,7 +46,7 @@
         "headline": "Build a sensitive-data detector from zero, with no labelled data",
         "description": "A step-by-step build of a model that finds, classifies and locates PCI, GDPR, HIPAA and custom sensitive data with exact character offsets, starting from an empty BrewSLM project and a local Ollama.",
         "datePublished": "2026-10-14",
-        "dateModified": "2026-10-14",
+        "dateModified": "2026-10-18",
         "author": { "@type": "Person", "name": "TensorGreed", "url": "https://github.com/TensorGreed" },
         "publisher": {
           "@type": "Organization",
@@ -92,6 +92,10 @@
             <a class="inline-link" href="https://ollama.com" target="_blank" rel="noopener noreferrer">Ollama</a>
             and, optionally, an Anthropic API key. This is the whole build in BrewSLM, one screen at
             a time, with every number from a real run — including the ones that went down.
+          </p>
+          <p class="form-note">
+            <strong>Updated 2026-10-18:</strong> click paths and screenshots show the new workspace
+            (Data / Train / Results / Ship). The runs, numbers and dates are unchanged.
           </p>
         </header>
 
@@ -183,12 +187,12 @@
         <p>
           A span model learns from text that contains the things it should find. If you can't
           share real tickets or clinical notes — usually the case for exactly this kind of model —
-          let a model write realistic, <em>invented</em> ones. The first card on the
-          <strong>Data</strong> tab does this.
+          let a model write realistic, <em>invented</em> ones. The first card on
+          <strong>Data → Sources</strong> does this.
         </p>
         <figure class="blog-figure">
-          <img src="./assets/blog/sensitive-data/01-seed-documents.png" alt="The Write sample documents card on the Data tab: what the documents must contain, genres one per line, document count and length" loading="lazy" />
-          <figcaption>Data tab → <em>No documents yet? Write sample documents</em>, with <em>Multi-page, with headers and footers</em> ticked. Your local model runs first; a cloud model is used only if you pin one.</figcaption>
+          <img src="./assets/blog/sensitive-data/01-seed-documents.png" alt="The No documents yet? Write sample documents card, opened: a text area for what the documents must contain, Genres one per line, Documents 60, Words each 160, a Layout select reading Multi-page, with headers and footers, and the buttons Check against benchmarks and Write 60 documents" loading="lazy" />
+          <figcaption><strong>Data → Sources</strong> → <em>No documents yet? Write sample documents</em>, with <em>Layout</em> set to <em>Multi-page, with headers and footers</em>. Your local model runs first; a cloud model is used only if you pin one. <em>Check against benchmarks</em> makes sure the prompt carries no benchmark gold value.</figcaption>
         </figure>
         <ul>
           <li>
@@ -205,10 +209,10 @@
           </li>
           <li><strong>Documents</strong> and <strong>words each</strong>: we used 80 × 170.</li>
           <li>
-            <strong>Multi-page, with headers and footers</strong>: tick it if your real documents
-            have page furniture (letterheads, "Page 2 of 5", confidentiality lines). We added a
-            paged batch later — see <a class="inline-link" href="#step-12">Step 12</a> — and you
-            can tick it from the start.
+            <strong>Layout</strong>: choose <em>Multi-page, with headers and footers</em> if your
+            real documents have page furniture (letterheads, "Page 2 of 5", confidentiality
+            lines). We added a paged batch later — see <a class="inline-link" href="#step-12">Step 12</a>
+            — and you can choose it from the start.
           </li>
         </ul>
         <p>
@@ -227,11 +231,12 @@
 
         <h2 id="step-3">Step 3 · Pick the span-extraction recipe</h2>
         <p>
-          From the recipe picker choose <strong>Structured Span Extractor</strong>
+          On <strong>Train</strong>, the <em>Task</em> row's <em>Change</em> (or <em>More options →
+          Task type</em>) opens the recipe picker; choose <strong>Structured Span Extractor</strong>
           (<code>span-extraction</code>). A row is <code>{text, entities: [{type, start, end,
           text}]}</code>, and evaluation uses the strict <code>span_set</code> scorer: a hit needs the
-          same type, start and end. On the <strong>Synthetic</strong> tab, set <strong>Generation mode</strong>
-          to <em>PII / NER span extraction</em>. (Once the project has a split, the tab opens in span
+          same type, start and end. On <strong>Data → Generate</strong>, set <strong>Generation mode</strong>
+          to <em>PII / NER span extraction</em>. (Once the project has a split, the step opens in span
           mode by itself.)
         </p>
 
@@ -251,8 +256,8 @@
           "model error" when one model's labels train and another's score.
         </p>
         <figure class="blog-figure">
-          <img src="./assets/blog/sensitive-data/02-synthetic-span-tools.png" alt="Synthetic tab in span mode: the entity type list, the Refine weak types / Write answer key / Relabel training rows buttons, and the labelling conventions editor" loading="lazy" />
-          <figcaption>Synthetic tab, span mode: the entity-type list, the three span tools, and <em>Labelling conventions</em> — one line per type.</figcaption>
+          <img src="./assets/blog/sensitive-data/02-synthetic-span-tools.png" alt="Data → Generate with Generation Mode set to PII / NER span extraction, Provider Local (Ollama), model gemma4: the Entity types field with Refine weak types, the span tools (Check prompt against benchmarks, Write answer key with ollama, Relabel training rows with ollama, Relabel test examples with ollama, Label document passages with ollama, Label whole documents with ollama, Compliance bundles) and the Labelling conventions editor open, one line per type, with Save conventions and Add a type" loading="lazy" />
+          <figcaption><strong>Data → Generate</strong>, mode <em>PII / NER span extraction</em>: the entity-type list, the span tools (the answer-key, relabel and passage-labelling buttons used in Steps 10–12) and <em>Labelling conventions</em> open — one line per type.</figcaption>
         </figure>
         <p>
           Open <strong>Labelling conventions</strong> and write one line per type: what counts
@@ -272,7 +277,7 @@ person_name:   a private individual's name, including in greetings and signature
         </p>
 
         <h2 id="step-5">Step 5 · Generate the labelled rows</h2>
-        <p>Still on the Synthetic tab, span mode:</p>
+        <p>Still on <strong>Data → Generate</strong>, span mode:</p>
         <ul>
           <li>
             <strong>Provider</strong>: Local (Ollama). Labelling runs through BrewSLM's synth
@@ -322,7 +327,7 @@ person_name:   a private individual's name, including in greetings and signature
 
         <h2 id="step-6">Step 6 · Split</h2>
         <p>
-          <strong>Dataset Prep → split</strong> 80 / 10 / 10. Ours came out 228 / 28 / 29. The test
+          <strong>Data → Split</strong>: 80 / 10 / 10. Ours came out 228 / 28 / 29. The test
           examples are what every score in this post is measured on.
         </p>
         <p>
@@ -342,8 +347,8 @@ person_name:   a private individual's name, including in greetings and signature
           mapping and are exact by construction.
         </p>
         <figure class="blog-figure">
-          <img src="./assets/blog/sensitive-data/04-training-task-type.png" alt="Task Type set to Token classification (spans with exact offsets)" loading="lazy" />
-          <figcaption>Training config → <em>Advanced</em> → <em>Power Tools</em> → <strong>Task Type: Token classification</strong>.</figcaption>
+          <img src="./assets/blog/sensitive-data/04-training-task-type.png" alt="The Model and hyperparameters section on Train: Training Mode SFT, Runtime External Command via Celery, Epochs, Batch Size, Learning Rate, Optimizer Paged AdamW (8-bit), Task Type set to Token classification (spans with exact offsets), and OCR-noise copies (Off, 1 copy per row) beside it" loading="lazy" />
+          <figcaption><strong>Train → More options → Model and hyperparameters</strong> → <strong>Task Type: Token classification (spans with exact offsets)</strong>, with <em>OCR-noise copies</em> beside it (see <a class="inline-link" href="#limits">limits</a>).</figcaption>
         </figure>
         <ul>
           <li>
@@ -366,7 +371,7 @@ person_name:   a private individual's name, including in greetings and signature
 
         <h2 id="step-8">Step 8 · Evaluate this run</h2>
         <p>
-          On the <strong>Eval</strong> tab, click <strong>Evaluate this run</strong> (it also runs by
+          On <strong>Results → Verdict</strong>, click <strong>Evaluate this run</strong> (it also runs by
           itself when training finishes; the bell reports it). A token-classification run is scored
           on its own: there is no "better than the base model" here, because its base is an encoder
           with an untrained head. BrewSLM tags the raw test texts with the head (no generation) and
@@ -375,7 +380,7 @@ person_name:   a private individual's name, including in greetings and signature
         </p>
         <figure class="blog-figure">
           <img src="./assets/blog/sensitive-data/05-eval-span.png" alt="Eval card: Span F1 0.85 against the answer key, written by Claude Haiku 4.5; test examples F1 0.92; weakest types; where it still fails" loading="lazy" />
-          <figcaption>Run #62 after Step 12. Once a second-opinion answer key exists (Step 10) the card leads with it. The first failure is the title convention from Step 11: the key says "Ms. Olivia Reed", the model "Olivia Reed".</figcaption>
+          <figcaption>Run #62 after Step 12, as the card looked before the 2026-10 revamp — kept as the record of that run. The same card now lives on <strong>Results → Verdict</strong>. Once a second-opinion answer key exists (Step 10) the card leads with it. The first failure is the title convention from Step 11: the key says "Ms. Olivia Reed", the model "Olivia Reed".</figcaption>
         </figure>
         <p>
           The first run (#53) scored <strong>P 0.88 / R 0.92 / F1 0.90</strong> on its 29 test
@@ -411,14 +416,14 @@ person_name:   a private individual's name, including in greetings and signature
           result is kept as the project's <code>gold_test</code> set.
         </p>
         <p>
-          <strong>Giving BrewSLM the key:</strong> on the Synthetic tab set <strong>Provider</strong> to
+          <strong>Giving BrewSLM the key:</strong> on <strong>Data → Generate</strong> set <strong>Provider</strong> to
           Anthropic, paste the key into <strong>API Key</strong> and click <strong>Save key to this
           project</strong>. It is stored encrypted on the project, the field shows "✓ saved on
           project", and the key is never shown back. Don't paste it into a chat or a ticket.
         </p>
         <figure class="blog-figure">
-          <img src="./assets/blog/sensitive-data/03-save-key.png" alt="Synthetic tab provider row: Anthropic selected, model claude-haiku-4-5, the API key field marked saved on project, and a Replace the saved key button" loading="lazy" />
-          <figcaption>Provider Anthropic, key saved on the project. With a fresh key the button reads <em>Save key to this project</em>.</figcaption>
+          <img src="./assets/blog/sensitive-data/03-save-key.png" alt="The provider row on Data → Generate: Provider Anthropic (saved), Model Name claude-haiku-4-5-20251001, and the API Key field marked saved on project with the placeholder (using saved key)" loading="lazy" />
+          <figcaption><strong>Data → Generate</strong>: provider <em>Anthropic (saved)</em>, model <code>claude-haiku-4-5-20251001</code>, API Key "✓ saved on project" — the field reads <em>(using saved key)</em>. With a fresh key the button reads <em>Save key to this project</em>.</figcaption>
         </figure>
         <p>
         </p>
@@ -508,19 +513,19 @@ person_name:   a private individual's name, including in greetings and signature
         </p>
         <ol>
           <li>
-            <strong>Write sample documents</strong> with <strong>Multi-page, with headers and
-            footers</strong> ticked. We wrote 40 more (7 minutes): 129 passages, 83 of them with
-            page lines.
+            <strong>Write sample documents</strong> (Data → Sources) with <em>Layout</em> set to
+            <strong>Multi-page, with headers and footers</strong>. We wrote 40 more (7 minutes):
+            129 passages, 83 of them with page lines.
           </li>
           <li>
-            <strong>Label document passages with</strong> your model (Synthetic tab). The span
+            <strong>Label document passages with</strong> your model (Data → Generate). The span
             generator in Step 5 rewrites passages into new snippets, which drops the layout; this
             labels the passages <em>as they are</em>, under your conventions. 128 passages, 708
             entities, 5 minutes. They land in the review queue as <code>passage_labels</code> —
             accept them there (pending rows never train).
           </li>
           <li>
-            Split with <strong>Keep the current test examples</strong>, and train.
+            Split (Data → Split) with <strong>Keep the current test examples</strong>, and train.
           </li>
         </ol>
         <div class="table-wrap">
@@ -542,7 +547,8 @@ person_name:   a private individual's name, including in greetings and signature
 
         <h2 id="step-13">Step 13 · Export and use it</h2>
         <p>
-          <strong>Export → Hugging Face</strong> packages the run's <code>model/</code> folder as
+          <strong>Ship → Package</strong> → <em>New export</em>, format <strong>Hugging Face</strong>,
+          packages the run's <code>model/</code> folder as
           is (there is no adapter to merge). It is 744 MB in fp32 and runs anywhere Transformers
           runs:
         </p>
@@ -634,7 +640,7 @@ ticket_id        152-160  0.95  'TCK-5531'</code></pre>
           <li>Refine passes narrowed the type list, leaving phones and emails unlabelled.</li>
           <li>The second-opinion key lost batches to replies cut off mid-JSON. Replies are now compact, and a failed batch is split rather than re-sent.</li>
           <li>Training, evaluation and the exported tokenizer all stopped at 512 tokens, and the export claimed an unlimited length, so <code>stride</code> did nothing.</li>
-          <li>"Evaluate this run" skipped token-classification runs; there was no UI to save the Anthropic key on the Synthetic tab; and rows written without an id could never be accepted from the review queue, so they silently never trained.</li>
+          <li>"Evaluate this run" skipped token-classification runs; there was no UI to save the Anthropic key on the synthetic-data step (now Data → Generate); and rows written without an id could never be accepted from the review queue, so they silently never trained.</li>
         </ul>
 
         <h2 id="limits">Limits, and what's next</h2>
@@ -648,7 +654,7 @@ ticket_id        152-160  0.95  'TCK-5531'</code></pre>
             <strong>Scanned documents.</strong> Long and paged text works (Step 12). Under simulated
             OCR noise (characters swapped for look-alikes: O→0, l→1, S→5, e→c…) the multi-page
             F1 holds at 2% of those characters (−0.01), loses about 0.07 at 5% and 0.15 at 10%.
-            <strong>OCR-noise copies</strong> (Power Tools, for token classification) trains on noisy
+            <strong>OCR-noise copies</strong> (Train → More options → Model and hyperparameters, for token classification) trains on noisy
             copies of your rows: with one copy at up to 10%, F1 at 10% noise went 0.69 → 0.79 and at
             20% 0.51 → 0.75, for 0.02 on clean text. Turn it on when your documents come from scans.
             Real scans also break words and lines, which this doesn't simulate.

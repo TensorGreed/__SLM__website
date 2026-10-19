@@ -138,27 +138,28 @@
         <p>Track 0 taught the choice between fine-tuning and retrieval; Track 2 lesson 2.7 ended with "if there's no lift, revisit the data." But sometimes the honest answer is that the task is knowledge-bound, not behavior-bound — no amount of fine-tuning teaches facts the model should be <em>looking up</em>. BrewSLM has surfaces for exactly that.</p>
 
         <h2>The post-eval decision engine</h2>
-        <p>After evaluation, a <strong>decision engine</strong> reads the results and the failure clusters and recommends a next move. If the failures look like missing knowledge (the model is fluent but wrong on facts) rather than missing behavior, it can recommend <strong>retrieval</strong> instead of another training round — the platform telling you, with evidence, that you're holding the wrong tool.</p>
+        <p>After evaluation, a <strong>decision engine</strong> reads the results and the failure clusters and recommends a next move. If the failures look like missing knowledge (the model is fluent but wrong on facts) rather than missing behavior, it can recommend <strong>retrieval</strong> instead of another training round — the platform telling you, with evidence, that you're holding the wrong tool. You meet the recommendation as a Coach notice at the top of <strong>Results</strong> and as the reroute panel on <strong>Results → Failures</strong>, which stays hidden until there is a failing eval to act on.</p>
 
         <h2>Auto-RAG — retrieval bolted onto your model</h2>
-        <p>At training completion, the auto-RAG service builds a <strong>BM25 index</strong> over your corpus. Then the playground's chat path <strong>prepends the top-K retrieved passages</strong> to the prompt before generation, so the model answers with relevant context in front of it. You can compare side by side — same model, with retrieval vs without — and there's a UI-triggered comparison Job for it:</p>
+        <p>At training completion, the auto-RAG service builds a <strong>BM25 index</strong> over your corpus. Then the chat on <strong>Results → Try it</strong> <strong>prepends the top-K retrieved passages</strong> to the prompt before generation, so the model answers with relevant context in front of it. You can compare side by side — same model, with retrieval vs without — from the <em>Auto-RAG comparison</em> card on <strong>Results → Compare</strong>, which starts the same harness as a background Job (tracked in the bell) and shows the two arms as cards:</p>
         <pre class="code-block"><code>$ python -m scripts.auto_rag_ab --project 1
-# builds/loads the BM25 index, runs the gold set with and without
+# builds/loads the BM25 index, runs the held-out split with and without
 # top-K retrieval, and reports the metric delta from retrieval</code></pre>
+        <figure class="academy-figure"><img src="../../assets/screens/workspace/results-compare.png" alt="The Results page on the Compare tab: a hint to pick a run under Verdict and press 'Compare to #…', an External benchmarks card with '+ Add a benchmark', a Run picker showing the baseline and the trained run, and the top of an Auto-RAG comparison card." loading="lazy" width="1600" height="1000" /><figcaption>Results → Compare: external benchmarks, the run picker, then the <em>Auto-RAG comparison</em> card that runs the with-vs-without-retrieval check.</figcaption></figure>
         <div class="callout callout--note">
           <p class="callout__label">From Track 1</p>
           <p>BM25 is keyword retrieval — the lexical baseline from the foundations track. Auto-RAG uses it because it's fast, dependency-light, and strong for many tasks; the point is to test whether <em>any</em> retrieval helps before investing in heavier machinery.</p>
         </div>
 
         <h2>Reroute-to-RAG — a retrieval-first sibling</h2>
-        <p>If retrieval is clearly the right architecture, <strong>reroute-to-RAG</strong> goes further: it clones the project into a sibling with <code>runtime_config.rag_first=True</code>. That sibling's playground uses the <strong>base model plus retrieval — no LoRA adapter at all</strong>. You keep the original fine-tuning project intact for comparison, and the new project pursues the retrieval path cleanly. The clone runs as a background Job (the <code>reroute_to_rag</code> kind), so it's tracked in the bell like everything else.</p>
+        <p>If retrieval is clearly the right architecture, <strong>reroute-to-RAG</strong> goes further: it clones the project into a sibling with <code>runtime_config.rag_first=True</code>. That sibling's <strong>Results → Try it</strong> chat uses the <strong>base model plus retrieval — no LoRA adapter at all</strong>. You keep the original fine-tuning project intact for comparison, and the new project pursues the retrieval path cleanly. The clone runs as a background Job (the <code>reroute_to_rag</code> kind), so it's tracked in the bell like everything else.</p>
 
         <div class="callout callout--warning">
           <p class="callout__label">The honest-metrics point</p>
           <p>The decision engine recommending RAG is not a failure of your fine-tune — it's the platform refusing to let you grind epochs against a problem training can't solve. Knowing <em>when not to fine-tune</em> is as valuable as knowing how, and it's the through-line from Track 0's pretraining-vs-fine-tuning-vs-RAG lesson.</p>
         </div>
 
-        <p>Whichever path clears the gates — a fine-tuned adapter or a retrieval-first project — the last stage is getting it out into the world. Export, deploy, and the assistant that's been guiding the whole flow are the final lesson.</p>
+        <p>Whichever path clears the pass/fail rules — a fine-tuned adapter or a retrieval-first project — the last stage is getting it out into the world. Export, deploy, and the assistant that's been guiding the whole flow are the final lesson.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
@@ -169,7 +170,7 @@
           <h2>Key terms</h2>
           <dl>
             <dt>post-eval decision engine</dt><dd>Reads eval results + clusters and recommends the next move — including retrieval over more training.</dd>
-            <dt>auto-RAG</dt><dd>Builds a BM25 index at training completion and prepends top-K retrieved passages at inference.</dd>
+            <dt>auto-RAG</dt><dd>Builds a BM25 index at training completion and prepends top-K retrieved passages at inference (Results → Try it; the comparison on Results → Compare).</dd>
             <dt>BM25</dt><dd>Keyword (lexical) retrieval — fast and dependency-light; the retrieval baseline.</dd>
             <dt>reroute-to-RAG</dt><dd>Clones the project into a retrieval-first sibling (rag_first=True) using base model + retrieval, no LoRA.</dd>
             <dt>knowledge-bound vs behavior-bound</dt><dd>Whether failures are missing facts (use retrieval) or missing behavior (fine-tune).</dd>
@@ -245,7 +246,7 @@
 
         <nav class="lesson-nav" aria-label="Lesson navigation">
           <a href="eval-packs-and-failure-clusters.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Evaluate: eval packs, gates, failure clusters & remediation</span></a>
-          <a href="export-deploy-coach.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Capstone B: export, deploy & Coach Mode end-to-end</span></a>
+          <a href="export-deploy-coach.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Capstone B: export, deploy & Coach end-to-end</span></a>
         </nav>
       </article>
     </div>

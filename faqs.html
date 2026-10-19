@@ -85,7 +85,7 @@
           <details class="faq-item reveal">
             <summary>Can I run BrewSLM without a GPU?</summary>
             <p>
-              Ingest, eval, export, and the wizard work fine CPU-only. Training is the only
+              Ingest, eval, export, and the workspace work fine CPU-only. Training is the only
               stage that effectively needs CUDA. The autopilot will refuse to start a real
               training run on CPU; you can override with the simulation backend
               (<code>TRAINING_BACKEND=simulate</code>) to walk the pipeline end-to-end without a
@@ -114,7 +114,8 @@
             <summary>The introspector picked the wrong mapper. How do I override?</summary>
             <p>
               Two paths. CLI: pass <code>--mapper &lt;id&gt;</code> + <code>--map-json '{…}'</code>
-              instead of <code>--auto</code>. UI: in the wizard's Map step, the mapper dropdown
+              instead of <code>--auto</code>. UI: in the import wizard's Map step (<strong>Data →
+              Sources</strong> → <em>Import dataset</em>), the mapper dropdown
               lists every registered mapper alongside the proposal; pick a different one and
               edit the field-map JSON before previewing. The deterministic sniffer is one
               input to the proposal, not the final word.
@@ -131,7 +132,7 @@
             </p>
           </details>
           <details class="faq-item reveal">
-            <summary>Why does the wizard block me below 80% confidence?</summary>
+            <summary>Why does the import wizard block me below 80% confidence?</summary>
             <p>
               Because silent auto-mapping is the single most damaging failure mode for a tool
               like this — a bad mapper picks the wrong fields, the trainer learns the wrong
@@ -144,7 +145,7 @@
             <summary>What happens to rejected rows?</summary>
             <p>
               They're grouped by stable reason code (<code>missing_text</code>,
-              <code>label_not_allowed</code>, <code>length_mismatch</code>, etc.). The wizard
+              <code>label_not_allowed</code>, <code>length_mismatch</code>, etc.). The import wizard
               renders the breakdown; you tick which categories to bulk-drop. Dropped categories
               still appear in the audit row's <code>rejection_counts</code> — the data
               accounting stays honest.
@@ -164,8 +165,9 @@
             <p>
               Anything HuggingFace can load via <code>transformers</code> in the size range
               BrewSLM targets — Llama 3, Qwen 2 / 2.5, Mistral, Phi, Gemma, etc. The autopilot
-              picks from a curated shortlist by task; you can pin a specific model via the
-              Training Config page.
+              picks from a curated shortlist by task; you can pin a specific model in the
+              <strong>Base model</strong> field on <strong>Train</strong> (<em>Browse</em> opens the
+              base model registry).
             </p>
           </details>
           <details class="faq-item reveal">
@@ -182,8 +184,9 @@
           <details class="faq-item reveal">
             <summary>Can I set custom promotion gates?</summary>
             <p>
-              Yes. The eval pack carries the gate policy. Required gates block; optional gates
-              allow degradation within tolerance. See
+              Yes. In the UI they are the <strong>pass/fail rules</strong> on <strong>Results →
+              Verdict</strong>; the rule set (the eval pack) carries the policy. Required rules
+              block; optional rules allow degradation within tolerance. See
               <code>app.services.evaluation_service</code> for the gate evaluation and
               <code>app.models.experiment</code> for what's stored.
             </p>
@@ -218,10 +221,12 @@
           <details class="faq-item reveal">
             <summary>What about secrets — HF tokens, Kaggle creds, teacher API keys?</summary>
             <p>
-              Stored under the Project → Secrets surface with encrypted-at-rest values. The
-              audit log records that a secret was used, not the value. CLI / API flows read
-              from env vars; the wizard surfaces an inline auth banner when a source needs
-              credentials that aren't present.
+              Saved on the project, encrypted at rest, from the step that uses them:
+              <strong>Data → Sources</strong> for Hugging Face / Kaggle credentials,
+              <strong>Data → Generate</strong> for a cloud teacher key (<em>Save key to this
+              project</em>). The audit log records that a secret was used, not the value. CLI /
+              API flows read from env vars; the import wizard surfaces an inline auth banner when
+              a source needs credentials that aren't present.
             </p>
           </details>
           <details class="faq-item reveal">

@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BrewSLM Creation Paths | CLI, Python API, and Wizard for SLM Fine-Tuning</title>
+    <title>BrewSLM Creation Paths | CLI, Python API, and the Workspace for SLM Fine-Tuning</title>
     <meta
       name="description"
-      content="Three ways to fine-tune a base model on custom data with BrewSLM: a CLI for shell-first ML teams, a Python/API surface for integrations, and a Wizard for guided local workflows."
+      content="Three ways to fine-tune a base model on custom data with BrewSLM: a CLI for shell-first ML teams, a Python/API surface for integrations, and the workspace UI — + New Project or a starter project, then Data, Train, Results, Ship."
     />
     <meta
       name="robots"
@@ -17,18 +17,18 @@
     <link rel="canonical" href="https://brewslm.com/creation-paths.html" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="BrewSLM" />
-    <meta property="og:title" content="BrewSLM Creation Paths | CLI, Python API, and Wizard for SLM Fine-Tuning" />
+    <meta property="og:title" content="BrewSLM Creation Paths | CLI, Python API, and the Workspace for SLM Fine-Tuning" />
     <meta
       property="og:description"
-      content="CLI, Python API, or Wizard UI: pick the BrewSLM surface that fits how your engineering team fine-tunes and evaluates models."
+      content="CLI, Python API, or the workspace UI: pick the BrewSLM surface that fits how your engineering team fine-tunes and evaluates models."
     />
     <meta property="og:url" content="https://brewslm.com/creation-paths.html" />
     <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="BrewSLM Creation Paths | CLI, Python API, and Wizard for SLM Fine-Tuning" />
+    <meta name="twitter:title" content="BrewSLM Creation Paths | CLI, Python API, and the Workspace for SLM Fine-Tuning" />
     <meta
       name="twitter:description"
-      content="CLI, Python API, or Wizard UI: pick the BrewSLM surface that fits how your engineering team fine-tunes and evaluates models."
+      content="CLI, Python API, or the workspace UI: pick the BrewSLM surface that fits how your engineering team fine-tunes and evaluates models."
     />
     <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
@@ -61,7 +61,7 @@
         <h1>Three ways to fine-tune a base model on custom data.</h1>
         <p class="page-sub">
           BrewSLM exposes the same small language model training workflow through a CLI, an
-          HTTP/Python API, and a guided Wizard UI. Pick the surface that matches how your team
+          HTTP/Python API, and the workspace UI. Pick the surface that matches how your team
           works, not a different feature tier.
         </p>
       </section>
@@ -83,9 +83,9 @@
             <p class="card-note"><strong>First milestone:</strong> a service-triggered import + run flow with task-id polling.</p>
           </article>
           <article class="decision-card reveal">
-            <h3>Wizard UI</h3>
-            <p>You're a newbie, a non-shell user, or just want to <em>see</em> what's happening. Inline column rundown, ranked hypotheses, bulk-drop, audit log.</p>
-            <p class="card-note"><strong>First milestone:</strong> a complete import in three clicks, no flags.</p>
+            <h3>The workspace</h3>
+            <p>You're new to this, a non-shell user, or just want to <em>see</em> what's happening. Six places per project — Overview, Data, Train, Results, Ship, Settings — with inline Coach notices where they apply.</p>
+            <p class="card-note"><strong>First milestone:</strong> a starter project trained and scored without typing a flag.</p>
           </article>
         </div>
       </section>
@@ -184,32 +184,93 @@
 
       <section class="section">
         <div class="section-head reveal">
-          <p class="eyebrow">Wizard UI</p>
-          <h2>Three clicks. Same pipeline. No flags.</h2>
+          <p class="eyebrow">The workspace</p>
+          <h2>Start a project, land on its Overview</h2>
+          <p>
+            The projects home has one button and one shelf. <strong>+ New Project</strong> asks
+            for a name and "What problem do you want this model to solve?" and sets the
+            defaults from the answer (base model, task profile, output schema — all changeable
+            later; manifest import sits under <em>Advanced options</em>). Below it, <strong>Or begin
+            with a starter project</strong>: three quick demos with data and an answer key already in
+            place (<em>Demo · PII / PCI Detector</em>, <em>Demo · Sentiment classifier</em>,
+            <em>Demo · Support FAQ</em> — "Open demo") and a row of starters with data and an
+            answer key ("Use this starter"). Every path lands on the project's Overview.
+          </p>
         </div>
+        <figure class="blog-figure reveal">
+          <img src="./assets/screens/workspace/projects.png" alt="The projects home: a search box with All / Draft / Active / Completed filters, a + New Project button top right, Starter projects — quick demos (Demo · PII / PCI Detector, Demo · Sentiment classifier, Demo · Support FAQ, each with Open demo), and Starter projects: with data and answer key (Agent Tool-Call Fine-Tune, Contract Clause Extractor, Data-to-SQL Assistant, Email/Chat Tone Adapter, each with Use this starter)" loading="lazy" width="1600" height="1000" />
+          <figcaption>The projects home: <strong>+ New Project</strong>, or begin with a starter project.</figcaption>
+        </figure>
+        <figure class="blog-figure reveal">
+          <img src="./assets/screens/workspace/new-project.png" alt="The New BrewSLM Project dialog: Project Name, a text area asking What problem do you want this model to solve?, a note that BrewSLM will analyze it and set sensible defaults, a collapsed Advanced options section, and Cancel / Create project buttons" loading="lazy" width="1600" height="1000" />
+          <figcaption><strong>+ New Project</strong>: a name and a brief in plain words. Advanced options holds the manifest import.</figcaption>
+        </figure>
         <div class="cluster-grid">
           <article class="cluster-card reveal">
-            <h3>Step 1 — Source</h3>
+            <h3>Data — five steps</h3>
             <ul class="capability-list">
-              <li>Source dropdown (jsonl / csv / hf / kaggle).</li>
-              <li>Per-source helper text + auth banner for gated datasets.</li>
-              <li>Click <em>Introspect</em>.</li>
+              <li><strong>Sources</strong>: upload files, <em>Import dataset (auto-mapping)</em>, or let a model write sample documents.</li>
+              <li><strong>Prepare</strong>: clean and chunk, redact PII &amp; secrets.</li>
+              <li><strong>Labels</strong>: confirm the task shape, build the answer key.</li>
+              <li><strong>Generate</strong>: synthetic rows (Q&amp;A, multi-turn, spans) from a local or cloud model.</li>
+              <li><strong>Split</strong>: train / validation / test; keep the test examples on later splits.</li>
             </ul>
           </article>
           <article class="cluster-card reveal">
-            <h3>Step 2 — Map</h3>
+            <h3>Train, then Results</h3>
+            <ul class="capability-list">
+              <li><strong>Train</strong> is one form: base model, task, one run or three seeds, run name, <strong>Train</strong>. Hyperparameters, LoRA, checks and presets are under <em>More options</em>.</li>
+              <li><strong>Results → Verdict</strong>: did it beat its base model, and did the pass/fail rules pass.</li>
+              <li><strong>Failures</strong> / <strong>Compare</strong> / <strong>Try it</strong>: where it fails, how it compares, and a chat with the run.</li>
+            </ul>
+          </article>
+          <article class="cluster-card reveal">
+            <h3>Ship</h3>
+            <ul class="capability-list">
+              <li><strong>Package</strong>: a new export (Hugging Face, GGUF, ONNX, Docker…) and the Releases table.</li>
+              <li><strong>Publish</strong>: a completed Hugging Face export to the Hub.</li>
+              <li><strong>Deploy</strong> / <strong>Monitor</strong>: serve plans and served versions; run events, failure clusters, drift.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head reveal">
+          <p class="eyebrow">Importing in the workspace</p>
+          <h2>Four steps. Same pipeline. No flags.</h2>
+          <p>
+            <strong>Data → Sources → <em>Import dataset (auto-mapping)</em></strong> opens the
+            import wizard. It runs the same introspector and mappers as the CLI and the API.
+          </p>
+        </div>
+        <figure class="blog-figure reveal">
+          <img src="./assets/screens/workspace/data-sources.png" alt="Data → Sources, step 1 of 5 (Sources, Prepare, Labels, Generate, Split): a step tip with a Watch the walkthrough link, two Coach notices, the card No documents yet? Write sample documents, and the card Import dataset (auto-mapping) with an Import dataset button" loading="lazy" width="1600" height="1000" />
+          <figcaption><strong>Data → Sources</strong>: sample documents, or <em>Import dataset (auto-mapping)</em>. Uploads sit on the same step.</figcaption>
+        </figure>
+        <div class="cluster-grid">
+          <article class="cluster-card reveal">
+            <h3>1 — Source · 2 — Task type</h3>
+            <ul class="capability-list">
+              <li>Source dropdown (jsonl / csv / hf / kaggle) or a browser upload.</li>
+              <li>Per-source helper text + auth banner for gated datasets.</li>
+              <li>Click <em>Introspect</em>; confirm the task type the sniffer proposes.</li>
+            </ul>
+          </article>
+          <article class="cluster-card reveal">
+            <h3>3 — Map</h3>
             <ul class="capability-list">
               <li>Column-signatures table (detected type + confidence per column).</li>
               <li>Ranked-hypothesis dropdown pre-selected to the top proposal.</li>
-              <li>JSON field-map editor for overrides. Low-confidence proposals show a red gate banner until you tick "proceed anyway."</li>
+              <li>JSON field-map editor for overrides. Low-confidence proposals show a banner until you confirm you reviewed the proposal.</li>
             </ul>
           </article>
           <article class="cluster-card reveal">
-            <h3>Step 3 — Preview &amp; Confirm</h3>
+            <h3>4 — Preview &amp; Confirm</h3>
             <ul class="capability-list">
               <li>Summary cards (accepted, rejected, mapper, target profile).</li>
               <li>Rejected rows grouped by reason; tick to bulk-drop.</li>
-              <li>"Save this mapping" persists the config for one-click re-runs.</li>
+              <li>"Save this mapping" persists the config for one-click re-runs from the <em>Saved mappings</em> panel on the same step.</li>
               <li>Final <em>Import</em> commits + emits the audit RunEvent.</li>
             </ul>
           </article>
@@ -221,7 +282,7 @@
           <p class="eyebrow">Learn The Concept</p>
           <h2>The lessons behind the three surfaces</h2>
           <p>
-            The CLI, API, and Wizard all wrap the same fine-tuning mechanics. These lessons help
+            The CLI, API, and workspace all wrap the same fine-tuning mechanics. These lessons help
             you decide what your team is doing when it picks a dataset format, adapts a base model,
             or moves from a notebook workflow into a platform.
           </p>
@@ -229,7 +290,7 @@
         <div class="cluster-grid">
           <article class="cluster-card reveal">
             <h3>Data in the wild</h3>
-            <p>Learn how custom datasets are shaped before they ever reach the CLI, API, or Wizard.</p>
+            <p>Learn how custom datasets are shaped before they ever reach the CLI, API, or workspace.</p>
             <ul class="capability-list">
               <li><a class="inline-link" href="./academy/sft-fundamentals/dataset-formats-in-the-wild.html">Dataset formats in the wild</a></li>
               <li><a class="inline-link" href="./academy/sft-fundamentals/task-shapes.html">Task shapes</a></li>
@@ -259,8 +320,8 @@
           <p class="eyebrow">Pick a door</p>
           <h2>All three lead to the same project</h2>
           <p>
-            You can switch surfaces mid-project. A wizard import is indistinguishable from a CLI
-            import in the audit log; a saved mapping created from the UI is callable from the
+            You can switch surfaces mid-project. A workspace import is indistinguishable from a
+            CLI import in the audit log; a saved mapping created from the UI is callable from the
             API; everything composes.
           </p>
           <div class="terminal-block">
@@ -273,7 +334,7 @@
             <p>&nbsp;&nbsp;&nbsp;&nbsp;-d '{"locator":"hf:imdb:train","mapper_id":"label_to_classification","field_map":{}}'</p>
             <p>&nbsp;</p>
             <p># UI</p>
-            <p># Pipeline → Data → "Import dataset (auto-mapping)" → Introspect → Map → Confirm</p>
+            <p># Data → Sources → "Import dataset (auto-mapping)" → Source → Task type → Map → Preview &amp; Confirm</p>
           </div>
         </div>
         <aside class="quickstart-notes">

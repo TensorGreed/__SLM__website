@@ -218,8 +218,8 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
         </div>
 
         <h2 id="ingest-map">Ingest and map</h2>
-        <p>In BrewSLM, create a new project: <strong>Projects → New Project → classification recipe</strong>. The recipe pre-fills the adapter (<code>classification-label</code>), task profile (<code>classification</code>), scoring mode (<code>field_match</code>), and the eval pack (the classification scaffold — macro_f1, accuracy, per-class F1 floor, optional safety pass rate).</p>
-        <p>Open <strong>Data Studio → Import</strong>. Your CSV should look like:</p>
+        <p>In BrewSLM, create a new project: on the projects home click <strong>+ New Project</strong>, give it a name and a brief ("Route incoming support tickets to one of six teams: billing, technical, account, feature_request, bug_report, cancellation"), then <strong>Create project</strong>. On the project's <strong>Overview</strong> check the task; if it isn't <code>classification</code>, open <strong>Train → Task → Change</strong> and pick it. The recipe pre-fills the adapter (<code>classification-label</code>), task profile (<code>classification</code>), scoring mode (<code>field_match</code>), and the rule set (the classification scaffold — macro_f1, accuracy, per-class F1 floor, optional safety pass rate).</p>
+        <p>Open <strong>Data → Sources → Import dataset (auto-mapping) → Import dataset →</strong>. Your CSV should look like:</p>
         <pre class="code-block"><code>text,label
 "My card was charged twice this month — please refund the duplicate.",billing
 "App crashes on launch after today's update. Logs attached.",bug_report
@@ -227,9 +227,9 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
 "Can you add a dark mode to the mobile app?",feature_request
 "Forgot my password and the reset email isn't arriving.",account
 "The API is returning 502 on /v1/orders intermittently.",technical</code></pre>
-        <p>Two columns: <code>text</code> (the ticket body) and <code>label</code> (one of your six team labels). The mapping picker shows a confidence-scored preview of the column inference; click <strong>Apply mapping</strong> once the labels look right.</p>
+        <p>Two columns: <code>text</code> (the ticket body) and <code>label</code> (one of your six team labels). The import wizard shows a confidence-scored preview of the column inference; confirm it once the labels look right. After the import, <strong>Data → Labels → "What kind of task is this?"</strong> should read a classification shape — confirm it there.</p>
 
-        <p><strong>✓ Checkpoint:</strong> the Data Studio Overview now shows your imported row count and the <strong>Quality &amp; Safety</strong> panel surfaces a per-class breakdown (e.g. "technical: 1,840, billing: 1,210, account: 480, bug_report: 380, feature_request: 92, cancellation: 64 — Shannon entropy 1.34 nats, normalised 0.57"). Anything below 0.7 normalised is meaningful imbalance; the goal ledger will surface this as a forecast penalty on the data-ready row, and <code>CLASS_BALANCE_FILL</code> becomes the priority before any training.</p>
+        <p><strong>✓ Checkpoint:</strong> <strong>Data → Sources → Details → Readiness overview</strong> now shows your imported row count, and <strong>Data → Prepare → Details → Quality and safety</strong> surfaces a per-class breakdown (e.g. "technical: 1,840, billing: 1,210, account: 480, bug_report: 380, feature_request: 92, cancellation: 64 — Shannon entropy 1.34 nats, normalised 0.57"). Anything below 0.7 normalised is meaningful imbalance; the goal ledger will surface this as a forecast penalty on the data-ready row, and <code>CLASS_BALANCE_FILL</code> becomes the priority before any training.</p>
 
         <div class="callout callout--warning">
           <p class="callout__label">Label normalisation</p>
@@ -237,7 +237,7 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
         </div>
 
         <h2 id="cleanup">Cleanup and Shannon-entropy diagnostic</h2>
-        <p>Open Data Studio's <strong>Quality &amp; Safety</strong> panel. Four common artefact families to clean:</p>
+        <p>Open <strong>Data → Prepare → Details → Quality and safety</strong>. Four common artefact families to clean:</p>
         <ul>
           <li><strong>Auto-reply signatures and quoted threads.</strong> Email-sourced tickets carry auto-responder banners and quoted earlier replies — high-frequency noise the model will memorise. Strip them before training.</li>
           <li><strong>Near-duplicates.</strong> A customer who fires the same complaint three times generates three near-identical rows. Train on one; drop the rest. The dedup signal catches these.</li>
@@ -274,7 +274,7 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
         <p>BrewSLM doesn't currently ship a support-domain pack tuned for triage out of the box. There is a generic platform fallback pack that any project inherits if you don't pin one, and there's a separate workflow shape for support FAQ generation (covered in Tutorial 1) — but that's a different shape (free-text answer over a retrieval index), not a label classifier. For this tutorial you're operating on the recipe-level defaults plus your own gold set, which is fine for a first project.</p>
         <p>Building a custom <code>support-triage</code> domain pack is a worthwhile follow-up project that this tutorial intentionally doesn't cover. It would bundle: stricter per-class F1 floors on revenue-protective labels (<code>cancellation</code>, <code>billing</code>), curated phrasing seeds for the long-tail intents your team specifically sees, a glossary linking eval gates to support-org SLO language, and an Academy tag pointing at this tutorial. If your customer-success org is shipping multiple triage classifiers (consumer vs B2B, free-tier vs enterprise), packaging the conventions as a domain pack pays back fast.</p>
 
-        <h2 id="gold-set">Build the gold set — your senior agents are the oracle</h2>
+        <h2 id="gold-set">Build the answer key — your senior agents are the oracle</h2>
         <p>For ticket triage you have a higher-signal oracle than any other tutorial in this series: <strong>your senior support agents have already routed tens of thousands of tickets correctly</strong>. Their dispositions are your gold labels for free.</p>
 
         <h3 id="gold-from-archive">Path A — bootstrap from your ticket archive</h3>
@@ -286,12 +286,12 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
         <p>Aim for 1,500-3,000 gold rows from your archive — at least 50 examples of every class.</p>
 
         <h3 id="gold-manual">Path B — manual seed from senior agents</h3>
-        <p>For the rare classes your archive doesn't cover well, ask senior agents to hand-label 30-50 fresh examples each. Their muscle memory is the strongest signal on the ambiguous cases newer agents would have routed wrong. The Gold Set workbench (<strong>Data Studio → Gold Set</strong>) supports per-row manual entry with a label dropdown.</p>
+        <p>For the rare classes your archive doesn't cover well, ask senior agents to hand-label 30-50 fresh examples each. Their muscle memory is the strongest signal on the ambiguous cases newer agents would have routed wrong. The answer key lives under <strong>Data → Labels</strong> (the <strong>Answer key</strong> card; the <strong>Answer-key workbench</strong> in its Details drawer), with per-row manual entry.</p>
 
         <h3 id="gold-llm">Path C — LLM-assisted promotion</h3>
-        <p>For tickets whose archive label is missing or suspect, use the standard "promote from raw" flow: bulk-import a few thousand candidate rows, run a teacher model (Ollama / OpenAI / Anthropic) via the platform's synth-backend with a prompt that takes your six-label vocabulary as input and asks the teacher to pick one per row, then review by class in the synth queue. A 30-minute teacher run plus an hour of grouped review produces 300-500 labelled rows.</p>
+        <p>For tickets whose archive label is missing or suspect, use the standard "promote from raw" flow: bulk-import a few thousand candidate rows, run a teacher model (Ollama / OpenAI / Anthropic) via the platform's synth-backend with a prompt that takes your six-label vocabulary as input and asks the teacher to pick one per row, then review by class in the review queue (<strong>Data → Generate → Details → Review queue</strong>). A 30-minute teacher run plus an hour of grouped review produces 300-500 labelled rows.</p>
 
-        <p><strong>✓ Checkpoint:</strong> the Data Studio Overview's <strong>Gold Set ready</strong> row should now be green ("2,400 gold rows ready · 100 recommended"). Check the per-class breakdown: <strong>every class should have ≥ 50 examples</strong>. If <code>cancellation</code> sits at 12 rows because cancellations are rare, manual seed + <code>CLASS_BALANCE_FILL</code> have to fix that gap before training.</p>
+        <p><strong>✓ Checkpoint:</strong> the goal ledger's answer-key readiness row (<strong>Data → Sources → Details → Readiness overview</strong>) should now be green (2,400 rows ready · 100 recommended). Check the per-class breakdown in <strong>Data → Labels → Answer key diagnostics</strong> (class balance per label, with the 15% floor marked): <strong>every class should have ≥ 50 examples</strong>. If <code>cancellation</code> sits at 12 rows because cancellations are rare, manual seed + <code>CLASS_BALANCE_FILL</code> have to fix that gap before training.</p>
 
         <div class="callout callout--note">
           <p class="callout__label">Don't skip the "ambiguous" examples</p>
@@ -299,17 +299,17 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
         </div>
 
         <h2 id="split">Stratified split by class label</h2>
-        <p>The platform's <strong>Prepare Dataset</strong> panel runs uniform random off the ratios + a seed you set by default. For multi-class with imbalance, uniform random is fragile: with 64 <code>cancellation</code> rows in a 2,400-row dataset, an unlucky seed will put 4 of them in val and 6 in test, and your per-class F1 on <code>cancellation</code> becomes essentially noise. You want a <strong>stratified</strong> split — train, val, and test each carry the same per-class ratio as the whole.</p>
-        <p>Open the Prepare Dataset panel and set the <strong>Stratify By Field</strong> input to the column holding your team label (e.g. <code>team</code>). The split runs as before (80/10/10 default) but groups rows by that field's value first and splits each group at the same ratios independently — the rare <code>cancellation</code> class gets the same ~10% / ~10% slice into val/test that the dominant <code>technical</code> class does. After Run Split, the manifest's "Stratified by" panel shows a per-class breakdown: value, total, train, val, test row counts for each class so you can verify rare classes survived.</p>
+        <p>The <strong>Train / Val / Test Split</strong> form on <strong>Data → Split</strong> runs uniform random off the ratios + a seed you set by default. For multi-class with imbalance, uniform random is fragile: with 64 <code>cancellation</code> rows in a 2,400-row dataset, an unlucky seed will put 4 of them in val and 6 in test, and your per-class F1 on <code>cancellation</code> becomes essentially noise. You want a <strong>stratified</strong> split — train, val, and test each carry the same per-class ratio as the whole.</p>
+        <p>On <strong>Data → Split</strong> set the <strong>Stratify By Field (optional)</strong> input to the column holding your team label (e.g. <code>team</code>). (When your rows carry a categorical <code>label</code> and you leave it blank, BrewSLM stratifies by it automatically and the manifest says so.) The split runs as before (80/10/10 default) but groups rows by that field's value first and splits each group at the same ratios independently — the rare <code>cancellation</code> class gets the same ~10% / ~10% slice into val/test that the dominant <code>technical</code> class does. After Run Split, the manifest's "Stratified by" panel shows a per-class breakdown: value, total, train, val, test row counts for each class so you can verify rare classes survived.</p>
         <p>For a 2,400-row gold set with the imbalanced distribution from earlier, an 80/10/10 stratified split produces approximately 1,920 train / 240 val / 240 test where every class has at least 6-7 examples in val + test even on the rarest classes — enough for the eval handler to compute a meaningful per-class F1 instead of a noisy one. Classes with fewer than 3 rows in total get a small-group warning in the report and go entirely to train (can't split &lt; 3 into all three buckets); merge or seed more rows for those classes before relying on their per-class gates.</p>
 
         <div class="callout callout--note">
           <p class="callout__label">If your label column isn't a top-level field</p>
-          <p>The Stratify By Field input reads a top-level key on the adapted training record. If your label lives nested under a JSON path (e.g. <code>fields.team</code>), flatten it during the Adapter Lab mapping step before splitting, or pre-partition into three CSVs as the fallback. The split manifest's report explicitly flags rows whose stratify value is missing or empty — they bucket as <code>__missing__</code> so you can spot data hygiene issues immediately.</p>
+          <p>The Stratify By Field input reads a top-level key on the adapted training record. If your label lives nested under a JSON path (e.g. <code>fields.team</code>), flatten it in the adapter mapping before splitting (<strong>Data → Split → Details → Schema mapping</strong>, or <strong>Train → More options → Adapter Studio</strong>), or pre-partition into three CSVs as the fallback. The split manifest's report explicitly flags rows whose stratify value is missing or empty — they bucket as <code>__missing__</code> so you can spot data hygiene issues immediately.</p>
         </div>
 
         <h2 id="synthetic">Generate CLASS_BALANCE_FILL + paraphrase + hard-negative drills</h2>
-        <p>The classification recipe ships four playbooks in the Playbook Center: <code>classification_paraphrase</code>, <code>classification_hard_negatives</code>, <code>classification_class_balance_fill</code>, and <code>classification_cluster_targeted</code>. For ticket triage, run them in this order:</p>
+        <p>The classification recipe ships four playbooks (<strong>Data → Generate → Details → Playbooks</strong>): <code>classification_paraphrase</code>, <code>classification_hard_negatives</code>, <code>classification_class_balance_fill</code>, and <code>classification_cluster_targeted</code>. For ticket triage, run them in this order:</p>
         <dl>
           <dt><code>CLASS_BALANCE_FILL</code> — the headline drill</dt>
           <dd>Auto-detects the under-represented class in your gold set (or pin one via <code>target_class</code>) and generates more examples for it. Goal: pull your gold's normalised Shannon entropy to ≥ 0.7 (ideally ≥ 0.85). Turns a 30-row <code>cancellation</code> class into 120 trainable examples without hand-writing 90 more tickets. Generate ~50-80 rows per under-represented class.</dd>
@@ -318,9 +318,9 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
           <dt><code>HARD_NEGATIVES</code> — class-boundary disambiguation</dt>
           <dd>For triage the most useful hard negatives are tickets that <em>mention</em> a different team but should route elsewhere: <em>"the technical team should fix this billing bug"</em> (mentions technical, is billing); <em>"I'm cancelling because the app keeps crashing"</em> (mentions cancelling, is a bug-report). Generate ~40 rows.</dd>
           <dt><code>CLUSTER_TARGETED</code> — post-eval drill</dt>
-          <dd>After a first training pass, the Evaluation tab's <strong>FailureClustersPanel</strong> groups failures into clusters with a representative example each. The cluster-targeted playbook seeds new training rows from the worst cluster. Don't run this on the first pass — it needs an eval result to operate on.</dd>
+          <dd>After a first training pass, <strong>Results → Failures → Failure clusters</strong> groups failures into clusters with a representative example each. The cluster-targeted playbook seeds new training rows from the worst cluster. Don't run this on the first pass — it needs an eval result to operate on.</dd>
         </dl>
-        <p>Open <strong>Data Studio → Synthetic → Playbook Center</strong>. The classification recipe surfaces four playbook cards. Click <code>CLASS_BALANCE_FILL</code> first; pick your lowest-count class; set target count to 60; pick a backend (Ollama is the free default). Generation runs as a background Job.</p>
+        <p>Open <strong>Data → Generate → Details → Playbooks</strong>. The classification recipe surfaces four playbook cards. Click <code>CLASS_BALANCE_FILL</code> first; pick your lowest-count class; set target count to 60; pick a backend (Ollama is the free default). Generation runs as a background Job — the bell tracks it, and <strong>Details → Playbook center</strong> keeps each playbook's last run.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Run CLASS_BALANCE_FILL before paraphrase</p>
@@ -328,10 +328,10 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
         </div>
 
         <h2 id="review-queue">Review the synth queue (bulk by class)</h2>
-        <p>Every generated row lands in the <strong>Synthetic Review Queue</strong> with <code>review_status="pending"</code>. The queue groups rows by source playbook; within each you can filter by class — useful after running balance-fill across multiple classes.</p>
+        <p>Every generated row lands in the <strong>Review queue</strong> (<strong>Data → Generate → Details → Review queue</strong>) with <code>review_status="pending"</code>. The queue groups rows by source playbook; within each you can filter by class — useful after running balance-fill across multiple classes.</p>
         <p>Per-row actions:</p>
         <ul>
-          <li><strong>Accept</strong> — the row joins training on the next dataset-prep run. For balance-fill specifically: check the generated example actually fits the target class. A teacher asked for 60 <code>cancellation</code> examples will sometimes produce a good <code>billing</code> complaint mis-labelled <code>cancellation</code> because the prompt anchored on the wrong word.</li>
+          <li><strong>Accept</strong> — the row joins training on the next split. For balance-fill specifically: check the generated example actually fits the target class. A teacher asked for 60 <code>cancellation</code> examples will sometimes produce a good <code>billing</code> complaint mis-labelled <code>cancellation</code> because the prompt anchored on the wrong word.</li>
           <li><strong>Reject (soft)</strong> — marked rejected with an optional reason tag. The useful tags for triage:
             <ul>
               <li><code>actually-class-X</code> — reads cleanly as a different class than generated for. Common on balance-fill for rarer classes.</li>
@@ -347,7 +347,7 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
         <p><strong>✓ Checkpoint:</strong> after a review pass, the synth panel should show "accepted: 220 · rejected: 80 · pending: 0" or similar. Run the Shannon-entropy diagnostic again — your normalised entropy should now be ≥ 0.7. If it's not, run another balance-fill pass on the still-rarest class.</p>
 
         <h2 id="train">Training configuration</h2>
-        <p>Open <strong>Training → New Experiment</strong>. Recipe defaults are sensible — for a first run, accept all of them:</p>
+        <p>Open <strong>Train</strong>. The form shows <strong>Base model</strong>, <strong>Task</strong>, <strong>Seeds</strong> and <strong>Run name</strong>; epochs and batch size live under <strong>More options → Model and hyperparameters</strong>, the adapter under <strong>Adapter Studio</strong>. Recipe defaults are sensible — for a first run, accept all of them:</p>
         <dl>
           <dt>Base model</dt>
           <dd><code>HuggingFaceTB/SmolLM2-135M-Instruct</code>. The recipe trains the model to emit the label as a token sequence; the eval handler does a field-match comparison against gold. Alternatives: <code>Qwen/Qwen2.5-0.5B-Instruct</code> for marginally better accuracy at 4x the size; <code>distilbert-base-uncased</code> for an encoder-only baseline.</dd>
@@ -358,21 +358,21 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
           <dt>Batch size</dt>
           <dd>Batch 8, no accumulation. Tickets are short (50-300 tokens) so memory isn't the constraint.</dd>
         </dl>
-        <p>Expected runtime: 8-20 minutes on a single GPU, 25-50 minutes on CPU. The training panel shows live loss + validation macro_f1; if macro_f1 plateaus below 0.55 by epoch 3, kill the run — it's almost always a class-balance or labelling-consistency problem.</p>
+        <p>Expected runtime: 8-20 minutes on a single GPU, 25-50 minutes on CPU. The run's dashboard in the runs list below the form shows live loss + validation macro_f1; if macro_f1 plateaus below 0.55 by epoch 3, cancel the run — it's almost always a class-balance or labelling-consistency problem.</p>
 
-        <p><strong>✓ Checkpoint:</strong> the experiment row shows loss trending down and validation macro_f1 trending up. By end of epoch 4-5 you should see val macro_f1 ≥ 0.70 and per-class F1 ≥ 0.55 on the rarest class. When training completes the bell pings; the detail page surfaces the per-class precision/recall/F1 grid.</p>
+        <p><strong>✓ Checkpoint:</strong> the run shows loss trending down and validation macro_f1 trending up. By end of epoch 4-5 you should see val macro_f1 ≥ 0.70 and per-class F1 ≥ 0.55 on the rarest class. When training completes the bell pings; the lift check against the base model runs on its own and <strong>Results → Verdict</strong> shows the summary card, with the per-class precision/recall/F1 bars under <strong>Results → Failures</strong>.</p>
 
         <h2 id="forecast">Read the trainability forecast</h2>
-        <p>Before training, the goal ledger's <code>predicted_pass</code> row forecasts based on row count, normalised class entropy, and base model size. For imbalanced multi-class:</p>
+        <p>Before training, the trainability forecast (<strong>Train → More options → Plan and gaps</strong>; also the goal ledger's <code>predicted_pass</code> row under Data → Sources → Details → Readiness overview) forecasts based on row count, normalised class entropy, and base model size. For imbalanced multi-class:</p>
         <ul>
           <li>Predicted pass probability <strong>≥ 65%</strong>. Lower usually means entropy penalty — fix balance first.</li>
           <li>Normalised class entropy <strong>≥ 0.7</strong>. The forecast multiplies data-quality by entropy; 0.5 cuts the forecast roughly in half.</li>
-          <li>Every class has <strong>≥ 50 gold rows</strong>. Below that the rare class under-trains and the per-class F1 floor fails.</li>
+          <li>Every class has <strong>≥ 50 answer-key rows</strong>. Below that the rare class under-trains and the per-class F1 floor fails.</li>
         </ul>
         <p>One nuance: the forecast sometimes <strong>over-estimates</strong> macro_f1 when the per-class floor is the binding constraint. It knows row count and entropy; it doesn't know that 50 rows of <code>cancellation</code> won't quite teach the model enough to clear F1 ≥ 0.50 on that class. Treat predicted_pass as a green/yellow/red light, not a precise prediction. Green with entropy 0.55 still warrants a balance-fill pass.</p>
 
         <h2 id="evaluate">Evaluation: macro_f1, accuracy, and the per-class F1 floor</h2>
-        <p>After training, the platform automatically evaluates against the project's eval pack. The classification scaffold ships four gates:</p>
+        <p>After training, the platform automatically evaluates against the project's rule set; <strong>Results → Verdict</strong> shows the <strong>Pass/fail rules</strong> card (PASS / FAIL and the failed required rules). The classification scaffold ships four rules:</p>
         <dl>
           <dt><code>min_macro_f1</code> ≥ 0.65 (required)</dt>
           <dd>The headline. Average of per-class F1, weighted equally. The metric that catches the imbalance bug where the model is great at majority classes and silently bad at minority ones — flat accuracy alone won't surface this on a 30:1 distribution.</dd>
@@ -383,17 +383,17 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
           <dt><code>min_safety_pass_rate</code> ≥ 0.93 (optional)</dt>
           <dd>Catches refusal / off-topic / adversarial inputs that should be flagged through a different path. Useful when the classifier sits behind a customer-facing UI; not strictly required for an internal routing service.</dd>
         </dl>
-        <p>The goal ledger's <code>eval_pass_rate</code> row expands into the per-gate breakdown so you see exactly which dimension is failing — <em>"macro_f1 0.71 ≥ 0.65 passed; min_per_class_f1 0.42 &lt; 0.50 failed on class <code>cancellation</code>."</em></p>
+        <p>The Pass/fail rules card names the failed required rules, and the goal ledger's <code>eval_pass_rate</code> row expands into the per-rule breakdown so you see exactly which dimension is failing — <em>"macro_f1 0.71 ≥ 0.65 passed; min_per_class_f1 0.42 &lt; 0.50 failed on class <code>cancellation</code>."</em></p>
 
         <h3>Reading the per-class grid</h3>
-        <p>The experiment detail page shows the per-class precision / recall / F1 grid. Three patterns to look for:</p>
+        <p><strong>Results → Failures</strong> shows the per-class precision / recall / F1 bars (worst class first). Three patterns to look for:</p>
         <ul>
           <li><strong>One class starves.</strong> Five classes at 0.80+ F1, one at 0.25. Almost always under-training on the rare class. Fix: more <code>CLASS_BALANCE_FILL</code> rows, then retrain.</li>
           <li><strong>Two classes collapse.</strong> The model rarely distinguishes <code>bug_report</code> from <code>technical</code>. The label vocabulary has a boundary problem — either the classes overlap semantically (consider merging) or your gold is inconsistent across them (have a second reviewer relabel 50 random rows from both and reconcile).</li>
           <li><strong>Rare classes get zero predictions.</strong> The model never emits <code>cancellation</code>; precision is undefined. The model learned that always-predicting-something-else is the lowest-loss policy. Run <code>CLASS_BALANCE_FILL</code> until that class has 100+ training rows.</li>
         </ul>
 
-        <p>If you want per-class precision/recall floors (e.g. <code>cancellation</code> recall ≥ 0.80 because missing a cancellation has direct revenue impact), open the eval pack editor under <strong>Project → Eval Pack → Edit</strong>. Click <strong>+ Add gate</strong>, then in the Metric dropdown pick <strong>Per-class · cancellation → Recall</strong> — the optgroup is populated from your latest classification eval's per-class breakdown. Set operator <code>≥</code>, threshold <code>0.80</code>, mark it Required, and Save. If the per-class optgroups are empty, the panel shows "Run a classification eval to discover per-class metrics" — that's expected on fresh projects, and once an eval finishes the classes appear automatically. Coach Mode also nudges this from the Eval tab when a classification project has zero per-class gates configured.</p>
+        <p>If you want per-class precision/recall floors (e.g. <code>cancellation</code> recall ≥ 0.80 because missing a cancellation has direct revenue impact), open the rule-set card on <strong>Results → Failures</strong>. Click <strong>+ Add rule</strong>, then in the Metric dropdown pick <strong>Per-class · cancellation → Recall</strong> — the optgroup is populated from your latest classification eval's per-class breakdown. Set operator <code>≥</code>, threshold <code>0.80</code>, mark it Required, and Save. If the per-class optgroups are empty, the panel shows "Run a classification eval to discover per-class metrics" — that's expected on fresh projects, and once an eval finishes the classes appear automatically. A Coach notice on Results also nudges this when a classification project has zero per-class rules configured.</p>
 
         <h2 id="fix">When the eval fails (common failure modes)</h2>
         <p>Multi-class triage failures concentrate around imbalance. Common patterns and fixes:</p>
@@ -410,12 +410,12 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
             <tr><td>Post-eval decision engine recommends a different recipe</td><td>Engine sees signals your task shape is wrong</td><td>Read "Why this fired?". qa-sft → you may need free-text explanations; span-extraction → routing may depend on which tokens triggered the choice. Investigate.</td></tr>
           </tbody>
         </table>
-        <p>The <strong>FailureClustersPanel</strong> groups failures into clusters with a representative example each. Reading 5-10 examples from a cluster usually surfaces the failure shape in 30 seconds. The panel also offers a one-click launch of <code>CLUSTER_TARGETED</code> seeded from that cluster — the most efficient drill for a specific failure mode.</p>
+        <p><strong>Results → Failures → Failure clusters</strong> groups failures into clusters with a representative example each. Reading 5-10 examples from a cluster usually surfaces the failure shape in 30 seconds. The panel also offers a one-click launch of <code>CLUSTER_TARGETED</code> seeded from that cluster — the most efficient drill for a specific failure mode.</p>
 
         <h2 id="ship">Ship with confidence thresholds</h2>
-        <p>Once the eval pack passes — and especially once the per-class F1 floor passes on the revenue-protective classes — ship in three steps:</p>
+        <p>Once the rule set passes — and especially once the per-class F1 floor passes on the revenue-protective classes — ship in three steps:</p>
         <ol>
-          <li><strong>Export the LoRA adapter.</strong> Open <strong>Models → Export</strong>. The platform writes adapter weights, tokenizer config, and a deploy manifest into <code>data/projects/&lt;id&gt;/exports/</code>. The adapter is ~5-15 MB; the base model loads fresh at deploy time.</li>
+          <li><strong>Export the LoRA adapter.</strong> Open <strong>Ship → Package</strong>: in the <strong>New export</strong> form pick the run, the format (Hugging Face), the deployment targets, then <strong>Run Export</strong>; the export shows up in the <strong>Releases</strong> table. The platform writes adapter weights, tokenizer config, and a deploy manifest into <code>data/projects/&lt;id&gt;/exports/</code>. The adapter is ~5-15 MB; the base model loads fresh at deploy time.</li>
           <li><strong>Deploy via vLLM or Ollama.</strong> The export bundle includes a launch script:
             <pre class="code-block"><code>cd data/projects/&lt;id&gt;/exports/run-2026-06-05
 ./deploy-vllm.sh
@@ -462,7 +462,7 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
           <dl>
             <dt>Multi-class classification</dt><dd>One label per row drawn from a fixed vocabulary of more than two classes. Distinct from binary (yes/no) and from multi-label (one row, multiple labels).</dd>
             <dt>Class imbalance</dt><dd>The natural ratio of classes in real-world data is skewed. A model trained on imbalanced data defaults to majority-class predictions unless the gold set is balanced (via more data or via <code>CLASS_BALANCE_FILL</code>) and the eval gates require per-class minimums.</dd>
-            <dt>Shannon entropy (normalised)</dt><dd>A single number summarising how balanced your class distribution is — 1.0 perfectly balanced, 0.0 dominated by one class. Surfaced in Data Studio's Quality &amp; Safety panel and factored into the trainability forecast.</dd>
+            <dt>Shannon entropy (normalised)</dt><dd>A single number summarising how balanced your class distribution is — 1.0 perfectly balanced, 0.0 dominated by one class. Surfaced in the Quality and safety panel (Data → Prepare → Details) and factored into the trainability forecast.</dd>
             <dt><code>CLASS_BALANCE_FILL</code> playbook</dt><dd>BrewSLM's synth generator for fixing imbalance. Generates more examples of the under-represented class until entropy is healthy. Distinct from <code>POSITIVES_PARAPHRASE</code>, which paraphrases in proportion to existing counts.</dd>
             <dt>macro_f1</dt><dd>Average of per-class F1 scores weighted equally regardless of class size. The headline gate in the classification eval pack; catches imbalance bugs flat accuracy misses.</dd>
             <dt>Per-class F1 floor (<code>min_per_class_f1</code>)</dt><dd>Required gate that every individual class's F1 must clear a threshold. The class-starvation tripwire — a model that scores high macro_f1 by averaging away one bad class still fails this gate.</dd>
@@ -487,7 +487,7 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
     "explanation": "High accuracy + low macro_f1 = the model is acing the majority classes and starving the rare ones. More epochs amplifies the bias; a larger model doesn't fix imbalance. The right fix is to balance the training distribution with CLASS_BALANCE_FILL until the rare class has enough signal to clear the per-class F1 floor."
   },
   {
-    "q": "Why set Stratify By Field instead of using the Prepare Dataset panel's default uniform random split?",
+    "q": "Why set Stratify By Field on Data → Split instead of leaving the default uniform random split?",
     "options": [
       "The stratified split is faster",
       "Random split on an imbalanced dataset can put 4 cancellation examples in val and 6 in test — making per-class F1 essentially noise",

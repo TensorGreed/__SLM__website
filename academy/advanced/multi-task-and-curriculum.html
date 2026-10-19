@@ -157,13 +157,15 @@
         </ul>
 
         <h2>Don't guess — A/B it</h2>
-        <p>Curriculum effects are real but not guaranteed; an ordering that helps one dataset does nothing for another. So treat it as a hypothesis and test it. BrewSLM has a curriculum A/B harness for exactly this — train with and without the ordering, evaluate both on the same gold set, and keep the winner:</p>
-        <pre class="code-block"><code>$ python -m scripts.curriculum_ab --project 1
-# trains baseline (shuffled) vs curriculum (easy-&gt;hard) on the same data,
-# evaluates both on the gold set, and reports the metric delta</code></pre>
+        <p>Curriculum effects are real but not guaranteed; an ordering that helps one dataset does nothing for another. So treat it as a hypothesis and test it. BrewSLM ships a curriculum A/B harness for exactly this — a CLI script, not a workspace control — that trains with and without the ordering over several seeds, evaluates both on the same gold set, and reports the delta:</p>
+        <pre class="code-block"><code>$ python -m backend.scripts.curriculum_ab --seeds 3 --num-epochs 3 \
+      --templates ticket-router log-triage      # from the repo root
+# self-contained: reads each starter project's gold.jsonl, shells out to
+# scripts/train.py for curriculum on vs off, and writes the mean macro-F1
+# delta per template to curriculum_ab_results.json / .md</code></pre>
         <div class="callout callout--note">
           <p class="callout__label">From Track 3</p>
-          <p>This is the same A/B discipline as the auto-RAG comparison: never adopt a technique on faith — run it against the alternative on a fixed gold set and let the delta decide. Curriculum and multi-task are hypotheses you test, not defaults you assume.</p>
+          <p>This is the same A/B discipline as the auto-RAG comparison (<strong>Results → Compare</strong> in the workspace): never adopt a technique on faith — run it against the alternative on a fixed gold set (the answer key) and let the delta decide. Curriculum and multi-task are hypotheses you test, not defaults you assume.</p>
         </div>
 
         <div class="callout callout--key">

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Observability and drift in production — BrewSLM Academy</title>
-    <meta name="description" content="Shipping a model isn't the end — production quality decays as the world changes. This lesson covers the RunEvent audit spine, scheduled drift checks that re-run the gold set against the live endpoint, the support bundle, and how to decide when to retrain." />
+    <meta name="description" content="Shipping a model isn't the end — production quality decays as the world changes. This lesson covers the RunEvent audit spine, drift checks that re-run the answer key (your gold set) against the deployed model, the support bundle, and how to decide when to retrain." />
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
     <meta name="author" content="TensorGreed" />
     <meta name="theme-color" content="#ffffff" />
@@ -12,12 +12,12 @@
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="BrewSLM" />
     <meta property="og:title" content="Observability and drift in production — BrewSLM Academy" />
-    <meta property="og:description" content="Shipping a model isn't the end — production quality decays as the world changes. This lesson covers the RunEvent audit spine, scheduled drift checks that re-run the gold set against the live endpoint, the support bundle, and how to decide when to retrain." />
+    <meta property="og:description" content="Shipping a model isn't the end — production quality decays as the world changes. This lesson covers the RunEvent audit spine, drift checks that re-run the answer key (your gold set) against the deployed model, the support bundle, and how to decide when to retrain." />
     <meta property="og:url" content="https://brewslm.com/academy/advanced/observability-and-drift.html" />
     <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Observability and drift in production — BrewSLM Academy" />
-    <meta name="twitter:description" content="Shipping a model isn't the end — production quality decays as the world changes. This lesson covers the RunEvent audit spine, scheduled drift checks that re-run the gold set against the live endpoint, the support bundle, and how to decide when to retrain." />
+    <meta name="twitter:description" content="Shipping a model isn't the end — production quality decays as the world changes. This lesson covers the RunEvent audit spine, drift checks that re-run the answer key (your gold set) against the deployed model, the support bundle, and how to decide when to retrain." />
     <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
     <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-YDPSHSVE1K"></script>
@@ -29,7 +29,7 @@
       {
         "@context": "https://schema.org", "@type": "LearningResource",
         "name": "Observability and drift in production",
-        "description": "Shipping a model isn't the end — production quality decays as the world changes. This lesson covers the RunEvent audit spine, scheduled drift checks that re-run the gold set against the live endpoint, the support bundle, and how to decide when to retrain.",
+        "description": "Shipping a model isn't the end — production quality decays as the world changes. This lesson covers the RunEvent audit spine, drift checks that re-run the answer key (your gold set) against the deployed model, the support bundle, and how to decide when to retrain.",
         "url": "https://brewslm.com/academy/advanced/observability-and-drift.html",
         "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Advanced", "timeRequired": "PT9M", "isAccessibleForFree": true,
         "teaches": ["observability", "RunEvent spine", "drift detection", "support bundle", "when to retrain"],
@@ -74,7 +74,7 @@
       "name": "How does BrewSLM detect drift?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "By re-running the gold set against the live endpoint on a schedule"
+        "text": "By re-running the answer key (the gold set) against the deployed model and comparing with the training baseline"
       }
     },
     {
@@ -82,7 +82,7 @@
       "name": "Drift is detected. The right response is usually\u2026",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Gather recent inputs, re-prepare, retrain, and re-evaluate against the same gates"
+        "text": "Gather recent inputs, re-prepare, retrain, and re-evaluate against the same pass/fail rules"
       }
     }
   ]
@@ -138,34 +138,34 @@
         <p>A deployed model meets inputs you never trained on, and the world it learned keeps moving. <strong>Observability</strong> is how you notice when it stops being good — before your users do.</p>
 
         <h2>The RunEvent spine, recapped</h2>
-        <p>From Track 3: every stage emits a <code>RunEvent</code> via <code>emit_event()</code> — a reason code from a lint-gated taxonomy plus a severity (info / warning / error / critical). One stream feeds every observability surface: the timeline, the failure-cluster view, the audit explorer, and the support bundle. The emission is best-effort (wrapped in try/except at each call site), so a bug in observability can never break the actual data or training path. That single design choice is what makes the whole pipeline debuggable after the fact.</p>
+        <p>From Track 3: every stage emits a <code>RunEvent</code> via <code>emit_event()</code> — a reason code from a lint-gated taxonomy plus a severity (info / warning / error / critical). One stream feeds every observability surface: the run-event timeline and failure clusters on <strong>Ship → Monitor</strong>, the audit explorer, and the support bundle. The emission is best-effort (wrapped in try/except at each call site), so a bug in observability can never break the actual data or training path. That single design choice is what makes the whole pipeline debuggable after the fact.</p>
 
         <h2>Drift: quality decays quietly</h2>
         <p>A model that scored 0.93 at launch can be 0.80 six months later without anyone touching it — because the <em>inputs</em> drifted. New slang, new product names, a new kind of customer. This is <strong>drift</strong>, and it's invisible unless you measure for it.</p>
 
-        <h2>Drift detection: re-run the gold set on the live endpoint</h2>
-        <p>BrewSLM's deploy stage (Track 3) includes a scheduled <strong>drift check</strong>: it periodically re-runs your gold set against the <em>live</em> endpoint and compares to the launch baseline. A significant drop emits <code>deployment_drift_detected</code> — the same gold set you built in Track 1, now a production sensor.</p>
-        <pre class="code-block"><code># scheduled drift check (deploy stage)
-re-run gold set vs live endpoint
+        <h2>Drift detection: re-run the gold set on the live model</h2>
+        <p>BrewSLM's <strong>Ship → Deploy</strong> stage (Track 3) has a <strong>drift check</strong> on every served version: it re-runs your gold set — the <strong>answer key</strong> under <strong>Data → Labels</strong> — against the deployed model and compares the pass rate to the baseline recorded at training time. You supply the live model's predictions — bring your own inference client and paste them into the check's form (the API and CLI can also call an endpoint URL themselves) — and run it on whatever cadence you choose; nothing schedules it for you. A significant drop emits <code>deployment_drift_detected</code> — the same gold set you built in Track 1, now a production sensor.</p>
+        <pre class="code-block"><code># drift check — Ship → Deploy → a served version → "Run drift check"
+re-run the answer key vs the deployed model
   launch:  accuracy 0.93
   today:   accuracy 0.86   → drift!  emit deployment_drift_detected
 # also: deployment_smoke_failed (promote-time), deployment_promote_blocked</code></pre>
         <div class="callout callout--note">
           <p class="callout__label">Your gold set keeps working</p>
-          <p>The gold set you curated for evaluation doesn't retire at launch — it becomes the regression sensor that watches the live model forever. That's a big payoff for the work you put into it in Track 1.</p>
+          <p>The gold set you curated for evaluation (the answer key) doesn't retire at launch — it becomes the regression sensor that watches the live model for as long as you keep running the check. That's a big payoff for the work you put into it in Track 1.</p>
         </div>
 
         <h2>When to retrain</h2>
         <p>Drift detection tells you <em>that</em> quality dropped; deciding what to do is judgment:</p>
         <ul>
-          <li><strong>Drift detected</strong> → gather recent real inputs, add them (via the review queue), re-prepare, re-train, re-evaluate against the same gates. The Track 3 loop, triggered by a signal instead of a hunch.</li>
-          <li><strong>New failure clusters</strong> in production logs → a targeted data fix (augment_from_cluster), not a full retrain.</li>
+          <li><strong>Drift detected</strong> → gather recent real inputs, add them (via the review queue under <strong>Data → Generate → Details</strong>), re-split on <strong>Data → Split</strong>, re-train, re-evaluate against the same pass/fail rules on <strong>Results → Verdict</strong>. The Track 3 loop, triggered by a signal instead of a hunch.</li>
+          <li><strong>New failure clusters</strong> (<strong>Ship → Monitor</strong>, or <strong>Results → Failures</strong> for eval misses) → a targeted data fix (augment_from_cluster), not a full retrain.</li>
           <li><strong>Stable</strong> → leave it alone. Retraining a healthy model just risks regressions.</li>
         </ul>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>The <strong>RunEvent spine</strong> makes every stage observable; best-effort emission means observability never breaks the data path. <strong>Drift detection</strong> re-runs your gold set against the live endpoint on a schedule, turning it into a production sensor — and a drop is the signal to gather fresh data and retrain through the same gates.</p>
+          <p>The <strong>RunEvent spine</strong> makes every stage observable; best-effort emission means observability never breaks the data path. <strong>Drift detection</strong> re-runs your gold set (the answer key) against the deployed model on a cadence you choose, turning it into a production sensor — and a drop is the signal to gather fresh data and retrain through the same pass/fail rules.</p>
         </div>
 
         <section class="key-terms">
@@ -174,7 +174,7 @@ re-run gold set vs live endpoint
             <dt>observability</dt><dd>The ability to see what the pipeline did and how the live model is performing.</dd>
             <dt>RunEvent spine</dt><dd>The one event stream every stage emits to, feeding all monitoring surfaces; best-effort so it can't break the data path.</dd>
             <dt>drift</dt><dd>Production quality decay caused by input distributions changing over time.</dd>
-            <dt>drift detection</dt><dd>A scheduled re-run of the gold set against the live endpoint to catch quality drops.</dd>
+            <dt>drift detection</dt><dd>A re-run of the gold set (answer key) against the deployed model, compared with the training baseline, to catch quality drops. In BrewSLM: Ship → Deploy → <em>Run drift check</em>.</dd>
             <dt>support bundle</dt><dd>A consumer of the RunEvent stream packaging the events/state needed to debug an issue.</dd>
             <dt>retrain trigger</dt><dd>Using a drift signal or new failure clusters to decide when to gather data and retrain.</dd>
           </dl>
@@ -211,18 +211,18 @@ re-run gold set vs live endpoint
     "q": "How does BrewSLM detect drift?",
     "options": [
       "By watching GPU temperature",
-      "By re-running the gold set against the live endpoint on a schedule",
+      "By re-running the answer key (the gold set) against the deployed model and comparing with the training baseline",
       "By counting tokens",
       "By re-exporting"
     ],
     "answer": 1,
-    "explanation": "The gold set becomes a scheduled production regression sensor."
+    "explanation": "The gold set becomes a production regression sensor you re-run on your own cadence (Ship → Deploy → Run drift check)."
   },
   {
     "q": "Drift is detected. The right response is usually\u2026",
     "options": [
       "Ignore it",
-      "Gather recent inputs, re-prepare, retrain, and re-evaluate against the same gates",
+      "Gather recent inputs, re-prepare, retrain, and re-evaluate against the same pass/fail rules",
       "Delete the deployment",
       "Increase the temperature"
     ],

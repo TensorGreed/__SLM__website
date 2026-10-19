@@ -44,7 +44,7 @@
         ],
         "tool": [
           { "@type": "HowToTool", "name": "BrewSLM" },
-          { "@type": "HowToTool", "name": "Domain Pack Manager" }
+          { "@type": "HowToTool", "name": "BrewSLM Settings → Tools → Domain Packs" }
         ],
         "step": [
           { "@type": "HowToStep", "name": "What you'll build", "url": "https://brewslm.com/academy/tutorials/building-domain-packs-finance-example.html#what-youll-build" },
@@ -142,7 +142,7 @@
         <div class="callout callout--note">
           <p class="callout__label">Before you start</p>
           <p>This tutorial assumes BrewSLM is running locally at <code>http://localhost:5173</code> with an admin user signed in. If you haven't done that yet, complete <a class="inline-link" href="setup-brewslm.html"><strong>Tutorial 0 — Set up BrewSLM and your first project</strong></a> first.</p>
-          <p>You'll get the most out of this tutorial if you already have a finished invoice-extraction project sitting in your workspace — the gold set, the cleaned data, the eval thresholds you converged on. The finance pack we'll build is the act of <em>packaging</em> what's already working into something the rest of your AP team can apply to their projects. <a class="inline-link" href="invoice-field-extraction.html">Tutorial 3</a> walks the invoice extractor end to end.</p>
+          <p>You'll get the most out of this tutorial if you already have a finished invoice-extraction project sitting in your workspace — the answer key, the cleaned data, the eval thresholds you converged on. The finance pack we'll build is the act of <em>packaging</em> what's already working into something the rest of your AP team can apply to their projects. <a class="inline-link" href="invoice-field-extraction.html">Tutorial 3</a> walks the invoice extractor end to end.</p>
           <p>If you've read <a class="inline-link" href="legal-contracts-domain-pack.html">T8</a>, you've already seen the pack contract once. This tutorial does not re-walk the rag-protocol recipe; head back to T1 or T8 for that. The focus here is on the pack layer itself, with finance / AP as the worked example.</p>
         </div>
 
@@ -232,7 +232,7 @@
           <dt><code>version</code> (1-32 chars)</dt>
           <dd>User-managed version string. The duplicate flow auto-bumps the patch component, but there is no structured semver parsing — it's a string, not a typed semantic version. Use semver shape anyway (<code>1.0.0</code>, <code>1.1.0</code>) for the audit trail.</dd>
           <dt><code>display_name</code> (1-255 chars, required)</dt>
-          <dd>What humans see in the manager dropdown. "Finance / AP" reads better than "finance-pack-v1" in a list of twelve.</dd>
+          <dd>What humans see in the pack dropdown. "Finance / AP" reads better than "finance-pack-v1" in a list of twelve.</dd>
           <dt><code>description</code> (optional)</dt>
           <dd>One or two sentences. The audit reader is your audience.</dd>
           <dt><code>owner</code> (1-128 chars, default <code>platform</code>)</dt>
@@ -251,7 +251,7 @@
         <p>The overlay is where the pack does its work. Three first-class fields on the overlay spec:</p>
         <dl>
           <dt><code>overlay.dataset_split</code></dt>
-          <dd>The ratios used at prepare-dataset time. Default <code>{ "train": 0.8, "val": 0.1, "test": 0.1, "seed": 42 }</code>. For AP, the default ratios are almost always right. The platform's prepare endpoint also accepts a <strong>Stratify By Field</strong> input (groups rows by a class label and preserves per-class proportions across train/val/test — useful for AP categories like "invoice", "credit_memo", "statement") and a <strong>Disjoint By Field</strong> input (assigns each group whole to one split — the right primitive for "same vendor / same template shouldn't leak between train and test"). Both surface in the Prepare Dataset panel UI; both get a per-group breakdown in the resulting split manifest. The two are mutually exclusive — stratify requires splitting groups, disjoint forbids it.</dd>
+          <dd>The ratios used at prepare-dataset time. Default <code>{ "train": 0.8, "val": 0.1, "test": 0.1, "seed": 42 }</code>. For AP, the default ratios are almost always right. The platform's prepare endpoint also accepts a <strong>Stratify By Field</strong> input (groups rows by a class label and preserves per-class proportions across train/val/test — useful for AP categories like "invoice", "credit_memo", "statement") and a <strong>Disjoint By Field</strong> input (assigns each group whole to one split — the right primitive for "same vendor / same template shouldn't leak between train and test"). Both surface on <strong>Data → Split</strong>; both get a per-group breakdown in the resulting split manifest. The two are mutually exclusive — stratify requires splitting groups, disjoint forbids it.</dd>
           <dt><code>overlay.training_defaults</code></dt>
           <dd>Pinned training-hyperparameter defaults — sft / llama3 / 3 epochs / batch 4 / lr 2e-4 / LoRA on, matching the platform default. Pinning them in the pack future-proofs against platform-default drift.</dd>
           <dt><code>overlay.registry_gates</code></dt>
@@ -323,7 +323,7 @@
 
         <div class="callout callout--note">
           <p class="callout__label">Today: default-normalizer is a no-op</p>
-          <p>Today the platform's <code>default-normalizer</code> hook is a no-op — it accepts the config and returns the row unchanged. The config block above is read-only documentation until you ship a custom normalizer plugin that implements the locale-aware logic, OR you handle currency normalisation in your gold-set preparation workflow (the more common path). The config still documents the intent for your team; the actual normalisation lives elsewhere for now.</p>
+          <p>Today the platform's <code>default-normalizer</code> hook is a no-op — it accepts the config and returns the row unchanged. The config block above is read-only documentation until you ship a custom normalizer plugin that implements the locale-aware logic, OR you handle currency normalisation while preparing your answer key (the more common path). The config still documents the intent for your team; the actual normalisation lives elsewhere for now.</p>
         </div>
 
         <h3 id="cleaning-dates">Date format disambiguation</h3>
@@ -354,7 +354,7 @@
           <dd><code>shipping_address</code>, <code>line_item_description</code> prose, contact name, remit-to phone. Recoverable, rarely block payment. <strong>Target: precision ≥ 0.80.</strong></dd>
         </dl>
 
-        <p>The pack does <em>not</em> override eval-pack thresholds directly. Eval packs and domain packs are siblings — eval packs gate the trained model; domain packs gate dataset / training / registry transitions. Per-entity floors live in the eval pack the project selects (the JSON copy-edit-select flow from the eval-pack scaffold). The domain pack documents your team's per-entity priorities as guidance; the actual gating happens at the eval-pack layer. The evaluator hook on the domain pack provides only the weighted-score signal:</p>
+        <p>The pack does <em>not</em> override eval-pack thresholds directly. Eval packs and domain packs are siblings — eval packs gate the trained model; domain packs gate dataset / training / registry transitions. Per-entity floors live in the eval pack the project selects — in the UI, the <em>Project rule set</em> picker on <strong>Results → Failures</strong>, scaffolded on the same tab (<strong>+ Add rule</strong>, or the JSON copy-edit-select flow). The domain pack documents your team's per-entity priorities as guidance; the actual gating happens at the eval-pack layer. The evaluator hook on the domain pack provides only the weighted-score signal:</p>
 
         <pre class="code-block"><code>"evaluator": {
   "hook_id": "weighted-score-evaluator",
@@ -410,41 +410,42 @@
 
         <p>The selection that pays back the most is the dozen terms that appear in your refusal phrases, your eval explanations, and your audit responses. Anything beyond that is glossary-bloat — the second-most-common pack-design mistake (the first is putting refusal phrases there, see the prior section).</p>
 
-        <h2 id="building-in-the-ui">Building the pack in the Domain Pack Manager</h2>
-        <p>Open the Domain Pack Manager from <strong>Project → Domain → Pack</strong>. It's the only entry point — pack assignment doesn't happen anywhere else. Four areas:</p>
+        <h2 id="building-in-the-ui">Building the pack under Settings → Tools → Domain Packs</h2>
+        <p>Open <strong>Settings → Tools</strong> and expand <strong>Domain Packs</strong> (the section loads when opened). It's the only entry point — pack assignment doesn't happen anywhere else. Four areas:</p>
+        <figure class="academy-figure"><img src="../../assets/screens/workspace/settings.png" alt="The project Settings page: Appearance, Workspace switches, export the project manifest, and a collapsed Tools section that holds the Domain Packs and Domain Profiles panels." loading="lazy" width="1600" height="1000" /><figcaption>Settings → Tools is where Domain Packs and Domain Profiles live; the section loads when opened.</figcaption></figure>
 
         <ol>
           <li><strong>Active pack panel</strong> — top, read-only, shows the currently-assigned pack's display name and <code>pack_id@version</code>. If nothing was set, shows <code>general-pack-v1</code>.</li>
-          <li><strong>Pack-selection controls</strong> — a dropdown of every installed pack plus four buttons: <em>Assign to Project</em>, <em>View / Edit Contract</em>, <em>Duplicate + Open Editor</em>, <em>New Pack</em>. A clickable grid list below with metadata badges (status, system flag, selected) offers the same selection as the dropdown.</li>
+          <li><strong>Pack-selection controls</strong> — a dropdown of every installed pack plus four buttons: <em>Assign to Project</em>, <em>View/Edit Contract</em>, <em>Duplicate + Open Editor</em>, <em>New Pack</em>. A clickable grid list below with metadata badges (status, system flag, selected) offers the same selection as the dropdown.</li>
           <li><strong>Hook catalog</strong> — three-column panel of available normalizers, validators, evaluators with descriptions and source plugin module. Below: <em>Loaded Plugin Modules</em>, <em>Plugin Load Errors</em>, and two buttons (<em>Refresh Catalog</em>, <em>Reload Plugins</em>).</li>
-          <li><strong>Editor modal</strong> — opens on <em>New Pack</em>, <em>View / Edit Contract</em>, or after a duplicate. Contains the <em>Hook Helper</em> (three dropdowns + Load From JSON / Apply To JSON for bidirectional sync) and the <em>Contract JSON textarea</em> (monospace editor where the contract actually lives).</li>
+          <li><strong>Editor modal</strong> — opens on <em>New Pack</em>, <em>View/Edit Contract</em>, or after a duplicate. Contains the <em>Hook Picker</em> (three dropdowns with a per-hook config JSON field; a change writes into the contract at once, and <em>Resync picker from JSON</em> reads the contract back into the dropdowns after a hand edit) and the <em>Contract JSON</em> textarea (monospace editor where the contract actually lives).</li>
         </ol>
 
         <p>The flow to build <code>finance-pack-v1</code>:</p>
         <ol>
           <li><strong>Click <em>New Pack</em>.</strong> The editor opens with a starter contract.</li>
           <li><strong>Fill identity in the JSON</strong> — pack_id, version, display_name, description, owner, status, default_profile_id, tags. The hint flags pack_id and display_name as required.</li>
-          <li><strong>Use the Hook Helper to pick hooks.</strong> Pick a normalizer, validator, evaluator; click <em>Apply To JSON</em> to write the IDs into the contract's <code>hooks</code> section. The dropdowns are the only first-class way to see which hook IDs are valid — typing them by hand is a typo waiting to happen.</li>
+          <li><strong>Use the Hook Picker to pick hooks.</strong> Pick a normalizer, validator, evaluator; the IDs land in the contract's <code>hooks</code> section as you pick them. The dropdowns are the only first-class way to see which hook IDs are valid — typing them by hand is a typo waiting to happen.</li>
           <li><strong>Edit the overlay JSON</strong> — dataset_split, training_defaults, registry_gates, plus the additional contract sections (cleaning hints, glossary, the evaluator hook's <code>weights</code> config). Overlay sections beyond the three first-class fields are JSON-only; no form fields exist for cleaning, validation, glossary, or eval thresholds.</li>
-          <li><strong>Save.</strong> Validates against <code>slm.domain-pack/v1</code>. Common errors: typo'd hook IDs (Hook Helper avoids this), missing required identity fields, malformed JSON.</li>
+          <li><strong>Save.</strong> Validates against <code>slm.domain-pack/v1</code>. Common errors: typo'd hook IDs (the Hook Picker avoids this), missing required identity fields, malformed JSON.</li>
         </ol>
 
         <div class="callout callout--note">
           <p class="callout__label">What the UI does not surface</p>
-          <p>The manager has <strong>no search or filter</strong> on the pack list (every pack shows; pick from the dropdown or click in the grid). Overlay sections beyond the three first-class fields are <strong>JSON-only</strong> — no form fields for cleaning, glossary, or eval thresholds. There is <strong>no view-only mode</strong> (opening the editor opens it editable). There is <strong>no in-line delete or archive button</strong>; use the <code>status</code> enum to deprecate. There is <strong>no version picker</strong> (the version shown is whatever was last saved). There is <strong>no batch operation</strong> (assign-many, duplicate-many). And there is <strong>no unassign button</strong> after a pack has been assigned to a project — only reassign to a different pack.</p>
+          <p>The panel has <strong>no search or filter</strong> on the pack list (every pack shows; pick from the dropdown or click in the grid). Overlay sections beyond the three first-class fields are <strong>JSON-only</strong> — no form fields for cleaning, glossary, or eval thresholds. There is <strong>no view-only mode</strong> (opening the editor opens it editable). There is <strong>no in-line delete or archive button</strong>; use the <code>status</code> enum to deprecate. There is <strong>no version picker</strong> (the version shown is whatever was last saved). There is <strong>no batch operation</strong> (assign-many, duplicate-many). And there is <strong>no unassign button</strong> after a pack has been assigned to a project — only reassign to a different pack.</p>
         </div>
 
-        <p><strong>✓ Checkpoint:</strong> the pack list shows <code>finance-pack-v1</code> alongside the seeded <code>general-pack-v1</code>, with the active badge if you assigned it, the system badge only on the seeded one, and your chosen status. Opening the editor on it should round-trip — Load From JSON populates the hook helper dropdowns to the IDs you saved, Apply To JSON writes them back unchanged.</p>
+        <p><strong>✓ Checkpoint:</strong> the pack list shows <code>finance-pack-v1</code> alongside the seeded <code>general-pack-v1</code>, with the active badge if you assigned it, the system badge only on the seeded one, and your chosen status. Opening the editor on it should round-trip — <em>Resync picker from JSON</em> sets the Hook Picker dropdowns to the IDs you saved, and re-picking the same values leaves the contract unchanged.</p>
 
         <h2 id="testing-your-pack">Testing your pack before applying it</h2>
-        <p>There's no dry-run endpoint, and the manager's save step validates only the JSON contract structure (schema reference, required identity fields, hook reference shape). The actual hook behaviour is wrapped in try/except with fallback to default behaviour — a typo in a hook config key is silent. The implication: testing is on you.</p>
+        <p>There's no dry-run endpoint, and the panel's save step validates only the JSON contract structure (schema reference, required identity fields, hook reference shape). The actual hook behaviour is wrapped in try/except with fallback to default behaviour — a typo in a hook config key is silent. The implication: testing is on you.</p>
 
         <p>The minimum acceptable test pass:</p>
         <ol>
           <li><strong>Round-trip the contract.</strong> Save the pack, reopen the editor, confirm the contract JSON comes back unchanged (modulo whitespace). If it doesn't round-trip, the validator dropped a field you wrote — usually a typo in a known key.</li>
-          <li><strong>Assign to a sandbox project.</strong> Create a throwaway project (or reuse an existing scratch one), assign the pack, look at the project's prepare-dataset and training-defaults panels. Confirm the dataset split, training defaults, and registry gates now reflect the pack's overlay rather than the platform default.</li>
-          <li><strong>Run prepare and watch the validator output.</strong> The validator hook reports its findings; compare a baseline run to your test run to see whether your pack config is actually being applied. If you expected a config change to bite and didn't see one, check: (1) the hook ID spelling matches a registered hook, (2) any custom plugin you wrote has been loaded via the Reload Plugins button on the manager, (3) your config-key names match what the hook implementation reads. Most pack debugging starts with one of these three.</li>
-          <li><strong>Run a training experiment.</strong> Even a small one — 30 rows is enough. The registry gates show on the experiment page after training; the <code>weighted_score</code> metric shows in the eval summary if your evaluator hook is reading the <code>weights</code> config. The act of running through end-to-end catches the hook-loading and config-key issues the JSON validator can't catch.</li>
+          <li><strong>Assign to a sandbox project.</strong> Create a throwaway project (or reuse an existing scratch one), assign the pack, look at <strong>Data → Split</strong> and the <strong>Train</strong> form. Confirm the dataset split, training defaults, and registry gates now reflect the pack's overlay rather than the platform default.</li>
+          <li><strong>Run prepare and watch the validator output.</strong> The validator hook reports its findings; compare a baseline run to your test run to see whether your pack config is actually being applied. If you expected a config change to bite and didn't see one, check: (1) the hook ID spelling matches a registered hook, (2) any custom plugin you wrote has been loaded via the <em>Reload Plugins</em> button in the hook catalog, (3) your config-key names match what the hook implementation reads. Most pack debugging starts with one of these three.</li>
+          <li><strong>Run a training experiment.</strong> Even a small one — 30 rows is enough. The registry gates are checked when you promote a checkpoint; the <code>weighted_score</code> metric shows in the eval summary (<strong>Results → Verdict</strong>) if your evaluator hook is reading the <code>weights</code> config. The act of running through end-to-end catches the hook-loading and config-key issues the JSON validator can't catch.</li>
         </ol>
 
         <p>The Reload Plugins button is your friend during this phase. If you ship a custom hook implementation as a Python plugin module, the platform lazy-loads it on first reference; if you change the plugin code, you'll need to reload to pick up the change. The Loaded Plugin Modules card on the catalog shows you what's currently in memory; the Plugin Load Errors card surfaces import-time failures.</p>
@@ -463,7 +464,7 @@
 
         <p>And there is no automatic re-assignment when you bump a pack's version — see the next section.</p>
 
-        <p><strong>✓ Checkpoint:</strong> your invoice project's header now labels it with <code>finance-pack-v1</code>; the prepare and training panels show the pack's dataset split and training defaults; the registry gates panel shows the tightened to-staging and to-production floors.</p>
+        <p><strong>✓ Checkpoint:</strong> the <em>Active</em> panel under <strong>Settings → Tools → Domain Packs</strong> now names <code>finance-pack-v1</code>; <strong>Data → Split</strong> and the <strong>Train</strong> form show the pack's dataset split and training defaults; the contract's <code>registry_gates</code> carry the tightened to-staging and to-production floors.</p>
 
         <h2 id="versioning">Versioning — what packs do, what they don't, how to migrate</h2>
         <p>The pack's <code>version</code> is a user-managed string. No structured semver parsing, no migration plumbing, no auto-versioning. The duplicate flow auto-bumps the patch component when you copy a pack — that's the only automation. Three implications:</p>
@@ -492,8 +493,8 @@
         <ol>
           <li><strong>Source side</strong> — open the pack in the editor, copy the contract JSON out of the textarea.</li>
           <li><strong>Paste it into a shared internal docs page, a git repo, or wherever your team versions configuration.</strong> Treat the JSON as the canonical artefact — it's the typed contract anyway.</li>
-          <li><strong>Target side</strong> — in the other tenant's Domain Pack Manager, click <em>New Pack</em>, paste the JSON into the editor's textarea, save.</li>
-          <li><strong>Re-pick the hooks via the Hook Helper.</strong> Hook IDs are tenant-local — if the target tenant has different hook plugins installed, the source pack's hook IDs may not resolve. The Hook Helper's dropdowns are populated from the target tenant's catalog; pick equivalents and Apply To JSON.</li>
+          <li><strong>Target side</strong> — in the other tenant's <strong>Settings → Tools → Domain Packs</strong>, click <em>New Pack</em>, paste the JSON into the editor's textarea, save.</li>
+          <li><strong>Re-pick the hooks via the Hook Picker.</strong> Hook IDs are tenant-local — if the target tenant has different hook plugins installed, the source pack's hook IDs may not resolve. The Hook Picker's dropdowns are populated from the target tenant's catalog; pick equivalents and they land in the contract.</li>
         </ol>
 
         <p>This sounds clunky and is. It is also, today, exactly what the platform offers. The accurate framing for the audit reader is "the pack contract is stored as JSON, which we version in our internal docs and replicate by manual copy to each BrewSLM tenant." Not "we have a marketplace." If your AP team operates across many tenants, treat the JSON as the artefact and the tenant as the deployment target.</p>
@@ -590,7 +591,7 @@
         <p>That is the full contract. It encodes the conventions an AP team is likely to converge on after one or two audit cycles, in a shape every project in the AP portfolio can apply at create-time. The audit reader's first question — "show me the policy" — has a single artefact to answer it.</p>
 
         <h2 id="applying-to-the-invoice-project">Applying the pack to the invoice project</h2>
-        <p>Go to your Tutorial 3 invoice project. Open the Domain Pack Manager. The Active panel shows <code>general-pack-v1</code>. Pick <code>finance-pack-v1</code> from the dropdown; click <em>Assign to Project</em>; confirm.</p>
+        <p>Go to your Tutorial 3 invoice project. Open <strong>Settings → Tools → Domain Packs</strong>. The <em>Active</em> panel shows <code>general-pack-v1</code>. Pick <code>finance-pack-v1</code> from the dropdown; click <em>Assign to Project</em>; confirm.</p>
 
         <p>What changes on the next prepare or training run:</p>
         <ul>
@@ -604,7 +605,7 @@
 
         <p>One subtle artefact: <code>adopt_pack_default_profile=true</code> is the UI default, so the project's <code>domain_profile_id</code> resets to <code>generic-domain-v1</code>. If you had a bespoke profile, re-set it afterward.</p>
 
-        <p><strong>✓ Checkpoint:</strong> the experiment page reflects the tightened registry gates; the eval summary shows the additional <code>weighted_score</code> metric from the evaluator hook (set up correctly + reading your weights config); the validator surfaces ambiguous-date and missing-PO flags. If nothing changed, check the project header for the active pack badge.</p>
+        <p><strong>✓ Checkpoint:</strong> promotion checks run against the tightened registry gates; the eval summary (<strong>Results → Verdict</strong>) shows the additional <code>weighted_score</code> metric from the evaluator hook (set up correctly + reading your weights config); the validator surfaces ambiguous-date and missing-PO flags. If nothing changed, check the <em>Active</em> panel under Domain Packs.</p>
 
         <h2 id="extending-the-pack">Extending the pack to PO, statement, and expense extractors</h2>
         <p>The same pack carries cleanly to the other AP projects in the portfolio. The interesting question is what stays in the pack and what stays per-project. Walking through the sibling projects:</p>
@@ -645,7 +646,7 @@
           <dt>Monitor pack effectiveness over time</dt>
           <dd>The pack is policy; the projects' eval rows are the evidence. Track per-quarter the share of AP-portfolio projects whose latest eval clears the pack's gates. Falling share means either the gates have outrun the data shape (sometimes legitimate — bump the version downward) or the data shape is decaying (more likely — investigate per project).</dd>
           <dt>Contribute back to your internal pack library</dt>
-          <dd>If your <code>finance-pack-v1</code> turns out to encode conventions other AP teams in your org would benefit from, copy the JSON contract into your internal documentation repo, label it with the version, and circulate. There's no marketplace; the JSON file is the artefact. Other teams paste it into their tenant via <em>New Pack</em>, re-pick hooks via the Hook Helper if the IDs differ, and they have the same policy applied.</dd>
+          <dd>If your <code>finance-pack-v1</code> turns out to encode conventions other AP teams in your org would benefit from, copy the JSON contract into your internal documentation repo, label it with the version, and circulate. There's no marketplace; the JSON file is the artefact. Other teams paste it into their tenant via <em>New Pack</em>, re-pick hooks in the Hook Picker if the IDs differ, and they have the same policy applied.</dd>
         </dl>
 
         <p>For more end-to-end tutorials covering other recipes — the rag-protocol family, span extraction, classification — head back to the <strong><a class="inline-link" href="index.html">tutorials hub</a></strong>.</p>
@@ -700,18 +701,18 @@
       "The pack does change the refusal phrase, but only after a full re-training run"
     ],
     "answer": 1,
-    "explanation": "The contract validator will accept the field; no behaviour follows. Per-pack refusal customisation would be a natural future enhancement — today, the refusal phrase has to be imprinted via the project's gold set plus synth-prompt edits. Documenting the workaround keeps the pack honest."
+    "explanation": "The contract validator will accept the field; no behaviour follows. Per-pack refusal customisation would be a natural future enhancement — today, the refusal phrase has to be imprinted via the project's answer key plus synth-prompt edits. Documenting the workaround keeps the pack honest."
   },
   {
-    "q": "Which of these is NOT something the Domain Pack Manager UI exposes today?",
+    "q": "Which of these is NOT something the Domain Packs panel (Settings → Tools) exposes today?",
     "options": [
       "A dropdown of every installed pack",
-      "A Hook Helper with three dropdowns and Load From JSON / Apply To JSON buttons",
+      "A Hook Picker with three dropdowns and a Resync picker from JSON button",
       "A search/filter bar on the pack list",
       "A Contract JSON textarea for editing overlay sections that don't have first-class form fields"
     ],
     "answer": 2,
-    "explanation": "The manager has no search or filter UI; every installed pack shows, pick from the dropdown or the click list. The Hook Helper, the JSON textarea, and the four-button control set are the manager's actual surface area. Overlay sections beyond dataset_split / training_defaults / registry_gates are JSON-only."
+    "explanation": "The panel has no search or filter UI; every installed pack shows, pick from the dropdown or the click list. The Hook Picker, the JSON textarea, and the four-button control set are the panel's actual surface area. Overlay sections beyond dataset_split / training_defaults / registry_gates are JSON-only."
   }
 ]
           </script>

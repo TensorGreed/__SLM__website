@@ -135,10 +135,11 @@
           </div>
         </header>
 
-        <p>In lesson 2.7 you ran a gold set by hand, computed accuracy, compared to the base, and read the misses to decide what data to fix. Stage 09 is that whole loop as a platform surface — with the quality gate from Track 1 made enforceable.</p>
+        <p>In lesson 2.7 you ran a gold set by hand, computed accuracy, compared to the base, and read the misses to decide what data to fix. Stage 09 is that whole loop as a platform surface — with the quality gate from Track 1 made enforceable. In the workspace it lives under <strong>Results</strong> (<code>/project/&lt;id&gt;/results</code>): <strong>Verdict</strong> answers "did it work?", <strong>Failures</strong> answers "where does it fail?".</p>
 
         <h2>The eval pack and its gates</h2>
-        <p>Evaluate takes the trained model, the held-out eval set (the manifest's <code>eval.jsonl</code>), and an <strong>eval pack</strong>. The eval pack declares the metrics to compute and the <strong>gates</strong> that decide <em>promotability</em> — the pass thresholds a model must clear to be shippable. This is precisely the Track 1 quality gate, now a declared object the platform enforces rather than a number you remember to check.</p>
+        <p>Evaluate takes the trained model, the held-out test split (the manifest's <code>test.jsonl</code> — the <strong>test examples</strong> in the UI), and an <strong>eval pack</strong>. The eval pack declares the metrics to compute and the <strong>gates</strong> that decide <em>promotability</em> — the pass thresholds a model must clear to be shippable. This is precisely the Track 1 quality gate, now a declared object the platform enforces rather than a number you remember to check. The UI calls the pack a <strong>rule set</strong> and its gates <strong>pass/fail rules</strong> (the API, the pack ids such as <code>evalpack.general.default</code> and the JSON keys keep the old names): <strong>Results → Verdict</strong> shows a <em>Pass/fail rules</em> card with the run, the rule set, when it was checked and which required rules failed; <strong>Results → Failures</strong> has the rule-set card where you pick the project's rule set and review each rule for the selected run.</p>
+        <figure class="academy-figure"><img src="../../assets/screens/workspace/results-verdict-rules.png" alt="The Pass/fail rules card on Results → Verdict: FAIL, Run #1 · v09-narrated-run, Rule set General Default Gates, the time it was checked, and Failed required rules: min_exact_match, min_f1" loading="lazy" width="1600" height="188" /><figcaption>Results → Verdict: the pass/fail rules card names the run, the rule set and the required rules that failed. Here run #1 beat its base model on the judged lift and still fails min_exact_match and min_f1.</figcaption></figure>
         <pre class="code-block"><code>eval_pack:
   metrics: [accuracy, macro_f1]
   gates:
@@ -156,7 +157,7 @@ transcription    →  WER</code></pre>
         <p>The result is a pass rate plus task-aware metrics, emitted as an <code>eval</code> RunEvent parented to the experiment (<code>exp-&lt;id&gt;</code>), with named failures like <code>eval_dataset_missing</code> or <code>eval_judge_unavailable</code>.</p>
 
         <h2>Failure clusters — your misses, grouped</h2>
-        <p>Reading individual wrong predictions (what you did by hand) doesn't scale to thousands of eval rows. BrewSLM groups the failures into <strong>failure clusters</strong>: buckets of misses that share a pattern — a confused class pair, a particular input phrasing, an edge case the data underrepresents. Instead of skimming a list, you see "37 failures: negative reviews containing the word 'but'."</p>
+        <p>Reading individual wrong predictions (what you did by hand) doesn't scale to thousands of eval rows. BrewSLM groups the failures into <strong>failure clusters</strong>: buckets of misses that share a pattern — a confused class pair, a particular input phrasing, an edge case the data underrepresents. Instead of skimming a list, you see "37 failures: negative reviews containing the word 'but'." Eval clusters sit on <strong>Results → Failures</strong> (with the remediation planner and the slice breakdown); failures from production run events are clustered on <strong>Ship → Monitor</strong>.</p>
 
         <div class="callout callout--note">
           <p class="callout__label">From Track 2</p>
@@ -164,21 +165,21 @@ transcription    →  WER</code></pre>
         </div>
 
         <h2>Remediation — close the loop</h2>
-        <p>Each cluster comes with a <strong>remediation plan</strong>: the recommended fix, often "augment from this cluster" — generate or import more rows like the ones failing, route them through the review queue (lesson 3.3), re-prepare, and re-train. This is the Coach-Mode <code>augment_from_cluster</code> action, and it's the data-centric iteration of Track 1 turned into a button. If the model <em>cleared the gates</em>, it's promotable. If it didn't — and especially if more data won't fix it — the platform's next move is to ask whether fine-tuning is even the right tool, which is the next lesson.</p>
+        <p>Each cluster comes with a <strong>remediation plan</strong>: the recommended fix, often "augment from this cluster" — generate or import more rows like the ones failing, route them through the review queue (lesson 3.3), re-split, and re-train. This is the <code>augment_from_cluster</code> action — the <em>Augment N rows for this cluster</em> button on the Coach notice at the top of Results, or <em>Augment from this cluster</em> on a cluster card under <strong>Results → Failures</strong> — and it's the data-centric iteration of Track 1 turned into a button. If the model <em>cleared the pass/fail rules</em>, it's promotable. If it didn't — and especially if more data won't fix it — the platform's next move is to ask whether fine-tuning is even the right tool, which is the next lesson.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>An <strong>eval pack</strong> turns the Track 1 quality gate into an enforceable promotability check; <strong>task-aware metrics</strong> fit the task automatically; <strong>failure clusters + remediation</strong> turn your by-hand 'read the misses' loop into grouped, actionable next steps.</p>
+          <p>An <strong>eval pack</strong> (the UI's <strong>rule set</strong> of <strong>pass/fail rules</strong>) turns the Track 1 quality gate into an enforceable promotability check; <strong>task-aware metrics</strong> fit the task automatically; <strong>failure clusters + remediation</strong> turn your by-hand 'read the misses' loop into grouped, actionable next steps.</p>
         </div>
 
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
-            <dt>eval pack</dt><dd>The declared set of metrics and promotion gates evaluated against the held-out eval set.</dd>
-            <dt>promotability gate</dt><dd>A pass threshold in the eval pack a model must clear to be shippable (the Track 1 quality gate).</dd>
+            <dt>eval pack</dt><dd>The declared set of metrics and promotion gates evaluated against the held-out test examples. In the UI: the <strong>rule set</strong> (Results → Verdict and Results → Failures).</dd>
+            <dt>promotability gate</dt><dd>A pass threshold in the eval pack a model must clear to be shippable (the Track 1 quality gate). In the UI: a <strong>pass/fail rule</strong>.</dd>
             <dt>task-aware metrics</dt><dd>Metrics defined by the handler's score() to fit the task shape (F1, span-set, faithfulness, WER, …).</dd>
             <dt>failure cluster</dt><dd>A bucket of eval misses sharing a pattern, surfaced instead of a flat list.</dd>
-            <dt>remediation plan</dt><dd>The recommended fix for a cluster — often augment_from_cluster to add similar rows and re-train.</dd>
+            <dt>remediation plan</dt><dd>The recommended fix for a cluster — often augment_from_cluster to add similar rows and re-train (Results → Failures).</dd>
           </dl>
         </section>
 
@@ -196,7 +197,7 @@ transcription    →  WER</code></pre>
       "The notification bell"
     ],
     "answer": 1,
-    "explanation": "Eval-pack gates are the enforceable form of Track 1's quality gate."
+    "explanation": "Eval-pack gates — the pass/fail rules on Results → Verdict — are the enforceable form of Track 1's quality gate."
   },
   {
     "q": "Where does the shape of the metrics come from?",

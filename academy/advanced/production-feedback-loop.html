@@ -104,11 +104,11 @@
         <p>Lesson 4.9 ended with a question: drift detection tells you <em>that</em> your live model has gotten worse — what do you do about it? You retrain. Retrain on what? That's the question this lesson answers. The "what" is production rows you collected, tagged, and curated. Without that data-collection loop, drift is a fire alarm with no water nearby.</p>
 
         <h2>Drift detects; the loop supplies</h2>
-        <p>Lesson 4.9's drift check re-runs your gold set against the live endpoint on a schedule. When the gold set's pass rate drops, you know something is wrong. <strong>You don't know what.</strong> Your gold set was curated months ago; what shifted in production isn't in it. The feedback loop's job is to make sure that, when drift fires, you have <em>recent real inputs the model got wrong</em> ready to add to the next training round.</p>
+        <p>Lesson 4.9's drift check re-runs your gold set (in BrewSLM, the <strong>answer key</strong> under <strong>Data → Labels</strong>) against the deployed model on whatever cadence you run it. When the gold set's pass rate drops, you know something is wrong. <strong>You don't know what.</strong> Your gold set was curated months ago; what shifted in production isn't in it. The feedback loop's job is to make sure that, when drift fires, you have <em>recent real inputs the model got wrong</em> ready to add to the next training round.</p>
 
         <div class="callout callout--note">
           <p class="callout__label">Two halves of one cycle</p>
-          <p><strong>Drift detection</strong> (Lesson 4.9) = the gold set, on a schedule, vs the live endpoint. Catches the problem. <strong>Feedback loop</strong> (this lesson) = continuous logging + tagging + conversion of production rows into training examples. Supplies the cure. You need both — drift without the loop is alarms without action; the loop without drift is data piling up with no signal that it's needed.</p>
+          <p><strong>Drift detection</strong> (Lesson 4.9) = the gold set, on a cadence, vs the deployed model. Catches the problem. <strong>Feedback loop</strong> (this lesson) = continuous logging + tagging + conversion of production rows into training examples. Supplies the cure. You need both — drift without the loop is alarms without action; the loop without drift is data piling up with no signal that it's needed.</p>
         </div>
 
         <h2>Step 1: log requests and responses</h2>
@@ -245,12 +245,12 @@ def logs_to_sft(log_path: str, tags: set[str], gold_corrections: dict[str, str])
         <ul>
           <li><strong>On drift signal.</strong> When <code>deployment_drift_detected</code> fires and you have at least N (say 100) tagged-and-corrected rows in the window, retrain. Skip retrain if you don't — collect more first; retraining on too little new data just trades one set of regressions for another (Lesson 1.21).</li>
           <li><strong>Cadenced.</strong> Weekly or monthly, whether drift fired or not. Cheap if your training pipeline is automated (Track 3); useful for slow-moving distributions that drift would never trip.</li>
-          <li><strong>On capability gap.</strong> When a specific failure cluster (Track 3, Lesson 3.13) crosses a count threshold, retrain on that cluster. The targeted version of <code>augment_from_cluster</code> in production.</li>
+          <li><strong>On capability gap.</strong> When a specific failure cluster (Track 3, Lesson 3.13; <strong>Results → Failures</strong> for eval misses, <strong>Ship → Monitor</strong> for run-log errors) crosses a count threshold, retrain on that cluster. The targeted version of <code>augment_from_cluster</code> in production.</li>
         </ul>
 
         <div class="callout callout--warning">
           <p class="callout__label">Don't ship a regression — re-run the eval suite</p>
-          <p>Every retrain has to clear the same eval-pack gates the previous deploy cleared (Track 3, Lesson 3.13's <code>required</code> gates). Otherwise you fix the new failures and reintroduce the old ones. The promotability decision is your safety net; treat it as such.</p>
+          <p>Every retrain has to clear the same eval-pack gates the previous deploy cleared (Track 3, Lesson 3.13's <code>required</code> gates — the <strong>pass/fail rules</strong> on <strong>Results → Verdict</strong> in the BrewSLM UI). Otherwise you fix the new failures and reintroduce the old ones. The promotability decision is your safety net; treat it as such.</p>
         </div>
 
         <div class="callout callout--key">

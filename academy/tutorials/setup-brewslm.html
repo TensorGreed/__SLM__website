@@ -6,7 +6,7 @@
     <title>Tutorial 0 — Set up BrewSLM and your first project — BrewSLM Academy</title>
     <meta
       name="description"
-      content="Get BrewSLM running locally in 15 minutes: clone the repo, start the backend on port 8000, start the frontend on port 5173, log in as the bootstrap admin user, create your first project, and learn where the main surfaces (Data Studio, Training, Evaluation, Playground, the notification bell) live in the UI. Prerequisite for every other tutorial in this track."
+      content="Get BrewSLM running locally in 15 minutes: clone the repo, start the backend on port 8000, start the frontend on port 5173, log in as the bootstrap admin user, create your first project, and learn where the six workspace destinations (Overview, Data, Train, Results, Ship, Settings) and the notification bell live in the UI. Prerequisite for every other tutorial in this track."
     />
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
     <meta name="author" content="TensorGreed" />
@@ -117,7 +117,7 @@
         <header class="lesson-header">
           <span class="lesson-header__badge">Tutorial 0 · Setup · Prerequisite</span>
           <h1>Set up BrewSLM and create your first project</h1>
-          <p class="lesson-header__outcome">By the end of this tutorial you'll have BrewSLM running locally at <code>http://localhost:5173</code>, an admin user you can log in as, an empty project you created from the dashboard, and a mental map of where the main surfaces (Data Studio, Training, Evaluation, Playground, the notification bell) live. Every other tutorial in this track assumes you've done this one — start here.</p>
+          <p class="lesson-header__outcome">By the end of this tutorial you'll have BrewSLM running locally at <code>http://localhost:5173</code>, an admin user you can log in as, an empty project you created from the projects home, and a mental map of the six destinations in the project sidebar (Overview, Data, Train, Results, Ship, Settings) plus the notification bell. Every other tutorial in this track assumes you've done this one — start here.</p>
           <div class="lesson-meta">
             <span><strong>Level:</strong> beginner</span>
             <span><strong>Time:</strong> ~15 minutes (mostly waiting for <code>pip install</code> and <code>npm install</code>)</span>
@@ -125,7 +125,7 @@
           </div>
         </header>
 
-        <p>This is the unglamorous tutorial that every other tutorial leans on. We're going to clone the repo, get the backend running on port 8000, get the frontend running on port 5173, log in, and click through the dashboard so you know where things are. No machine learning yet — just enough to land you in front of a working empty project, ready to import data in Tutorial 1.</p>
+        <p>This is the unglamorous tutorial that every other tutorial leans on. We're going to clone the repo, get the backend running on port 8000, get the frontend running on port 5173, log in, and click through the workspace so you know where things are. No machine learning yet — just enough to land you in front of a working empty project, ready to import data in Tutorial 1.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
@@ -200,7 +200,7 @@ npm run dev</code></pre>
           <li>In <strong>Password</strong>, type the value of <code>API_KEY</code> from your <code>backend/.env</code> file. The default value from <code>.env.example</code> is <code>sk-mock-admin-key</code>.</li>
           <li>Click <strong>Sign in</strong>.</li>
         </ol>
-        <p><strong>✓ Checkpoint:</strong> after sign-in you should land on <code>/projects</code> — the project dashboard. The header shows <code>admin</code> in the top right. The body says something like "You don't have any projects yet" with a big <strong>+ New Project</strong> button. If you see "you don't have access to any projects" instead, you logged in as a non-admin user (the default ENGINEER role doesn't get any projects until an admin grants access). Sign out, sign back in with the exact username <code>admin</code>.</p>
+        <p><strong>✓ Checkpoint:</strong> after sign-in you should land on the projects home. The header shows <code>admin</code> in the top right next to the help (?) icon and the notification bell, with a <strong>+ New Project</strong> button on the left of them. Below the search box and the All / Draft / Active / Completed filter sits <strong>"Or begin with a starter project"</strong> — three quick demos (Demo · PII / PCI Detector, Demo · Sentiment classifier, Demo · Support FAQ) and a row of starter templates. If you see "you don't have access to any projects" instead, you logged in as a non-admin user (the default ENGINEER role doesn't get any projects until an admin grants access). Sign out, sign back in with the exact username <code>admin</code>.</p>
 
         <div class="callout callout--warning">
           <p class="callout__label">Production auth is different</p>
@@ -208,40 +208,45 @@ npm run dev</code></pre>
         </div>
 
         <h2 id="first-project">Step 5 — Create your first project</h2>
-        <p>On the <code>/projects</code> dashboard:</p>
+        <p>On the projects home:</p>
+        <figure class="academy-figure"><img src="../../assets/screens/workspace/projects.png" alt="The BrewSLM projects home: a search box with All / Draft / Active / Completed filters, a + New Project button in the top bar, three quick-demo starter cards (PII / PCI Detector, Sentiment classifier, Support FAQ) and a row of starter templates with Use this starter buttons." loading="lazy" width="1600" height="1000" /><figcaption>The projects home after sign-in. <strong>+ New Project</strong> is top right; the starter projects are below the search box.</figcaption></figure>
         <ol>
-          <li>Click the <strong>+ New Project</strong> button (top right of the project list).</li>
-          <li>A modal opens. Fill in:
+          <li>Click the <strong>+ New Project</strong> button (top right, next to the bell).</li>
+          <li>The <strong>New BrewSLM Project</strong> dialog opens. Fill in:
             <ul>
-              <li><strong>Name</strong>: anything memorable — for example <code>tutorial-0-test</code>.</li>
-              <li><strong>Description</strong>: optional — type "first project from Tutorial 0" or leave it empty.</li>
-              <li><strong>Recipe</strong>: the dropdown lists every recipe BrewSLM ships. For this first project pick <code>qa-sft</code> (the most general). Other recipes (<code>classification</code>, <code>rag-protocol</code>, <code>span-extraction</code>, <code>summarization</code>, <code>code-review</code>, <code>generic-sft</code>) all work too — you can change later or create a second project per recipe.</li>
-              <li><strong>Domain Pack</strong> + <strong>Domain Profile</strong>: leave both blank. The platform's defaults work fine. (Tutorial 8 covers domain packs.)</li>
+              <li><strong>Project Name</strong>: anything memorable — for example <code>tutorial-0-test</code>.</li>
+              <li><strong>What problem do you want this model to solve?</strong>: one or two plain sentences, e.g. "Answer customer support FAQs from our resolved tickets. Never hallucinate beyond the dataset." BrewSLM reads this brief and sets the defaults — base model, task profile, output schema. There is no recipe dropdown any more; the task shape comes from the brief and the data, and you can change it later (<strong>Train → Task → Change</strong>, or <strong>Data → Labels → "What kind of task is this?" → Change</strong>).</li>
+              <li><strong>Advanced options</strong>: leave collapsed. It holds a description override, sample inputs / outputs, a base model and deployment target, and the link to import a <code>brewslm.yaml</code> manifest instead. Domain packs are not part of creation — they live under <strong>Settings → Tools → Domain Packs</strong> (Tutorial 8 covers them).</li>
             </ul>
           </li>
           <li>Click <strong>Create project</strong>.</li>
         </ol>
-        <p><strong>✓ Checkpoint:</strong> you should now be on the project detail page. The URL looks like <code>/project/1</code> (the project id is 1 since this is your first). The left sidebar shows pipeline stages: <strong>Pipeline</strong>, <strong>Domain</strong>, <strong>Workflow</strong>, <strong>Training Config</strong>. The top of the page shows the project name. The center panel shows the Data Studio overview — which is empty because there's no data yet. That's expected.</p>
+        <p>The alternative, if you'd rather start with data already in place: under <strong>"Or begin with a starter project"</strong> click <strong>Open demo</strong> on <strong>Demo · Support FAQ</strong>. That is the project Tutorial 1 works in.</p>
+        <p><strong>✓ Checkpoint:</strong> you should now be on the project's <strong>Overview</strong>. The URL looks like <code>/project/1</code> (the project id is 1 since this is your first). The left sidebar lists six destinations: <strong>Overview</strong>, <strong>Data</strong>, <strong>Train</strong>, <strong>Results</strong>, <strong>Ship</strong>, <strong>Settings</strong>, with <strong>Quick search ⌘K</strong> at the bottom. The top bar shows the project name and a <strong>Health</strong> chip. The Overview's "Where you are" card says <strong>Data Ingestion</strong> and "Next step" offers <strong>Import source data</strong> — expected, there's no data yet.</p>
+        <figure class="academy-figure"><img src="../../assets/screens/workspace/overview.png" alt="A project Overview in BrewSLM: the left sidebar with Overview, Data, Train, Results, Ship and Settings; cards for Where you are, Next step, Latest run and Shipped model; a Worth a look list of Coach notices; a collapsed Full plan." loading="lazy" width="1600" height="1000" /><figcaption>The Overview of the Demo · Support FAQ project after one training run and one export. A fresh project shows the same layout with the run and export cards empty.</figcaption></figure>
 
         <h2 id="tour">Step 6 — Tour the main surfaces</h2>
-        <p>Take five minutes to click through the main panels so the rest of the tutorials don't feel like a treasure hunt. The terms used in the other tutorials map to these surfaces:</p>
+        <p>Take five minutes to click through the six destinations so the rest of the tutorials don't feel like a treasure hunt. Every project has the same sidebar, and nothing is hidden behind a mode switch. The tutorials write click paths as <strong>Destination → Step/Tab → control</strong>, e.g. <strong>Data → Generate → <em>Generation Mode</em></strong>.</p>
         <dl>
-          <dt>Top navigation bar</dt>
-          <dd>Persistent across every page. From left: the BrewSLM logo (clicks home to the project dashboard), the project name dropdown (switches projects), the page-level navigation, and on the far right the <strong>notification bell</strong> (the cluster of icons including a bell shape). The bell tracks every background job — synth generation, training runs, dataset prep, RAG comparison. Click it to see in-flight + completed jobs.</dd>
-          <dt>Left sidebar — pipeline stages</dt>
-          <dd>The vertical sidebar on the project detail page. Stages are: Ingest → Clean → Gold Set → Synthetic → Dataset Prep → Tokenize → Train → Evaluate → Compress → Export → Deploy. Click any stage to jump to its surface. The current stage is highlighted.</dd>
-          <dt>Data Studio</dt>
-          <dd>The most-used surface. Mostly that's the <strong>Pipeline → Data</strong> entry in the sidebar (you may also see "Data Studio" as a top-level link depending on the build). It's a multi-panel view: <strong>Overview readiness</strong> at the top (the "% toward your stated goal" widget), then panels for <strong>Sources</strong>, <strong>Mapping</strong>, <strong>Quality &amp; Safety</strong>, <strong>Gold Set</strong>, <strong>Synthetic Playbook Center</strong>, <strong>Review Queue</strong>, <strong>Prepare Dataset</strong>, <strong>Dataset Versions</strong>. The tutorials refer to these by name; you can find any of them by scrolling the Data Studio page or using the in-page section index.</dd>
-          <dt>Synthetic tab</dt>
-          <dd>Where you run synth playbooks (paraphrase, hard-negatives, refusals, etc.) and accept/reject generated rows in the <strong>Review Queue</strong> at the bottom of the page. The playbooks themselves are configured from the <strong>Synthetic Playbook Center</strong> in Data Studio.</dd>
-          <dt>Training tab</dt>
-          <dd>Where you configure + launch training runs. The center shows the experiment list with live-loss sparklines for in-flight runs and a "kill switch" if a run goes off the rails. Each experiment has its own detail page with the full loss curve, eval results, exported artifacts.</dd>
-          <dt>Evaluation tab</dt>
-          <dd>Where eval packs run + scorecards land. The <strong>Failure Clusters</strong> panel groups eval failures by reason so you can fix the biggest cluster first. The <strong>Reroute Recommendation</strong> panel surfaces when the platform thinks you should switch to RAG instead of more training.</dd>
-          <dt>Playground</dt>
-          <dd>Chat with your trained model. Each turn carries a small provenance footer at the bottom showing which adapter served the reply, which RAG chunks (if any) were retrieved, and the latency. The Playground is the most reliable smoke test for "did the model actually learn what I trained it on?"</dd>
+          <dt>Top bar</dt>
+          <dd>Persistent across every page. From left: the BrewSLM logo (back to the projects home), the project name and its description, a <strong>Health</strong> chip, the help (?) icon, the <strong>notification bell</strong> and the user menu. The bell tracks every background job — synthetic generation, training runs, evaluations, exports, RAG comparisons. Click it to see in-flight and recently completed jobs; each one deep-links to where its result landed.</dd>
+          <dt>Left sidebar — six destinations</dt>
+          <dd><strong>Overview · Data · Train · Results · Ship · Settings</strong>, in pipeline order, plus <strong>Quick search</strong> (⌘K / Ctrl+K — a command palette that jumps to any step, section or tab by name) and <strong>Collapse</strong>. The active destination is highlighted.</dd>
+          <dt>Overview (<code>/project/&lt;id&gt;</code>)</dt>
+          <dd>"Where you are" (the current stage) and "Next step" with one button; a <strong>Latest run</strong> card (lift against the base model, "Open results"); a <strong>Shipped model</strong> card (export, Hub link, "Open Ship"); <strong>Worth a look</strong> — up to three Coach notices with a one-click action and a "why?" trace; and a collapsed <strong>Full plan</strong> (checklist + quickstart). When in doubt, come back here and press the Next step button.</dd>
+          <dt>Data (<code>/project/&lt;id&gt;/data?step=…</code>)</dt>
+          <dd>Five numbered steps across the top: <strong>1 Sources</strong> (upload files, <em>Import dataset (auto-mapping)</em>, <em>Write sample documents</em>), <strong>2 Prepare</strong> (cleaning: chunk size, Redact PII &amp; Secrets, <em>Clean All Documents</em>), <strong>3 Labels</strong> (confirm "What kind of task is this?", the <strong>answer key</strong> — the gold evaluation dataset — with its diagnostics), <strong>4 Generate</strong> (synthetic data: generation mode, provider, model, playbooks), <strong>5 Split</strong> (train / validation / test). Each step is a short form on top plus a collapsed <strong>Details</strong> drawer holding the advanced panels — review queue, playbook center, quality and safety, schema mapping, dataset versions. The tutorials name those sections as <strong>Data → Step → Details → Section</strong>. A one-line tip and a "Watch the walkthrough" link sit under the step bar.</dd>
+          <dt>Train (<code>/project/&lt;id&gt;/train</code>)</dt>
+          <dd>One form: <strong>Base model</strong> (+ Browse), <strong>Task</strong> (read-only + Change), <strong>Seeds</strong> (One run / Three seeds), <strong>Run name</strong>, a readiness line, and the <strong>Train</strong> button — which opens a confirm dialog with the resolved config and an estimate before <strong>Launch</strong>. Everything else waits under <strong>More options</strong>: Model and hyperparameters, LoRA and advanced training, Seeds, Checks (preflight), Cloud burst, Training presets, Plan and gaps (config gaps + trainability forecast), Base model registry, Task type, Pipeline presets, Adapter Studio, Tokenization. The runs list with each run's live dashboard sits below the form.</dd>
+          <dt>Results (<code>/project/&lt;id&gt;/results?tab=…</code>)</dt>
+          <dd>Four tabs. <strong>Verdict</strong> ("Did it work?") — the summary card (better than the base model / within noise…), run picker, the pass/fail rules, the scorecard. <strong>Failures</strong> ("Where does it fail?") — failure clusters, eval gaps, built-in checks, custom checks, the rule-set editor, the reroute recommendation, the answer-key review. <strong>Compare</strong> — other runs and models, external benchmarks, the Auto-RAG comparison. <strong>Try it</strong> — the chat playground: pick a training run, set temperature and max tokens, chat. The most reliable smoke test for "did the model actually learn what I trained it on?"</dd>
+          <dt>Ship (<code>/project/&lt;id&gt;/ship?stage=…</code>)</dt>
+          <dd>Four stages: <strong>Package</strong> (the <em>New export</em> form — run, format, quantization, deployment targets — and the <strong>Releases</strong> table), <strong>Publish</strong> (a completed Hugging Face export to the Hub), <strong>Deploy</strong> (serve / deploy plans, served versions), <strong>Monitor</strong> (run events, failure clusters, drift).</dd>
+          <dt>Settings (<code>/project/&lt;id&gt;/settings</code>)</dt>
+          <dd>Appearance (Light / Dark / Match system), Workspace (<em>Show inline tips</em> — the Coach notices; <em>Start advanced sections collapsed</em>), export the project manifest, and a collapsed <strong>Tools</strong> section for the long tail: Autopilot Planner, Workflow Builder, Domain Packs, Domain Profiles, Extension Studio, Autopilot decisions.</dd>
         </dl>
-        <p>You don't have to memorise this — the tutorials reference these surfaces by exact name, and your project's empty state will guide you through filling them in.</p>
+        <figure class="academy-figure"><img src="../../assets/screens/workspace/data-sources.png" alt="The Data destination on step 1 Sources: a step bar 1 Sources, 2 Prepare, 3 Labels, 4 Generate, 5 Split; a tip line with Watch the walkthrough; two Coach notices with action buttons; cards for Write sample documents and Import dataset (auto-mapping)." loading="lazy" width="1600" height="1000" /><figcaption><strong>Data → Sources</strong>. Every Data step has the same shape: step bar, tip line, Coach notices, the step's form, and a Details drawer below.</figcaption></figure>
+        <p>You don't have to memorise this — the tutorials reference these destinations and steps by exact name, and the Overview's Next step button always points at the one that matters now.</p>
 
         <h2 id="optional-worker">Optional — Start the worker (only for big jobs)</h2>
         <p>For long-running queued jobs (real GPU training, big synth runs, remote dataset imports), BrewSLM uses Celery. The tutorials don't strictly require it — small synth runs and the SmolLM2 default model finish synchronously. But if you plan to run heavy GPU training, start the worker in a third terminal:</p>
@@ -284,9 +289,10 @@ celery -A app.worker.celery_app worker --loglevel=INFO --pool=threads --concurre
           <dl>
             <dt>Backend</dt><dd>The FastAPI Python process at <code>http://localhost:8000</code>. Handles all data, model, and job work. Survives frontend restarts.</dd>
             <dt>Frontend</dt><dd>The Vite/React UI at <code>http://localhost:5173</code>. The thing you click. Talks to the backend over HTTP.</dd>
-            <dt>Project</dt><dd>One BrewSLM training effort. Has one recipe, one gold set, one dataset family, one trained model (or many experiments comparing variants). Multiple projects per BrewSLM install are normal.</dd>
-            <dt>Recipe</dt><dd>The training plan template — base model + adapter + eval pack bundle. You pick one when creating a project. The full list (rag-protocol, classification, qa-sft, span-extraction, summarization, code-review, generic-sft) is covered across the other tutorials.</dd>
-            <dt>Data Studio</dt><dd>The dashboard for getting data into shape: import, clean, gold set, synthetic data, prepare. Where you spend most of your time before training.</dd>
+            <dt>Project</dt><dd>One BrewSLM training effort. Has one task shape, one answer key, one dataset family, one trained model (or many runs comparing variants). Multiple projects per BrewSLM install are normal.</dd>
+            <dt>Recipe</dt><dd>The training plan template — base model + adapter + pass/fail rule set. BrewSLM picks one from your brief and your data; change it under <strong>Train → Task → Change</strong>. The full list (rag-protocol, classification, qa-sft, span-extraction, summarization, code-review, generic-sft) is covered across the other tutorials.</dd>
+            <dt>Data</dt><dd>The destination for getting data into shape, in five steps: Sources, Prepare, Labels (the answer key), Generate (synthetic data), Split. Where you spend most of your time before training.</dd>
+            <dt>Answer key</dt><dd>BrewSLM's name for the gold set — the trusted rows every run is scored against. Lives under <strong>Data → Labels</strong>.</dd>
             <dt>Notification bell</dt><dd>Top-right icon. Tracks every background job. Tells you when a 30-second synth generation is done or a 30-minute training run is converging.</dd>
             <dt>Admin user</dt><dd>The bootstrap account with full project access. Always log in as <code>admin</code> for the tutorials — other usernames auto-provision as engineers with no project access.</dd>
           </dl>

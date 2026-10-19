@@ -52,7 +52,7 @@
           { "@type": "HowToStep", "name": "Ingest and map", "url": "https://brewslm.com/academy/tutorials/sql-injection-classifier.html#ingest-map" },
           { "@type": "HowToStep", "name": "Cleanup and class balance check", "url": "https://brewslm.com/academy/tutorials/sql-injection-classifier.html#cleanup" },
           { "@type": "HowToStep", "name": "Pick the recipe", "url": "https://brewslm.com/academy/tutorials/sql-injection-classifier.html#pick-recipe" },
-          { "@type": "HowToStep", "name": "Build the gold set with curated hard negatives", "url": "https://brewslm.com/academy/tutorials/sql-injection-classifier.html#gold-set" },
+          { "@type": "HowToStep", "name": "Build the answer key with curated hard negatives", "url": "https://brewslm.com/academy/tutorials/sql-injection-classifier.html#gold-set" },
           { "@type": "HowToStep", "name": "Generate hard-negative drills", "url": "https://brewslm.com/academy/tutorials/sql-injection-classifier.html#synthetic" },
           { "@type": "HowToStep", "name": "Review the synth queue", "url": "https://brewslm.com/academy/tutorials/sql-injection-classifier.html#review-queue" },
           { "@type": "HowToStep", "name": "Train", "url": "https://brewslm.com/academy/tutorials/sql-injection-classifier.html#train" },
@@ -128,7 +128,7 @@
           <p class="lesson-header__outcome">By the end of this tutorial you'll have a binary classifier that flags SQL-injection-shaped queries at sub-10ms latency, deployable inline before your database layer. It runs on a single small GPU (or CPU), costs nothing per query at inference, and — unlike a regex stack — generalises to injection patterns it has never seen because it's a language model, not a string matcher.</p>
           <div class="lesson-meta">
             <span><strong>Level:</strong> intermediate</span>
-            <span><strong>Time:</strong> ~2.5 hours total (most of it gold-set curation, which is the work that matters)</span>
+            <span><strong>Time:</strong> ~2.5 hours total (most of it answer-key curation, which is the work that matters)</span>
             <span><strong>Prerequisites:</strong> <a class="inline-link" href="support-faq-rag-protocol.html">Tutorial 1 (Support FAQ)</a> for the workflow shape, <a class="inline-link" href="../sft-fundamentals/task-shapes.html">Task shapes</a> for the classification framing</span>
           </div>
         </header>
@@ -142,7 +142,8 @@
         <details class="tutorial-glossary">
           <summary><strong>Terms you'll see in this tutorial</strong> (click to expand)</summary>
           <dl>
-            <dt>Recipe</dt><dd>The training-plan template you pick when creating a project. For this tutorial: <code>classification</code>. Defines the base model + adapter + eval pack defaults for binary/multi-class text classification.</dd>
+            <dt>Recipe</dt><dd>The training-plan template behind a project. For this tutorial: <code>classification</code> (shown in the app as the task type <em>Text Classifier</em> / <em>Classification</em>). Defines the base model + adapter + pass/fail-rule defaults for binary/multi-class text classification.</dd>
+            <dt>Answer key</dt><dd>BrewSLM's name for the gold set — the trusted, human-checked rows every run is scored against. It lives under <strong>Data → Labels</strong> (the <em>Answer key</em> card). This tutorial says "answer key" for the thing in the app and "gold" for the idea.</dd>
             <dt>Classification head</dt><dd>A small dense layer the platform adds on top of the base model's hidden state to predict a label from a fixed vocabulary. For SQLi: two output classes (<code>injection</code>, <code>benign</code>).</dd>
             <dt>Hard negative</dt><dd>An input that LOOKS like the target class but is labeled as the OTHER class. For SQLi: a benign query that contains injection-flavoured tokens (quote marks, OR, comments, SELECT). The single most important data type for a security classifier.</dd>
             <dt>HARD_NEGATIVES playbook</dt><dd>BrewSLM's synth generator for confusable rows. Asks a teacher model to generate inputs that look like the target class but should be labeled as the other class. The classifier's precision lives or dies on the rows from this playbook.</dd>
@@ -201,8 +202,8 @@
         </div>
 
         <h2 id="ingest-map">Ingest and map</h2>
-        <p>In BrewSLM, create a new project: <strong>Projects → New Project → classification recipe</strong>. The recipe pre-fills the adapter (<code>classification-label</code>), task profile (<code>classification</code>), and eval pack (the classification scaffold with macro-F1 + per-class precision floor).</p>
-        <p>Open <strong>Data Studio → Import</strong>. Your CSV should look like:</p>
+        <p>In BrewSLM, create a new project: <strong>Projects → + New Project</strong>, give it a name and describe the job in <em>What problem do you want this model to solve?</em> ("flag SQL-injection-shaped input as injection or benign before it reaches the database"). The project opens on its <strong>Overview</strong>. The task shape is confirmed on <strong>Data → Labels</strong> → <em>What kind of task is this?</em> — a <code>text,label</code> file is usually detected as <em>Classification</em>; if not, <strong>Change</strong> and pick it (<strong>Train → More options → Task type</strong> → <em>Text Classifier</em> → <em>Use this task type</em> is the same switch). Confirming sets the adapter (<code>classification-label</code>), task profile (<code>classification</code>) and the scaffolded pass/fail rule set (macro-F1 + per-class precision floor).</p>
+        <p>Open <strong>Data → Sources</strong> → <em>Import dataset (auto-mapping)</em> → <strong>Import dataset →</strong>. The wizard walks <em>Source → Task type → Map → Preview &amp; Confirm</em>. Your CSV should look like:</p>
         <pre class="code-block"><code>text,label
 "' OR 1=1 --",injection
 "O'Brien",benign
@@ -210,9 +211,9 @@
 "3 OR 4 cars",benign
 "1 AND SLEEP(5) --",injection
 "WHERE can I find the export menu?",benign</code></pre>
-        <p>Two columns: <code>text</code> (the input to classify) and <code>label</code> (one of <code>injection</code> / <code>benign</code>). The mapping picker shows a confidence-scored preview; click <strong>Apply mapping</strong> once the labels look right.</p>
+        <p>Two columns: <code>text</code> (the input to classify) and <code>label</code> (one of <code>injection</code> / <code>benign</code>). The wizard's <strong>Map</strong> step proposes the columns and <strong>Preview &amp; Confirm</strong> shows the accepted sample rows; click <strong>Import N row(s) to project</strong> once the labels look right.</p>
 
-        <p><strong>✓ Checkpoint:</strong> the Data Studio Overview now shows your imported row count and the <strong>Quality &amp; Safety</strong> panel surfaces a per-class breakdown (e.g. "injection: 120, benign: 130, Shannon entropy 1.00"). If the entropy is below 0.5, your dataset is severely imbalanced — the goal ledger will flag this as a blocker on the data-ready row and the synth <code>CLASS_BALANCE_FILL</code> playbook becomes the priority before any training.</p>
+        <p><strong>✓ Checkpoint:</strong> <strong>Data → Sources</strong> lists the import (Details → <em>Sources summary</em> shows the row count). The per-class picture lives on <strong>Data → Labels</strong>: <em>Answer key diagnostics</em> under the Answer key card shows the share per label and the entropy of the key in nats (a perfectly balanced binary key reads ln 2 ≈ 0.69; the dashed 15% line is the floor Coach uses to flag an under-represented class), and <strong>Data → Split</strong> → Details → <em>Data health and leakage</em> flags imbalance in the training rows. If a class sits under the line, the <em>Readiness overview</em> ledger (Data → Sources → Details) blocks the <code>data_ready</code> row and the <em>Balance class distribution</em> playbook (<code>CLASS_BALANCE_FILL</code>) becomes the priority before any training.</p>
 
         <div class="callout callout--warning">
           <p class="callout__label">Label normalisation</p>
@@ -220,11 +221,11 @@
         </div>
 
         <h2 id="cleanup">Cleanup and class-balance check</h2>
-        <p>Open Data Studio's <strong>Quality &amp; Safety</strong> panel + the <strong>Synthetic Quality Analytics</strong> panel. Key checks:</p>
+        <p>Open <strong>Data → Prepare</strong> (its Details → <strong>Quality and safety</strong> section runs the PII, toxicity and leakage scans) and, once you have generated rows, <strong>Data → Generate</strong> → Details → <strong>Synthetic quality</strong>. Key checks:</p>
         <ul>
-          <li><strong>Class balance.</strong> Both panels show the per-class row count + Shannon entropy. Aim for entropy &gt; 1.0 (close to perfectly-balanced ≈ 1.0 for binary). Below 0.5 = severe imbalance; the goal ledger will surface this as a blocker on the data-ready component.</li>
-          <li><strong>Duplicate detection.</strong> Many public SQLi corpora ship near-duplicates ("OR 1=1" and "OR 1=1 --" are functionally identical). Drop one. The platform's dedup signal in Data Studio catches these — review one cluster at a time.</li>
-          <li><strong>PII in benign queries.</strong> Your application logs may contain user-submitted emails, names, phone numbers. Decide your policy: redact (preserve shape: <code>name@domain.tld</code> → <code>X@X.X</code>) or drop. The platform will not auto-redact — every row is a review decision per the safety rule.</li>
+          <li><strong>Class balance.</strong> <em>Answer key diagnostics</em> (Data → Labels) shows the per-class share + entropy of the key; <em>Data health and leakage</em> (Data → Split → Details) flags imbalance in the training rows. Aim for both classes near 50% — the 15% line is where Coach starts warning; below it the <em>Readiness overview</em> ledger blocks the <code>data_ready</code> row.</li>
+          <li><strong>Duplicate detection.</strong> Many public SQLi corpora ship near-duplicates ("OR 1=1" and "OR 1=1 --" are functionally identical). Drop one. The near-duplicate signal in <em>Data health and leakage</em> catches these, and <strong>Data → Prepare</strong>'s one-click autofixes (dedupe, near-duplicate dedup) apply the fix — review one cluster at a time.</li>
+          <li><strong>PII in benign queries.</strong> Your application logs may contain user-submitted emails, names, phone numbers. Decide your policy: redact (preserve shape: <code>name@domain.tld</code> → <code>X@X.X</code>) or drop. <strong>Data → Prepare</strong>'s <em>Redact PII &amp; Secrets</em> checkbox redacts per field when you run <em>Clean All Documents</em>; whether a redacted query is still a useful benign example is your call per row.</li>
           <li><strong>Encoding hygiene.</strong> Strip BOMs, normalise quotes (smart quotes vs straight quotes are a real source of false-positives), normalise whitespace. The classifier doesn't need to learn that <code>"</code> and <code>"</code> are the same character.</li>
         </ul>
 
@@ -244,11 +245,11 @@
         <p>For the canonical inline-WAF use case: <strong>classification</strong>. Sticking with it for the rest of this tutorial.</p>
 
         <h2 id="domain-packs">Domain packs (the security gap)</h2>
-        <p>BrewSLM doesn't ship a security-domain pack out of the box today — the platform's curated packs (legal, support, ecommerce, healthcare) are around content domains, not threat domains. For SQLi you're operating on platform defaults, which is fine.</p>
+        <p>BrewSLM doesn't ship a security-domain pack out of the box today — the curated packs (legal, support, ecommerce, healthcare; <strong>Settings → Tools → Domain Packs</strong>) are around content domains, not threat domains. For SQLi you're operating on platform defaults, which is fine.</p>
         <p>Building a custom <code>security</code> pack is a worthwhile follow-up project that this tutorial intentionally doesn't cover. It would bundle: stricter precision floors (95%+ on the benign class), curated obfuscation patterns for the hard-negatives playbook, a glossary that links the eval-pack gates to the relevant OWASP top-10 entry, and an Academy tag pointing at this tutorial. If you're shipping this to a security team that uses the platform across multiple projects (XSS classifier, prompt-injection classifier, etc.), packaging the conventions as a domain pack pays back fast.</p>
 
-        <h2 id="gold-set">Build the gold set — hard negatives are the work</h2>
-        <p>The gold set is where this tutorial diverges most from tutorial 1. For a SQLi classifier:</p>
+        <h2 id="gold-set">Build the answer key (gold set) — hard negatives are the work</h2>
+        <p>The answer key — BrewSLM's name for the gold set, under <strong>Data → Labels</strong> → the <em>Answer key</em> card — is where this tutorial diverges most from tutorial 1. The same curation applies to the training rows you import. For a SQLi classifier:</p>
 
         <h3 id="gold-positives">Positive class (~150 rows)</h3>
         <p>Start with the OWASP / payloadbox payload list. Manually pick rows that span every category:</p>
@@ -281,7 +282,7 @@
         <ol>
           <li>Bulk-import a few thousand candidate rows (mixed positive + negative, unlabeled).</li>
           <li>Run a teacher model (Ollama / OpenAI / Anthropic) via the platform's synth-backend on the candidates with a prompt like: <em>"label each row as 'injection' or 'benign'. Return JSONL."</em></li>
-          <li>Every labeled row lands in the synth review queue. Review one cluster at a time; accept the confident-correct ones; soft-reject the rest with reason tags.</li>
+          <li>Import the labelled rows through <strong>Data → Sources → Import dataset</strong>; they land pending in the <strong>Review queue</strong> (<strong>Data → Generate</strong> → Details → <em>Review queue</em>). Review one group at a time; accept the confident-correct ones; soft-reject the rest with reason tags.</li>
         </ol>
         <p>A 30-minute teacher run + 30 minutes of review can produce 200 labeled rows. Faster than hand-labeling 200 from scratch, slower but more reliable than blind-trusting the teacher's labels.</p>
 
@@ -291,47 +292,48 @@
         </div>
 
         <h2 id="split">Splitting train, validation, test</h2>
-        <p>BrewSLM auto-splits when you click <strong>Run prepare now</strong> on the Data Studio Prepare Dataset panel. For classification, two things to override:</p>
+        <p><strong>Data → Split</strong> (the <em>Train / Val / Test Split</em> form) cuts the split when you click <strong>Run Split</strong>. For classification, two things to get right:</p>
         <ul>
-          <li><strong>Stratified split.</strong> The default is random; switch to stratified so train/val/test all carry the same injection:benign ratio. Available in the prepare-dataset config.</li>
-          <li><strong>Reserve adversarial-only test rows.</strong> The 50-row red-team set you curated (see Choose your dataset above) goes in a SEPARATE test dataset, not the main split. The platform supports multiple test sets per project; tag them so the eval pack scores both.</li>
+          <li><strong>Stratified split.</strong> Put <code>label</code> in <strong>Stratify By Field (optional)</strong> so train/val/test all carry the same injection:benign ratio. (With the field left blank the split auto-stratifies by a categorical label anyway and records <code>stratify_auto</code> in the manifest — set it explicitly so you can see it.) On every later re-split tick <strong>Keep the current N test examples</strong> so new data never moves the test examples into training.</li>
+          <li><strong>Reserve adversarial-only test rows.</strong> The 50-row red-team set you curated (see Choose your dataset above) stays OUT of the main split: import it as an <strong>external benchmark</strong> (<strong>Results → Compare</strong> → <em>External benchmarks</em>; a <code>text,label</code> file under the project's imports, mapped onto your two labels, leakage-filtered against train + val, scored against any run you pick).</li>
         </ul>
-        <p>For a 400-row total gold set, 80/10/10 produces 320 train / 40 val / 40 test. That's enough — the adversarial held-out set is what catches generalisation failures, not the random-split test.</p>
+        <p>For 400 rows in total, 80/10/10 produces 320 train / 40 val / 40 test. That's enough — the adversarial benchmark is what catches generalisation failures, not the random-split test examples.</p>
 
         <h2 id="synthetic">Generate hard-negative drills</h2>
-        <p>This is THE most important synth step in this tutorial. The classification recipe ships three playbooks; for SQLi the headline one is <code>HARD_NEGATIVES</code>:</p>
+        <p>This is THE most important synth step in this tutorial. Three playbooks matter for a classifier (<strong>Data → Generate</strong> → Details → <em>Playbooks</em>); for SQLi the headline one is <em>Hard negatives</em> (<code>HARD_NEGATIVES</code>):</p>
         <dl>
-          <dt>HARD_NEGATIVES — the precision-defender drill</dt>
+          <dt>Hard negatives (<code>HARD_NEGATIVES</code>) — the precision-defender drill</dt>
           <dd>Generates rows that LOOK like the target class but should be labeled as the OTHER class. For SQLi: queries that look injection-shaped (quote marks, OR, comments, semicolons) but are actually legitimate user input. Validator drops rows where the model labelled them as the target class — that's a generation failure, the model is supposed to produce confusable rows the trained model must learn to discriminate. Generate ~60 rows targeting "looks like injection but is benign".</dd>
-          <dt>POSITIVES_PARAPHRASE — coverage extender</dt>
+          <dt>Paraphrase positives (<code>POSITIVES_PARAPHRASE</code>) — coverage extender</dt>
           <dd>Vary the wording of injection patterns: alternative obfuscations, different keywords, different injection vectors against the same logical attack. Generate ~40 rows seeded from your manually-curated positive set.</dd>
-          <dt>CLASS_BALANCE_FILL — for the imbalance case</dt>
-          <dd>If your gold set is imbalanced (say 100 injections / 30 benigns), this playbook fills the under-represented class until balance ≥ 0.7 entropy. Optional — only run if the goal ledger flags class imbalance as a blocker.</dd>
+          <dt>Balance class distribution (<code>CLASS_BALANCE_FILL</code>) — for the imbalance case</dt>
+          <dd>If your rows are imbalanced (say 100 injections / 30 benigns), this playbook fills the under-represented class. Optional — only run if Coach or the <em>Readiness overview</em> ledger flags class imbalance.</dd>
         </dl>
-        <p>Open <strong>Data Studio → Synthetic → Playbook Center</strong>. The classification recipe surfaces three playbook cards; click <code>HARD_NEGATIVES</code> first, set target count to 60, pick a backend (Ollama, OpenAI, Anthropic). Generation runs as a background Job; the notification bell tracks progress.</p>
+        <p>Open <strong>Data → Generate</strong>. Pick a <em>Provider</em> (Local (Ollama) is the free default; OpenAI / Anthropic / DeepSeek with a key) and <em>Model Name</em>, then open Details → <strong>Playbooks</strong>: run <em>Hard negatives</em> first with a target of 60. Generation runs as a background Job; the notification bell tracks progress.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Run hard-negatives BEFORE positives_paraphrase</p>
-          <p>Hard negatives are where your accuracy lives; do them first, review them, fix any prompt drift. Positives-paraphrase is a coverage extender — useful but secondary. Class-balance-fill is a corrective, used only if the ledger flags imbalance. Doing them in the wrong order means you'll be reviewing easy positives while the hard negatives that actually matter haven't been generated yet.</p>
+          <p>Hard negatives are where your accuracy lives; do them first, review them, fix any prompt drift. <em>Paraphrase positives</em> is a coverage extender — useful but secondary. <em>Balance class distribution</em> is a corrective, used only if the ledger flags imbalance. Doing them in the wrong order means you'll be reviewing easy positives while the hard negatives that actually matter haven't been generated yet.</p>
         </div>
 
         <h2 id="review-queue">Review the synth queue</h2>
-        <p>Every generated row lands with <code>review_status="pending"</code>. The classification hard-negatives playbook is the highest-stakes review pass you'll do — each accepted row teaches the model what NOT to flag, so accidentally accepting a mis-labeled row gets baked into a precision regression you'll see only when production traffic hits.</p>
+        <p>Every generated row lands pending in the <strong>Review queue</strong> (<strong>Data → Generate</strong> → Details → <em>Review queue</em>: tick rows, then <em>Accept selected</em> / <em>Reject selected</em>; the Review queue under <strong>Data → Labels</strong> → Details groups them by the playbook that produced them, with <em>Accept all</em> / <em>Reject all</em> per group). The classification hard-negatives playbook is the highest-stakes review pass you'll do — each accepted row teaches the model what NOT to flag, so accidentally accepting a mis-labeled row gets baked into a precision regression you'll see only when production traffic hits.</p>
         <p>Per-row actions:</p>
         <ul>
           <li><strong>Accept</strong> — the row joins training. For hard negatives: only accept if you can articulate <em>why</em> this string would fool a regex but is legitimate. "Looks confusing" is not a reason; "ORM-generated SELECT in an error message" is.</li>
           <li><strong>Reject (soft)</strong> — the row is marked rejected with an optional reason, stays on disk for audit. Use reason tags: <code>actually-injection</code>, <code>too-trivial</code>, <code>label-drift</code>, <code>mis-generated</code>.</li>
-          <li><strong>Purge</strong> — periodically clear the rejected pile (filtered by reason). For SQLi specifically, NEVER purge the <code>actually-injection</code> reason without a second person reviewing — those rows are evidence of a teacher-model failure mode worth keeping.</li>
+          <li><strong>Purge this reason</strong> — periodically clear the rejected pile, one reason at a time. For SQLi specifically, NEVER purge the <code>actually-injection</code> reason without a second person reviewing — those rows are evidence of a teacher-model failure mode worth keeping.</li>
         </ul>
         <p>Expect to reject 30-50% of generated hard negatives on first pass. The acceptance rate climbs as you tune the playbook prompt.</p>
 
         <h2 id="train">Training configuration</h2>
-        <p>Open <strong>Training → New Experiment</strong>. The recipe defaults are sensible:</p>
+        <p>Open <strong>Train</strong>. It is one form — <em>Base model</em> (+ Browse), <em>Task</em>, <em>Seeds</em> (One run / Three seeds), <em>Run name</em>, a readiness line and the <strong>Train</strong> button (a confirm dialog shows the resolved config, then <strong>Launch</strong>). The knobs below live under <strong>More options</strong> → <em>Model and hyperparameters</em> (epochs, batch size, learning rate, <em>Task Type</em>) and <em>LoRA and advanced training</em>. The recipe defaults are sensible:</p>
+        <figure class="academy-figure"><img src="../../assets/screens/workspace/train.png" alt="The Train page: Coach notices, then the form with Base model HuggingFaceTB/SmolLM2-135M-Instruct and Browse, Task, Seeds (One run / Three seeds), Run name, a Ready to train line and the Train button." loading="lazy" width="1600" height="1000" /><figcaption>Train. One form; the hyperparameters and the Task Type are under <em>More options</em> below it.</figcaption></figure>
         <dl>
           <dt>Base model</dt>
-          <dd><code>HuggingFaceTB/SmolLM2-135M-Instruct</code>. The classification head sits on top of the base model's hidden state; the LoRA adapter touches the attention projections. Alternative: <code>distilbert-base-uncased</code> for marginally better accuracy at higher latency (encoder-only models are good at classification).</dd>
-          <dt>Classification head</dt>
-          <dd>Two output classes (<code>injection</code>, <code>benign</code>) inferred from your gold set's label vocabulary. The head is a single dense layer initialised from scratch and trained alongside the LoRA.</dd>
+          <dd><code>HuggingFaceTB/SmolLM2-135M-Instruct</code>. The classification head sits on top of the base model's hidden state; the LoRA adapter touches the attention projections. Alternative: <code>distilbert-base-uncased</code> for marginally better accuracy at higher latency (encoder-only models are good at classification; the app trains their heads in fp32 and scores them with a head-only eval).</dd>
+          <dt>Task Type</dt>
+          <dd><strong>More options → Model and hyperparameters → Task Type</strong> = <em>Classification</em>. Two output classes (<code>injection</code>, <code>benign</code>) are inferred from your rows' label vocabulary. The head is a single dense layer initialised from scratch and trained alongside the LoRA.</dd>
           <dt>Learning rate</dt>
           <dd>2e-4 LoRA + 5e-5 classification head. The platform default splits these; the head learns faster because it's initialised from scratch while LoRA fine-tunes a pretrained backbone.</dd>
           <dt>Epochs</dt>
@@ -339,40 +341,40 @@
           <dt>Batch size</dt>
           <dd>Batch 8, no accumulation. Classification inputs are short (queries, not paragraphs) so memory isn't the constraint; bigger batches stabilise gradients.</dd>
         </dl>
-        <p>Expected runtime: 3-10 minutes on a single GPU, 10-20 minutes on CPU. Watch the training loss + macro-F1 on validation in the live signals panel; if F1 plateaus below 0.80 by epoch 3, kill the run and check the gold set — it's almost always a labeling consistency problem, not a model problem.</p>
+        <p>Expected runtime: 3-10 minutes on a single GPU, 10-20 minutes on CPU. Watch the training loss + validation metrics in the run's live dashboard in the runs list under the form; if F1 plateaus below 0.80 by epoch 3, <strong>Cancel</strong> the run and check the labels — it's almost always a labeling consistency problem, not a model problem.</p>
 
-        <p><strong>✓ Checkpoint:</strong> in the Training tab, your experiment row shows the live loss sparkline trending down and the validation macro-F1 trending up. By the end of epoch 3-4 you should see val macro-F1 ≥ 0.85. When training completes the bell pings, the experiment row turns green, and the experiment detail page surfaces the final per-class precision/recall/F1 grid.</p>
+        <p><strong>✓ Checkpoint:</strong> on <strong>Train</strong>, your run's row shows the live loss sparkline trending down and the validation macro-F1 trending up. By the end of epoch 3-4 you should see val macro-F1 ≥ 0.85. When training completes the bell pings, the automatic lift check scores the run, and <strong>Results → Verdict</strong> shows the summary card ("Accuracy x on the test examples" for an encoder classifier, the lift against the base model otherwise) with the per-class numbers in the scorecard below it.</p>
 
         <h2 id="forecast">Read the trainability forecast</h2>
-        <p>Before training, the goal ledger's <code>predicted_pass</code> row gives you a forecast based on row count, class balance, and base model size. For SQLi specifically:</p>
+        <p>Before training, the <strong>trainability forecast</strong> (<strong>Train → More options → Plan and gaps</strong>, "Predicted gate-pass: ~N%"; the same number is the <code>predicted_pass</code> row of the goal ledger on <strong>Data → Sources → Details → Readiness overview</strong>) gives you a forecast based on row count, class balance, and base model size. For SQLi specifically:</p>
         <ul>
-          <li>Predicted pass probability <strong>≥ 70%</strong>. Lower means your gold set is too thin OR your hard negatives are too similar to each other (low diversity).</li>
+          <li>Predicted pass probability <strong>≥ 70%</strong>. Lower means your answer key is too thin OR your hard negatives are too similar to each other (low diversity).</li>
           <li>Data ready <strong>= met</strong> with both classes ≥ 100 rows each. Below that, the model under-fits one class.</li>
-          <li>Goal ledger's <code>gold_set</code> row at <strong>≥ 100%</strong>. The discipline pack defaults to 100 gold rows; for classification you can go higher (300-400) with diminishing returns past 500.</li>
+          <li>Goal ledger's <code>gold_set</code> row at <strong>≥ 100%</strong>. The default is 100 answer-key rows; for classification you can go higher (300-400) with diminishing returns past 500.</li>
         </ul>
         <p>If the forecast is below 50%, training will pass the basic gates but fail the per-class precision floor on real-world traffic. <strong>Spend the extra hour curating hard negatives instead of training.</strong> The single biggest predictor of a successful SQLi classifier is the quality of the hard-negative pile, not the training config.</p>
 
         <h2 id="evaluate">Evaluation with per-class precision floors</h2>
-        <p>The classification eval pack ships four gates that matter for security classifiers:</p>
+        <p>After training, the automatic lift check scores the run and <strong>Results → Verdict</strong> shows the <em>Pass/fail rules</em> card (rule set, PASS/FAIL, the required rules that failed). The classification rule set ships four rules that matter for security classifiers:</p>
         <dl>
           <dt>Macro-F1 ≥ 0.85</dt>
           <dd>Average of per-class F1s. Catches the failure mode where the model is great at the majority class and bad at the minority class — flat accuracy alone won't surface this on a 99/1 split.</dd>
           <dt>Per-class F1 floor ≥ 0.70</dt>
           <dd>Every class must hit at least 0.70 F1 individually. For SQLi: <code>injection</code> F1 ≥ 0.70 AND <code>benign</code> F1 ≥ 0.70 — neither class is allowed to starve.</dd>
           <dt>Benign-class precision ≥ 0.95 (override the default)</dt>
-          <dd>The default classification pack scores macro F1; for SQLi specifically you want to OVERRIDE the per-class precision floor on the benign class to 0.95+. Open the eval pack editor under <strong>Project → Eval Pack → Edit</strong>, click <strong>+ Add gate</strong>, and in the Metric dropdown pick <strong>Per-class · benign → Precision</strong> (the optgroup populates from your latest classification eval; if it's empty, run an eval first to discover classes). Set operator <code>≥</code>, threshold <code>0.95</code>, mark it Required, and Save. A model with 0.92 benign precision blocks 8% of legitimate traffic at the false-positive rate — usually unacceptable.</dd>
+          <dd>The default classification rule set scores macro F1; for SQLi specifically you want to OVERRIDE the per-class precision floor on the benign class to 0.95+. On <strong>Results → Failures</strong>, the <em>Scaffolded pass/fail rule set</em> card (shown until you've saved a rule set; afterwards the eval-pack picker on the same tab is the way in) has <strong>+ Add rule</strong>: in the Metric dropdown pick <strong>Per-class · benign → Precision</strong> (the per-class groups populate from your latest classification eval; if they're empty, run an eval first to discover classes). Set operator <code>≥</code>, threshold <code>0.95</code>, tick Required, and Save. A model with 0.92 benign precision blocks 8% of legitimate traffic at the false-positive rate — usually unacceptable.</dd>
           <dt>Safety pass rate ≥ 0.93</dt>
           <dd>Catches refusal / off-topic / adversarial inputs that should be flagged through a different path. Optional gate but useful when you wire the model behind a SOC dashboard.</dd>
         </dl>
-        <p>The goal ledger's <code>eval_pass_rate</code> row expands into the per-gate breakdown so you see exactly which class is starving and which gate is failing.</p>
+        <p>The scorecard under the <em>Pass/fail rules</em> card on <strong>Results → Verdict</strong> lists every rule with its value and threshold so you see exactly which class is starving and which rule is failing.</p>
 
         <h2 id="adversarial">Run the adversarial eval</h2>
-        <p>The 50-row red-team set you curated lives as a separate test dataset. Configure the eval pack to score the main test set AND the adversarial set, treating both as required gates with different thresholds:</p>
+        <p>The 50-row red-team set you curated lives as an external benchmark (<strong>Results → Compare</strong> → <em>External benchmarks</em>). Score each run on it — <em>Score this run</em> (later <em>Re-score</em>) on its row; the result also shows as a benchmark line on the Verdict card — alongside the test examples, so you read two numbers with different bars:</p>
         <ul>
-          <li>Main test set: macro-F1 ≥ 0.85 (random split — checks the model isn't overfit to the gold set)</li>
-          <li>Adversarial test set: macro-F1 ≥ 0.65 (lower bar — these are intentionally hard; you want to know whether the model generalises, not whether it solves them all)</li>
+          <li>Test examples: macro-F1 ≥ 0.85 (the rule set; random split — checks the model isn't overfit to its training rows)</li>
+          <li>Adversarial benchmark: macro-F1 ≥ 0.65 (a bar you hold it to by eye — these are intentionally hard; you want to know whether the model generalises, not whether it solves them all)</li>
         </ul>
-        <p>The two scores in concert tell you different things. High main + low adversarial = the model memorised your gold set. High both = the model generalises. Low main = something is broken in the training pipeline, not the data.</p>
+        <p>The two scores in concert tell you different things. High main + low adversarial = the model memorised its training rows. High both = the model generalises. Low main = something is broken in the training pipeline, not the data.</p>
 
         <div class="callout callout--note">
           <p class="callout__label">Update the adversarial set quarterly</p>
@@ -388,8 +390,8 @@
           <tbody>
             <tr><td>Macro-F1 strong (0.90+), benign precision 0.85</td><td>Hard negatives too easy or too few — model defaults to flagging anything quote-shaped</td><td>Add 100+ harder negatives. Mine new ones from your most active form-field columns. Re-run HARD_NEGATIVES playbook with the new seeds.</td></tr>
             <tr><td>Injection precision 0.95+, injection recall 0.70</td><td>Model is too conservative — misses novel injection variants</td><td>Add obfuscated injection examples to the gold set (hex-encoded, comment-spliced, second-order). Run POSITIVES_PARAPHRASE for variant coverage.</td></tr>
-            <tr><td>Both classes &lt; 0.75 F1</td><td>Gold set is too small OR has labeling inconsistency</td><td>Sample 50 random gold rows; have a second reviewer re-label without seeing the original. Disagreement &gt; 10% = labeling problem. Reconcile and re-train.</td></tr>
-            <tr><td>Adversarial set F1 below 0.50 despite main &gt; 0.85</td><td>Model memorised the gold set; doesn't generalise</td><td>Reduce training to fewer epochs; add more diversity to gold; consider a larger base model. The Arc-L decision engine will surface this exact "knowledge-bound" recommendation.</td></tr>
+            <tr><td>Both classes &lt; 0.75 F1</td><td>Answer key is too small OR has labeling inconsistency</td><td>Sample 50 random answer-key rows; have a second reviewer re-label without seeing the original. Disagreement &gt; 10% = labeling problem. Reconcile and re-train.</td></tr>
+            <tr><td>Adversarial benchmark F1 below 0.50 despite main &gt; 0.85</td><td>Model memorised its training rows; doesn't generalise</td><td>Reduce training to fewer epochs; add more diversity to the rows; consider a larger base model. The reroute recommendation on <strong>Results → Failures</strong> may surface the same "more data, not more training" signal.</td></tr>
             <tr><td>Per-class precision passes but model flags 5% of production traffic</td><td>Train-test distribution mismatch — your test set's benign queries don't reflect production traffic</td><td>Capture 1000+ real production queries, label them (10% sample by hand, rest via teacher), re-run eval against this realistic test set BEFORE shipping.</td></tr>
           </tbody>
         </table>
@@ -404,13 +406,8 @@
           <dt>Inline blocking (after shadow-mode tuning)</dt>
           <dd>Wire the classifier as middleware between your application and database. Queries flagged with confidence &gt; 0.85 get blocked; the user sees a generic "input rejected" page. Only do this AFTER shadow mode has proven the false-positive rate on YOUR traffic.</dd>
         </dl>
-        <p>Export and deploy via the recipe's <code>target_profile</code> (defaults to <code>vllm_server</code>):</p>
-        <pre class="code-block"><code>cd data/projects/&lt;id&gt;/exports/run-2026-06-05
-./deploy-vllm.sh
-# Loads the classifier on localhost:8000.
-# POST /classify with { "text": "..." } returns { "label": "...", "confidence": 0.97 }
-# Latency: 5-15ms on a single GPU, 30-80ms on CPU.</code></pre>
-        <p>For inline deployment, wrap the classifier in a thin HTTP service that fronts your DB layer. The classifier itself does the heavy lifting; your service handles auth, threshold tuning, and the block-or-allow decision.</p>
+        <p>Export on <strong>Ship → Package</strong> → <em>New export</em>: pick the run, a <em>Format</em> (<em>HuggingFace</em> for the weights — a LoRA run is merged into its base at export; <em>ONNX</em>; <em>Docker</em>, which bundles a <code>serve.py</code> and Dockerfile), quantization and deployment targets, then <strong>Run Export</strong>. The export appears in the <em>Releases</em> table and under <code>data/projects/&lt;id&gt;/exports/</code>; <strong>Ship → Deploy</strong> holds the serve / deploy plans for the targets you ticked, and <strong>Ship → Publish</strong> pushes a HuggingFace export to the Hub. Smoke-test first on <strong>Results → Try it</strong> (<em>Provider</em> = <em>Trained run (this project)</em>; a classifier run replies with the predicted label).</p>
+        <p>For inline deployment, wrap the exported classifier in a thin HTTP service that fronts your DB layer — <code>POST /classify</code> with the text, back comes the label and its probability; 5-15 ms on a single GPU, 30-80 ms on CPU. The classifier itself does the heavy lifting; your service handles auth, threshold tuning, and the block-or-allow decision.</p>
 
         <div class="callout callout--warning">
           <p class="callout__label">Defense in depth, not replacement</p>
@@ -421,11 +418,11 @@
         <p>You have a deployed SQLi classifier with calibrated thresholds. Three next moves:</p>
         <dl>
           <dt>Active-learning loop from production</dt>
-          <dd>Every shadow-mode disagreement (classifier flags but WAF doesn't, or vice versa) is a high-signal training example. Capture them; have analysts review the disagreements; promote the confident-correct ones to the gold set. Retrain when gold grows by ~100 rows. Over a quarter, the classifier gets noticeably sharper on your traffic specifically.</dd>
+          <dd>Every shadow-mode disagreement (classifier flags but WAF doesn't, or vice versa) is a high-signal training example. Capture them; have analysts review the disagreements; add the confident-correct ones to the training rows and the answer key. Retrain when the key grows by ~100 rows. Over a quarter, the classifier gets noticeably sharper on your traffic specifically.</dd>
           <dt>Generalise to adjacent threat classes</dt>
           <dd>The same recipe + workflow works for: XSS payload detection (binary classifier on user-supplied HTML/JS), command injection (on inputs to shell wrappers), prompt-injection on LLM inputs, abuse-language flagging. New gold set; same training pipeline. The classification recipe is more general-purpose than its name suggests.</dd>
           <dt>Build a security domain pack</dt>
-          <dd>Package the conventions you've established here — precision floors, eval-pack overrides, hard-negative playbook prompts — into a custom <code>security</code> domain pack. Future security classifier projects inherit the conventions instead of re-establishing them each time.</dd>
+          <dd>Package the conventions you've established here — precision floors, rule-set overrides, hard-negative playbook prompts — into a custom <code>security</code> domain pack (<strong>Settings → Tools → Domain Packs</strong>). Future security classifier projects inherit the conventions instead of re-establishing them each time.</dd>
         </dl>
 
         <p>The next tutorial picks a different recipe: <strong>invoice field extraction</strong> with the span-extraction recipe — structured output, JSON-schema gold sets, and the structured-extraction eval handler's validity diagnostics. Same end-to-end workflow shape; another platform path.</p>
@@ -489,7 +486,7 @@
       "Training needs more epochs"
     ],
     "answer": 1,
-    "explanation": "High main + low adversarial = memorisation, not generalisation. Fix: add diversity to the gold set (more obfuscation variants, second-order patterns), reduce epochs, or consider a larger base model. The Arc-L decision engine surfaces exactly this signal as 'knowledge-bound' recommending more data over more training."
+    "explanation": "High main + low adversarial = memorisation, not generalisation. Fix: add diversity to the gold set (more obfuscation variants, second-order patterns), reduce epochs, or consider a larger base model. The reroute recommendation on Results → Failures can surface the same signal — more data over more training."
   }
 ]
           </script>

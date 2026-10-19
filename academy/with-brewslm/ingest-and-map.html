@@ -138,7 +138,8 @@
         <p>In Track 2 you wrote your dataset as a Python list of dicts. That's perfect for learning and hopeless at scale: no provenance, no rejection accounting, no reuse. BrewSLM's stages 01–04 turn "get data in" into an auditable, per-row-accountable import.</p>
 
         <h2>01 Ingest — source locators</h2>
-        <p>You don't write a loader; you name a source. A <strong>locator</strong> says where the rows live:</p>
+        <p>In the workspace all four stages run from <strong>Data → Sources</strong> (<code>/project/&lt;id&gt;/data?step=data</code>): upload files there, or open the <em>Import dataset (auto-mapping)</em> card and press <em>Import dataset →</em> for the wizard this lesson describes. You don't write a loader; you name a source. A <strong>locator</strong> says where the rows live:</p>
+        <figure class="academy-figure"><img src="../../assets/screens/workspace/data-sources.png" alt="The Data page on step 1 Sources: two Coach notices at the top, a 'No documents yet? Write sample documents' card, and an 'Import dataset (auto-mapping)' card that says to point at a JSONL, CSV, HuggingFace dataset or Kaggle competition, with an 'Import dataset' button." loading="lazy" width="1600" height="1000" /><figcaption>Data → Sources: the <em>Import dataset (auto-mapping)</em> card opens the locator → introspect → dry-run → commit wizard.</figcaption></figure>
         <pre class="code-block"><code>hf:imdb:train            # a Hugging Face dataset + split
 jsonl:/path/to/data.jsonl
 kaggle:competition:slug</code></pre>
@@ -168,7 +169,7 @@ rejected:   188
   payload: { source, mapper, accepted: 4812, rejected: 188,
              written_path, config_id }
   on error → dataset_import_failed</code></pre>
-        <p>One nuance worth knowing: bulk-dropping in the UI affects only the <em>sample</em> rendered to you; the true accepted/rejected counts are preserved in the audit row, so the numbers never lie. With data ingested and mapped, the next lesson covers the platform's answer to "in practice, hundreds more rows" — generating synthetic data and reviewing it.</p>
+        <p>One nuance worth knowing: bulk-dropping in the UI affects only the <em>sample</em> rendered to you; the true accepted/rejected counts are preserved in the audit row, so the numbers never lie. Imported rows land in the project's synthetic dataset, so you will meet them again in the review queue (<strong>Data → Labels → Details → Review queue</strong>). With data ingested and mapped, the next lesson covers the platform's answer to "in practice, hundreds more rows" — generating synthetic data and reviewing it.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>

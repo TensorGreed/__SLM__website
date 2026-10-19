@@ -138,7 +138,8 @@
         <p>Your Track 2 dataset had a comment: <code># ... in practice, hundreds more rows</code>. Producing those rows — covering the hard cases, keeping balance — is real work. BrewSLM's synthetic-data surface generates candidates and routes them through review so quantity never costs you quality.</p>
 
         <h2>Recipe-aware playbooks</h2>
-        <p>A <strong>synthetic playbook</strong> generates rows that match your project's task shape and scoring mode — not generic text, but examples shaped like the ones the model will be scored on. Generation runs as a background <strong>Job</strong> (the same jobs framework that powers training and RAG comparison), so a large batch doesn't block the request; the notification bell tracks it to completion.</p>
+        <p>A <strong>synthetic playbook</strong> generates rows that match your project's task shape and scoring mode — not generic text, but examples shaped like the ones the model will be scored on. The surface is <strong>Data → Generate</strong> (<code>/project/&lt;id&gt;/data?step=synthetic</code>): pick a <em>Generation Mode</em> (Single-turn Q&amp;A, Multi-turn, or span extraction), a provider and model (a local Ollama model first), the source text, and how many pairs; the playbook catalogue and its last runs sit in the step's <em>Details</em> drawer (<em>Playbook center</em>). Generation runs as a background <strong>Job</strong> (the same jobs framework that powers training and RAG comparison), so a large batch doesn't block the request; the notification bell tracks it to completion.</p>
+        <figure class="academy-figure"><img src="../../assets/screens/workspace/data-generate.png" alt="The Data page on step 4 Generate: a Synthetic Data Generation form with Generation Mode set to Single-turn Q&A, Provider Local (Ollama), Model Name gemma4:latest, the API URL, a Source Text box with a 'Load from Cleaned Data' button, and Pairs to Generate set to 5." loading="lazy" width="1600" height="1000" /><figcaption>Data → Generate: mode, provider, model, source text and the number of pairs; the run lands in the bell as a Job.</figcaption></figure>
 
         <h2>Nothing lands trusted: review_status = pending</h2>
         <p>Every generated row arrives with <code>review_status="pending"</code> and is written to the project's synthetic JSONL. It is <em>not</em> training data yet. This is the platform enforcing a Track 1 rule — never train on data you haven't looked at — as a workflow, not a good intention.</p>
@@ -146,22 +147,22 @@
 { "prompt": "Classify the sentiment ...: shipping was slow but the product is great",
   "completion": "positive",
   "review_status": "pending",
-  "source": "synth_playbook",
-  "run_id": "synth-2026-05-29-..." }</code></pre>
+  "synth_source": "playbook:classification:positives_paraphrase",
+  "synth_confidence": 0.82 }</code></pre>
         <div class="callout callout--note">
           <p class="callout__label">Provenance on every picked row</p>
-          <p>Notice the <code>source</code> and <code>run_id</code>. When the UI shows you one row out of a batch, it labels which playbook and run produced it, so you can trace a bad example back to the generation that made it — and regenerate or drop that whole run if needed.</p>
+          <p>Notice the <code>synth_source</code> and <code>synth_confidence</code>. The review queue groups rows by <code>synth_source</code>, so you can trace a bad example back to the playbook that made it — and accept or reject that whole group at once.</p>
         </div>
 
         <h2>Work the review queue</h2>
-        <p>You triage pending rows: approve the good ones (they become trainable), and reject the rest. Rejected rows aren't dumped wholesale — they're <strong>grouped by reason</strong> and individually selectable, so you can bulk-drop "label ambiguous" while keeping "minor typo" rows you'll fix. This is the same rejected-rows-are-selectable pattern from the import dry-run, applied to generation.</p>
+        <p>The queue is under <strong>Data → Labels → Details → Review queue</strong> (<code>/project/&lt;id&gt;/data?step=goldset&amp;open=review-queue</code>); pending rows are grouped by their <code>synth_source</code>, and each group has <em>Accept all</em> / <em>Reject all</em> next to per-row triage. You approve the good ones (they become trainable), and reject the rest. Rejected rows aren't dumped wholesale — rejection is soft, they're <strong>grouped by reason</strong> and individually selectable, so you can bulk-drop "label ambiguous" while keeping "minor typo" rows you'll fix. Training reads skip both pending and rejected rows. This is the same rejected-rows-are-selectable pattern from the import dry-run, applied to generation.</p>
 
         <div class="callout callout--warning">
           <p class="callout__label">A no-op is not a success</p>
           <p>If a generation run produces zero usable rows, the Job <em>fails loudly</em> with a diagnostic rather than reporting a cheerful "Done." A silent empty result would mislead you into thinking you have data you don't. Honest failure beats a green checkmark over nothing.</p>
         </div>
 
-        <p>Approved synthetic rows join your imported rows as candidate training data. Before any of it trains, it has to be cleaned and prepared into the manifest — the next lesson.</p>
+        <p>Approved synthetic rows join your imported rows as candidate training data. Before any of it trains, it has to be cleaned and split into the manifest (Data → Prepare, Data → Split) — the next lesson.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
@@ -173,9 +174,9 @@
           <dl>
             <dt>synthetic playbook</dt><dd>A recipe-aware generator that produces rows matching the project's task shape and scoring mode.</dd>
             <dt>review_status = pending</dt><dd>The state every generated row starts in; not trainable until reviewed.</dd>
-            <dt>review queue</dt><dd>The triage surface where pending rows are approved or rejected.</dd>
+            <dt>review queue</dt><dd>The triage surface where pending rows are approved or rejected (Data → Labels → Details → Review queue).</dd>
             <dt>bulk-drop by reason</dt><dd>Rejecting groups of rows by their reason code instead of all-or-nothing.</dd>
-            <dt>run_id / source</dt><dd>Provenance fields letting you trace a row back to the generation run that made it.</dd>
+            <dt>synth_source / synth_confidence</dt><dd>Provenance fields: which playbook produced a row (the review queue groups by it) and how confident the generator was.</dd>
           </dl>
         </section>
 

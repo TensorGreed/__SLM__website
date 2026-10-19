@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Clean and prepare: the manifest is the source of truth — BrewSLM Academy</title>
-    <meta name="description" content="Stages 05–06: optional cleaning (PII findings, quality scores, chunks) and Prepare, which builds prepared/manifest.json plus train and eval splits carrying the task_profile and scoring_mode — replacing the by-hand tokenize/collate/split with a single declarative artifact everything downstream reads from." />
+    <meta name="description" content="Stages 05–06: optional cleaning (PII findings, quality scores, chunks) and Prepare, which builds prepared/manifest.json plus train, validation and test splits carrying the task_profile and scoring_mode — replacing the by-hand tokenize/collate/split with a single declarative artifact everything downstream reads from." />
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
     <meta name="author" content="TensorGreed" />
     <meta name="theme-color" content="#ffffff" />
@@ -12,12 +12,12 @@
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="BrewSLM" />
     <meta property="og:title" content="Clean and prepare: the manifest is the source of truth — BrewSLM Academy" />
-    <meta property="og:description" content="Stages 05–06: optional cleaning (PII findings, quality scores, chunks) and Prepare, which builds prepared/manifest.json plus train and eval splits carrying the task_profile and scoring_mode — replacing the by-hand tokenize/collate/split with a single declarative artifact everything downstream reads from." />
+    <meta property="og:description" content="Stages 05–06: optional cleaning (PII findings, quality scores, chunks) and Prepare, which builds prepared/manifest.json plus train, validation and test splits carrying the task_profile and scoring_mode — replacing the by-hand tokenize/collate/split with a single declarative artifact everything downstream reads from." />
     <meta property="og:url" content="https://brewslm.com/academy/with-brewslm/clean-prepare-manifest.html" />
     <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Clean and prepare: the manifest is the source of truth — BrewSLM Academy" />
-    <meta name="twitter:description" content="Stages 05–06: optional cleaning (PII findings, quality scores, chunks) and Prepare, which builds prepared/manifest.json plus train and eval splits carrying the task_profile and scoring_mode — replacing the by-hand tokenize/collate/split with a single declarative artifact everything downstream reads from." />
+    <meta name="twitter:description" content="Stages 05–06: optional cleaning (PII findings, quality scores, chunks) and Prepare, which builds prepared/manifest.json plus train, validation and test splits carrying the task_profile and scoring_mode — replacing the by-hand tokenize/collate/split with a single declarative artifact everything downstream reads from." />
     <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
     <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-YDPSHSVE1K"></script>
@@ -29,10 +29,10 @@
       {
         "@context": "https://schema.org", "@type": "LearningResource",
         "name": "Clean and prepare: the manifest is the source of truth",
-        "description": "Stages 05–06: optional cleaning (PII findings, quality scores, chunks) and Prepare, which builds prepared/manifest.json plus train and eval splits carrying the task_profile and scoring_mode — replacing the by-hand tokenize/collate/split with a single declarative artifact everything downstream reads from.",
+        "description": "Stages 05–06: optional cleaning (PII findings, quality scores, chunks) and Prepare, which builds prepared/manifest.json plus train, validation and test splits carrying the task_profile and scoring_mode — replacing the by-hand tokenize/collate/split with a single declarative artifact everything downstream reads from.",
         "url": "https://brewslm.com/academy/with-brewslm/clean-prepare-manifest.html",
         "inLanguage": "en", "learningResourceType": "Lesson", "educationalLevel": "Intermediate", "timeRequired": "PT10M", "isAccessibleForFree": true,
-        "teaches": ["Clean stage", "manifest", "train/eval split", "task_profile", "scoring_mode"],
+        "teaches": ["Clean stage", "manifest", "train/val/test split", "task_profile", "scoring_mode"],
         "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
         "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
       }
@@ -74,7 +74,7 @@
       "name": "What does Prepare produce?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "manifest.json plus train.jsonl and eval.jsonl"
+        "text": "manifest.json plus train.jsonl, val.jsonl and test.jsonl"
       }
     },
     {
@@ -127,7 +127,7 @@
         <header class="lesson-header">
           <span class="lesson-header__badge">Track 3 · With BrewSLM · Lesson 4</span>
           <h1>Clean and prepare: the manifest is the source of truth</h1>
-          <p class="lesson-header__outcome">After this lesson you can run the optional clean stage, understand what Prepare produces, and explain why the manifest — not raw files — is the single source of truth for training and evaluation.</p>
+          <p class="lesson-header__outcome">After this lesson you can run the optional clean stage (Data → Prepare), understand what the Split step produces, and explain why the manifest — not raw files — is the single source of truth for training and evaluation.</p>
           <div class="lesson-meta">
             <span><strong>Level:</strong> intermediate</span>
             <span><strong>Read time:</strong> ~10 min</span>
@@ -138,16 +138,19 @@
         <p>In Track 2 you tokenized examples, built the loss mask, and split train/val by hand. BrewSLM folds all of that into two stages whose output is one authoritative artifact: the <strong>manifest</strong>.</p>
 
         <h2>05 Clean (optional)</h2>
-        <p>If your rows are raw documents rather than tidy pairs, the clean stage processes them: it emits cleaned text, chunk JSONL, and per-document metadata — <strong>PII findings, a quality score, and a text hash</strong>. It runs as a background task with <code>task_id</code> polling so a big cleaning pass never blocks past the proxy timeout, and it has explicit failure modes: <code>cleaning_pii_block</code> and <code>cleaning_outlier_threshold_exceeded</code>. For already-clean classification pairs like our sentiment data, you can skip it.</p>
+        <p>If your rows are raw documents rather than tidy pairs, the clean stage processes them: it emits cleaned text, chunk JSONL, and per-document metadata — <strong>PII findings, a quality score, and a text hash</strong>. In the workspace this is <strong>Data → Prepare</strong> (<code>/project/&lt;id&gt;/data?step=cleaning</code>): set the chunk size, tick <em>redact PII &amp; secrets</em>, press <em>Clean All Documents</em>; the quality and safety scans sit in the step's <em>Details</em> drawer. It runs as a background task with <code>task_id</code> polling so a big cleaning pass never blocks past the proxy timeout, and it has explicit failure modes: <code>cleaning_pii_block</code> and <code>cleaning_outlier_threshold_exceeded</code>. For already-clean classification pairs like our sentiment data, you can skip it.</p>
 
         <h2>06 Prepare — build the manifest</h2>
-        <p>Prepare takes your synthetic + cleaned rows and the project's dataset-adapter preset and produces:</p>
+        <p>Prepare is the <strong>Data → Split</strong> step (<code>/project/&lt;id&gt;/data?step=dataprep</code>, the <em>Train / Val / Test Split</em> card). It takes your cleaned + synthetic rows and the project's split adapter and produces:</p>
         <pre class="code-block"><code>prepared/
   manifest.json     # the source of truth: counts, schema, task_profile,
                     # output_schema.scoring_mode, paths, hashes
   train.jsonl       # the training split
-  eval.jsonl        # the held-out evaluation split</code></pre>
-        <p>That <code>train.jsonl</code> / <code>eval.jsonl</code> split is the platform doing your <code>train_test_split</code> from Track 2 — and the held-out <code>eval.jsonl</code> is what the eval pack will score against later.</p>
+  val.jsonl         # the validation split
+  test.jsonl        # the held-out test split ("test examples" in the UI)
+  versions/&lt;v&gt;/     # a snapshot of each split run</code></pre>
+        <p>That <code>train.jsonl</code> / <code>val.jsonl</code> / <code>test.jsonl</code> split is the platform doing your <code>train_test_split</code> from Track 2 — and the held-out <code>test.jsonl</code> is what the pass/fail rules will score against later (Results → Verdict). Rows are deduplicated as they are split; a later re-split can <em>keep the current test examples</em> so new data never moves the answer key into training; and the dataset versions in the step's <em>Details</em> drawer let you make an earlier split active again.</p>
+        <figure class="academy-figure"><img src="../../assets/screens/workspace/data-split.png" alt="The Data page on step 5 Split: a Train / Val / Test Split card explaining that the combined dataset is split into training, validation and test JSONL files, a note that the active prepared version's split config is reused, and a Split adapter section with qa-pair and instruction_sft selected plus an optional adapter config JSON." loading="lazy" width="1600" height="1000" /><figcaption>Data → Split: the split adapter and ratios on top; the manifest and the three files are written when you run it.</figcaption></figure>
 
         <div class="callout callout--note">
           <p class="callout__label">From Track 2: where did tokenization and the loss mask go?</p>
@@ -159,15 +162,15 @@
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>Prepare turns reviewed rows into a <strong>manifest</strong> plus train/eval splits. The manifest carries the task profile and scoring mode and is the source of truth for every later stage — so the tokenization and masking you did by hand become a declaration the handler executes, reproducibly.</p>
+          <p>The Split step turns reviewed rows into a <strong>manifest</strong> plus train / val / test splits. The manifest carries the task profile and scoring mode and is the source of truth for every later stage — so the tokenization and masking you did by hand become a declaration the handler executes, reproducibly.</p>
         </div>
 
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
-            <dt>Clean stage</dt><dd>Optional processing of raw documents into cleaned text + chunks + PII/quality metadata.</dd>
+            <dt>Clean stage</dt><dd>Optional processing of raw documents into cleaned text + chunks + PII/quality metadata (Data → Prepare).</dd>
             <dt>manifest</dt><dd>prepared/manifest.json — the authoritative record of rows, schema, task_profile, scoring_mode, paths, and hashes.</dd>
-            <dt>train/eval split</dt><dd>train.jsonl and eval.jsonl produced by Prepare; the platform's train_test_split.</dd>
+            <dt>train/val/test split</dt><dd>train.jsonl, val.jsonl and test.jsonl produced by Data → Split; the platform's train_test_split. The test split is the UI's "test examples".</dd>
             <dt>task_profile</dt><dd>The declared task type recorded in the manifest, used to pick the handler.</dd>
             <dt>scoring_mode</dt><dd>How outputs are scored, recorded in the manifest's output_schema.</dd>
           </dl>
@@ -204,12 +207,12 @@
     "q": "What does Prepare produce?",
     "options": [
       "A deployed endpoint",
-      "manifest.json plus train.jsonl and eval.jsonl",
+      "manifest.json plus train.jsonl, val.jsonl and test.jsonl",
       "A GGUF file",
       "A RunEvent only"
     ],
     "answer": 1,
-    "explanation": "Prepare builds the manifest and the train/eval splits."
+    "explanation": "The Split step builds the manifest and the train / val / test files."
   },
   {
     "q": "Why is a BrewSLM run more reproducible than your script?",

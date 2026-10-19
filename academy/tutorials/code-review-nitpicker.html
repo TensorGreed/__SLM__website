@@ -52,12 +52,12 @@
           { "@type": "HowToStep", "name": "Ingest and map", "url": "https://brewslm.com/academy/tutorials/code-review-nitpicker.html#ingest-map" },
           { "@type": "HowToStep", "name": "Cleanup", "url": "https://brewslm.com/academy/tutorials/code-review-nitpicker.html#cleanup" },
           { "@type": "HowToStep", "name": "Pick the recipe", "url": "https://brewslm.com/academy/tutorials/code-review-nitpicker.html#pick-recipe" },
-          { "@type": "HowToStep", "name": "Build the gold set", "url": "https://brewslm.com/academy/tutorials/code-review-nitpicker.html#gold-set" },
+          { "@type": "HowToStep", "name": "Build the answer key", "url": "https://brewslm.com/academy/tutorials/code-review-nitpicker.html#gold-set" },
           { "@type": "HowToStep", "name": "Split by repository or author", "url": "https://brewslm.com/academy/tutorials/code-review-nitpicker.html#split" },
           { "@type": "HowToStep", "name": "Generate synthetic drills", "url": "https://brewslm.com/academy/tutorials/code-review-nitpicker.html#synthetic" },
           { "@type": "HowToStep", "name": "Review the synth queue", "url": "https://brewslm.com/academy/tutorials/code-review-nitpicker.html#review-queue" },
           { "@type": "HowToStep", "name": "Train", "url": "https://brewslm.com/academy/tutorials/code-review-nitpicker.html#train" },
-          { "@type": "HowToStep", "name": "Evaluate with LLM-judge gates", "url": "https://brewslm.com/academy/tutorials/code-review-nitpicker.html#evaluate" },
+          { "@type": "HowToStep", "name": "Evaluate with LLM-judge pass/fail rules", "url": "https://brewslm.com/academy/tutorials/code-review-nitpicker.html#evaluate" },
           { "@type": "HowToStep", "name": "Ship as a draft-suggestion GitHub Action", "url": "https://brewslm.com/academy/tutorials/code-review-nitpicker.html#ship" }
         ],
         "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
@@ -128,7 +128,7 @@
           <p class="lesson-header__outcome">By the end of this tutorial you'll have a small language model that reads a code diff and writes 1-3 review comments in your team's voice — catching the style nits, the dropped-null-check, the missing tests, the wrong logger call, the convention drift. Not replacing human review; lifting the floor. The boring stuff gets caught automatically so your senior engineers focus on architecture and intent. Runs on a single small GPU, deployable as a GitHub Action that posts draft suggestions on every PR.</p>
           <div class="lesson-meta">
             <span><strong>Level:</strong> intermediate</span>
-            <span><strong>Time:</strong> ~3 hours total (most of it gold-set curation from your own PR archive)</span>
+            <span><strong>Time:</strong> ~3 hours total (most of it answer-key curation from your own PR archive)</span>
             <span><strong>Prerequisites:</strong> <a class="inline-link" href="setup-brewslm.html">Tutorial 0 (Setup BrewSLM)</a>. Optional context: <a class="inline-link" href="support-faq-rag-protocol.html">Tutorial 1</a> for the workflow shape, <a class="inline-link" href="../sft-fundamentals/task-shapes.html">Task shapes</a> for why instruction-SFT fits code review.</span>
           </div>
         </header>
@@ -142,9 +142,9 @@
         <details class="tutorial-glossary">
           <summary><strong>Terms you'll see in this tutorial</strong> (click to expand)</summary>
           <dl>
-            <dt>Recipe</dt><dd>The training-plan template you pick when creating a project. For this tutorial: <code>code-review</code>. Defines the base model + adapter + eval pack defaults for diff-to-review-comment generation.</dd>
+            <dt>Recipe</dt><dd>The training-plan template behind a project. For this tutorial: <code>code-review</code> (shown in the app as the task type <em>Code Review Nitpicker</em>). Defines the base model + adapter + pass/fail-rule defaults for diff-to-review-comment generation.</dd>
             <dt>Adapter</dt><dd>The mapping layer that converts your CSV/JSONL rows into training-ready fields. For code-review, the adapter is <code>qa-pair</code> — it reads (diff, review) pairs treating the diff as the input and the review comment as the output.</dd>
-            <dt>Gold set</dt><dd>Your trusted reference rows — the "exemplary" reviews from your senior engineers. Aim for 100+ rows; the recipe's <code>min_rows_recommended</code> is 100 but more is better when the target is voice.</dd>
+            <dt>Gold set / answer key</dt><dd>Your trusted reference rows — the "exemplary" reviews from your senior engineers. In BrewSLM this is the <strong>answer key</strong>, under <strong>Data → Labels</strong> (the <em>Answer key</em> card). Aim for 100+ rows; the recipe's <code>min_rows_recommended</code> is 100 but more is better when the target is voice.</dd>
             <dt>Synth playbook</dt><dd>A platform-provided generator that expands your gold set with controlled variations. Code-review ships three: paraphrase (voice drill), hard negatives (anti-patterns), and cluster-targeted (failure-mode patching).</dd>
             <dt>LLM judge</dt><dd>A teacher model that scores whether the candidate review hits the same critique <em>theme</em> as the reference review, even if the wording differs. The primary eval gate for code-review because exact-match doesn't apply when two valid reviews of the same diff use different words.</dd>
             <dt>Field-match scoring</dt><dd>The scoring mode the code-review recipe runs in. Compares the candidate output to the reference using token-level metrics (F1, exact match) AND the LLM judge — but the judge does the heavy lifting; F1 is a sanity check.</dd>
@@ -215,16 +215,16 @@
         </div>
 
         <h2 id="ingest-map">Ingest and map</h2>
-        <p>In BrewSLM, create a new project: <strong>Projects → New Project → code-review recipe</strong>. The recipe pre-fills the adapter pick (<code>qa-pair</code>), task profile (<code>instruction_sft</code>), scoring mode (<code>field_match</code>), and points the eval pack scaffold at the code-review template (LLM-judge headline gate, F1 as a sanity check).</p>
-        <p>Open <strong>Data Studio → Import</strong>. Drop your CSV or JSONL. The expected shape is two required fields plus an optional rationale:</p>
+        <p>In BrewSLM, create a new project: <strong>Projects → + New Project</strong>, give it a name and describe the job in <em>What problem do you want this model to solve?</em> ("read a code diff and write 1-3 review comments in our team's voice"). The project opens on its <strong>Overview</strong>. Then pick the recipe: <strong>Train → More options → Task type</strong> → the <em>Code Review Nitpicker</em> card → <strong>Use this task type</strong>. It sets the adapter (<code>qa-pair</code>), task profile (<code>instruction_sft</code> — <strong>Data → Labels</strong> → <em>What kind of task is this?</em> will read <em>Instruction following</em>), scoring mode (<code>field_match</code>), and the code-review rule set (LLM-judge headline rule, F1 as a sanity check).</p>
+        <p>Open <strong>Data → Sources</strong> → <em>Import dataset (auto-mapping)</em> → <strong>Import dataset →</strong>. The wizard walks <em>Source → Task type → Map → Preview &amp; Confirm</em>; point it at your CSV or JSONL. The expected shape is two required fields plus an optional rationale:</p>
         <pre class="code-block"><code>{
   "diff": "+ if (user.id == null) {\n+     return;\n+ }",
   "review": "Use `===` for null check, or `if (user.id != null)` to also catch undefined.",
   "rationale": "JS equality nit; the loose-equality form coerces both null and undefined."
 }</code></pre>
-        <p>The mapping picker will scan the columns and match them against the recipe's shape signature (input columns named like <code>diff</code>/<code>patch</code>/<code>code</code>/<code>file</code>/<code>snippet</code>, output columns like <code>review</code>/<code>comment</code>/<code>feedback</code>/<code>suggestion</code>). Click <strong>Apply mapping</strong> when the preview looks right.</p>
+        <p>The wizard's <strong>Map</strong> step scans the columns and matches them against the recipe's shape signature (input columns named like <code>diff</code>/<code>patch</code>/<code>code</code>/<code>file</code>/<code>snippet</code>, output columns like <code>review</code>/<code>comment</code>/<code>feedback</code>/<code>suggestion</code>). <strong>Preview &amp; Confirm</strong> shows the accepted sample rows; click <strong>Import N row(s) to project</strong> when the preview looks right.</p>
 
-        <p><strong>✓ Checkpoint:</strong> the Data Studio Overview now shows your imported row count, and the <strong>Sources</strong> panel lists your import with a green status badge. The goal ledger's <code>data_ready</code> row turns green once row count crosses 100; below that it shows amber with a "more data recommended" hint. If the mapping is wrong, the preview rows will be empty or mis-shaped — click <strong>Edit mapping</strong> on the panel and pick the correct columns.</p>
+        <p><strong>✓ Checkpoint:</strong> <strong>Data → Sources</strong> lists the import (Details → <em>Sources summary</em> shows the row count per source). The goal ledger on the <em>Readiness overview</em> (same Details drawer) turns its <code>data_ready</code> row green once the row count crosses 100; below that it shows amber with a "more data recommended" hint. If the mapping is wrong, the preview rows will be empty or mis-shaped — go <strong>Back</strong> to the Map step and pick the correct columns before importing.</p>
 
         <div class="callout callout--warning">
           <p class="callout__label">Don't strip the diff context</p>
@@ -232,13 +232,13 @@
         </div>
 
         <h2 id="cleanup">Cleanup</h2>
-        <p>Open Data Studio's <strong>Quality &amp; Safety</strong> panel. For code-review data, the cleanup pass is mostly about <em>noise removal</em>:</p>
+        <p>Open <strong>Data → Prepare</strong> and its Details → <strong>Quality and safety</strong> section. For code-review data, the cleanup pass is mostly about <em>noise removal</em>:</p>
         <ul>
           <li><strong>Strip auto-generated comments.</strong> Your archive will include CI-bot comments ("✅ Build passed", "Codecov: -0.2%"), Dependabot dependency-bump notices, Snyk security-scan summaries, copilot suggestions accepted-as-comments. None of these are reviews; all of them are noise. Filter by author handle (drop rows where commenter ends in <code>[bot]</code>) and by content heuristics (drop rows starting with markdown badge images).</li>
           <li><strong>Drop LGTM-only rows.</strong> "LGTM", "ship it", "👍", "approve" — these are signal-zero for training a model to write reviews. They're useful as <em>hard negatives</em> (see the synth section below) but should not be in your positive gold set.</li>
-          <li><strong>Normalise diff whitespace.</strong> Mixed line endings (CRLF vs LF), trailing whitespace on diff lines, smart-quotes in review text. The platform's dedup signal in Data Studio will catch many of these as "near-duplicates" — review one cluster at a time.</li>
+          <li><strong>Normalise diff whitespace.</strong> Mixed line endings (CRLF vs LF), trailing whitespace on diff lines, smart-quotes in review text. The near-duplicate signal in <em>Data health and leakage</em> (<strong>Data → Split</strong> → Details) will catch many of these, and Prepare's one-click autofixes apply the fix — review one cluster at a time.</li>
           <li><strong>Deduplicate near-identical reviews.</strong> The same engineer often writes the same review on similar diffs ("add a docstring", "extract this magic number"). Keep one canonical instance per pattern — train/test leakage on duplicate reviews inflates F1 scores artificially.</li>
-          <li><strong>PII in commit history.</strong> Reviews sometimes quote internal Slack messages, customer names, or production credentials accidentally pasted in. Walk the Quality & Safety panel's PII flags and decide per-row.</li>
+          <li><strong>PII in commit history.</strong> Reviews sometimes quote internal Slack messages, customer names, or production credentials accidentally pasted in. Walk the <em>Quality and safety</em> section's PII flags and decide per-row (Prepare's <em>Redact PII &amp; Secrets</em> checkbox redacts per field on <em>Clean All Documents</em>).</li>
         </ul>
         <p>Skip nothing here. The code-review model inherits whatever signal you don't filter — if half your training rows are bot comments, the model will learn to write bot comments.</p>
 
@@ -260,12 +260,12 @@
         <p>For the canonical "comment on diffs in your team's voice" use case: <strong>code-review wins</strong> because (a) the LLM-judge eval handles the "many valid reviews" problem that breaks F1-led recipes, (b) the scaffold expects a <code>diff</code> input + <code>review</code> output without forcing you to invent mapping, and (c) the three code-review playbooks target voice, anti-patterns, and failure clusters specifically. Sticking with code-review for the rest of this tutorial.</p>
 
         <h2 id="domain-packs">Domain packs (the language-specific gap)</h2>
-        <p>BrewSLM doesn't ship a code-review domain pack today — the platform's curated packs (legal, support, ecommerce, healthcare) are content domains, not engineering domains. For code-review you're operating on the recipe defaults, which is fine for v1.</p>
+        <p>BrewSLM doesn't ship a code-review domain pack today — the curated packs (legal, support, ecommerce, healthcare; <strong>Settings → Tools → Domain Packs</strong>) are content domains, not engineering domains. For code-review you're operating on the recipe defaults, which is fine for v1.</p>
         <p>A worthwhile follow-up project is to build a custom pack that bundles your team's style guide as prompt context — the synth playbooks accept extra context, so a <code>style_guide.md</code> excerpt injected into the playbook prompt teaches the synth-generated reviews to align with your conventions. The pack would also bundle: cleaning rules tuned to your CI bot author handles, an LLM-judge rubric that calls out your specific conventions ("does the review match our naming convention for boolean flags?"), and language-specific severity ladders ("nit / suggestion / blocker" for JS vs "info / warn / error" for Go).</p>
         <p>If you're shipping this to a security team or to multiple language verticals (one model per language), packaging the conventions as a domain pack pays back fast. The platform's pack framework is general-purpose; the recipe is one input among many.</p>
 
-        <h2 id="gold-set">Build the gold set — exemplary reviews + LLM-assisted promotion</h2>
-        <p>The gold set is where the model's voice comes from. Two complementary paths, both worth running:</p>
+        <h2 id="gold-set">Build the answer key (gold set) — exemplary reviews + LLM-assisted promotion</h2>
+        <p>The answer key — BrewSLM's name for the gold set — is where the model's voice comes from. Two complementary paths, both worth running:</p>
 
         <h3 id="gold-manual">Path A — manual seeding from "exemplary" reviews</h3>
         <p>Pick your 3-5 senior engineers (the ones whose reviews other engineers learn from). Walk their last 50 PR reviews each. Grab the inline comments where:</p>
@@ -274,58 +274,58 @@
           <li>The PR author acknowledged the comment (replied "good catch" / "fixed in next push" / made the change).</li>
           <li>The comment is 1-3 sentences — long enough to explain, short enough to read in a glance.</li>
         </ul>
-        <p>Open the Gold Set workbench (<strong>Data Studio → Gold Set</strong>). For each row paste the diff context (4-6 lines around the comment line) into <code>diff</code>, paste the comment verbatim into <code>review</code>, and add a one-line rationale tag (<code>style-nit</code>, <code>bug-suggestion</code>, <code>test-gap</code>, <code>convention</code>, <code>security</code>). Spend 60 minutes here. These ~50-100 rows are the most important data in the project — they imprint voice on the rest.</p>
+        <p>Open <strong>Data → Labels</strong> → the <strong>Answer key</strong> card (<em>Practice answer key / Final answer key</em> picker, <em>Lock</em>). For each row paste the diff context (4-6 lines around the comment line) into the input field, paste the comment verbatim into the expected-answer field, and add a one-line rationale tag (<code>style-nit</code>, <code>bug-suggestion</code>, <code>test-gap</code>, <code>convention</code>, <code>security</code>). Spend 60 minutes here. These ~50-100 rows are the most important data in the project — they imprint voice on the rest.</p>
 
         <h3 id="gold-llm-assisted">Path B — LLM-assisted promotion from your full archive</h3>
         <p>Your full PR archive is too large to hand-curate. For the bulk pass, an out-of-band scoring step works well — the platform doesn't bundle a "rank by quality" UI, so you'll script this against your teacher backend directly:</p>
         <ol>
           <li>Bulk-import your filtered PR review archive (post-cleanup) into the project.</li>
           <li>Write a short script that POSTs each (diff, review) pair to your teacher (Ollama / OpenAI / Anthropic — whichever you've set up as a synth backend). Prompt the teacher to score the pair on three axes (concrete suggestion present, voice matches team norm, comment is actionable) and return a 0-3 score per axis. Aggregate the scores per row.</li>
-          <li>Sort by aggregate score; promote the top 20% into the gold set by importing them as a curated subset. The rest stay in the project's raw rows but are skipped at training time. Promotion is still an explicit user decision via the gold-set workbench — the platform won't auto-promote teacher-scored rows on its own.</li>
+          <li>Sort by aggregate score; import the top 20% as a curated subset (<strong>Data → Sources → Import dataset</strong>; they land pending in the <strong>Review queue</strong> under Data → Generate → Details, and only accepted rows train) and put the best of them in the answer key on <strong>Data → Labels</strong>. Promotion is still an explicit user decision — the platform won't auto-promote teacher-scored rows on its own.</li>
         </ol>
         <p>This compresses 8 hours of manual gold-curation into ~90 minutes of scripting + review. The trade-off: the teacher's score is a proxy, not a verdict. Spot-check 30 of the promoted rows manually before training; if more than 20% of those feel off-voice, tighten the teacher prompt and re-rank.</p>
 
-        <p><strong>✓ Checkpoint:</strong> the Data Studio Overview's <strong>Gold Set ready</strong> row should show ≥ 100 rows (green) or 50-99 rows (amber, "100 recommended"). Below 50 the goal ledger flags this as a blocker on the gold-set component. If the row is grey, nothing got promoted — check the Gold Set workbench page to confirm rows actually landed there.</p>
+        <p><strong>✓ Checkpoint:</strong> the <em>Readiness overview</em> ledger (<strong>Data → Sources</strong> → Details) should show its <code>gold_set</code> row at ≥ 100 rows (green) or 50-99 rows (amber, "100 recommended"). Below 50 it flags the answer key as a blocker. If the row is grey, nothing landed — open <strong>Data → Labels</strong> and check the Answer key card's entry count.</p>
 
         <div class="callout callout--note">
           <p class="callout__label">Don't skip the rationale tags</p>
-          <p>The <code>rationale</code> field is optional in the schema but valuable in practice. Tagging each gold row by category (<code>style-nit</code> / <code>bug-suggestion</code> / <code>test-gap</code> / <code>convention</code> / <code>security</code> / <code>perf</code>) lets the FailureClustersPanel group eval failures by category later — "the model is strong on style nits but misses test-coverage gaps". That diagnostic is impossible without the tags.</p>
+          <p>The <code>rationale</code> field is optional in the schema but valuable in practice. Tagging each gold row by category (<code>style-nit</code> / <code>bug-suggestion</code> / <code>test-gap</code> / <code>convention</code> / <code>security</code> / <code>perf</code>) lets the failure clusters on <strong>Results → Failures</strong> group eval failures by category later — "the model is strong on style nits but misses test-coverage gaps". That diagnostic is impossible without the tags.</p>
         </div>
 
         <h2 id="split">Splitting train, validation, test — by repo or author, not random</h2>
         <p>This is where the code-review recipe diverges sharpest from tutorial 1 and 2. <strong>Don't use a random split.</strong> Reviews by the same engineer are stylistically correlated; the same engineer's reviews appearing in both train and test inflates eval scores because the model can essentially "recognise" the reviewer's voice rather than generalising the critique reasoning.</p>
-        <p>The platform's Prepare Dataset surface today produces a random split off the canonical splits config (train_ratio / val_ratio / test_ratio / seed). For code-review specifically you want stronger guarantees, which means doing the partitioning <em>before</em> import: split your archive into three CSV/JSONL files yourself (train.jsonl / val.jsonl / test.jsonl) using a deterministic key, and import the three files as three separate datasets in the project. Three useful keys for code-review:</p>
+        <p><strong>Data → Split</strong> (the <em>Train / Val / Test Split</em> form, <strong>Run Split</strong>) cuts a random split off the ratios + seed — and its <strong>Disjoint By Field (optional)</strong> input is exactly the guarantee this section wants: give every row a key column, name it there, and every group lands whole in one split (the manifest's "Disjoint by" report shows per-split group counts and the ratio drift). Three useful keys for code-review:</p>
         <ul>
           <li><strong>Split by repository.</strong> All rows from repo A go to train; all rows from repo B go to validation; all rows from repo C go to test. Best when your team works across many repos with overlapping author sets — the model has to generalise across codebases. Use when you have ≥ 5 source repos.</li>
           <li><strong>Split by author.</strong> Engineer A's reviews go to train; engineer B's to validation; engineer C's to test. Best when one repo dominates your archive — the model has to generalise across reviewers. Use when you have ≥ 5 distinct reviewers contributing comments.</li>
-          <li><strong>Split by time.</strong> Reviews from Jan-Apr go to train; May to validation; June to test. The most realistic for measuring deployment readiness because production traffic is "later than training data". Use as a complementary check even when you've already done one of the above.</li>
+          <li><strong>Split by time.</strong> Reviews from Jan-Apr go to train; May to validation; June to test. The most realistic for measuring deployment readiness because production traffic is "later than training data". Disjoint-by won't order the months for you, so for this one pre-cut the files yourself and import the later months as an <strong>external benchmark</strong> (<strong>Results → Compare</strong> → <em>External benchmarks</em>). Use as a complementary check even when you've already done one of the above.</li>
         </ul>
-        <p>For a 400-row gold set, 80/10/10 produces 320 train / 40 val / 40 test. With a key-based split the per-split counts may be uneven — that's fine, the eval pack handles small validation sets gracefully and the LLM-judge scoring works at any size.</p>
+        <p>For a 400-row gold set, 80/10/10 produces 320 train / 40 val / 40 test. With a key-based split the per-split counts may be uneven — that's fine, the rule set handles small validation sets gracefully and the LLM-judge scoring works at any size. On every later re-split tick <strong>Keep the current N test examples</strong> so new rows never move the test examples into training.</p>
 
         <div class="callout callout--warning">
           <p class="callout__label">Random split = inflated F1 + LLM-judge scores</p>
-          <p>If you skip this step and use the default random split, expect to see eval scores 10-15 points higher than what you'll observe in production. That gap is the leakage signal — your model "knows" the reviewer rather than the critique. Worse, you won't notice the inflation until you ship and the model starts writing reviews that don't sound like anyone on your team. Spend the extra 5 minutes configuring a key-based split.</p>
+          <p>If you skip this step and use the default random split, expect to see eval scores 10-15 points higher than what you'll observe in production. That gap is the leakage signal — your model "knows" the reviewer rather than the critique. Worse, you won't notice the inflation until you ship and the model starts writing reviews that don't sound like anyone on your team. Spend the extra 5 minutes filling in <em>Disjoint By Field</em>.</p>
         </div>
 
         <h2 id="synthetic">Generate synthetic drills</h2>
         <p>The code-review recipe ships three synthetic playbooks. Each drills a different aspect of review-quality:</p>
         <dl>
-          <dt>code_review_paraphrase (POSITIVES_PARAPHRASE) — voice drill</dt>
+          <dt>Paraphrase positives (<code>POSITIVES_PARAPHRASE</code>) — voice drill</dt>
           <dd>Vary the wording of a review while keeping the underlying critique intact. "Use <code>is None</code> not <code>== None</code>" becomes "Prefer <code>is None</code> here — the loose-equality form coerces and is slower." Same critique theme, different phrasing. Goal: the model learns that the same diff can elicit many valid review wordings, all of which should hit the same theme. Generate ~80 rows from your gold set.</dd>
-          <dt>code_review_hard_negatives (HARD_NEGATIVES) — what NOT to emit</dt>
+          <dt>Hard negatives (<code>HARD_NEGATIVES</code>) — what NOT to emit</dt>
           <dd>Two flavours for code-review specifically: (a) "LGTM" reviews paired with diffs that have real issues — the model needs to learn that empty-praise reviews are wrong; (b) reviews that MISS the actual bug while commenting on irrelevant style nits. Both train the model on the failure modes you want to avoid: silence when speaking up matters, and pedantry that misses the real concern. Generate ~50 rows.</dd>
-          <dt>code_review_cluster_targeted (CLUSTER_TARGETED) — failure-mode patching</dt>
-          <dd>After a first training run + eval, the FailureClustersPanel groups failures into themes ("missed null checks", "wrong logger level", "off-voice"). This playbook seeds new training rows specifically targeting the weakest clusters — you point it at a cluster, it generates diffs that exercise the same pattern, and a teacher writes reviews. Skip on the first pass; run after the first eval to close the gap.</dd>
+          <dt>Target a failure cluster (<code>CLUSTER_TARGETED</code>) — failure-mode patching</dt>
+          <dd>After a first training run + eval, the failure clusters on <strong>Results → Failures</strong> group failures into themes ("missed null checks", "wrong logger level", "off-voice"). This playbook seeds new training rows specifically targeting the weakest clusters — you point it at a cluster, it generates diffs that exercise the same pattern, and a teacher writes reviews. Skip on the first pass; run after the first eval to close the gap.</dd>
         </dl>
-        <p>Open <strong>Data Studio → Synthetic → Playbook Center</strong>. The code-review recipe surfaces three playbook cards. Click <code>code_review_paraphrase</code> first, set target count to 80, pick a backend (Ollama is the free default; OpenAI / Anthropic give noticeably better paraphrases at code-review's voice). Generation runs as a background Job; the notification bell tracks progress.</p>
+        <p>Open <strong>Data → Generate</strong>. Pick a <em>Provider</em> (Local (Ollama) is the free default; OpenAI / Anthropic give noticeably better paraphrases at code-review's voice — <em>Save key to this project</em> keeps the key) and <em>Model Name</em>, then open Details → <strong>Playbooks</strong> and run <em>Paraphrase positives</em> first with a target of 80. Generation runs as a background Job; the notification bell tracks progress.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Don't run cluster-targeted first</p>
-          <p>The cluster-targeted playbook needs a baseline model + an eval run to know which clusters are weak. Run paraphrase + hard-negatives first; train + eval the v1 model; then use the FailureClustersPanel's "Generate targeted drills" button to feed the weakest cluster back into cluster-targeted. This is iteration 2, not iteration 1.</p>
+          <p><em>Target a failure cluster</em> needs a baseline model + an eval run to know which clusters are weak. Run paraphrase + hard-negatives first; train + eval the v1 model; then use the cluster's <strong>Generate N rows from this cluster</strong> control on <strong>Results → Failures</strong> to feed the weakest cluster back in. This is iteration 2, not iteration 1.</p>
         </div>
 
         <h2 id="review-queue">Review the synth queue</h2>
-        <p>Every generated row lands in the <strong>Synthetic Review Queue</strong> with <code>review_status="pending"</code>. The queue groups rows by source playbook so you can review one category at a time. For code-review specifically, expect <strong>30-50% soft-reject rate</strong> on the first pass — teacher models are stronger at code than at voice, so paraphrased reviews drift toward "ChatGPT voice" easily.</p>
+        <p>Every generated row lands pending in the <strong>Review queue</strong> (<strong>Data → Generate</strong> → Details → <em>Review queue</em>, where you tick rows and use <em>Accept selected</em> / <em>Reject selected</em>). The Review queue under <strong>Data → Labels</strong> → Details groups rows by the playbook that produced them, with <em>Accept all</em> / <em>Reject all</em> per group, so you can review one category at a time. For code-review specifically, expect <strong>30-50% soft-reject rate</strong> on the first pass — teacher models are stronger at code than at voice, so paraphrased reviews drift toward "ChatGPT voice" easily.</p>
         <p>Per-row actions and reason tags:</p>
         <ul>
           <li><strong>Accept</strong> — the row joins training on the next prepare-dataset run. For paraphrase rows: only accept if the new wording still sounds like something your team would say. "Sounds like a teacher model" is a reason to reject.</li>
@@ -338,37 +338,38 @@
               <li><code>invented-issue</code> — review describes a problem that isn't actually in the diff; the model would learn to hallucinate concerns.</li>
             </ul>
           </li>
-          <li><strong>Purge by reason</strong> — group-level action that deletes all rows tagged with one reason. Periodic cleanup; the platform never auto-purges.</li>
+          <li><strong>Purge this reason</strong> — group-level action that deletes all rejected rows tagged with one reason. Periodic cleanup; the platform never auto-purges.</li>
         </ul>
-        <p>The review queue is also where the platform's per-row confidence score surfaces. Paraphrase rows scoring below 50% confidence almost always correlate with voice drift — highlight them and review those first.</p>
+        <p>The <em>Synthetic quality</em> section next to it (Data → Generate → Details) scores the generated rows. Low-scoring paraphrase rows almost always correlate with voice drift — review those first.</p>
 
         <h2 id="train">Training configuration</h2>
-        <p>Open <strong>Training → New Experiment</strong>. The recipe defaults are sensible:</p>
+        <p>Open <strong>Train</strong>. It is one form — <em>Base model</em> (+ Browse), <em>Task</em>, <em>Seeds</em> (One run / Three seeds), <em>Run name</em>, a readiness line and the <strong>Train</strong> button (a confirm dialog shows the resolved config and an estimate, then <strong>Launch</strong>). The knobs below live under <strong>More options</strong> → <em>Model and hyperparameters</em> (epochs, batch size, learning rate) and <em>LoRA and advanced training</em>. The recipe defaults are sensible:</p>
         <dl>
           <dt>Base model</dt>
-          <dd><code>Qwen/Qwen2.5-Coder-1.5B-Instruct</code>. Pre-trained on code; instruction-tuned; good fit for the diff-to-comment shape. The 1.5B size fits comfortably on an 8 GB GPU. <strong>Alternative:</strong> <code>Qwen/Qwen2.5-Coder-3B-Instruct</code> for teams that want longer / more nuanced reviews and have a bigger GPU (12 GB+) — noticeably better at multi-issue diffs where the model needs to spot 2-3 issues in one diff. <code>HuggingFaceTB/SmolLM2-1.7B-Instruct</code> is the non-coder alternative if you don't want a code-pretrained base for some reason.</dd>
+          <dd><code>Qwen/Qwen2.5-Coder-1.5B-Instruct</code> (type it in the <em>Base model</em> field or pick it via <strong>Browse</strong>). Pre-trained on code; instruction-tuned; good fit for the diff-to-comment shape. The 1.5B size fits comfortably on an 8 GB GPU. <strong>Alternative:</strong> <code>Qwen/Qwen2.5-Coder-3B-Instruct</code> for teams that want longer / more nuanced reviews and have a bigger GPU (12 GB+) — noticeably better at multi-issue diffs where the model needs to spot 2-3 issues in one diff. <code>HuggingFaceTB/SmolLM2-1.7B-Instruct</code> is the non-coder alternative if you don't want a code-pretrained base for some reason.</dd>
           <dt>Adapter</dt>
-          <dd>LoRA, rank 16, alpha 32, target modules <code>q_proj,k_proj,v_proj,o_proj</code>. Standard for instruction-SFT.</dd>
+          <dd>LoRA, rank 16, alpha 32; leave <em>target modules</em> on <code>auto</code> (all linear layers for a model ≤ 2B). Standard for instruction-SFT.</dd>
           <dt>Learning rate</dt>
           <dd>2e-4. Same as the QA-shape recipes; LoRA's small parameter count tolerates the higher rate.</dd>
           <dt>Epochs</dt>
-          <dd>3. For 300-500 row training sets, 3 epochs hits the plateau; 5+ overfits the voice. The training panel's live-loss sparkline will plateau by step 200-300 if the dataset is healthy.</dd>
+          <dd>3. For 300-500 row training sets, 3 epochs hits the plateau; 5+ overfits the voice. (An empty field lets the app size epochs to your row count.) The run's live-loss sparkline will plateau by step 200-300 if the dataset is healthy.</dd>
           <dt>Batch size + gradient accumulation</dt>
           <dd>Batch 2, accumulate 8 → effective batch 16. Diffs can be long (up to the 2-3k token context window); the smaller per-step batch keeps memory in check.</dd>
         </dl>
-        <p>Expected runtime: 15-40 minutes on a single GPU (RTX 3060+ for the 1.5B, RTX 3090+ for the 3B), 60-90 minutes on CPU for the 1.5B (CPU is impractical for the 3B). Watch the live signals panel: if loss isn't dropping by step 100, kill the run via the experiment row's kill switch and check your gold set — the input data is probably misshapen (most common cause: diff column accidentally swapped with review column during mapping).</p>
+        <p>Expected runtime: 15-40 minutes on a single GPU (RTX 3060+ for the 1.5B, RTX 3090+ for the 3B), 60-90 minutes on CPU for the 1.5B (CPU is impractical for the 3B). Watch the run's live dashboard in the runs list under the form: if loss isn't dropping by step 100, <strong>Cancel</strong> the run and check your rows — the input data is probably misshapen (most common cause: diff column accidentally swapped with review column during mapping).</p>
 
-        <p><strong>✓ Checkpoint:</strong> in the Training tab, your experiment row shows a live sparkline that drops from ~2.5-3.5 in the first few steps down to ~0.4-0.7 by the end. The bell shows a "training" notification with a percentage. When complete, the experiment row turns green and the experiment detail page surfaces the final loss + a "Run evaluation" button.</p>
+        <p><strong>✓ Checkpoint:</strong> on <strong>Train</strong>, your run's row shows a live sparkline that drops from ~2.5-3.5 in the first few steps down to ~0.4-0.7 by the end. The bell shows the training Job with a percentage. When it completes, the automatic lift check scores the run and <strong>Results → Verdict</strong> shows the summary card — "Better than the base model" / "within noise" with the judge's correct / partial / wrong counts — plus <strong>Re-run lift check</strong> and <strong>Check across 3 seeds</strong>.</p>
+        <figure class="academy-figure"><img src="../../assets/screens/workspace/results-verdict.png" alt="Results → Verdict: tabs Verdict, Failures, Compare, Try it; a step tip with Watch the walkthrough; two Coach notices; then the summary card Better than the base model for run #1 (v09-narrated-run vs base HuggingFaceTB/SmolLM2-135M-Instruct, 20 test examples): judge answer correct 0.167 (base) to 0.225 (fine-tuned), +0.058, judged by the template smoke backend, with Re-run lift check and Check across 3 seeds buttons, and the list of where it still fails" loading="lazy" width="1600" height="1000" /><figcaption>Results → Verdict after a run: the judged lift against the base model on top; the pass/fail rules card for the same run sits further down the tab.</figcaption></figure>
 
         <h2 id="forecast">Read the trainability forecast</h2>
-        <p>Before kicking off the training run, the platform pre-computes a <strong>trainability forecast</strong> on the goal ledger's <code>predicted_pass</code> row. For code-review projects the forecast is <em>noisier</em> than for classification or QA — the LLM-judge gate has higher inherent variance than exact-match metrics because it depends on a teacher model's scoring of theme overlap, and theme overlap is fuzzier than token overlap.</p>
+        <p>Before kicking off the training run, the platform pre-computes a <strong>trainability forecast</strong> (<strong>Train → More options → Plan and gaps</strong>, "Predicted gate-pass: ~N%"; the same number is the <code>predicted_pass</code> row of the goal ledger on <strong>Data → Sources → Details → Readiness overview</strong>). For code-review projects the forecast is <em>noisier</em> than for classification or QA — the LLM-judge gate has higher inherent variance than exact-match metrics because it depends on a teacher model's scoring of theme overlap, and theme overlap is fuzzier than token overlap.</p>
         <p>For a healthy code-review project you want:</p>
         <ul>
           <li>Predicted pass probability <strong>≥ 55%</strong>. Lower than the rag-protocol / classification thresholds because of the LLM-judge variance — a 55% prediction here is roughly equivalent to 70% on a classification project.</li>
-          <li>Gold set readiness <strong>≥ 100% (i.e. ≥100 gold rows)</strong>. Below this the forecast becomes too noisy to trust at all.</li>
+          <li>Answer-key readiness <strong>≥ 100% (i.e. ≥100 answer-key rows)</strong>. Below this the forecast becomes too noisy to trust at all.</li>
           <li>Data ready <strong>= met</strong> (training rows + mapping + key-based split all green).</li>
         </ul>
-        <p>If the forecast is below 40%, training will likely fail the LLM-judge gate. <strong>Add more gold + run another paraphrase round</strong> — the goal ledger's blockers panel will tell you which component is weakest.</p>
+        <p>If the forecast is below 40%, training will likely fail the LLM-judge gate. <strong>Add more answer-key rows + run another paraphrase round</strong> — the <em>Readiness overview</em> ledger will tell you which component is weakest.</p>
 
         <div class="callout callout--note">
           <p class="callout__label">Why the forecast is noisier for LLM-judge tasks</p>
@@ -376,7 +377,7 @@
         </div>
 
         <h2 id="evaluate">Evaluation: LLM-judge as the primary gate</h2>
-        <p>After training, the platform automatically evaluates against the project's eval pack. For code-review projects the scaffold gates three behaviours:</p>
+        <p>After training, the automatic lift check scores the run and <strong>Results → Verdict</strong> shows the <em>Pass/fail rules</em> card (rule set, PASS/FAIL, the required rules that failed) above the judged summary. The judge is resolved from <code>EVAL_JUDGE_BACKEND</code>, else the project's <code>eval_judge</code> setting, else the first local model (Ollama) — never a cloud model over a reachable local one. For code-review projects the rule set covers three behaviours:</p>
         <dl>
           <dt>LLM-judge pass rate ≥ 0.70 (required)</dt>
           <dd>The headline gate. A teacher model scores each candidate review against the reference review along three axes: (a) does the candidate identify the same critique theme as the reference, (b) is the suggestion actionable and concrete, (c) does the candidate's voice match the team norm. Pass = aggregate score crosses the threshold. <strong>This is the gate you actually care about.</strong></dd>
@@ -385,8 +386,8 @@
           <dt>Safety pass rate ≥ 0.93 (not required)</dt>
           <dd>Catches reviews that leak PII, suggest unsafe code, or use language inappropriate for your team's communication norms. Mostly defensive; should pass easily if your gold set is clean.</dd>
         </dl>
-        <p>The goal ledger expands the <code>eval_pass_rate</code> row into a per-gate breakdown — "LLM-judge 0.72/≥0.70 passed, F1 0.43/≥0.40 passed, safety 0.96/≥0.93 passed." If LLM-judge passes but F1 is high (≥ 0.70), the model is likely over-memorising your gold; a too-perfect F1 on a generative task is a warning sign, not a success.</p>
-        <p>The FailureClustersPanel groups eval failures by theme for code-review specifically. Common cluster headers:</p>
+        <p>The scorecard under the <em>Pass/fail rules</em> card lists every rule with its value and threshold — "LLM-judge 0.72/≥0.70 passed, F1 0.43/≥0.40 passed, safety 0.96/≥0.93 passed." If LLM-judge passes but F1 is high (≥ 0.70), the model is likely over-memorising your gold; a too-perfect F1 on a generative task is a warning sign, not a success.</p>
+        <p>The failure clusters on <strong>Results → Failures</strong> group eval failures by theme. Common cluster headers for code-review:</p>
         <ul>
           <li><strong>"missed the bug"</strong> — model commented on style while the diff had a real issue. The hard-negatives playbook targets exactly this.</li>
           <li><strong>"off-voice"</strong> — model wrote a syntactically-fine review that doesn't sound like your team. Add more gold from your senior engineers' archive.</li>
@@ -401,13 +402,13 @@
             <tr><th>Symptom</th><th>Root cause</th><th>Fix</th></tr>
           </thead>
           <tbody>
-            <tr><td>LLM-judge pass &lt; 0.50, model always says "LGTM"</td><td>Hard-negatives playbook didn't run — model learned that approving is the safe default</td><td>Run code_review_hard_negatives for 50+ rows targeting LGTM-when-bug-exists. Retrain.</td></tr>
-            <tr><td>LLM-judge pass 0.60-0.65, FailureClustersPanel surfaces "invented issue" as dominant cluster</td><td>Model is hallucinating bugs that aren't there</td><td>Add gold rows that are diffs the team explicitly did NOT comment on — silence-is-correct exemplars. Reduce paraphrase rows that may have drifted toward invented issues.</td></tr>
+            <tr><td>LLM-judge pass &lt; 0.50, model always says "LGTM"</td><td>Hard-negatives playbook didn't run — model learned that approving is the safe default</td><td>Run <em>Hard negatives</em> for 50+ rows targeting LGTM-when-bug-exists. Retrain.</td></tr>
+            <tr><td>LLM-judge pass 0.60-0.65, Results → Failures surfaces "invented issue" as the dominant cluster</td><td>Model is hallucinating bugs that aren't there</td><td>Add gold rows that are diffs the team explicitly did NOT comment on — silence-is-correct exemplars. Reduce paraphrase rows that may have drifted toward invented issues.</td></tr>
             <tr><td>LLM-judge pass &gt; 0.70 but production reviews "don't sound like us"</td><td>Voice drift in synth rows you accepted</td><td>Audit the last paraphrase round — the synth queue keeps soft-rejected rows on disk. Look for patterns in <code>not-our-voice</code> rejections you might have missed. Re-curate gold.</td></tr>
             <tr><td>F1 unusually high (&gt; 0.75) but LLM-judge plateaus at 0.55</td><td>Model memorised gold's wording without learning to generalise — over-fit on small set</td><td>Reduce epochs (try 2 instead of 3). Add more diversity to gold — every gold row should be from a distinct PR.</td></tr>
             <tr><td>Model adopts wrong voice register (formal where team is casual, or vice versa)</td><td>Gold set is mixed-register; teacher imprinted on the loudest signal</td><td>Filter gold to ONE register (pick the dominant team voice and stick with it). Re-train. Voice consistency matters more than coverage on the first pass.</td></tr>
-            <tr><td>Model misses domain-specific anti-patterns (e.g. uses incorrect logger call, doesn't flag a SQL N+1)</td><td>Anti-patterns are under-represented in gold</td><td>Use code_review_cluster_targeted seeded from the FailureClustersPanel's specific weak cluster. Generate 30+ diffs that exercise the missed pattern. Retrain.</td></tr>
-            <tr><td>LLM-judge pass varies 10+ points between runs without retraining</td><td>LLM-judge variance (the gate is inherently noisier than F1)</td><td>Run eval 3 times; report median. If variance persists, switch the judge backend to a stronger model (Anthropic/OpenAI vs Ollama) for more stable scoring.</td></tr>
+            <tr><td>Model misses domain-specific anti-patterns (e.g. uses incorrect logger call, doesn't flag a SQL N+1)</td><td>Anti-patterns are under-represented in gold</td><td>Use <em>Generate N rows from this cluster</em> on the weak cluster (Results → Failures). Generate 30+ diffs that exercise the missed pattern. Retrain.</td></tr>
+            <tr><td>LLM-judge pass varies 10+ points between runs without retraining</td><td>LLM-judge variance (the gate is inherently noisier than F1)</td><td>Run eval 3 times; report median. If variance persists, switch the judge to a stronger model (<code>EVAL_JUDGE_BACKEND=anthropic:&lt;model&gt;</code> or the project's <code>eval_judge</code> setting, instead of the local Ollama default) for more stable scoring.</td></tr>
           </tbody>
         </table>
 
@@ -426,13 +427,8 @@
           <dt>Blocking review mode (after months of tuning)</dt>
           <dd>Model's comments are posted as standard review comments equivalent to a human review. The PR is held until either the author addresses the comment or a human reviewer dismisses it. <strong>Don't do this until you have at least 3 months of draft-suggestion deployment data showing acceptance rate ≥ 50%.</strong> The cost of a bad blocking comment is high (slows the team); the cost of a missed dismissed suggestion is zero.</dd>
         </dl>
-        <p>Export and deploy via the recipe's <code>target_profile</code> (defaults to <code>vllm_server</code>):</p>
-        <pre class="code-block"><code>cd data/projects/&lt;id&gt;/exports/run-2026-06-05
-./deploy-vllm.sh
-# Loads Qwen2.5-Coder-1.5B + LoRA adapter on localhost:8000.
-# POST /review with { "diff": "..." } returns { "review": "1. ...\n2. ..." }
-# Latency: 1-3s on a single GPU.</code></pre>
-        <p>Wire it as a GitHub Action that runs on PR open / synchronize. The Action pulls the diff via <code>gh pr diff</code>, posts to the model's <code>/review</code> endpoint, and writes the response as a draft-suggestion review comment via <code>gh pr review --comment</code>. Self-hosted runners with GPU access keep the round-trip private; the model never sees the internet, and your diffs never leave your network.</p>
+        <p>Export on <strong>Ship → Package</strong> → <em>New export</em>: pick the run, a <em>Format</em> (<em>HuggingFace</em> — the LoRA is merged into Qwen2.5-Coder at export, so the folder loads with plain <code>transformers</code> or vLLM; <em>GGUF (CPU)</em> for llama.cpp / Ollama; <em>Docker</em>, which bundles a <code>serve.py</code> and Dockerfile), quantization and deployment targets, then <strong>Run Export</strong>. The export appears in the <em>Releases</em> table and under <code>data/projects/&lt;id&gt;/exports/</code>; <strong>Ship → Deploy</strong> holds the serve / deploy plans for the targets you ticked, and <strong>Ship → Publish</strong> pushes a HuggingFace export to the Hub. Smoke-test first on <strong>Results → Try it</strong> (<em>Provider</em> = <em>Trained run (this project)</em>) with a few diffs. Latency: 1-3 s per diff on a single GPU.</p>
+        <p>Wire it as a GitHub Action that runs on PR open / synchronize. The Action pulls the diff via <code>gh pr diff</code>, posts it to whatever serves the export (a chat-completions call for vLLM / Ollama; wrap it in a thin <code>/review</code> endpoint), and writes the response as a draft-suggestion review comment via <code>gh pr review --comment</code>. Self-hosted runners with GPU access keep the round-trip private; the model never sees the internet, and your diffs never leave your network.</p>
 
         <div class="callout callout--warning">
           <p class="callout__label">Floor-lifting, not ceiling-raising</p>
@@ -445,9 +441,9 @@
           <dt>Language-specific variants</dt>
           <dd>One model handles all your languages OK; one model per language (Python, Go, TypeScript) handles each one noticeably better. Same recipe + workflow; segment your gold set by language and train per-segment. Routing happens at deploy time — the GitHub Action inspects the diff's file extensions and picks the right model.</dd>
           <dt>Pull style-guide context via auto-RAG</dt>
-          <dd>Your team's style guide is a stable document. Index it as an auto-RAG corpus and prepend retrieved chunks to the diff at inference time. The model writes reviews informed by the exact style-guide rules — "according to section 3.2 of the team's Python guide, use <code>pathlib</code> not <code>os.path</code> for new code." Works without retraining the model.</dd>
+          <dd>Your team's style guide is a stable document. Upload it on <strong>Data → Sources</strong> and clean it; the passages become a retrieval index, and on <strong>Results → Try it</strong> the <em>Answer from your documents</em> toggle prepends retrieved passages to the diff at inference time (each reply shows its <em>Sources</em>). The model writes reviews informed by the exact style-guide rules — "according to section 3.2 of the team's Python guide, use <code>pathlib</code> not <code>os.path</code> for new code." Works without retraining the model; for the GitHub Action you prepend the same retrieved chunks yourself.</dd>
           <dt>Active learning from acceptance signal</dt>
-          <dd>Every draft-suggestion the human reviewer accepts is a high-signal positive example. Every dismissed suggestion is a soft-negative. Capture both via webhook from your PR platform; promote the accepted ones to gold; retrain when gold grows by ~100 rows. Over a quarter, the model converges on the suggestions your team actually finds useful — a continuous-improvement loop powered by the review process itself.</dd>
+          <dd>Every draft-suggestion the human reviewer accepts is a high-signal positive example. Every dismissed suggestion is a soft-negative. Capture both via webhook from your PR platform; add the accepted ones to the training rows and the answer key; retrain when the key grows by ~100 rows. Over a quarter, the model converges on the suggestions your team actually finds useful — a continuous-improvement loop powered by the review process itself.</dd>
         </dl>
 
         <p>Curious where to go after this? The <strong><a class="inline-link" href="index.html">tutorials hub</a></strong> covers other end-to-end recipes — span-extraction for structured field extraction, classification for binary security flags, rag-protocol for grounded-answer chatbots. Each one is the same workflow shape on a different recipe.</p>
@@ -455,13 +451,13 @@
         <section class="key-terms">
           <h2 id="key-terms">Key terms</h2>
           <dl>
-            <dt>code-review recipe</dt><dd>BrewSLM recipe that trains a small model to comment on code diffs in a team's voice. Uses the qa-pair adapter, instruction_sft task profile, and an LLM-judge-led eval pack scaffold.</dd>
+            <dt>code-review recipe</dt><dd>BrewSLM recipe (task type <em>Code Review Nitpicker</em>) that trains a small model to comment on code diffs in a team's voice. Uses the qa-pair adapter, instruction_sft task profile, and an LLM-judge-led rule set.</dd>
             <dt>LLM judge</dt><dd>A teacher model that scores whether a candidate review hits the same critique theme as the reference review, even if the wording differs. The primary eval gate for code-review because exact-match doesn't apply when many wordings are valid.</dd>
             <dt>Critique theme</dt><dd>What the review is fundamentally about — "missing null check", "wrong logger level", "off-spec naming convention". The thing the LLM judge scores theme-overlap on.</dd>
             <dt>Split by repo / author / time</dt><dd>Stratified splitting strategies that prevent reviewer-voice leakage between train and test. Random split inflates eval scores 10-15 points by letting the model recognise reviewers rather than generalise critique reasoning.</dd>
             <dt>Hard negatives (code-review flavour)</dt><dd>LGTM reviews on diffs that have real issues, plus reviews that flag style nits while missing the actual bug. Trains the model on the failure modes (silence when speaking up matters, pedantry that misses the point) you want to avoid.</dd>
             <dt>Draft suggestion mode</dt><dd>GitHub's PR-review feature where comments are posted as suggestions the reviewer can accept-with-one-click or dismiss. The recommended starting deployment pattern — zero false-positive cost because bad suggestions never reach the PR author.</dd>
-            <dt>code_review_cluster_targeted</dt><dd>Synthetic playbook that generates training rows targeting the weakest cluster surfaced by the FailureClustersPanel after a baseline eval. Iteration-2 tool, not iteration-1.</dd>
+            <dt>Target a failure cluster (<code>CLUSTER_TARGETED</code>)</dt><dd>Synthetic playbook that generates training rows targeting the weakest cluster on Results → Failures after a baseline eval (<em>Generate N rows from this cluster</em>). Iteration-2 tool, not iteration-1.</dd>
           </dl>
         </section>
 

@@ -6,7 +6,7 @@
     <title>BrewSLM Workflow | From Base Model to Domain-Specific Small Language Model</title>
     <meta
       name="description"
-      content="The BrewSLM workflow for fine-tuning small language models on custom data: ingest, map, prepare, preflight, train, evaluate, export, and deploy with an audit trail at every stage."
+      content="The BrewSLM workflow for fine-tuning small language models on custom data: Data, Train, Results and Ship — ingest, prepare, label, generate, split, train, evaluate, export and deploy with an audit trail at every stage."
     />
     <meta
       name="robots"
@@ -61,9 +61,32 @@
         <h1>From base model to domain-specific small language model, stage by stage.</h1>
         <p class="page-sub">
           This is the product path from custom dataset ingestion to training, evaluation, export,
-          and deployment. Every stage has explicit inputs, outputs, and an audit-log entry, so ML
-          engineers can see exactly what happened to their base model and their data.
+          and deployment. In the app it is four places in a project's sidebar —
+          <strong>Data</strong>, <strong>Train</strong>, <strong>Results</strong>,
+          <strong>Ship</strong> — with an <strong>Overview</strong> that says where you are and
+          what the next step is. Every stage has explicit inputs, outputs, and an audit-log entry,
+          so ML engineers can see exactly what happened to their base model and their data.
         </p>
+      </section>
+
+      <section class="section">
+        <div class="section-head reveal">
+          <p class="eyebrow">The workspace</p>
+          <h2>Six destinations, one project</h2>
+          <p>
+            Every project opens on its <strong>Overview</strong>: the current stage, one button for
+            the next step, the latest run's lift against its base model, the shipped export, and up
+            to three Coach notices worth a look. The sidebar below it is the whole map:
+            <strong>Data</strong> (five steps: Sources, Prepare, Labels, Generate, Split),
+            <strong>Train</strong> (one form), <strong>Results</strong> (Verdict, Failures, Compare,
+            Try it), <strong>Ship</strong> (Package, Publish, Deploy, Monitor) and
+            <strong>Settings</strong>. Quick search (⌘K / Ctrl+K) jumps to any of them.
+          </p>
+        </div>
+        <figure class="blog-figure reveal">
+          <img src="./assets/screens/workspace/overview.png" alt="A project's Overview: the sidebar with Overview, Data, Train, Results, Ship and Settings; cards for Where you are (Training) with a Next step button, Latest run (Run #1 beats its base model, judge_correct 0.167 to 0.225), Shipped model (Export #1 gguf) and three Coach notices under Worth a look" loading="lazy" width="1600" height="1000" />
+          <figcaption>The Overview of the Support FAQ starter project after one training run and a GGUF export. Everything below is reachable from the sidebar on the left.</figcaption>
+        </figure>
       </section>
 
       <section class="section workflow">
@@ -73,83 +96,102 @@
         </div>
         <div class="workflow-map">
           <article class="workflow-step reveal">
-            <div class="step-head"><span>01</span><h3>Ingest</h3></div>
-            <p><strong>Inputs:</strong> source locator (<code>jsonl:/path</code>, <code>hf:id:split</code>, <code>kaggle:competition:slug</code>, etc.)</p>
+            <div class="step-head"><span>01</span><h3>Sources</h3></div>
+            <p><strong>Where:</strong> <strong>Data → Sources</strong>. Upload files, <em>Import dataset (auto-mapping)</em>, or <em>No documents yet? Write sample documents</em>.</p>
+            <p><strong>Inputs:</strong> a browser upload, or a source locator (<code>jsonl:/path</code>, <code>hf:id:split</code>, <code>kaggle:competition:slug</code>, etc.).</p>
             <p><strong>Outputs:</strong> rows on disk in the project's data dir.</p>
-            <p><strong>Contract:</strong> source connectors implement <code>load()</code> + <code>describe()</code>. Unparseable rows surface as sentinel rows, not silent drops.</p>
+            <p><strong>Contract:</strong> source connectors implement <code>load()</code> + <code>describe()</code>. Unparseable rows surface as sentinel rows, not silent drops. A file that cannot be parsed is an error, never accepted text.</p>
             <p><strong>RunEvent:</strong> none here directly — the introspector + run downstream emit one each.</p>
           </article>
           <article class="workflow-step reveal">
-            <div class="step-head"><span>02</span><h3>Introspect</h3></div>
-            <p><strong>Inputs:</strong> ~20 sample rows from the source.</p>
-            <p><strong>Outputs:</strong> ranked <code>ShapeHypothesis</code> list + a top <code>ProposedMapping</code> with confidence + rationale.</p>
-            <p><strong>Contract:</strong> never silently auto-picks. Below 0.80 needs <code>--force</code>.</p>
-            <p><strong>RunEvent:</strong> none — introspection is a read.</p>
-          </article>
-          <article class="workflow-step reveal">
-            <div class="step-head"><span>03</span><h3>Map (dry-run)</h3></div>
-            <p><strong>Inputs:</strong> locator + mapper + field map + optional drop reasons.</p>
-            <p><strong>Outputs:</strong> sample of accepted rows + full rejection breakdown grouped by reason.</p>
-            <p><strong>Contract:</strong> per-row accountability. Every row is a <code>TransformedRow</code> or a <code>RejectedRow</code> with a stable reason code.</p>
-            <p><strong>RunEvent:</strong> none — dry-run.</p>
-          </article>
-          <article class="workflow-step reveal">
-            <div class="step-head"><span>04</span><h3>Map (commit)</h3></div>
-            <p><strong>Inputs:</strong> same as dry-run, after user confirms.</p>
-            <p><strong>Outputs:</strong> rows appended to the project's synthetic JSONL.</p>
-            <p><strong>Contract:</strong> bulk-drop only affects the <em>sample</em> rendered to the user; counts stay in the audit row.</p>
+            <div class="step-head"><span>02</span><h3>Introspect &amp; map</h3></div>
+            <p><strong>Where:</strong> the import wizard behind <em>Import dataset</em>: Source → Task type → Map → Preview &amp; Confirm.</p>
+            <p><strong>Inputs:</strong> ~20 sample rows from the source; then locator + mapper + field map + optional drop reasons.</p>
+            <p><strong>Outputs:</strong> ranked <code>ShapeHypothesis</code> list + a top <code>ProposedMapping</code> with confidence + rationale; on confirm, rows appended to the project's synthetic JSONL.</p>
+            <p><strong>Contract:</strong> never silently auto-picks — below 0.80 the UI asks you to confirm you reviewed the proposal (CLI: <code>--force</code>). Per-row accountability: every row is a <code>TransformedRow</code> or a <code>RejectedRow</code> with a stable reason code; rejected rows are grouped by reason and bulk-droppable, and the counts stay in the audit row.</p>
             <p><strong>RunEvent:</strong> <code>ingestion</code> / <code>dataset_import_run</code> on success, <code>dataset_import_failed</code> on error. Payload: source, mapper, accepted/rejected counts, written_path, config_id.</p>
           </article>
           <article class="workflow-step reveal">
-            <div class="step-head"><span>05</span><h3>Clean (optional)</h3></div>
+            <div class="step-head"><span>03</span><h3>Prepare</h3></div>
+            <p><strong>Where:</strong> <strong>Data → Prepare</strong> — chunk size, redact PII &amp; secrets, <em>Clean All Documents</em>.</p>
             <p><strong>Inputs:</strong> the project's RawDocuments.</p>
-            <p><strong>Outputs:</strong> cleaned text + chunks JSONL + per-document metadata (PII findings, quality score, text hash).</p>
-            <p><strong>Contract:</strong> runs as a background task with task_id polling so the HTTP request never blocks past the dev-proxy timeout.</p>
+            <p><strong>Outputs:</strong> cleaned text + chunks JSONL + per-document metadata (PII findings, quality score, text hash). Row files are cleaned row by row; only documents are chunked, on sentence boundaries.</p>
+            <p><strong>Contract:</strong> runs as a background task that the notification bell follows, so the HTTP request never blocks.</p>
             <p><strong>RunEvent:</strong> <code>cleaning</code> / info on success; <code>cleaning_outlier_threshold_exceeded</code> / <code>cleaning_pii_block</code> on the named failure modes.</p>
           </article>
           <article class="workflow-step reveal">
-            <div class="step-head"><span>06</span><h3>Prepare</h3></div>
-            <p><strong>Inputs:</strong> synthetic + cleaned rows; the project's dataset-adapter preset.</p>
-            <p><strong>Outputs:</strong> <code>prepared/manifest.json</code> + <code>train.jsonl</code> + <code>eval.jsonl</code>. Carries <code>task_profile</code> + <code>output_schema.scoring_mode</code>.</p>
-            <p><strong>Contract:</strong> the manifest is the source of truth for everything downstream; nothing reads from disk paths directly.</p>
+            <div class="step-head"><span>04</span><h3>Labels</h3></div>
+            <p><strong>Where:</strong> <strong>Data → Labels</strong> — confirm the task shape ("What kind of task is this?") and build the <strong>answer key</strong>, the held-out set every score is measured against.</p>
+            <p><strong>Inputs:</strong> your own labelled rows, rows drafted by a model and checked by a person, or (for span projects) labelling conventions, one line per type.</p>
+            <p><strong>Outputs:</strong> a confirmed task profile + adapter preset that split, train and eval all read; the answer key (practice / final), kept out of training.</p>
+            <p><strong>Contract:</strong> a leaked answer key makes a score measure memorisation, so train↔answer-key overlap is scanned and flagged.</p>
+            <p><strong>RunEvent:</strong> none — labelling is data, not a run.</p>
+          </article>
+          <article class="workflow-step reveal">
+            <div class="step-head"><span>05</span><h3>Generate</h3></div>
+            <p><strong>Where:</strong> <strong>Data → Generate</strong> — synthetic data: Single-turn Q&amp;A, Multi-turn, or PII / NER span extraction; provider (local Ollama first, or a cloud model); playbooks matched to the task shape.</p>
+            <p><strong>Inputs:</strong> cleaned passages (or pasted source text) + a generation model.</p>
+            <p><strong>Outputs:</strong> rows in the project's synthetic JSONL, <em>pending</em> until accepted in the review queue (in the step's Details drawer).</p>
+            <p><strong>Contract:</strong> pending and rejected rows never train. Offsets on span rows are verified against the text, never trusted. A batch that validates to nothing yields nothing and says why.</p>
+            <p><strong>RunEvent:</strong> a background Job per batch; the bell reports rows kept and the diagnostic when none were.</p>
+          </article>
+          <article class="workflow-step reveal">
+            <div class="step-head"><span>06</span><h3>Split</h3></div>
+            <p><strong>Where:</strong> <strong>Data → Split</strong> — train / validation / test, the dataset adapter, dedup, and <em>Keep the current test examples</em> on every later split.</p>
+            <p><strong>Inputs:</strong> cleaned + accepted synthetic rows; the project's dataset-adapter preset.</p>
+            <p><strong>Outputs:</strong> <code>prepared/manifest.json</code> + <code>train.jsonl</code> / <code>val.jsonl</code> / <code>test.jsonl</code>, plus a versioned snapshot of each split. Carries <code>task_profile</code> + <code>output_schema.scoring_mode</code>.</p>
+            <p><strong>Contract:</strong> the manifest is the source of truth for everything downstream; nothing reads from disk paths directly. Keeping the test examples means a new run is scored on the same rows as the last one.</p>
             <p><strong>RunEvent:</strong> dataset-prep summary.</p>
           </article>
           <article class="workflow-step reveal">
-            <div class="step-head"><span>07</span><h3>Preflight</h3></div>
-            <p><strong>Inputs:</strong> prepared manifest + base model + runtime profile + hardware.</p>
-            <p><strong>Outputs:</strong> pass/fail + blocker list + a generated train plan.</p>
-            <p><strong>Contract:</strong> dependency, memory-fit, capability, and gate-policy checks. Strict mode blocks; fail-open mode emits warnings.</p>
-            <p><strong>RunEvent:</strong> blockers surface as <code>training</code> / <code>training_dispatch_error</code> when fatal.</p>
-          </article>
-          <article class="workflow-step reveal">
-            <div class="step-head"><span>08</span><h3>Train</h3></div>
-            <p><strong>Inputs:</strong> prepared manifest + chosen recipe + checkpoint cadence.</p>
-            <p><strong>Outputs:</strong> checkpoints + per-step loss / eval traces + a final adapter weights blob.</p>
-            <p><strong>Contract:</strong> task-handler dispatcher routes to ClassificationHandler, QAHandler, StructuredExtractionHandler (span_set or field_match), RAGHandler, AlignmentHandler, Seq2SeqHandler, VisionLanguageHandler, AudioTranscriptHandler, or SafetyHandler.</p>
+            <div class="step-head"><span>07</span><h3>Train</h3></div>
+            <p><strong>Where:</strong> <strong>Train</strong> — one form: base model (+ Browse), task, one run or three seeds, run name, a readiness line, and <strong>Train</strong>. Epochs, LoRA, checks, cloud burst, presets and the plan-vs-data gaps wait under <em>More options</em>. The runs list with each run's live dashboard sits below the form.</p>
+            <p><strong>Inputs:</strong> prepared manifest + base model + the resolved config (shown in a confirm dialog with an estimate before Launch).</p>
+            <p><strong>Outputs:</strong> checkpoints + per-step loss / eval traces + adapter weights (or a full model for encoders). Preflight runs first: dependency, memory-fit, capability and rule-policy checks; strict mode blocks, fail-open emits warnings.</p>
+            <p><strong>Contract:</strong> task-handler dispatcher routes to ClassificationHandler, QAHandler, StructuredExtractionHandler (span_set or field_match), RAGHandler, AlignmentHandler, Seq2SeqHandler, VisionLanguageHandler, AudioTranscriptHandler, or SafetyHandler. Cancel stops the process.</p>
             <p><strong>RunEvent:</strong> <code>training</code> / info on completion (payload: experiment_id, backend, final_train_loss). <code>training_oom</code> / <code>training_runtime_error</code> / <code>training_timeout</code> / <code>training_cancelled</code> on failure.</p>
           </article>
           <article class="workflow-step reveal">
-            <div class="step-head"><span>09</span><h3>Evaluate</h3></div>
-            <p><strong>Inputs:</strong> trained model + held-out eval set + eval pack.</p>
-            <p><strong>Outputs:</strong> pass rate + task-aware metrics (per-class P/R/F1, span-set, faithfulness, alignment margin, BLEU/ROUGE, WER, etc.).</p>
-            <p><strong>Contract:</strong> the metric shape comes from the handler's <code>score()</code>; gates declared in the eval pack decide promotability.</p>
+            <div class="step-head"><span>08</span><h3>Results</h3></div>
+            <p><strong>Where:</strong> <strong>Results</strong> — <strong>Verdict</strong> (did it work? the lift against the base model, pass/fail rules, the scorecard), <strong>Failures</strong> (where it fails: clusters, eval gaps, built-in and custom checks, slices), <strong>Compare</strong> (other runs, external benchmarks, Auto-RAG) and <strong>Try it</strong> (chat with the run; a redaction box for span runs).</p>
+            <p><strong>Inputs:</strong> trained model + the test examples (or the answer key) + the rule set.</p>
+            <p><strong>Outputs:</strong> task-aware metrics (per-class P/R/F1, span-set, faithfulness, alignment margin, BLEU/ROUGE, WER, etc.), paired base-vs-fine-tuned evidence (better / worse / within noise), and the pass/fail verdict.</p>
+            <p><strong>Contract:</strong> the metric shape comes from the handler's <code>score()</code>; the pass/fail rules declared in the rule set decide promotability. The lift check runs by itself when a real run completes.</p>
             <p><strong>RunEvent:</strong> <code>eval</code> / info, parented to <code>exp-&lt;id&gt;</code>. <code>eval_runtime_error</code> / <code>eval_judge_unavailable</code> / <code>eval_dataset_missing</code> on failure.</p>
           </article>
           <article class="workflow-step reveal">
-            <div class="step-head"><span>10</span><h3>Export</h3></div>
-            <p><strong>Inputs:</strong> trained model + target format (GGUF / safetensors / HF / vLLM-compat).</p>
-            <p><strong>Outputs:</strong> artifact bundle with weights, tokenizer, manifest, smoke-check trace.</p>
-            <p><strong>Contract:</strong> quantization variants (Q4_K_M, AWQ, GPTQ) tracked so the Compression page knows what's available.</p>
+            <div class="step-head"><span>09</span><h3>Package &amp; publish</h3></div>
+            <p><strong>Where:</strong> <strong>Ship → Package</strong> (<em>New export</em>: run, format, quantization, deployment targets; the <strong>Releases</strong> table; Options: <em>Compress</em> and the manifest) and <strong>Ship → Publish</strong> (a completed Hugging Face export to the Hub).</p>
+            <p><strong>Inputs:</strong> trained model + target format (Hugging Face / GGUF / ONNX / Docker / vLLM-compat).</p>
+            <p><strong>Outputs:</strong> artifact bundle with weights, tokenizer, manifest, smoke-check trace. A LoRA run is merged first.</p>
+            <p><strong>Contract:</strong> quantization variants (Q4_K_M, AWQ, GPTQ) are tracked per run so a GGUF export packages only that run's compressed files — no raw-weights fallback under a compressed label.</p>
             <p><strong>RunEvent:</strong> <code>export</code> / info on success (payload: format, output_path, file_size_bytes). <code>export_run_failed</code> / <code>export_artifact_missing</code> / <code>export_quantization_failed</code> on the named failures.</p>
           </article>
           <article class="workflow-step reveal">
-            <div class="step-head"><span>11</span><h3>Deploy (optional)</h3></div>
+            <div class="step-head"><span>10</span><h3>Deploy &amp; monitor (optional)</h3></div>
+            <p><strong>Where:</strong> <strong>Ship → Deploy</strong> (serve / deploy plans, served versions) and <strong>Ship → Monitor</strong> (run events, failure clusters, drift).</p>
             <p><strong>Inputs:</strong> an export + a target (vLLM endpoint / local runner / cloud burst).</p>
             <p><strong>Outputs:</strong> a versioned <code>DeploymentVersion</code> with promote / reject / rollback / drift-check actions.</p>
-            <p><strong>Contract:</strong> smoke check at promote time; drift check re-runs the gold set against the live endpoint on a schedule.</p>
+            <p><strong>Contract:</strong> smoke check at promote time; the drift check re-runs the answer key against the live endpoint on a schedule.</p>
             <p><strong>RunEvent:</strong> <code>deployment</code> / info per action; <code>deployment_smoke_failed</code> / <code>deployment_drift_detected</code> / <code>deployment_promote_blocked</code> on failure.</p>
           </article>
         </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head reveal">
+          <p class="eyebrow">Two screens</p>
+          <h2>Train is a form; Results is a verdict</h2>
+        </div>
+        <figure class="blog-figure reveal">
+          <img src="./assets/screens/workspace/train.png" alt="The Train page: a readiness line reading Ready to train, 1 warning; a form with Base model HuggingFaceTB/SmolLM2-135M-Instruct and a Browse button, Task Question &amp; Answer Assistant (qa-sft) with Change, Seeds One run or Three seeds, Run name, and a Train button; two Coach warnings above it" loading="lazy" width="1600" height="1000" />
+          <figcaption><strong>Train</strong>: base model, task, seeds, run name, Train. Everything else is under <em>More options</em>; runs and live metrics stay below.</figcaption>
+        </figure>
+        <figure class="blog-figure reveal">
+          <img src="./assets/screens/workspace/results-verdict.png" alt="Results → Verdict: tabs Verdict, Failures, Compare, Try it; a step tip with Watch the walkthrough; two Coach notices; then the summary card Better than the base model for run #1 (v09-narrated-run vs base HuggingFaceTB/SmolLM2-135M-Instruct, 20 test examples): judge answer correct 0.167 (base) to 0.225 (fine-tuned), +0.058, judged by the template smoke backend, with Re-run lift check and Check across 3 seeds buttons, and the list of where it still fails" loading="lazy" width="1600" height="1000" />
+          <figcaption>Results → Verdict: the lift of run #1 over its base model, judged on 20 test examples. Below it on the same tab, the pass/fail rules card for the same run (next figure). The numbers are from a smoke run of the Support FAQ starter on a 135M model, not a result to repeat.</figcaption>
+        </figure>
+<figure class="blog-figure"><img src="./assets/screens/workspace/results-verdict-rules.png" alt="The Pass/fail rules card on Results → Verdict: FAIL, Run #1 · v09-narrated-run, Rule set General Default Gates, the time it was checked, and Failed required rules: min_exact_match, min_f1" loading="lazy" width="1600" height="188" /><figcaption>The pass/fail rules card for the same run: it beat its base model and still fails the required rules. Both are true; the card says which bar it misses.</figcaption></figure>
       </section>
 
       <section class="section">
@@ -164,7 +206,7 @@
           </div>
           <div class="arch-lane">
             <span>Consumers</span>
-            <p>The Observability timeline. The failure-cluster surface. The support bundle. The audit explorer. The Lab Journal gamification layer.</p>
+            <p>The run timeline and the failure-cluster surface on Ship → Monitor. The support bundle. The audit explorer. The notification bell for anything still running.</p>
           </div>
           <div class="arch-lane">
             <span>Why this matters</span>
@@ -185,8 +227,8 @@
           <h2>The Academy lessons behind the workflow</h2>
           <p>
             BrewSLM automates the lifecycle, but the underlying ideas still matter when you choose
-            a base model, build a gold set, or decide whether a training run actually improved the
-            model.
+            a base model, build a gold set (the <strong>answer key</strong> under Data → Labels),
+            or decide whether a training run actually improved the model.
           </p>
         </div>
         <div class="cluster-grid">
@@ -200,7 +242,7 @@
           </article>
           <article class="cluster-card reveal">
             <h3>Evaluation and gates</h3>
-            <p>Promotion gates only make sense if they are anchored to the right metric and a held-out gold set.</p>
+            <p>Promotion gates only make sense if they are anchored to the right metric and a held-out gold set. In BrewSLM they are the pass/fail rules on Results → Verdict.</p>
             <ul class="capability-list">
               <li><a class="inline-link" href="./academy/sft-fundamentals/gold-sets.html">Gold sets</a></li>
               <li><a class="inline-link" href="./academy/sft-fundamentals/evaluation-fundamentals.html">Evaluation that matches the task</a></li>
@@ -226,21 +268,22 @@
             <p>$ python -m app.cli.dataset_import run \</p>
             <p>&nbsp;&nbsp;&nbsp;&nbsp;--locator hf:imdb:train --project 1 --auto --limit 5000</p>
             <p>&nbsp;</p>
-            <p># or, via the wizard:</p>
-            <p># Pipeline → Data → "Import dataset (auto-mapping)"</p>
+            <p># or, in the workspace:</p>
+            <p># Data → Sources → "Import dataset (auto-mapping)"</p>
             <p>&nbsp;</p>
-            <p># train via autopilot from the Training Config page</p>
+            <p># train from the Train page: base model, task, seeds → Train</p>
             <p>&nbsp;</p>
             <p># or, scripted:</p>
-            <p>$ curl -X POST localhost:8000/api/projects/1/training/run \</p>
+            <p>$ curl -X POST localhost:8000/api/projects/1/training/experiments \</p>
             <p>&nbsp;&nbsp;&nbsp;&nbsp;-H 'Content-Type: application/json' \</p>
-            <p>&nbsp;&nbsp;&nbsp;&nbsp;-d '{"autopilot": true, "one_click": true}'</p>
+            <p>&nbsp;&nbsp;&nbsp;&nbsp;-d '{"name": "first-run", "config": {"base_model": "HuggingFaceTB/SmolLM2-135M-Instruct"}}'</p>
+            <p>$ curl -X POST localhost:8000/api/projects/1/training/experiments/&lt;id&gt;/start</p>
           </div>
         </div>
         <aside class="quickstart-notes">
           <p class="notes-head">Related</p>
           <p class="form-note"><a class="inline-link" href="./capabilities.html">Capabilities:</a> registries, mappers, eval handlers.</p>
-          <p class="form-note"><a class="inline-link" href="./creation-paths.html">Creation paths:</a> CLI vs Python vs Wizard.</p>
+          <p class="form-note"><a class="inline-link" href="./creation-paths.html">Creation paths:</a> CLI vs API vs the workspace.</p>
           <a class="btn btn-solid" href="./faqs.html">Read FAQs</a>
         </aside>
       </section>

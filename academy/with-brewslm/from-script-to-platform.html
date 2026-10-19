@@ -154,12 +154,13 @@
           <p class="callout__label">From Track 2</p>
           <p>Your script maps almost one-to-one: build-a-dataset → <strong>Ingest/Map</strong> (01–04); tokenize/collate + split → <strong>Prepare</strong> (06); the LoRA Trainer loop → <strong>Train</strong> (08); evaluate-by-hand → <strong>Evaluate</strong> (09); merge-and-ship → <strong>Export/Deploy</strong> (10–11). The new stages — Introspect, Preflight, Clean — are the safety rails you didn't write.</p>
         </div>
+        <p>In the workspace the eleven stages fold into the six destinations of a project's left sidebar (<code>/project/&lt;id&gt;</code>): <strong>Overview</strong> (where you are, the next step, the latest run, the shipped model), <strong>Data</strong> with five numbered steps — Sources (01–04), Prepare (05), Labels (the answer key), Generate (synthetic rows), Split (06) — <strong>Train</strong> (07–08: the readiness line is preflight, the form is the run), <strong>Results</strong> (09: Verdict / Failures / Compare / Try it), <strong>Ship</strong> (10–11: Package / Publish / Deploy / Monitor) and <strong>Settings</strong>. The rest of this track names those places as it goes.</p>
 
         <h2>Every stage emits a RunEvent</h2>
         <p>The single most important difference from a script is the <strong>audit spine</strong>. Each stage writes one or more <code>RunEvent</code> rows via <code>emit_event()</code>, with a reason code from a lint-gated taxonomy and a severity (info / warning / error / critical). One stream feeds the observability timeline, the failure-cluster surface, the support bundle, and the audit explorer. When your by-hand script failed, you read a stack trace; when a BrewSLM stage fails, it emits a named event like <code>training_oom</code> that every downstream view picks up automatically.</p>
 
         <h2>It starts with a project</h2>
-        <p>Everything in BrewSLM hangs off a <strong>project</strong>: a base model, its data, its recipes, its experiments, its deployments, and its event history. Where your script kept state in local files and variables, the project is the durable container that makes the pipeline resumable, auditable, and shareable. Create one, point it at a base model, and you're at stage 01.</p>
+        <p>Everything in BrewSLM hangs off a <strong>project</strong>: a base model, its data, its recipes, its experiments, its deployments, and its event history. Where your script kept state in local files and variables, the project is the durable container that makes the pipeline resumable, auditable, and shareable. Create one with <strong>+ New Project</strong> (a name and "What problem do you want this model to solve?") or open a starter project, and you land on its Overview — stage 01 is <strong>Data → Sources</strong>.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>

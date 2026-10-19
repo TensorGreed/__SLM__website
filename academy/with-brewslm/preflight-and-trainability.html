@@ -127,7 +127,7 @@
         <header class="lesson-header">
           <span class="lesson-header__badge">Track 3 · With BrewSLM · Lesson 6</span>
           <h1>Preflight and the trainability forecast</h1>
-          <p class="lesson-header__outcome">After this lesson you can explain what preflight checks, the difference between strict and fail-open modes, and how the trainability forecast catches memory and dependency problems before training starts instead of after it crashes.</p>
+          <p class="lesson-header__outcome">After this lesson you can explain what preflight checks, the difference between strict and fail-open modes, where the result shows up on the <strong>Train</strong> page, and how the trainability forecast catches memory and dependency problems before training starts instead of after it crashes.</p>
           <div class="lesson-meta">
             <span><strong>Level:</strong> intermediate</span>
             <span><strong>Read time:</strong> ~9 min</span>
@@ -158,7 +158,7 @@ verdict: GO  →  train plan generated (lora r=16, 3 epochs, eff. batch 16)
 #   memory-fit ..... BLOCK  (est 27 GB &gt; 24 GB) → lower batch or add grad-accum
 #   dependency ..... BLOCK  (DPO objective needs the preference-training extra)</code></pre>
         <h2>This is the trainability forecast</h2>
-        <p>Surfaced in the UI, preflight is the <strong>trainability forecast</strong>: a green light to launch, or a specific list of what to fix first. Instead of "start training, wait, watch it OOM at step 1, lower the batch, repeat," you get the verdict in seconds. It's the Track 1 memory lesson and the Track 2 environment lesson, turned into a gate.</p>
+        <p>Surfaced in the UI, preflight is the <strong>readiness line</strong> on the <strong>Train</strong> form — "Ready to train, 1 warning." with a <em>Check again</em> link; it re-runs when you change the base model — and, in full, the <strong>trainability forecast</strong> under <strong>Train → More options → Plan and gaps</strong> (next to the config-gap scan and the archetype comparison), with the preflight checks and the generated plan under <strong>Train → More options → Checks</strong>. A green line means launch; otherwise you get the specific list of what to fix first. Instead of "start training, wait, watch it OOM at step 1, lower the batch, repeat," you get the verdict in seconds. It's the Track 1 memory lesson and the Track 2 environment lesson, turned into a gate — and the confirm dialog the Train button opens shows the resolved config and estimate one last time before <em>Launch</em>.</p>
 
         <div class="callout callout--note">
           <p class="callout__label">From Track 2</p>
@@ -170,14 +170,14 @@ verdict: GO  →  train plan generated (lora r=16, 3 epochs, eff. batch 16)
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>Preflight is the forecast you never ran by hand: dependency, memory-fit, capability, and gate checks that return a verdict + blocker list + train plan <em>before</em> spending compute. Strict mode blocks; fail-open warns. Catch the OOM on paper, not at step one.</p>
+          <p>Preflight is the forecast you never ran by hand: dependency, memory-fit, capability, and gate checks that return a verdict + blocker list + train plan <em>before</em> spending compute — the readiness line on Train, the full report under More options → Checks / Plan and gaps. Strict mode blocks; fail-open warns. Catch the OOM on paper, not at step one.</p>
         </div>
 
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
             <dt>Preflight</dt><dd>Stage 07: pre-run checks returning pass/fail, a blocker list, and a generated train plan.</dd>
-            <dt>trainability forecast</dt><dd>The UI surfacing of preflight — a go/no-go verdict with the specific things to fix.</dd>
+            <dt>trainability forecast</dt><dd>The UI surfacing of preflight — the readiness line on the Train form, in full under Train → More options → Plan and gaps: a go/no-go verdict with the specific things to fix.</dd>
             <dt>memory-fit check</dt><dd>Computes whether model + batch + seq length + precision fit in VRAM (the Track 1 memory math).</dd>
             <dt>strict vs fail-open</dt><dd>Strict blocks on any blocker; fail-open emits warnings and proceeds.</dd>
             <dt>train plan</dt><dd>The concrete runnable plan preflight generates from the recipe + manifest.</dd>
