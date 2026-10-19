@@ -90,7 +90,7 @@
             medical record number, your own employee ids) and <em>exactly where</em> it is
             (character start and end). You have no labelled data, a GPU or a patient CPU, a local
             <a class="inline-link" href="https://ollama.com" target="_blank" rel="noopener noreferrer">Ollama</a>
-            and, optionally, an Anthropic API key. This is the whole build in BrewSLM, one screen at
+            and, optionally, a cloud model API key. This is the whole build in BrewSLM, one screen at
             a time, with every number from a real run — including the ones that went down.
           </p>
           <p class="form-note">
@@ -120,7 +120,7 @@
             </thead>
             <tbody>
               <tr><td>Labels written by the same local model that wrote the training data</td><td>0.91</td><td>0.93</td><td>0.92</td></tr>
-              <tr><td><strong>An independent answer key written by a second model (Claude Haiku 4.5)</strong></td><td><strong>0.85</strong></td><td><strong>0.85</strong></td><td><strong>0.85</strong></td></tr>
+              <tr><td><strong>An independent answer key written by a second, flagship cloud model</strong></td><td><strong>0.85</strong></td><td><strong>0.85</strong></td><td><strong>0.85</strong></td></tr>
             </tbody>
           </table>
         </div>
@@ -160,7 +160,7 @@
             it costs nothing per call.
           </li>
           <li>
-            <strong>Optional:</strong> an Anthropic API key for the second-opinion answer key.
+            <strong>Optional:</strong> a cloud model API key for the second-opinion answer key.
             Every key in this post cost a few cents (estimated; see <a class="inline-link" href="#cost">cost</a>).
           </li>
           <li>
@@ -379,7 +379,7 @@ person_name:   a private individual's name, including in greetings and signature
           and for every failing text the entities expected and found, side by side.
         </p>
         <figure class="blog-figure">
-          <img src="./assets/blog/sensitive-data/05-eval-span.png" alt="Eval card: Span F1 0.85 against the answer key, written by Claude Haiku 4.5; test examples F1 0.92; weakest types; where it still fails" loading="lazy" />
+          <img src="./assets/blog/sensitive-data/05-eval-span.png" alt="Eval card: Span F1 0.85 against the answer key, written by a second model; test examples F1 0.92; weakest types; where it still fails" loading="lazy" />
           <figcaption>Run #62 after Step 12, as the card looked before the 2026-10 revamp — kept as the record of that run. The same card now lives on <strong>Results → Verdict</strong>. Once a second-opinion answer key exists (Step 10) the card leads with it. The first failure is the title convention from Step 11: the key says "Ms. Olivia Reed", the model "Olivia Reed".</figcaption>
         </figure>
         <p>
@@ -410,32 +410,32 @@ person_name:   a private individual's name, including in greetings and signature
         <p>
           Every number so far scored the model against labels written by <em>the same model that
           wrote its training data</em>. That measures how well the student copies its teacher, not
-          how right either of them is. <strong>Write answer key with</strong> (provider Anthropic,
-          model <code>claude-haiku-4-5</code>) hands the test texts — unchanged — to a second model.
+          how right either of them is. <strong>Write answer key with</strong> (a cloud provider and
+          a small flagship model) hands the test texts — unchanged — to a second model.
           It asks only for the entities, under your conventions, and verifies every offset. The
           result is kept as the project's <code>gold_test</code> set.
         </p>
         <p>
           <strong>Giving BrewSLM the key:</strong> on <strong>Data → Generate</strong> set <strong>Provider</strong> to
-          Anthropic, paste the key into <strong>API Key</strong> and click <strong>Save key to this
+          your cloud provider, paste the key into <strong>API Key</strong> and click <strong>Save key to this
           project</strong>. It is stored encrypted on the project, the field shows "✓ saved on
           project", and the key is never shown back. Don't paste it into a chat or a ticket.
         </p>
         <figure class="blog-figure">
-          <img src="./assets/blog/sensitive-data/03-save-key.png" alt="The provider row on Data → Generate: Provider Anthropic (saved), Model Name claude-haiku-4-5-20251001, and the API Key field marked saved on project with the placeholder (using saved key)" loading="lazy" />
-          <figcaption><strong>Data → Generate</strong>: provider <em>Anthropic (saved)</em>, model <code>claude-haiku-4-5-20251001</code>, API Key "✓ saved on project" — the field reads <em>(using saved key)</em>. With a fresh key the button reads <em>Save key to this project</em>.</figcaption>
+          <img src="./assets/blog/sensitive-data/03-save-key.png" alt="The provider row on Data → Generate: the cloud provider (saved), its Model Name, and the API Key field marked saved on project with the placeholder (using saved key)" loading="lazy" />
+          <figcaption><strong>Data → Generate</strong>: provider <em>(saved)</em> and model (names blurred), API Key "✓ saved on project" — the field reads <em>(using saved key)</em>. With a fresh key the button reads <em>Save key to this project</em>.</figcaption>
         </figure>
         <p>
         </p>
         <p>
           It took 45 seconds for all 44 texts. The bell reports the <strong>agreement between the
           two labellers</strong>: strict span F1 of the old labels against the new key. Ours was
-          <strong>0.74</strong>. Scored against Haiku's key, run #56 dropped from 0.88 to
+          <strong>0.74</strong>. Scored against the second model's key, run #56 dropped from 0.88 to
           <strong>0.74</strong>.
         </p>
         <p>
           That drop is the most useful number in this post. It was not the model getting worse; it
-          was the old answer key being wrong in a consistent way. Haiku had found 14 phones, 12
+          was the old answer key being wrong in a consistent way. The second model had found 14 phones, 12
           emails and 13 names the local labels didn't have. Every one of those phones and emails
           matched BrewSLM's own regex. They were missing because of the narrowed refine passes from
           Step 9.
@@ -446,7 +446,7 @@ person_name:   a private individual's name, including in greetings and signature
         <div class="table-wrap">
           <table class="compare-table">
             <thead>
-              <tr><th>Fix</th><th>What changed</th><th>F1 vs Haiku key</th></tr>
+              <tr><th>Fix</th><th>What changed</th><th>F1 vs second-opinion key</th></tr>
             </thead>
             <tbody>
               <tr>
@@ -493,7 +493,7 @@ person_name:   a private individual's name, including in greetings and signature
         </p>
         <p>
           We measured it by joining the 44 test texts into four multi-page documents of 780–915
-          tokens and scoring them against the Haiku key. Before windowing, nothing after token 512
+          tokens and scoring them against the second-opinion key. Before windowing, nothing after token 512
           was found:
         </p>
         <div class="table-wrap">
@@ -530,7 +530,7 @@ person_name:   a private individual's name, including in greetings and signature
         </ol>
         <div class="table-wrap">
           <table class="compare-table">
-            <thead><tr><th>Multi-page documents, F1 vs the Haiku key</th><th>Before (run #59)</th><th>Re-split only (run #60)</th><th>+ paged passages (run #62)</th></tr></thead>
+            <thead><tr><th>Multi-page documents, F1 vs the second-opinion key</th><th>Before (run #59)</th><th>Re-split only (run #60)</th><th>+ paged passages (run #62)</th></tr></thead>
             <tbody>
               <tr><td>Texts joined by blank lines</td><td>0.82</td><td>0.84</td><td>0.84</td></tr>
               <tr><td>"Page n of 11" footers</td><td>0.74</td><td>0.73</td><td><strong>0.84</strong></td></tr>
@@ -617,7 +617,7 @@ ticket_id        152-160  0.95  'TCK-5531'</code></pre>
               <tr><td>Refine pass, 55 rows (local)</td><td>5 min</td><td>local</td></tr>
               <tr><td>Training one run (GB10)</td><td>46–63 s</td><td>local</td></tr>
               <tr><td>Evaluation, 44 texts</td><td>seconds</td><td>local</td></tr>
-              <tr><td>Answer key, 44 texts (Haiku 4.5)</td><td>45–60 s</td><td>8 calls — a few cents (estimated)</td></tr>
+              <tr><td>Answer key, 44 texts (cloud model)</td><td>45–60 s</td><td>8 calls — a few cents (estimated)</td></tr>
               <tr><td>Relabel 874 training rows under conventions (local)</td><td>39 min</td><td>local</td></tr>
               <tr><td>40 paged documents + labelling their 129 passages (local)</td><td>7 + 5 min</td><td>local</td></tr>
             </tbody>
@@ -640,7 +640,7 @@ ticket_id        152-160  0.95  'TCK-5531'</code></pre>
           <li>Refine passes narrowed the type list, leaving phones and emails unlabelled.</li>
           <li>The second-opinion key lost batches to replies cut off mid-JSON. Replies are now compact, and a failed batch is split rather than re-sent.</li>
           <li>Training, evaluation and the exported tokenizer all stopped at 512 tokens, and the export claimed an unlimited length, so <code>stride</code> did nothing.</li>
-          <li>"Evaluate this run" skipped token-classification runs; there was no UI to save the Anthropic key on the synthetic-data step (now Data → Generate); and rows written without an id could never be accepted from the review queue, so they silently never trained.</li>
+          <li>"Evaluate this run" skipped token-classification runs; there was no UI to save a cloud API key on the synthetic-data step (now Data → Generate); and rows written without an id could never be accepted from the review queue, so they silently never trained.</li>
         </ul>
 
         <h2 id="limits">Limits, and what's next</h2>
@@ -692,7 +692,7 @@ POST /api/projects/{id}/training/experiments/{exp}/start
 POST /api/projects/{id}/evaluation/run-heldout?async_job=true  {"experiment_id": exp, "dataset_name": "test", "eval_type": "f1"}
 # refine, second opinion, label repair
 GET  /api/projects/{id}/synthetic/weak-types?threshold=0.8
-POST /api/projects/{id}/synthetic/relabel-answer-key  {"split": "test", "backend": "cloud:anthropic:claude-haiku-4-5-20251001"}
+POST /api/projects/{id}/synthetic/relabel-answer-key  {"split": "test", "backend": "cloud:&lt;provider&gt;:&lt;model&gt;"}
 POST /api/projects/{id}/synthetic/relabel-answer-key  {"target": "training", "backend": "ollama"}
 POST /api/projects/{id}/synthetic/spans/regex-augment
 # page furniture: paged documents → label passages as they are → accept → split keeping the test rows
