@@ -205,7 +205,7 @@
           judge score between two systems clears row-to-row noise, and works back from there: 150
           passages at 3 pairs per passage with a 10% test share. The 150 are spread evenly over the
           whole publication in document order (another fix made during this project; it used to
-          take the first 150, which on Pub 17 is the table of contents and "What's New"). For each
+          take the first 150, which on Pub 17 meant the opening chapters only). For each
           passage the writer produces training pairs plus one different question for the answer
           key, held to a stricter standard: self-contained, and answered by something the passage
           actually states.
@@ -338,8 +338,7 @@
         </p>
         <p>
           The project's pass/fail rules failed the run too (<code>exact_match ≥ 0.40</code> and
-          <code>f1 ≥ 0.50</code> both still below threshold), but they would have failed the
-          retrieval system by the same rules; F1 is not the right bar for either. The judged lift
+          <code>f1 ≥ 0.50</code> both still below threshold), but exact match and token F1 are not the right bar for long answers in either direction. The judged lift
           against the base model is the line that told the truth.
         </p>
 
@@ -355,8 +354,7 @@
           (RAG)</em>, that serves the base model plus retrieved passages, with the cleaned corpus,
           the answer key, the split and the retrieval setting from the sweep carried over. It ran
           its own passages check on arrival and reproduced 0.17 → 0.73 exactly, keeping the
-          inherited setting since no arm beat it. Its Overview, Results and Ship pages describe a
-          retrieval system; nothing on it is trained.
+          inherited setting since no arm beat it. Nothing on it is trained.
         </p>
 
         <h2 id="step-7">Step 7 · Results → Try it, five questions of our own</h2>
@@ -373,7 +371,7 @@
             <tbody>
               <tr><td>Standard deduction for married filing jointly, 2025</td><td>$31,500</td><td>$34,700. It quoted a worked example for a couple both over 65; the "What's New" passage with $31,500 was not among the five retrieved.</td><td>Wrong</td></tr>
               <tr><td>Child tax credit per child</td><td>$2,200</td><td>$2,200, and added the $1,700 additional child tax credit maximum.</td><td>Right</td></tr>
-              <tr><td>Due date of the 2025 Form 1040</td><td>April 15, 2026</td><td>April 15, 2026, plus the June 15 case for certain taxpayers abroad. True, and more than asked.</td><td>Right</td></tr>
+              <tr><td>Due date of the 2025 Form 1040</td><td>April 15, 2026</td><td>April 15, 2026, plus the June 15 case for nonresident aliens without U.S. wages. True, and more than asked.</td><td>Right</td></tr>
               <tr><td>Traditional IRA contribution limit at age 52</td><td>$8,000 (the $7,000 limit plus $1,000 at 50 or older)</td><td>Quoted "$7,000 ($8,000 if 50 or older)" without applying the age.</td><td>Partial</td></tr>
               <tr><td>Is Treasury bond interest taxable federally?</td><td>Yes; exempt from state and local tax</td><td>Yes, and exempt from state and local tax.</td><td>Right</td></tr>
             </tbody>
@@ -400,13 +398,11 @@
         </p>
         <p>
           The mechanism is not mysterious. A document-grounded Q&amp;A task asks the model to
-          return specific facts, numbers and page references from a 142-page source. A LoRA
-          fine-tune on a few hundred pairs sampled from a tenth of the passages teaches the
+          return specific facts, numbers and page references from a 142-page source. A fine-tune on a few hundred pairs sampled from a tenth of the passages teaches the
           model what answers from this source look like; it does not install the other 900
           passages, and it visibly degrades what the base model knew. Retrieval puts the relevant
           600 characters in front of a model that can read. The pre-training check exists because
-          this outcome is common enough to be the default expectation for this task shape, and
-          cheap enough to measure before spending the GPU time: the question is never "can we
+          this outcome is common enough to be the default expectation for this task shape, and it can be measured before any training runs: the question is never "can we
           fine-tune this?" but "does fine-tuning beat the base model with its own documents?"
         </p>
 
