@@ -90,7 +90,7 @@
             medical record number, your own employee ids) and <em>exactly where</em> it is
             (character start and end). You have no labelled data, a GPU or a patient CPU, a local
             <a class="inline-link" href="https://ollama.com" target="_blank" rel="noopener noreferrer">Ollama</a>
-            and, optionally, a cloud model API key. This is the whole build in BrewSLM, one screen at
+            and, optionally, access to a stronger model for a second opinion. This is the whole build in BrewSLM, one screen at
             a time, with every number from a real run — including the ones that went down.
           </p>
           <p class="form-note">
@@ -120,7 +120,7 @@
             </thead>
             <tbody>
               <tr><td>Labels written by the same local model that wrote the training data</td><td>0.91</td><td>0.93</td><td>0.92</td></tr>
-              <tr><td><strong>An independent answer key written by a second, flagship cloud model</strong></td><td><strong>0.85</strong></td><td><strong>0.85</strong></td><td><strong>0.85</strong></td></tr>
+              <tr><td><strong>An independent answer key written by a second, independent model</strong></td><td><strong>0.85</strong></td><td><strong>0.85</strong></td><td><strong>0.85</strong></td></tr>
             </tbody>
           </table>
         </div>
@@ -160,8 +160,8 @@
             it costs nothing per call.
           </li>
           <li>
-            <strong>Optional:</strong> a cloud model API key for the second-opinion answer key.
-            Every key in this post cost a few cents (estimated; see <a class="inline-link" href="#cost">cost</a>).
+            <strong>Optional:</strong> a second model for the second-opinion answer key — another
+            local model works; a flagship model can be used for higher quality.
           </li>
           <li>
             <strong>Hardware:</strong> we ran on an NVIDIA GB10. The labelled data takes the
@@ -410,13 +410,13 @@ person_name:   a private individual's name, including in greetings and signature
         <p>
           Every number so far scored the model against labels written by <em>the same model that
           wrote its training data</em>. That measures how well the student copies its teacher, not
-          how right either of them is. <strong>Write answer key with</strong> (a cloud provider and
-          a small flagship model) hands the test texts — unchanged — to a second model.
+          how right either of them is. <strong>Write answer key with</strong> (another local model, or a
+          flagship model when you want higher quality) hands the test texts — unchanged — to a second model.
           It asks only for the entities, under your conventions, and verifies every offset. The
           result is kept as the project's <code>gold_test</code> set.
         </p>
         <p>
-          <strong>Giving BrewSLM the key:</strong> on <strong>Data → Generate</strong> set <strong>Provider</strong> to
+          <strong>If the second model is a cloud one:</strong> on <strong>Data → Generate</strong> set <strong>Provider</strong> to
           your cloud provider, paste the key into <strong>API Key</strong> and click <strong>Save key to this
           project</strong>. It is stored encrypted on the project, the field shows "✓ saved on
           project", and the key is never shown back. Don't paste it into a chat or a ticket.
@@ -617,7 +617,7 @@ ticket_id        152-160  0.95  'TCK-5531'</code></pre>
               <tr><td>Refine pass, 55 rows (local)</td><td>5 min</td><td>local</td></tr>
               <tr><td>Training one run (GB10)</td><td>46–63 s</td><td>local</td></tr>
               <tr><td>Evaluation, 44 texts</td><td>seconds</td><td>local</td></tr>
-              <tr><td>Answer key, 44 texts (cloud model)</td><td>45–60 s</td><td>8 calls — a few cents (estimated)</td></tr>
+              <tr><td>Answer key, 44 texts (second model)</td><td>about a minute</td><td>depends on the model you pick</td></tr>
               <tr><td>Relabel 874 training rows under conventions (local)</td><td>39 min</td><td>local</td></tr>
               <tr><td>40 paged documents + labelling their 129 passages (local)</td><td>7 + 5 min</td><td>local</td></tr>
             </tbody>
