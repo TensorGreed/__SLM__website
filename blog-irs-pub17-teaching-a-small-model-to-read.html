@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Teaching a 1.5B model to read IRS Pub 17: two misses, one pass</title>
+    <meta
+      name="description"
+      content="Part 2 of the Pub 17 run. A 1.5B model fine-tuned to answer from retrieved passages beat the same base model reading the same passages: 0.688 vs 0.570 on 157 pre-registered questions, all three seeds better. Every number, including the two attempts that missed."
+    />
+    <meta
+      name="robots"
+      content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
+    />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/blog-irs-pub17-teaching-a-small-model-to-read.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Teaching a 1.5B model to read IRS Pub 17: two misses, one pass" />
+    <meta
+      property="og:description"
+      content="A 1.5B passage reader beat its base model reading the same passages, 0.688 vs 0.570 on 157 pre-registered questions, all three seeds better. Every number, including the two attempts that missed."
+    />
+    <meta property="og:url" content="https://brewslm.com/blog-irs-pub17-teaching-a-small-model-to-read.html" />
+    <meta property="og:image" content="https://brewslm.com/assets/blog/irs-pub17-reader/01-reader-verdict.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Teaching a 1.5B model to read IRS Pub 17: two misses, one pass" />
+    <meta
+      name="twitter:description"
+      content="A 1.5B passage reader beat its base model reading the same passages, 0.688 vs 0.570 on 157 pre-registered questions, all three seeds better. Every number, including the two attempts that missed."
+    />
+    <meta property="article:published_time" content="2026-10-22" />
+    <meta name="twitter:image" content="https://brewslm.com/assets/blog/irs-pub17-reader/01-reader-verdict.png" />
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YDPSHSVE1K"></script>
+    <script src="./assets/analytics.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Teaching a 1.5B model to read IRS Pub 17: two misses, one pass",
+        "description": "Part 2 of the Pub 17 run: a 1.5B model fine-tuned to answer from retrieved passages beat the same base model reading the same passages on 157 pre-registered questions (0.688 vs 0.570), with all three training seeds better. Published on the Hugging Face Hub.",
+        "datePublished": "2026-10-22",
+        "dateModified": "2026-10-22",
+        "author": { "@type": "Person", "name": "TensorGreed", "url": "https://github.com/TensorGreed" },
+        "publisher": {
+          "@type": "Organization",
+          "name": "TensorGreed",
+          "url": "https://github.com/TensorGreed",
+          "logo": { "@type": "ImageObject", "url": "https://brewslm.com/assets/brewslm-logo.svg" }
+        },
+        "mainEntityOfPage": "https://brewslm.com/blog-irs-pub17-teaching-a-small-model-to-read.html",
+        "image": "https://brewslm.com/assets/blog/irs-pub17-reader/01-reader-verdict.png"
+      }
+    </script>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./index.html" aria-label="BrewSLM Home">
+        <img class="brand-logo" src="./assets/brewslm-logo.svg" alt="BrewSLM" />
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="./academy/index.html">Academy</a>
+        <a href="./creation-paths.html">Creation Paths</a>
+        <a href="./workflow.html">Workflow</a>
+        <a href="./capabilities.html">Capabilities</a>
+        <a href="./blog.html" aria-current="page">Blog</a>
+        <a href="./faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="./index.html#quickstart">Quickstart</a>
+    </header>
+
+    <main>
+      <!-- Not .reveal: the reveal observer needs 14% of an element on screen,
+           which a post this long can never reach, so it would stay invisible. -->
+      <article class="section blog-post">
+        <header class="blog-post-head reveal">
+          <p class="eyebrow">Part 2 · Documents → Q&amp;A · Training a passage reader</p>
+          <h1>Teaching a 1.5B model to read Pub 17: two misses, one pass</h1>
+          <p class="blog-post-meta"><time datetime="2026-10-22">October 22, 2026</time> · By <a class="inline-link" href="https://github.com/TensorGreed" target="_blank" rel="noopener noreferrer">TensorGreed</a> · BrewSLM engineering blog</p>
+          <p class="page-sub">
+            In <a class="inline-link" href="./blog-irs-pub17-fine-tune-lost-retrieval-won.html">part 1</a>,
+            a model fine-tuned on question → answer pairs from IRS Publication 17 scored 0.02, and
+            the base model with the publication's passages in front of it scored 0.73. That post
+            ended with a plan: stop trying to teach the model the facts, and teach it to
+            <em>read the passages retrieval hands it</em>. This post is that plan carried out. It
+            took three days and two attempts that didn't clear the bar. The third did: a 1.5B
+            model that answers from retrieved passages better than the same base model reading the
+            same passages, on 157 questions fixed before any model was scored. All three training
+            seeds beat the bar. It is
+            <a class="inline-link" href="https://huggingface.co/TensorGreed/brewslm-pub17-passage-reader" target="_blank" rel="noopener noreferrer">on the Hugging Face Hub</a>.
+          </p>
+          <p class="form-note">
+            <strong>For education only. Not tax advice.</strong> The model in this post demonstrates
+            a training method. It is not a tax expert and makes no claim to be one. It answered 41
+            of 157 test questions wrong. Do not use it, or anything like it, to prepare a return;
+            the IRS publishes Publication 17 at IRS.gov.
+          </p>
+        </header>
+
+        <h2 id="result">The result, in one table</h2>
+        <p>
+          157 held-out questions, the same retrieval for every arm (top-3 passages of 600
+          characters, no reranker), the same judge (<code>gemma4:12b</code> running locally,
+          grading each answer against the answer key as correct / partial / wrong = 1 / 0.5 / 0):
+        </p>
+        <div class="table-wrap">
+          <table class="compare-table">
+            <thead>
+              <tr><th>System</th><th>Correct / partial / wrong</th><th>Judge score</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Base model alone (Qwen2.5-1.5B-Instruct)</td><td>—</td><td>0.073</td></tr>
+              <tr><td>Base model + retrieved passages <strong>(the bar)</strong></td><td>82 / 15 / 60</td><td>0.570</td></tr>
+              <tr><td>Fine-tuned reader + the same passages, seed 42 (run #160)</td><td>91 / 18 / 48</td><td>0.637</td></tr>
+              <tr><td>Fine-tuned reader + the same passages, seed 43 (run #161)</td><td>97 / 13 / 47</td><td>0.659</td></tr>
+              <tr><td><strong>Fine-tuned reader + the same passages, seed 44 (run #162, published)</strong></td><td><strong>100 / 16 / 41</strong></td><td><strong>0.688</strong></td></tr>
+              <tr><td>Published reader, no passages</td><td>—</td><td>0.185</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Paired row by row against the bar, run #162 is better on 32 questions, worse on 12 and
+          the same on 113: <strong>+0.118, 95% interval +0.054 to +0.182</strong>. The weakest
+          seed cleared it by much less (+0.067, interval +0.003 to +0.131), and averaged over the
+          three seeds the gain is +0.091 (+0.028 to +0.155). So read the headline as "about +0.07
+          to +0.12, depending on the seed", not as exactly +0.118. The spread between seeds is
+          about as large as the weakest seed's gain.
+        </p>
+        <figure class="blog-figure">
+          <img src="./assets/blog/irs-pub17-reader/01-reader-verdict.png" alt="The Results → Verdict card for run #162: Better than the base model + your passages. Run #162, seed 44 of run #160, vs base Qwen/Qwen2.5-1.5B-Instruct, 157 test examples, trained to answer from your passages, so both are scored with the same retrieved passages. judge: answer correct 0.570 (base + your passages) → 0.688 (fine-tuned + the same passages), +0.118. Gain on these rows: fine-tuning helped 32 rows, hurt 12, no change on 113; 95% range +0.054 to +0.182, a gain beyond row-to-row noise; one training run, so re-train and re-run before relying on it. Base + passages 82 correct, 15 partial, 60 wrong, retrieval missed 31 and the model misread 29; fine-tuned + passages 100 / 16 / 41, retrieval missed 28 and the model misread 13; without passages the fine-tune scores 0.185. Retrieval served: top-3 (BM25 only), 600-char passages. Judged by ollama:gemma4:12b." loading="lazy" width="1752" height="908" />
+          <figcaption>Results → Verdict for run #162. The card compares the fine-tune with the base model <em>reading the same passages</em>, splits the wrong answers into retrieval misses and misreads, and reminds you that one training run is one draw.</figcaption>
+        </figure>
+        <p>
+          The no-passages line matters as much as the headline. On its own the reader scores 0.185:
+          it did not memorise the publication, and it isn't supposed to. Retrieval still does the
+          remembering, which is part 1's result. The fine-tune taught the model to read.
+        </p>
+
+        <h2 id="bar">Why the bar is the base model <em>with</em> passages</h2>
+        <p>
+          A fine-tune that answers from passages is easy to make look good: compare it with the
+          base model without passages and you get 0.07 → 0.69, a tenfold "improvement" that
+          retrieval alone produces. The honest comparison is the base model reading the
+          <em>same</em> passages for the <em>same</em> questions, scored by the same judge. That's
+          the bar. The fine-tune has to beat it beyond row-to-row noise, or it hasn't earned its
+          training run.
+        </p>
+        <p>We also wrote the rules down before anything was scored:</p>
+        <ul>
+          <li>
+            <strong>The test and validation sets were frozen and checksummed first.</strong> 157
+            questions each, never edited afterwards, with no question shared between train,
+            validation and test, and no source passage shared between test and validation.
+          </li>
+          <li>
+            <strong>Three seeds on identical data.</strong> One training run is one draw. The
+            same comparison across three seeds is how you find out whether a gain is the method
+            or the luck of the draw.
+          </li>
+          <li>
+            <strong>The seed to publish is picked on validation, never on test.</strong> The pass
+            rule: the picked seed must be better than the bar on test, with the 95% interval above
+            zero, <em>and</em> at least two of the three seeds must be better too.
+          </li>
+        </ul>
+
+        <h2 id="changed-plan">What changed from part 1's plan, and why</h2>
+        <p>
+          Part 1 said the reader would be judged on the same 41 questions, against base +
+          passages at 0.73. Two things changed that plan.
+        </p>
+        <ul>
+          <li>
+            <strong>The model.</strong> Qwen2.5-3B-Instruct, part 1's base, has a research-only
+            licence, so a fine-tune of it couldn't be published. Qwen2.5-1.5B-Instruct is
+            Apache 2.0. The smaller model is also a weaker reader, at 0.585 with passages on the
+            same 41 rows against the 3B's 0.73, which leaves more room for training to help.
+          </li>
+          <li>
+            <strong>The test set.</strong> The first 1.5B reader trained without the abstention
+            rows described below (run #153) scored 0.732 against the 1.5B bar of 0.585 on those 41
+            rows. That was better, but the 95% interval was +0.004 to +0.289. 41 rows can't tell
+            +0.05 from +0.25. Part 1's retrieval had also been chosen on those same 41 rows. So
+            the 41 rows were retired as the judge of anything, the retrieval was re-chosen on a
+            separate validation set, and every later number in this post is on 157 fresh test
+            questions spread over the whole publication.
+          </li>
+        </ul>
+        <p>
+          The very first reader is worth a line too. Run #152 trained on the pairs' own answers,
+          with the right passage held out of 20% of prompts so the model would learn to say "I
+          don't know". It learned that too well: on validation it said "the passages don't say"
+          on 35% of questions whose answer passage was right there in the prompt. The cause was in
+          the data. A pair's answer was written from one passage, but retrieval doesn't always
+          return that passage, so the targets disagreed with the prompts. That led to the fix every
+          later attempt uses.
+        </p>
+
+        <h2 id="recipe">The recipe: training equals serving</h2>
+        <p>
+          Every training question is retrieved with the project's own retrieval and rendered
+          exactly as serving will send it: the numbered passages in the system message, then the
+          question. A <strong>teacher model</strong> answers from those same passages, citing
+          <code>[1]</code>, <code>[2]</code>, …, and its answer becomes the training target. When
+          the passages don't hold the answer, the teacher says so, and that answer is kept as a
+          natural "I don't know". No rows are withheld artificially. A local judge then grades
+          every teacher answer against the pair's reference answer and drops the ones it rejects,
+          before anything trains.
+        </p>
+        <p>
+          In BrewSLM that's the Documents → Q&amp;A card on <strong>Train</strong>, with
+          <strong>Train the model to answer from your passages</strong> and <strong>Use a teacher
+          model's answers to the same passages as the targets</strong> ticked, and the teacher
+          picked in the Generation model picker under it.
+        </p>
+
+        <h2 id="attempt-1">Attempt 1: one writer cleared it, the other didn't</h2>
+        <p>
+          The first full attempt ran the recipe twice on the same 157-question test set (bar
+          0.621, base + passages), changing only the model that wrote the training data, meaning
+          the question → answer pairs and the teacher answers:
+        </p>
+        <div class="table-wrap">
+          <table class="compare-table">
+            <thead>
+              <tr><th>Data writer</th><th>Seed 42</th><th>Seed 43</th><th>Seed 44</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>A flagship-class model</td><td>0.717 · better</td><td>0.752 · better</td><td>0.688 · within noise</td></tr>
+              <tr><td><code>gpt-oss:120b</code>, open weights, on our own GPU</td><td>0.662 · within noise</td><td>0.637 · within noise</td><td>0.659 · within noise</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          The stronger writer beat the bar on two of three seeds. Every seed from the open-weight
+          writer scored above the bar, but none beyond noise. A flagship model can be used
+          for higher quality, and here it measurably was. But we publish weights only when every
+          row of their data, test set included, came from an open-weight model we can name on the
+          model card. So the question became: what was the open-weight pipeline getting wrong?
+        </p>
+        <p>The data said two things:</p>
+        <ul>
+          <li>
+            <strong>Questions that point at nothing.</strong> 292 of the open-weight writer's
+            answer-key questions were thrown out for asking about "this passage" instead of naming
+            their subject. A question like that can't be answered by anyone who hasn't seen the
+            passage, so retrieval can't find it and the model can't answer it. About 9% of its
+            training questions had the same habit, and those weren't caught.
+          </li>
+          <li>
+            <strong>Answers the judge rejected, and partial answers kept.</strong> The judge
+            rejected 12.7% of the open-weight teacher's answers, against 3.9% for the flagship's.
+            The filter dropped only answers graded <em>wrong</em>. Answers graded
+            <em>partial</em> trained.
+          </li>
+        </ul>
+
+        <h2 id="fixes">What we changed in BrewSLM</h2>
+        <p>Each failure became a general option rather than a one-off script:</p>
+        <ul>
+          <li>
+            <strong>Question repair.</strong> The flow now rewrites a generated question that
+            points at "the passage" or "this section" so it names its subject, or drops it when it
+            can't. On attempt 2 it rewrote 60 and stripped 9, and the answer-key questions thrown
+            out for pointing at nothing fell from 292 to 4.
+          </li>
+          <li>
+            <strong>A stricter keep rule for teacher answers.</strong>
+            <code>teacher_filter_keep: "correct"</code> keeps only answers the judge grades fully
+            correct. The default, <code>"not_wrong"</code>, still keeps partial ones. It's an API
+            option on the flow today, and the card doesn't show it yet.
+          </li>
+          <li>
+            <strong>Critique and revise.</strong> Instead of throwing away every rejected answer,
+            <strong>Revise answers the checker rejects (one round of feedback)</strong> sends each
+            one to a critic. The <strong>Critic model</strong> picker chooses it, or the judge's own
+            reason is used at no extra call. The critic reads the question, the reference, the
+            answer and the passages, and says what's wrong. The teacher rewrites the answer from
+            the same passages, and <em>the same judge grades the rewrite</em> and has the final
+            say. We deliberately used a critic that isn't the evaluation judge, so the training
+            answers aren't tuned to one model's taste.
+          </li>
+          <li>
+            <strong>A run that dies resumes.</strong> Generation replies, teacher answers and
+            judge verdicts are saved as they arrive. Attempt 2's teacher step was stopped at the
+            filter for a machine restart, then re-posted with the same request, and it picked up at
+            judged answer 1,650 of 2,890 without asking the teacher anything again.
+          </li>
+        </ul>
+        <figure class="blog-figure">
+          <img src="./assets/blog/irs-pub17-reader/03-teacher-revise-options.png" alt="The Turn your documents into a Q&amp;A assistant card on Train, set up as for this run: Generation model, local model; Train the model to answer from your passages (ticked, implied by the teacher option); Use a teacher model's answers to the same passages as the targets (ticked) with a Teacher model picker set to the local model; Revise answers the checker rejects (one round of feedback) (ticked) with a Critic model picker, here the checker itself (its verdict's reason, no extra call); Batch (half price, slower) unticked; Calls at once 4; Keep the current test examples and grow them to resolve a gap of 0.08 (157 rows) (ticked); buttons Train again on the teacher's answers to your passages and Run again (write new pairs)." loading="lazy" width="1752" height="1184" />
+          <figcaption>The Documents → Q&amp;A card on Train with the options this run used. For attempt 2 the critic was <code>gpt-oss:120b</code> (picked by name through the API), not the checker itself, which is the default shown here.</figcaption>
+        </figure>
+
+        <h2 id="attempt-2">Attempt 2: all open weights, the test set included</h2>
+        <p>
+          A new project, built from scratch from the same PDF: same cleaning, same base model,
+          same retrieval. <code>gpt-oss:120b</code> wrote everything: questions, reference
+          answers, the 157-question test set, the 157-question validation set, and the teacher
+          answers. <code>gemma4:12b</code> judged. This test set is not attempt 1's, which is why
+          the bar moves from 0.621 to 0.570, and why the two attempts' scores aren't directly
+          comparable. Each is only meaningful against its own bar.
+        </p>
+        <div class="table-wrap">
+          <table class="compare-table">
+            <thead>
+              <tr><th>Stage</th><th>What came out</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Generation</td><td>1,064 / 1,064 passages, 3,187 training pairs, 1,054 answer-key questions (60 rewritten, 9 stripped by question repair)</td></tr>
+              <tr><td>Split</td><td>3,168 train / 157 validation / 157 test; no question shared across them</td></tr>
+              <tr><td>Teacher answers</td><td>3,317, of which 272 were natural "I don't know"s</td></tr>
+              <tr><td>Judge filter, keep = correct</td><td>2,890 answers graded; 2,262 correct, 628 rejected</td></tr>
+              <tr><td>Critique and revise, one round</td><td>628 revised; 242 fixed and kept; 386 still rejected (317 still partial or wrong, 69 turned into "I don't know")</td></tr>
+              <tr><td>Trains on</td><td>2,779 passage-prompt rows</td></tr>
+              <tr><td>Training, per seed</td><td>LoRA r 16 on every linear layer, 2 epochs, 348 steps, 36 to 38 minutes on an NVIDIA GB10</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Then the rule, applied mechanically. Validation scores were 0.710, 0.704 and 0.723 for
+          seeds 42, 43 and 44, so seed 44 is the pick. Its test result is better than the bar with
+          the interval above zero (+0.054 to +0.182). All three seeds are better, and the rule
+          needed two. <strong>Pass.</strong>
+        </p>
+        <p>
+          One thing we found while writing this up: the flow's own summary said the revise round
+          "attempted 628" but the filter "dropped 317", which don't reconcile. The missing 69 were
+          revisions that came back as "I don't know". They were correctly kept out of training,
+          but they dropped out of every count. That's fixed: the counts now add up, and the 69
+          have a line of their own.
+        </p>
+
+        <h2 id="caveats">What the number does and doesn't say</h2>
+        <ul>
+          <li>
+            <strong>Retrieval is the ceiling.</strong> The retriever found the right passage for
+            123 of 157 test questions, the same for every arm. 28 of the published model's 41 wrong
+            answers are questions where the right passage was never in the prompt. No reader can
+            fix those. The other 13 are misreads: the right passage was there and the model got
+            it wrong. The base model misread 29.
+          </li>
+          <li>
+            <strong>Same family, in distribution.</strong> The test questions were written by the
+            same model that wrote the training questions. The result says this reader handles
+            <em>that kind</em> of question about this document better than its base. It says
+            nothing about questions people would phrase differently, or about tax knowledge in
+            general.
+          </li>
+          <li>
+            <strong>One judge.</strong> <code>gemma4:12b</code> filtered the training answers and
+            scored the test, so its preferences shape both. A different judge might rank the arms
+            differently.
+          </li>
+          <li>
+            <strong>Validation ran higher than test.</strong> The fine-tunes scored 0.70 to 0.72 on
+            validation and 0.64 to 0.69 on test, while the base bar was lower on validation (0.551
+            vs 0.570). We used validation only to pick the seed, never to report the result.
+          </li>
+          <li>
+            <strong>It cites in two formats.</strong> 505 of the 2,779 training answers kept the
+            teacher model's own citation style, <code>【1†L1-L4】</code> (passage 1, lines 1-4),
+            because our cleanup step converted <code>【1】</code> to <code>[1]</code> but missed
+            that form. The trained model copied it: 73 of its 157 test answers cite that way, and 66
+            use <code>[1]</code>. The number is still the passage number. The judge grades facts,
+            so the scores don't depend on it, but a strict parser would. The cleanup step now handles
+            both forms, also for answers already cached, so the next training run won't learn it.
+            This model keeps the habit, and its card says so.
+          </li>
+          <li>
+            <strong>The project's default pass/fail rules say FAIL.</strong> BrewSLM's generic rule
+            set for this task wants token-F1, an LLM-judge pass rate and a safety pass rate, none of
+            which this run measured, so the scorecard reports them as failed or missing. We judged
+            this model on the rule we wrote down before scoring, not on those defaults. We mention
+            it because a screenshot of that panel would show a red FAIL, and it should.
+          </li>
+        </ul>
+        <figure class="blog-figure">
+          <img src="./assets/blog/irs-pub17-reader/02-where-it-fails.png" alt="Where it still fails, 57 of 157 test examples. 1: What amount is entered on line 4 if any? Expected -0-; got I don't know; judge wrong; retrieval missed it. 2: For what type of accelerated death benefits is filing Form 8853 not required? Expected: you don't have to file Form 8853 to exclude accelerated death benefits paid on the basis of actual expenses incurred. Got: Form 8853 is not needed for benefits paid on a per-diem or other periodic basis, cited as 【1†L1-L4】; judge wrong, the model named per-diem payments where the reference says actual expenses; retrieval found the passage, so the model misread it. 3: After what year are Indian tribal government bonds treated as issued by a state? Expected: after 1982, including tribal economic development bonds issued after February 17, 2009. Got: after 1982, cited 【1†L1-L3】; judge partial, the 2009 date for economic development bonds is missing; retrieval found it." loading="lazy" width="1752" height="960" />
+          <figcaption>The first three of the 57 test questions it still gets wrong or partly wrong, as Results → Verdict lists them. One retrieval miss, one misread (it swapped which payments are exempt), one partial. Two show the <code>【1†L1-L4】</code> citation form.</figcaption>
+        </figure>
+
+        <h2 id="try">Try it</h2>
+        <p>
+          The model is
+          <a class="inline-link" href="https://huggingface.co/TensorGreed/brewslm-pub17-passage-reader" target="_blank" rel="noopener noreferrer">TensorGreed/brewslm-pub17-passage-reader</a>
+          (Apache 2.0, merged weights, about 3 GB). Its model card has the exact prompt layout it
+          was trained on, a working <code>transformers</code> snippet, every number above, and how
+          the data was made. Put it behind a retriever over Publication 17, keep the passages in
+          the system message, and it cites the passage it used (as <code>[1]</code> or
+          <code>【1†L1-L4】</code>, see above) or says it doesn't know.
+        </p>
+
+        <h2 id="api">The same run from a script</h2>
+        <p>Every option above is a field on one request. Against a running BrewSLM:</p>
+        <pre class="terminal-block"><code># pairs, answer key, split, teacher answers, filter, one revise round, then train
+POST /api/projects/{id}/flows/documents-to-qa   {
+  "backend": "ollama:gpt-oss:120b",
+  "train": true,
+  "answers_from_teacher": true,  "teacher_backend": "ollama:gpt-oss:120b",
+  "teacher_filter": true,        "teacher_filter_keep": "correct",
+  "teacher_revise_rounds": 1,    "teacher_critic_backend": "ollama:gpt-oss:120b",
+  "keep_test": true,             "decision_gap": 0.08,  "concurrency": 4
+}
+# three seeds of the same run's exact config, as one seed group with its own lift check
+POST /api/projects/{id}/evaluation/summary/check-seeds   {"experiment_id": {run}, "num_seeds": 3}
+# score any finished run on validation, as a tracked Job
+POST /api/projects/{id}/auto-rag/comparison/run?corpus=documents&amp;split=val&amp;experiment_id={run}</code></pre>
+        <p>
+          Publication 17 is a work of the United States government and in the public domain.
+          The run ids in this post (#160, #161, #162) are the real ones.
+        </p>
+
+        <div class="blog-post-footer">
+          <a class="btn btn-solid" href="./blog.html">Back to blog</a>
+          <a class="btn btn-ghost" href="./blog-irs-pub17-fine-tune-lost-retrieval-won.html">Part 1: the fine-tune lost, retrieval won</a>
+          <a class="btn btn-ghost" href="./academy/with-brewslm/auto-rag-and-reroute.html">Auto-RAG and reroute, in the Academy</a>
+        </div>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p>
+        <a
+          class="footer-link"
+          href="https://github.com/TensorGreed/__SLM__/issues"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Support &amp; questions: GitHub Issues</a
+        >
+      </p>
+    </footer>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
