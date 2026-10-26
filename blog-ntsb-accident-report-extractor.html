@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Narrative in, JSON out: a 1.5B accident-report extractor that knows when to say null</title>
+    <meta
+      name="description"
+      content="A 1.5B model fine-tuned to turn NTSB aviation accident narratives into a 13-field JSON record. 0.959 field accuracy on 1,234 pre-registered test narratives against 0.494 for the base model, and null when the text doesn't say. All three seeds passed. Every number, including where it still fails."
+    />
+    <meta
+      name="robots"
+      content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
+    />
+    <meta name="author" content="TensorGreed" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://brewslm.com/blog-ntsb-accident-report-extractor.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="BrewSLM" />
+    <meta property="og:title" content="Narrative in, JSON out: a 1.5B accident-report extractor that knows when to say null" />
+    <meta
+      property="og:description"
+      content="0.959 field accuracy on 1,234 pre-registered NTSB test narratives against 0.494 for the base model, null recall 0.976 against 0.545, all three seeds passing. Every number, including where it still fails."
+    />
+    <meta property="og:url" content="https://brewslm.com/blog-ntsb-accident-report-extractor.html" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Narrative in, JSON out: a 1.5B accident-report extractor that knows when to say null" />
+    <meta
+      name="twitter:description"
+      content="0.959 field accuracy on 1,234 pre-registered NTSB test narratives against 0.494 for the base model, null recall 0.976 against 0.545, all three seeds passing."
+    />
+    <meta property="article:published_time" content="2026-10-25" />
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YDPSHSVE1K"></script>
+    <script src="./assets/analytics.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Narrative in, JSON out: a 1.5B accident-report extractor that knows when to say null",
+        "description": "A 1.5B model fine-tuned with BrewSLM to turn NTSB aviation accident narratives into a 13-field JSON record, scored against a pre-registered rule on 1,234 test narratives, with all three training seeds passing. Published on the Hugging Face Hub.",
+        "datePublished": "2026-10-25",
+        "dateModified": "2026-10-25",
+        "author": { "@type": "Person", "name": "TensorGreed", "url": "https://github.com/TensorGreed" },
+        "publisher": {
+          "@type": "Organization",
+          "name": "TensorGreed",
+          "url": "https://github.com/TensorGreed",
+          "logo": { "@type": "ImageObject", "url": "https://brewslm.com/assets/brewslm-logo.svg" }
+        },
+        "mainEntityOfPage": "https://brewslm.com/blog-ntsb-accident-report-extractor.html"
+      }
+    </script>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./index.html" aria-label="BrewSLM Home">
+        <img class="brand-logo" src="./assets/brewslm-logo.svg" alt="BrewSLM" />
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="./academy/index.html">Academy</a>
+        <a href="./creation-paths.html">Creation Paths</a>
+        <a href="./workflow.html">Workflow</a>
+        <a href="./capabilities.html">Capabilities</a>
+        <a href="./blog.html" aria-current="page">Blog</a>
+        <a href="./faqs.html">FAQs</a>
+      </nav>
+      <a class="btn btn-outline" href="./index.html#quickstart">Quickstart</a>
+    </header>
+
+    <main>
+      <!-- Not .reveal: the reveal observer needs 14% of an element on screen,
+           which a post this long can never reach, so it would stay invisible. -->
+      <article class="section blog-post">
+        <header class="blog-post-head reveal">
+          <p class="eyebrow">Structured extraction · Narrative → JSON · Showcase 3</p>
+          <h1>Narrative in, JSON out: a 1.5B accident-report extractor that knows when to say null</h1>
+          <p class="blog-post-meta"><time datetime="2026-10-25">October 25, 2026</time> · By <a class="inline-link" href="https://github.com/TensorGreed" target="_blank" rel="noopener noreferrer">TensorGreed</a> · BrewSLM engineering blog</p>
+          <p class="page-sub">
+            Our first two showcases were a
+            <a class="inline-link" href="./blog-sensitive-data-detector-from-zero.html">span tagger</a>
+            and a <a class="inline-link" href="./blog-irs-pub17-teaching-a-small-model-to-read.html">passage reader</a>
+            that answers questions. This one is neither. It reads a U.S. aviation accident narrative
+            and writes one flat JSON record: aircraft, damage, injuries, operating rule, flight
+            purpose, date, state and pilot hours. When the narrative doesn't state a field, it writes
+            <code>null</code> instead of guessing. On 1,234 test narratives fixed before any model
+            was scored, it gets 0.959 of fields exactly right, against 0.494 for the same base model.
+            When a field isn't in the text, it leaves it null 97.6% of the time, against 54.5%. All
+            three training seeds passed the rule we wrote down first. It is
+            <a class="inline-link" href="https://huggingface.co/TensorGreed/brewslm-ntsb-accident-extractor" target="_blank" rel="noopener noreferrer">on the Hugging Face Hub</a>.
+          </p>
+          <p class="form-note">
+            <strong>For education only.</strong> The model in this post demonstrates a training
+            method. It is not an aviation-safety or accident-investigation expert and makes no claim
+            to be one. It misses about half the aircraft model designators the narratives state (see
+            below). Its output is not an NTSB finding. For anything real, use the official records at
+            data.ntsb.gov.
+          </p>
+        </header>
+
+        <h2 id="result">The result, in one table</h2>
+        <p>
+          1,234 held-out test narratives. Every output is parsed as JSON and compared field by field
+          with the answer key. The comparison is typed: numbers as numbers, strings ignoring case
+          and spacing, and <code>null</code>, a missing key and <code>""</code> all count as null.
+        </p>
+        <div class="table-wrap">
+          <table class="compare-table">
+            <thead>
+              <tr><th></th><th>Base model, same prompt</th><th>Base model, schema-aware prompt*</th><th>Fine-tuned (seed 42, published)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Output matches the schema (valid JSON, every field, right types, allowed values)</td><td>0.042</td><td>0.770</td><td><strong>0.995</strong></td></tr>
+              <tr><td>Fields exactly right (13 fields, all rows)</td><td>0.494</td><td>0.481</td><td><strong>0.959</strong></td></tr>
+              <tr><td>Whole record right (all 13 fields)</td><td>0.000</td><td>—</td><td><strong>0.625</strong></td></tr>
+              <tr><td>When it says null, the field really is unstated (null precision)</td><td>0.901</td><td>0.533</td><td><strong>0.954</strong></td></tr>
+              <tr><td>When a field is unstated, it says null (null recall)</td><td>0.545</td><td>0.371</td><td><strong>0.976</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          * A 300-row subset of the same test set, run by a separate script and scored with
+          BrewSLM's own scorer. It gives the base model its chat template, every field's type and
+          allowed values, and "use null when the narrative doesn't state it". We ran it so the
+          fine-tune couldn't be credited with what a better prompt would have done anyway. Prompting
+          fixed the format (0.042 → 0.770 schema-valid), but accuracy didn't move, and the base model
+          started inventing: guessed dates, <code>"Not specified in the narrative"</code> as an
+          aircraft make, values for fields the text never mentions. Null recall <em>fell</em>, from
+          0.545 to 0.371. Telling a small model "don't guess" isn't the same as teaching it not to.
+        </p>
+
+        <h2 id="why">Why this task, and why null is the point</h2>
+        <p>
+          Extraction is the most common thing people want a small model for that isn't chat:
+          read a document, fill in a form. The NTSB's accident database is a good test bed. It's
+          public domain, it's large, and every event has both a narrative written by an
+          investigator and a set of coded fields filled in by hand. That looks like a ready-made
+          answer key. It isn't, and that's what this project was about.
+        </p>
+        <p>
+          The coded fields come from the whole investigation: forms, records, interviews. The
+          narrative is a summary, and it often doesn't repeat them. In the 12,421 events we used, the
+          narrative names the aircraft make in 40% of cases and states the pilot's total hours in
+          7%. Train a model to output the coded value from the narrative, and for those rows you are
+          training it to produce a fact that isn't in its input. That is invention, taught on
+          purpose. A model trained that way will fill in the pilot's hours for any narrative you
+          give it.
+        </p>
+        <p>
+          So the answer key is <strong>masked</strong>. For each field we start from the
+          investigators' coded value, and keep it only if a fixed, deterministic text check finds it
+          stated in the narrative. Otherwise it's <code>null</code>. The make or model has to appear
+          as written. The injury counts have to be stated. The date has to appear in the text: when
+          the text's date is a day off the coded one, the text wins, because the model can only learn
+          to read what's there. No language model touched the labels, training or test. The masking
+          script went through three rounds of fixes on a 50-row hand audit. Its first version, for
+          example, accepted the bare word "air" as a mention of the make Air Tractor.
+        </p>
+        <p>
+          That gives the score a specific meaning. It measures <em>extracts what the text says</em>,
+          not <em>knows what happened</em>. It is also slightly conservative. A check can miss a
+          value phrased in an unusual way, and the model is then marked wrong for extracting it.
+        </p>
+
+        <h2 id="rule">The rule, written down first</h2>
+        <p>
+          Before training we froze the rule and a checksum of it. Three seeds (13, 42, 1234) train
+          on identical data. Each seed is evaluated on test <strong>once</strong>, and every gate
+          must pass on <strong>every</strong> seed:
+        </p>
+        <div class="table-wrap">
+          <table class="compare-table">
+            <thead>
+              <tr><th>Gate (test)</th><th>Floor</th><th>Base</th><th>Seed 13</th><th>Seed 42</th><th>Seed 1234</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Output matches the schema</td><td>≥ 0.95</td><td>0.042</td><td>0.994</td><td><strong>0.995</strong></td><td>0.997</td></tr>
+              <tr><td>Fields exactly right, all 13</td><td>≥ 0.85</td><td>0.494</td><td>0.958</td><td><strong>0.959</strong></td><td>0.957</td></tr>
+              <tr><td>Weakest of the 8 fact fields, exactly right</td><td>≥ 0.70</td><td>—</td><td>0.749</td><td><strong>0.752</strong></td><td>0.742</td></tr>
+              <tr><td>Null precision</td><td>≥ 0.95</td><td>0.901</td><td>0.955</td><td><strong>0.954</strong></td><td>0.952</td></tr>
+              <tr><td>Null recall</td><td>≥ 0.90</td><td>0.545</td><td>0.976</td><td><strong>0.976</strong></td><td>0.977</td></tr>
+              <tr><td>Weakest of the 8 fact fields, null recall</td><td>≥ 0.80</td><td>—</td><td>0.964</td><td><strong>0.964</strong></td><td>0.964</td></tr>
+              <tr><td>Paired per-row gain over base, 95% interval</td><td>&gt; 0</td><td>—</td><td>+0.430 to +0.458</td><td><strong>+0.430 to +0.458</strong></td><td>+0.429 to +0.457</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul>
+          <li>
+            <strong>The 8 fact fields</strong> are the ones a narrative states directly: make, model,
+            date, state, the three injury counts and pilot hours. The other five (aircraft category,
+            damage, highest injury, operating rule, flight purpose) map free wording onto fixed codes.
+            We report them but didn't gate them per field. We couldn't justify a floor for them
+            before seeing a trained model.
+          </li>
+          <li>
+            <strong>Null recall matters most for safety.</strong> For an extractor, the harmful
+            mistake is inventing a value the text never states. Under a masked answer key, that's
+            exactly what null recall measures, so it has two floors.
+          </li>
+          <li>
+            <strong>The rule was amended twice, before any evaluation ran.</strong> The per-row gain
+            uses per-row field F1, because BrewSLM's evals store that per row but not per-row exact
+            match. And we hadn't said which seed to publish, so we fixed it as the best on
+            validation. Both changes are in the frozen file with their dates.
+          </li>
+          <li>
+            <strong>One test look means one.</strong> BrewSLM runs an automatic 100-row test check
+            after every training run. We turned it off for this project, so each seed's single full
+            test eval is the only time test was scored.
+          </li>
+        </ul>
+        <p>
+          Validation scores were 0.9595, 0.9614 and 0.9610 for seeds 13, 42 and 1234, so seed 42 is
+          the published one. All three seeds passed every gate. <strong>Pass.</strong> The seeds
+          agree to within 0.002 on field accuracy, so this isn't a lucky draw.
+        </p>
+        <figure class="blog-figure">
+          <img src="./assets/blog/ntsb-extractor/01-verdict-three-seeds.png" alt="The Results → Verdict card for run #164: Better than the base model, across 3 seeds. Run #164, NTSB extractor, Qwen2.5-1.5B, 3 seeds vs base Qwen/Qwen2.5-1.5B-Instruct, 1234 test examples. f1: 0.519 (base) → 0.960 ± 0.001 (fine-tuned, mean of 3 seeds), +0.442. Holds across seeds: F1 0.960, 0.961, 0.960, every seed beat the base model; runs #165 (seed 13) 0.960, #166 (seed 42) 0.961, #167 (seed 1234) 0.960; failures and row counts are from run #165, the median seed. Ship one seed, picked by lowest validation loss, ties to the lower run id, test not used to pick: seed 13 run #165 validation loss 0.008 test f1 0.960; seed 42 run #166 0.008, 0.961; seed 1234 run #167 0.008, 0.960, marked picked; button Ship this seed (run #167). Gain on these rows: fine-tuning helped 1228 rows, hurt 3, no change on 3; average change +0.444 F1 per row, 95% range +0.430 to +0.458, a gain beyond row-to-row noise." loading="lazy" width="1992" height="880" />
+          <figcaption>
+            Results → Verdict for the three-seed run. Two things differ from the tables above. The card
+            scores per-field F1 (0.519 → 0.960), not exact match (0.494 → 0.959). And BrewSLM's
+            built-in picker chooses by lowest validation loss, so it marks seed 1234 (0.00782 against
+            0.00784 for seed 42, a gap the card rounds away). Our frozen rule picks by validation field
+            accuracy, which gives seed 42. Either choice is within seed-to-seed noise; we published the
+            one the rule named.
+          </figcaption>
+        </figure>
+
+        <h2 id="fails">Where it still fails</h2>
+        <div class="table-wrap">
+          <table class="compare-table">
+            <thead>
+              <tr><th>Field</th><th>Exactly right, all rows</th><th>Right when the text states it (rows)</th><th>Null recall</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>aircraft_model</td><td>0.752</td><td><strong>0.388 (454)</strong></td><td>0.964</td></tr>
+              <tr><td>pilot_total_hours</td><td>0.970</td><td>0.765 (85)</td><td>0.985</td></tr>
+              <tr><td>aircraft_make</td><td>0.917</td><td>0.811 (508)</td><td>0.992</td></tr>
+              <tr><td>damage</td><td>0.977</td><td>0.990 (1,155)</td><td>0.785</td></tr>
+              <tr><td>the other 9 fields</td><td>0.960 to 0.994</td><td>0.975 to 0.996</td><td>0.946 to 0.991 (category: 0.571, 14 rows)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul>
+          <li>
+            <strong>Aircraft model is the big miss.</strong> 454 test narratives state the model
+            designator. The model returned <code>null</code> for 232 of them and a different
+            designator for 46. "Beech 58", "Bell 47-G", "Cessna 152": it gets the make and drops the
+            model. Most of the gap between 0.959 field accuracy and 0.625 whole-record accuracy is
+            this one field. If you need the model designator, check its nulls against the text.
+          </li>
+          <li>
+            <strong>Its mistakes lean toward null.</strong> Across all fields it wrote
+            <code>null</code> for a stated value 382 times, and invented a value for an unstated field
+            192 times. For an extractor that's the safer direction, but it's why null precision
+            (0.954) only just clears its floor of 0.95. About 1 in 22 nulls hides a value the text
+            does state.
+          </li>
+          <li>
+            <strong>The answer key's own blind spots.</strong> Some of those "missed" models may
+            be the masking check's fault, not the model's: if training rows nulled designators
+            the check failed to recognise, the model learned some of that caution. We didn't
+            measure how much. It's the first thing to look at for a v2.
+          </li>
+        </ul>
+
+        <h2 id="brewslm">What BrewSLM needed for this</h2>
+        <p>
+          Three things BrewSLM couldn't do at the start, each built as a general feature rather
+          than for NTSB:
+        </p>
+        <ul>
+          <li>
+            <strong>A JSON-extraction recipe with typed scoring.</strong> Extraction used to be
+            scored by comparing each field as a string, with no idea of types, nulls or allowed
+            values. The new <code>json-extraction</code> recipe takes an output schema (types, enums,
+            nullable fields) and scores against it. Numbers compare as numbers. Null precision and
+            recall are computed per field. Out-of-vocabulary enum values and type violations get
+            their own rates. "Valid JSON" and "valid against the schema" are separate numbers, as
+            the first table shows they should be. The Data step has a schema editor, and Results
+            shows the per-field table.
+          </li>
+          <li>
+            <strong>Bring your own train / validation / test.</strong> BrewSLM always split a dataset
+            itself. Here the split had to be by NTSB event id, decided outside, with 1,234 test rows
+            fixed in advance. <strong>Use my own train / val / test files</strong> on the Data split
+            form imports three files with exact membership: no shuffle, no ratio, no dedup. It
+            refuses (or, if you ask, drops from train) any training row whose input also appears in
+            validation or test. It reports rejected rows by file and line, and no later step (cleaning,
+            synthetic data, re-splitting) can move a test row into training. That last guarantee
+            took several rounds of independent code review to get right. Round after round found
+            another way a test row could leak back in: a re-split, a malformed line, a column that
+            looked like the input but was really the label.
+          </li>
+          <li>
+            <strong>Rows whose input is their own answer.</strong> One of those reviews found that a
+            badly mapped dataset could train a model on <code>input = label</code> and look perfect.
+            BrewSLM now rejects such rows by name (<code>input_is_answer</code>,
+            <code>classification_input_is_label</code>) instead of training on them, in the import and
+            in the normal split.
+          </li>
+        </ul>
+
+        <h2 id="training">Training</h2>
+        <div class="table-wrap">
+          <table class="compare-table">
+            <thead>
+              <tr><th>Stage</th><th>What came out</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Population</td><td>NTSB accidents since 2015, one aircraft, with a probable-cause narrative under 14,000 characters: 12,421 events</td></tr>
+              <tr><td>Split, by a hash of the event id</td><td>9,931 train / 1,256 validation / 1,234 test; the import found 0 shared inputs and 0 duplicates</td></tr>
+              <tr><td>Prompt</td><td>The field list, "reply with a single JSON object", the narrative. No chat template. Longest row 3,366 tokens.</td></tr>
+              <tr><td>Training, per seed</td><td>Qwen2.5-1.5B-Instruct, LoRA r 16 on every linear layer, loss on the JSON answer only, max length 4,096 (nothing truncated), 1 epoch, 621 steps, about 4 hours on an NVIDIA GB10</td></tr>
+              <tr><td>Final loss (seed 42)</td><td>train 0.009, validation 0.008</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          One seed didn't start cleanly. Seed 1234 failed two minutes in, before its first training
+          step, on a DNS error reaching the model hub. No eval had run, so we restarted it with the
+          same config. We mention it because the run log shows a FAILED row, and it should.
+        </p>
+
+        <h2 id="try">Try it</h2>
+        <p>
+          The model is
+          <a class="inline-link" href="https://huggingface.co/TensorGreed/brewslm-ntsb-accident-extractor" target="_blank" rel="noopener noreferrer">TensorGreed/brewslm-ntsb-accident-extractor</a>
+          (Apache 2.0, merged weights, about 3 GB). Its card has the exact prompt, a working
+          <code>transformers</code> snippet, the schema with every allowed value, and every number
+          above. Before publishing, we re-ran that snippet against the merged weights on 100 test
+          narratives. It parsed all 100 outputs and scored 0.976 field accuracy on that sample.
+        </p>
+
+        <h2 id="api">The same run from a script</h2>
+        <p>Against a running BrewSLM, the whole project is a handful of requests:</p>
+        <pre class="terminal-block"><code># recipe + output schema (types, enums, nullable fields)
+PUT  /api/projects/{id}/recipe                 {"recipe_id": "json-extraction"}
+PUT  /api/projects/{id}/recipe/output-schema   {"output_schema": { ...13 properties... }}
+# your own splits, exact membership; refuse any train row that leaks into val/test
+POST /api/projects/{id}/dataset/predefined-split   train=@train.jsonl val=@val.jsonl test=@test.jsonl on_leak=fail
+# three seeds of one config, as a seed group
+POST /api/projects/{id}/training/experiments   {"name": "...", "config": {
+  "base_model": "Qwen/Qwen2.5-1.5B-Instruct", "use_lora": true,
+  "max_seq_length": 4096, "seeds": [13, 42, 1234]}}
+# one full held-out eval per seed, greedy
+POST /api/projects/{id}/evaluation/run-heldout?async_job=true   {"experiment_id": {run},
+  "dataset_name": "test", "max_samples": 5000, "max_new_tokens": 512, "temperature": 0}</code></pre>
+        <p>
+          The NTSB data is U.S. government work in the public domain. Courtesy: National
+          Transportation Safety Board. The answer key is a masked derivative of the NTSB's coded
+          fields, not NTSB findings, and this project isn't affiliated with or endorsed by the NTSB.
+          NTSB accident reports can't be used as evidence in a civil action for damages (49 U.S.C.
+          § 1154(b)), and nor should a model trained on them.
+        </p>
+
+        <div class="blog-post-footer">
+          <a class="btn btn-solid" href="./blog.html">Back to blog</a>
+          <a class="btn btn-ghost" href="./blog-irs-pub17-teaching-a-small-model-to-read.html">The Pub 17 passage reader</a>
+          <a class="btn btn-ghost" href="./blog-sensitive-data-detector-from-zero.html">The sensitive-data tagger</a>
+        </div>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> BrewSLM.com</p>
+      <p>Built by <a href="https://github.com/TensorGreed">TensorGreed</a></p>
+      <p>
+        <a
+          class="footer-link"
+          href="https://github.com/TensorGreed/__SLM__/issues"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Support &amp; questions: GitHub Issues</a
+        >
+      </p>
+    </footer>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
