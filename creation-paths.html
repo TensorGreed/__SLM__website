@@ -110,12 +110,12 @@
           <article class="decision-card reveal">
             <h3>CLI</h3>
             <p>You already script your ML lifecycle. You want one binary per stage, exit codes, and stdout you can grep.</p>
-            <p class="card-note"><strong>First milestone:</strong> a scripted import + train + export job under CI.</p>
+            <p class="card-note"><strong>First milestone:</strong> a scripted import under CI. The CLI covers import; train and export are HTTP calls (next card).</p>
           </article>
           <article class="decision-card reveal">
             <h3>HTTP / Python API</h3>
             <p>The SLM lifecycle is one piece of a larger backend. You want the same pipeline as a service call.</p>
-            <p class="card-note"><strong>First milestone:</strong> a service-triggered import + run flow with task-id polling.</p>
+            <p class="card-note"><strong>First milestone:</strong> a service-triggered import + training run, polled through the Jobs API (<code>GET /api/jobs/active</code>, <code>GET /api/jobs/{id}</code>).</p>
           </article>
           <article class="decision-card reveal">
             <h3>The workspace</h3>
@@ -135,17 +135,26 @@
             <p class="pane-title">The subcommand surface</p>
             <div class="terminal-block dense">
               <p>$ python -m app.cli.dataset_import sources</p>
-              <p>csv  hf  jsonl  kaggle</p>
+              <p>csv</p>
+              <p>file</p>
+              <p>git</p>
+              <p>hf</p>
+              <p>jsonl</p>
+              <p>kaggle</p>
+              <p>web</p>
               <p>&nbsp;</p>
               <p>$ python -m app.cli.dataset_import mappers</p>
-              <p>bio_to_spans                  → task_profile=structured_extraction</p>
-              <p>chat_messages_passthrough     → task_profile=chat_sft</p>
-              <p>kv_to_structured              → task_profile=structured_extraction</p>
-              <p>label_to_classification       → task_profile=classification</p>
-              <p>preference_pair               → task_profile=dpo</p>
-              <p>qa_pair_passthrough           → task_profile=qa</p>
-              <p>rag_passthrough               → task_profile=rag_qa</p>
-              <p>text_only                     → task_profile=language_modeling</p>
+              <p>bio_to_spans                    → task_profile=structured_extraction</p>
+              <p>chat_messages_passthrough       → task_profile=chat_sft</p>
+              <p>code_label_to_findings          → task_profile=structured_extraction</p>
+              <p>contrast_functions              → task_profile=structured_extraction</p>
+              <p>fix_pair                        → task_profile=structured_extraction</p>
+              <p>kv_to_structured                → task_profile=structured_extraction</p>
+              <p>label_to_classification         → task_profile=classification</p>
+              <p>preference_pair                 → task_profile=dpo</p>
+              <p>qa_pair_passthrough             → task_profile=qa</p>
+              <p>rag_passthrough                 → task_profile=rag_qa</p>
+              <p>text_only                       → task_profile=language_modeling</p>
               <p>&nbsp;</p>
               <p>$ python -m app.cli.dataset_import introspect \</p>
               <p>&nbsp;&nbsp;&nbsp;&nbsp;--locator hf:imdb:train</p>
@@ -166,7 +175,8 @@
             </ul>
             <p>
               Every command is also exposed via HTTP. The CLI is a thin wrapper over the same
-              service functions the API hits.
+              service functions the API hits. It runs in-process, so it needs no login; HTTP calls
+              carry an <code>X-API-Key</code> header (<code>AUTH_ENABLED</code> defaults to true).
             </p>
           </article>
         </div>
@@ -287,7 +297,7 @@
           <article class="cluster-card reveal">
             <h3>1 — Source · 2 — Task type</h3>
             <ul class="capability-list">
-              <li>Source dropdown (jsonl / csv / hf / kaggle) or a browser upload.</li>
+              <li>Source dropdown (JSONL, server file, CSV, HuggingFace Hub, website page, Git repository, Kaggle) or a browser upload.</li>
               <li>Per-source helper text + auth banner for gated datasets.</li>
               <li>Click <em>Introspect</em>; confirm the task type the sniffer proposes.</li>
             </ul>
@@ -365,7 +375,7 @@
             <p>&nbsp;</p>
             <p># API</p>
             <p>$ curl -X POST localhost:8000/api/projects/1/dataset-import/run \</p>
-            <p>&nbsp;&nbsp;&nbsp;&nbsp;-H 'Content-Type: application/json' \</p>
+            <p>&nbsp;&nbsp;&nbsp;&nbsp;-H 'X-API-Key: sk-mock-admin-key' -H 'Content-Type: application/json' \</p>
             <p>&nbsp;&nbsp;&nbsp;&nbsp;-d '{"locator":"hf:imdb:train","mapper_id":"label_to_classification","field_map":{}}'</p>
             <p>&nbsp;</p>
             <p># UI</p>
