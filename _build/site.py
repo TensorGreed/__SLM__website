@@ -470,12 +470,16 @@ class Facts:
         body = body_of(text)
         self.h1 = text_of(first(r"<h1\b[^>]*>(.*?)</h1>", body) or "")
         self.crumbs = self._crumbs(body)
-        self.level = text_of(first(r"<strong>Level:</strong>(.*?)</span>", body) or "") or None
-        self.time = text_of(first(r"<strong>(?:Read time|Time):</strong>(.*?)</span>", body) or "") or None
+        meta = first(r'<div class="lesson-meta"[^>]*>(.*?)</div>', body) or ""
+        self.level = text_of(first(r"<strong>Level:</strong>(.*?)</span>", meta) or "") or None
+        self.time = text_of(first(r"<strong>(?:Read time|Time):</strong>(.*?)</span>", meta) or "") or None
         self.outcome = text_of(first(r'class="lesson-header__outcome"[^>]*>(.*?)</p>', body) or "") or None
         self.published = first(r'class="blog-post-meta"[^>]*>\s*<time datetime="([^"]+)"', body)
         q = first(r"<section\b[^>]*\bdata-quiz\b[^>]*>.*?<script type=\"application/json\">(.*?)</script>", body)
-        self.quiz = json.loads(q) if q else None
+        try:
+            self.quiz = json.loads(q) if q else None
+        except ValueError:
+            self.quiz = None   # check reports it (Visible parses the same data)
         self.quiz_title = text_of(first(r'class="quiz__title"[^>]*>(.*?)</h2>', body) or "") or None
 
     def _crumbs(self, body: str) -> list[tuple[str, str]]:
@@ -911,6 +915,189 @@ def build_404() -> str:
 """
 
 
+class Visible(HTMLParser):
+    """A second, independent reading of what a page shows, for `check`.
+
+    The generator reads pages with the regexes in Facts; this walks the DOM
+    with html.parser instead, so an extraction bug in one is not repeated in
+    the other. It collects the h1, headings by id, the breadcrumb, lesson
+    meta, quiz data, FAQ entries, glossary terms, blog cards, the post date,
+    links inside <main> and the page's visible words.
+    """
+
+    BLOCK = {"br", "p", "li", "ul", "ol", "div", "dd", "dt", "tr", "td", "th", "h1", "h2", "h3", "h4",
+             "h5", "h6", "section", "article", "pre", "table", "summary", "details", "blockquote", "nav",
+             "header", "footer", "main"}
+
+    def __init__(self, rel: str, text: str):
+        super().__init__(convert_charrefs=True)
+        self.rel = rel
+        self.h1 = None
+        self.headings: dict[str, str] = {}
+        self.crumbs: list[tuple[str, str | None]] = []
+        self.level = self.time = self.published = None
+        self.quiz_raw: str | None = None
+        self.faq: list[tuple[str, str]] = []
+        self.terms: list[tuple[str, str, str]] = []
+        self.cards: list[tuple[str, str | None]] = []
+        self.main_links: list[str] = []
+        self.words: list[str] = []
+        self._stack: list[tuple[str, dict]] = []
+        self._caps: list[dict] = []      # open captures: {kind, depth, buf, ...}
+        self._in_body = self._in_main = False
+        self._skip = 0                   # inside <script>/<style> (not visible)
+        self._quiz_depth = None
+        self._card = None
+        # Pages without <main> (lessons, glossary): the whole body counts.
+        self._has_main = re.search(r"<main\b", text) is not None
+        self.feed(text)
+        self.close()
+
+    def _open(self, kind, **kw):
+        self._caps.append({"kind": kind, "depth": len(self._stack), "buf": [], **kw})
+
+    @staticmethod
+    def _t(buf):
+        return " ".join("".join(buf).split())
+
+    def handle_starttag(self, tag, attrs):
+        a = {k: (v or "") for k, v in attrs}
+        cls = set(a.get("class", "").split())
+        if tag == "body":
+            self._in_body = True
+            self._in_main = not self._has_main
+        if tag in self.BLOCK:
+            for c in self._caps:
+                c["buf"].append(" ")
+        if tag in VOID:
+            return
+        self._stack.append((tag, a))
+        depth = len(self._stack)
+        if tag == "main":
+            self._in_main = True
+        if tag in ("script", "style"):
+            if tag == "script" and self._quiz_depth is not None and a.get("type") == "application/json":
+                self._open("quiz")
+            else:
+                self._skip += 1
+            return
+        if tag == "section" and "data-quiz" in a:
+            self._quiz_depth = depth
+        if re.fullmatch(r"h[1-6]", tag):
+            self._open("heading", tag=tag, id=a.get("id"))
+        if tag == "nav" and "breadcrumb" in cls:
+            self._open("crumbs")
+        if tag == "li" and any(c["kind"] == "crumbs" for c in self._caps):
+            self._open("crumb", href=None)
+        if tag == "a":
+            for c in self._caps:
+                if c["kind"] == "crumb" and c["href"] is None:
+                    c["href"] = a.get("href")
+            if self._in_main and a.get("href"):
+                self.main_links.append(a["href"])
+            if self._card is not None:
+                self._open("card_a", href=a.get("href"))
+        if tag == "span" and any(c["kind"] == "meta" for c in self._caps):
+            self._open("meta_span")
+        if tag == "div" and "lesson-meta" in cls:
+            self._open("meta")
+        if tag == "time" and any(c["kind"] == "postmeta" for c in self._caps) and self.published is None:
+            self.published = a.get("datetime")
+        if tag == "p" and "blog-post-meta" in cls:
+            self._open("postmeta")
+        if self._in_main:
+            if tag == "details":
+                self._open("details")
+            if tag == "summary":
+                self._open("summary")
+            if tag == "dt" and a.get("id"):
+                self._open("dt", id=a["id"])
+            if tag == "dd" and self.terms and self.terms[-1][2] is None:
+                self._open("dd")
+            if tag == "article" and "blog-card" in cls:
+                self._card = {"h3": None, "href": None, "depth": depth}
+            if tag == "h3" and self._card is not None:
+                self._open("card_h3")
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
+        if tag not in VOID and self._stack and self._stack[-1][0] == tag:
+            self.handle_endtag(tag)
+
+    def handle_endtag(self, tag):
+        if tag not in (t for t, _ in self._stack):
+            return
+        while self._stack:
+            depth = len(self._stack)
+            t, _ = self._stack[-1]
+            done = [c for c in self._caps if c["depth"] == depth]   # opened by this element
+            for c in done:
+                self._caps.remove(c)
+                self._close(c)
+            self._stack.pop()
+            if t in ("script", "style") and not any(c["kind"] == "quiz" for c in done):
+                self._skip = max(0, self._skip - 1)
+            if t == "main":
+                self._in_main = False
+            if t == "section" and self._quiz_depth == depth:
+                self._quiz_depth = None
+            if t == "article" and self._card is not None and self._card["depth"] == depth:
+                self.cards.append((self._card["h3"], self._card["href"]))
+                self._card = None
+            if t == tag:
+                break
+        if tag in self.BLOCK:
+            for c in self._caps:
+                c["buf"].append(" ")
+
+    def _close(self, c):
+        k, text = c["kind"], self._t(c["buf"])
+        raw = "".join(c["buf"])
+        if k == "heading":
+            if c["tag"] == "h1" and self.h1 is None:
+                self.h1 = text
+            if c["id"]:
+                self.headings[c["id"]] = text
+        elif k == "crumb":
+            self.crumbs.append((text, c["href"]))
+        elif k == "meta_span":
+            m = re.match(r"(Level|Read time|Time):\s*(.*)", text)
+            if m and m.group(1) == "Level":
+                self.level = m.group(2)
+            elif m:
+                self.time = m.group(2)
+        elif k == "quiz":
+            self.quiz_raw = raw
+        elif k == "summary":
+            self._summary = text
+        elif k == "details":
+            q = getattr(self, "_summary", "")
+            self.faq.append((q, text[len(q):].strip() if text.startswith(q) else text))
+        elif k == "dt":
+            self.terms.append((c["id"], text, None))
+        elif k == "dd":
+            i, t, _ = self.terms[-1]
+            self.terms[-1] = (i, t, text)
+        elif k == "card_h3" and self._card is not None:
+            self._card["h3"] = text
+        elif k == "card_a" and self._card is not None and text.startswith("Read"):
+            self._card["href"] = c["href"]
+
+    def handle_data(self, data):
+        if self._skip:
+            return
+        for c in self._caps:
+            c["buf"].append(data)
+        if self._in_body and not any(c["kind"] == "quiz" for c in self._caps):
+            self.words.append(data)
+
+    def quiz(self):
+        return json.loads(self.quiz_raw) if self.quiz_raw is not None else None
+
+    def word_set(self) -> set[str]:
+        return set(re.findall(r"[a-z0-9][a-z0-9+./-]*[a-z0-9]|[a-z0-9]", " ".join(self.words).lower()))
+
+
 # ── JSON-LD check (shape + agreement with the visible page) ────────────────
 
 # Properties each top-level node must carry (Google's required/recommended set
@@ -935,7 +1122,7 @@ LD_REQUIRED = {
 }
 # Types each page type must carry.
 LD_EXPECTED = {
-    "home": {"Organization", "WebSite"},
+    "home": {"Organization", "WebSite", "SoftwareApplication"},
     "post": {"BlogPosting", "BreadcrumbList"},
     "blog_index": {"Blog", "BreadcrumbList"},
     "academy_index": {"Course", "BreadcrumbList"},
@@ -975,10 +1162,42 @@ def ids_on(text: str) -> set[str]:
     return set(re.findall(r'\bid="([^"]+)"', text))
 
 
-def check_jsonld(rel: str, text: str, facts: dict, pages: set[str], texts: dict) -> tuple[list[str], list[str]]:
-    """Errors for one page's JSON-LD, and the types it carries."""
-    f, pt = facts[rel], page_type(rel)
+def words_of(s: str) -> list[str]:
+    return re.findall(r"[a-z0-9][a-z0-9+./-]*[a-z0-9]|[a-z0-9]", s.lower())
+
+
+def on_page(phrase: str, page_words: set[str], page_text: str) -> bool:
+    """A hand-written phrase (HowTo supply/tool/step text) is backed by the
+    page: at least 60% of its words of 4+ letters appear there, or, for a
+    phrase without such words, the phrase itself does."""
+    w = [x for x in words_of(phrase) if len(x) >= 4]
+    if not w:
+        return phrase.lower() in page_text.lower()
+    return sum(x in page_words for x in w) / len(w) >= 0.6
+
+
+def check_jsonld(rel: str, text: str, vis: dict, pages: set[str], texts: dict) -> tuple[list[str], list[str]]:
+    """Errors for one page's JSON-LD, and the types it carries.
+
+    Agreement is checked against Visible (html.parser), not against the
+    Facts regexes the generator used, so a generator bug cannot pass itself."""
+    v, pt = vis[rel], page_type(rel)
+    url = url_of(rel)
+    description = scan(text).metas.get("description", "")
     errs: list[str] = []
+    try:
+        vquiz = v.quiz()
+    except ValueError as e:
+        vquiz = None
+        errs.append(f"the visible quiz data does not parse ({e})")
+
+    def kids_of(r: str, want) -> list[str]:
+        out = []
+        for href in vis[r].main_links:
+            t = resolve_link(r, html.unescape(href))
+            if t in pages and t != r and want(t) and t not in out:
+                out.append(t)
+        return out
     nodes, perr = ld_nodes(text)
     errs += perr
     page_ids = ids_on(text)
@@ -1059,36 +1278,50 @@ def check_jsonld(rel: str, text: str, facts: dict, pages: set[str], texts: dict)
         if types & {"BlogPosting", "Blog", "LearningResource", "HowTo", "DefinedTermSet", "WebPage",
                     "CollectionPage", "FAQPage", "WebSite", "SoftwareApplication"} or \
                 (types == {"Course"} and pt in ("academy_index", "track_index")):
-            if main_url != f.url:
-                err(f"{name}.url {main_url!r} is not this page ({f.url})")
-            if "description" in n and n["description"] != f.description and not types & {"SoftwareApplication"}:
+            if main_url != url:
+                err(f"{name}.url {main_url!r} is not this page ({url})")
+            if "description" in n and n["description"] != description and not types & {"SoftwareApplication"}:
                 err(f"{name}.description differs from the meta description")
         heading = n.get("headline") if types & {"BlogPosting", "Article"} else n.get("name")
         if (types & {"BlogPosting", "LearningResource", "HowTo", "WebPage", "CollectionPage", "FAQPage"}
-                or (types == {"Course"} and pt == "track_index")) and heading != f.h1:
-            err(f"{name} name/headline {heading!r} is not the h1 {f.h1!r}")
-        if "Article" in types and n.get("headline") != f.h1:
+                or (types == {"Course"} and pt == "track_index")) and heading != v.h1:
+            err(f"{name} name/headline {heading!r} is not the h1 {v.h1!r}")
+        if "Article" in types and n.get("headline") != v.h1:
             err(f"{name}.headline {n.get('headline')!r} is not the h1")
         if "BlogPosting" in types and pt == "post":
-            if n.get("datePublished") != f.published:
-                err(f"BlogPosting.datePublished {n.get('datePublished')!r} is not the visible date {f.published!r}")
+            if n.get("datePublished") != v.published:
+                err(f"BlogPosting.datePublished {n.get('datePublished')!r} is not the visible date {v.published!r}")
             if str(n.get("dateModified", "")) < str(n.get("datePublished", "")):
                 err("BlogPosting.dateModified is before datePublished")
         if "LearningResource" in types:
-            if f.level and str(n.get("educationalLevel", "")).lower() != f.level.lower():
-                err(f"educationalLevel {n.get('educationalLevel')!r} is not the visible level {f.level!r}")
-            if duration_minutes(n.get("timeRequired")) != duration_minutes(f.time):
-                err(f"timeRequired {n.get('timeRequired')!r} is not the visible time {f.time!r}")
+            if v.level and str(n.get("educationalLevel", "")).lower() != v.level.lower():
+                err(f"educationalLevel {n.get('educationalLevel')!r} is not the visible level {v.level!r}")
+            if duration_minutes(n.get("timeRequired")) != duration_minutes(v.time):
+                err(f"timeRequired {n.get('timeRequired')!r} is not the visible time {v.time!r}")
         if "HowTo" in types:
-            if duration_minutes(n.get("totalTime")) != duration_minutes(f.time):
-                err(f"HowTo.totalTime {n.get('totalTime')!r} is not the visible time {f.time!r}")
+            if duration_minutes(n.get("totalTime")) != duration_minutes(v.time):
+                err(f"HowTo.totalTime {n.get('totalTime')!r} is not the visible time {v.time!r}")
+            page_text = " ".join(" ".join(v.words).split())
+            page_words = set(words_of(page_text))
             for i, s in enumerate(n.get("step", [])):
                 if not (s.get("name") or s.get("text")):
                     err(f"HowTo.step[{i}]: missing name/text")
                 internal(s.get("url"), f"HowTo.step[{i}].url", anchors=True)
+                frag = urlparse(s.get("url", "")).fragment
+                if s.get("name") and s["name"] != v.headings.get(frag):
+                    err(f"HowTo.step[{i}].name {s['name']!r} is not the heading at #{frag} "
+                        f"({v.headings.get(frag)!r})")
+                for k in ("text", "description"):
+                    if s.get(k) and not on_page(s[k], page_words, page_text):
+                        err(f"HowTo.step[{i}].{k} is not backed by the page: {s[k][:60]!r}")
+            for k in ("supply", "tool"):
+                for x in n.get(k, []):
+                    nm = x.get("name", "") if isinstance(x, dict) else str(x)
+                    if not on_page(nm, page_words, page_text):
+                        err(f"HowTo.{k} {nm!r} is not backed by the page")
         if "Quiz" in types:
             want = [(q["q"], q["options"][q["answer"]],
-                     sorted(o for i, o in enumerate(q["options"]) if i != q["answer"])) for q in f.quiz or []]
+                     sorted(o for i, o in enumerate(q["options"]) if i != q["answer"])) for q in vquiz or []]
             got = []
             for q in n.get("hasPart", []):
                 if not (q.get("text") and q.get("eduQuestionType")):
@@ -1101,8 +1334,8 @@ def check_jsonld(rel: str, text: str, facts: dict, pages: set[str], texts: dict)
             got = [(q.get("name"), (q.get("acceptedAnswer") or {}).get("text")) for q in n.get("mainEntity", [])]
             if not got or any(not a or not b for a, b in got):
                 err("FAQPage: a question without name or answer text")
-            if got != f.faq():
-                err(f"FAQPage ({len(got)} Q&As) differs from the visible FAQ ({len(f.faq())})")
+            if got != v.faq:
+                err(f"FAQPage ({len(got)} Q&As) differs from the visible FAQ ({len(v.faq)})")
         if "DefinedTermSet" in types:
             got = []
             for t in n.get("hasDefinedTerm", []):
@@ -1110,23 +1343,23 @@ def check_jsonld(rel: str, text: str, facts: dict, pages: set[str], texts: dict)
                     err(f"DefinedTerm {t.get('name')!r}: missing name/description")
                 internal(t.get("url"), f"DefinedTerm {t.get('name')!r}.url", anchors=True)
                 got.append((urlparse(t.get("url", "")).fragment, t.get("name"), t.get("description")))
-            if got != f.terms():
-                err(f"DefinedTermSet ({len(got)} terms) differs from the visible glossary ({len(f.terms())})")
+            if got != v.terms:
+                err(f"DefinedTermSet ({len(got)} terms) differs from the visible glossary ({len(v.terms)})")
         if "Blog" in types:
             got = [(p.get("headline"), p.get("url")) for p in n.get("blogPost", [])]
-            if got != f.cards():
-                err(f"Blog.blogPost ({len(got)}) differs from the visible post cards ({len(f.cards())})")
+            if got != [(h, abs_url(rel, u or "")) for h, u in v.cards]:
+                err(f"Blog.blogPost ({len(got)}) differs from the visible post cards ({len(v.cards)})")
             posts = {url_of(p) for p in pages if page_type(p) == "post"}
             if {u for _, u in got} != posts:
                 err("Blog.blogPost does not list every post")
         if types == {"Course"} and pt == "track_index":
             d = rel.rsplit("/", 1)[0] + "/"
-            kids = f.child_pages(pages, lambda t: t.startswith(d) and page_type(t) in ("lesson", "tutorial"))
+            kids = kids_of(rel, lambda t: t.startswith(d) and page_type(t) in ("lesson", "tutorial"))
             if [(p.get("name"), p.get("url")) for p in n.get("hasPart", [])] != \
-                    [(facts[k].h1, url_of(k)) for k in kids]:
+                    [(vis[k].h1, url_of(k)) for k in kids]:
                 err("Course.hasPart differs from the lessons the track page lists")
         if types == {"Course"} and pt == "academy_index":
-            linked = {url_of(t) for t in f.child_pages(pages, lambda t: page_type(t) == "track_index")}
+            linked = {url_of(t) for t in kids_of(rel, lambda t: page_type(t) == "track_index")}
             for p in n.get("hasPart", []):
                 if p.get("url") not in linked:
                     err(f"Course.hasPart {p.get('url')} is not linked from the academy page")
@@ -1136,20 +1369,23 @@ def check_jsonld(rel: str, text: str, facts: dict, pages: set[str], texts: dict)
                 err("BreadcrumbList positions are not 1..n")
             if len(items) < 2:
                 err("BreadcrumbList has fewer than 2 items")
-            want = breadcrumb_ld(f)
-            if want is None:
+            want = [(n_, norm_url(urljoin(url, html.unescape(h))) if h is not None else url) for n_, h in v.crumbs]
+            if want and want[0][1] != BASE:
+                want.insert(0, ("Home", BASE))
+            if not v.crumbs:
                 err("BreadcrumbList but no visible .breadcrumb on the page")
-            elif [(i.get("name"), i.get("item")) for i in items] != \
-                    [(i["name"], i["item"]) for i in want["itemListElement"]]:
+            elif [(i.get("name"), i.get("item")) for i in items] != want:
                 err("BreadcrumbList differs from the visible breadcrumb")
 
     have = set(found)
     want = set(LD_EXPECTED.get(pt, set()))
     if rel == CFG["faq"]["path"]:
         want.add("FAQPage")
-    if f.quiz:
+    if pt == "track_index":
+        want.add("Course" if rel.split("/")[1] in CFG["academy"]["course_tracks"] else "CollectionPage")
+    if vquiz:
         want.add("Quiz")
-    if f.crumbs:
+    if v.crumbs:
         want.add("BreadcrumbList")
     for t in sorted(want - have):
         err(f"missing {t} for a {pt} page")
@@ -1218,8 +1454,9 @@ def cmd_check(args) -> int:
     warns: list[str] = []
     pages, gen, facts = render()
     ld_types_seen: dict[str, int] = {}
+    vis = {rel: Visible(rel, text) for rel, text in pages.items()}
     for rel, text in pages.items():
-        e, found = check_jsonld(rel, text, facts, set(pages), pages)
+        e, found = check_jsonld(rel, text, vis, set(pages), pages)
         errors += e
         for t in found:
             ld_types_seen[t] = ld_types_seen.get(t, 0) + 1
