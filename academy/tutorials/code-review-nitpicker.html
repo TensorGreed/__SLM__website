@@ -123,32 +123,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why does the code-review eval pack lean on LLM-judge as the primary gate instead of F1?",
-          "text": "Why does the code-review eval pack lean on LLM-judge as the primary gate instead of F1?",
+          "name": "Why does the code-review rule set lean on an LLM-judge pass rate rather than token F1 as its main gate?",
+          "text": "Why does the code-review rule set lean on an LLM-judge pass rate rather than token F1 as its main gate?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "F1 is too slow to compute"
+              "text": "Token F1 can't be computed on diffs because they mix code and prose"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "F1 isn't a real metric"
+              "text": "A judge is cheaper to run than token F1 on long reviews"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The platform doesn't support F1 for code-review"
+              "text": "BrewSLM only computes F1 for classification projects, not for text output"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Two valid reviews of the same diff use different words, so token-overlap metrics penalise correct paraphrases — the judge scores theme overlap instead",
+            "text": "Valid reviews of one diff use different words, so token overlap misses them",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Code review is a many-valid-answers task. Two reviewers writing valid critiques of the same diff will say different things in different words. F1 over tokens would penalise the paraphrase even when the critique theme is identical. The LLM judge scores whether the candidate review hits the same theme as the reference, regardless of wording."
+              "text": "Code review is a many-valid-answers task: two good critiques of the same diff share few tokens, so F1 punishes a correct paraphrase. BrewSLM's judge scores each answer 1–5 on a generic correct-and-complete rubric and counts a row as passing at 4 or above; it does not score 'theme' or 'voice' (that would be a custom rubric). Note the judge rule only counts after you adopt the scaffold with Use scaffold and run an LLM Judge eval yourself; the automatic lift check scores exact match."
             }
           }
         },
@@ -162,26 +162,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Random splits are slower"
+              "text": "Random splits aren't reproducible, so scores drift between runs"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Repos are easier to count than rows"
+              "text": "Grouped splits put more rows in train, so the model sees more styles"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "BrewSLM doesn't support random splits"
+              "text": "Each repository uses its own tokenizer settings, so rows can't be mixed"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Reviews by the same engineer are stylistically correlated; random splits leak voice between train and test, inflating eval scores 10-15 points without real generalisation",
+            "text": "Same-author reviews share a voice, so random splits leak it into test",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Same-author rows in train + test let the model 'recognise' the reviewer's voice rather than generalise the critique reasoning. The leakage inflates F1 and LLM-judge scores at eval time but the gap shows up in production as reviews that don't sound like anyone on your team. Key-based splits force the model to generalise across reviewers / codebases."
+              "text": "Reviews by one engineer are stylistically correlated. With a random split the model can 'recognise' a reviewer's voice in test instead of generalising the critique, which inflates eval scores and then disappoints in production. Splitting with Disjoint By Field on author or repository forces generalisation across reviewers and codebases."
             }
           }
         },
@@ -189,32 +189,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What does draft-suggestion deployment mode give you that blocking-review mode doesn't?",
-          "text": "What does draft-suggestion deployment mode give you that blocking-review mode doesn't?",
+          "name": "Why start a review bot in a reviewer-only stage, where a human sees its comments before anything reaches the PR, rather than letting it post blocking reviews on day one?",
+          "text": "Why start a review bot in a reviewer-only stage, where a human sees its comments before anything reaches the PR, rather than letting it post blocking reviews on day one?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Faster inference"
+              "text": "GitHub hides suggested changes from the PR author until a reviewer approves them"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Better F1 scores"
+              "text": "Blocking reviews need a bigger model and a longer context window"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Larger context windows"
+              "text": "Comments in that stage don't count as reviews, so the bot runs faster"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Zero false-positive cost — bad suggestions get dismissed by the reviewer and never reach the PR author; the model can be wrong without slowing the team down",
+            "text": "Low blast radius: a human decides before any comment can block the merge",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Draft-suggestion mode surfaces model comments only to the human reviewer, who accepts or dismisses each one before anything is posted. A bad suggestion that gets dismissed is invisible to the PR author — zero blast radius. Blocking-review mode posts comments equivalent to a human review and slows the PR until they're addressed; the cost of a bad blocking comment is high. Start with draft-suggestion; earn the right to block."
+              "text": "The point is containment: a wrong comment costs the reviewer a few seconds and never holds up the merge, so you can measure the bot's hit rate before giving it more power. The tempting idea that GitHub keeps suggested changes invisible to the author is false: suggestions live on review comments the author can see and apply. A real reviewer-only stage posts somewhere the author doesn't see, such as a private channel or a check-run summary for reviewers."
             }
           }
         },
@@ -222,32 +222,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What does a 'hard negative' look like for code-review (compared to a hard negative for SQL-injection classification)?",
-          "text": "What does a 'hard negative' look like for code-review (compared to a hard negative for SQL-injection classification)?",
+          "name": "What does a 'hard negative' look like for code review (compared to a hard negative for SQL-injection classification)?",
+          "text": "What does a 'hard negative' look like for code review (compared to a hard negative for SQL-injection classification)?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "A diff with no changes"
+              "text": "A diff with no changed lines, paired with an empty review"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "A diff in a language the model has never seen"
+              "text": "A diff in a programming language the base model never saw in pretraining"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Two diffs with identical line numbers"
+              "text": "A correct review reworded so it shares few words with the reference"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "An LGTM review paired with a diff that has a real issue — or a review that flags trivial style nits while missing the actual bug in the diff",
+            "text": "An LGTM on a diff with a real bug, or a nit-only review that misses it",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "For code-review, hard negatives are the failure modes you want the model to avoid emitting: empty-praise reviews on diffs that needed real feedback, and pedantic style-nit reviews that miss the actual bug. The code_review_hard_negatives playbook generates both. Compare to SQL-injection classification where hard negatives are benign queries that LOOK injection-shaped — the shape of 'hard negative' depends on the task."
+              "text": "For code review, hard negatives are the outputs you want the model never to emit: empty praise on a diff that needed feedback, and style nits that miss the actual bug. The code_review_hard_negatives playbook generates both. A reworded correct review is a paraphrase positive, not a negative. For SQL-injection classification, hard negatives are benign inputs that look injection-shaped — what counts as 'hard negative' depends on the task."
             }
           }
         }
@@ -676,89 +676,89 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "Why does the code-review eval pack lean on LLM-judge as the primary gate instead of F1?",
-    "options": [
-      "F1 is too slow to compute",
-      "Two valid reviews of the same diff use different words, so token-overlap metrics penalise correct paraphrases — the judge scores theme overlap instead",
-      "F1 isn't a real metric",
-      "The platform doesn't support F1 for code-review"
-    ],
-    "answer": 1,
-    "explanation": "Code review is a many-valid-answers task. Two reviewers writing valid critiques of the same diff will say different things in different words. F1 over tokens would penalise the paraphrase even when the critique theme is identical. The LLM judge scores whether the candidate review hits the same theme as the reference, regardless of wording."
-  },
-  {
-    "q": "Why does the code-review recipe recommend splitting train/val/test by repository or by author rather than randomly?",
-    "options": [
-      "Random splits are slower",
-      "Reviews by the same engineer are stylistically correlated; random splits leak voice between train and test, inflating eval scores 10-15 points without real generalisation",
-      "Repos are easier to count than rows",
-      "BrewSLM doesn't support random splits"
-    ],
-    "answer": 1,
-    "explanation": "Same-author rows in train + test let the model 'recognise' the reviewer's voice rather than generalise the critique reasoning. The leakage inflates F1 and LLM-judge scores at eval time but the gap shows up in production as reviews that don't sound like anyone on your team. Key-based splits force the model to generalise across reviewers / codebases."
-  },
-  {
-    "q": "What does draft-suggestion deployment mode give you that blocking-review mode doesn't?",
-    "options": [
-      "Faster inference",
-      "Zero false-positive cost — bad suggestions get dismissed by the reviewer and never reach the PR author; the model can be wrong without slowing the team down",
-      "Better F1 scores",
-      "Larger context windows"
-    ],
-    "answer": 1,
-    "explanation": "Draft-suggestion mode surfaces model comments only to the human reviewer, who accepts or dismisses each one before anything is posted. A bad suggestion that gets dismissed is invisible to the PR author — zero blast radius. Blocking-review mode posts comments equivalent to a human review and slows the PR until they're addressed; the cost of a bad blocking comment is high. Start with draft-suggestion; earn the right to block."
-  },
-  {
-    "q": "What does a 'hard negative' look like for code-review (compared to a hard negative for SQL-injection classification)?",
-    "options": [
-      "A diff with no changes",
-      "An LGTM review paired with a diff that has a real issue — or a review that flags trivial style nits while missing the actual bug in the diff",
-      "A diff in a language the model has never seen",
-      "Two diffs with identical line numbers"
-    ],
-    "answer": 1,
-    "explanation": "For code-review, hard negatives are the failure modes you want the model to avoid emitting: empty-praise reviews on diffs that needed real feedback, and pedantic style-nit reviews that miss the actual bug. The code_review_hard_negatives playbook generates both. Compare to SQL-injection classification where hard negatives are benign queries that LOOK injection-shaped — the shape of 'hard negative' depends on the task."
-  }
-]
+            [
+              {
+                "q": "Why does the code-review rule set lean on an LLM-judge pass rate rather than token F1 as its main gate?",
+                "options": [
+                  "Token F1 can't be computed on diffs because they mix code and prose",
+                  "Valid reviews of one diff use different words, so token overlap misses them",
+                  "A judge is cheaper to run than token F1 on long reviews",
+                  "BrewSLM only computes F1 for classification projects, not for text output"
+                ],
+                "answer": 1,
+                "explanation": "Code review is a many-valid-answers task: two good critiques of the same diff share few tokens, so F1 punishes a correct paraphrase. BrewSLM's judge scores each answer 1–5 on a generic correct-and-complete rubric and counts a row as passing at 4 or above; it does not score 'theme' or 'voice' (that would be a custom rubric). Note the judge rule only counts after you adopt the scaffold with Use scaffold and run an LLM Judge eval yourself; the automatic lift check scores exact match."
+              },
+              {
+                "q": "Why does the code-review recipe recommend splitting train/val/test by repository or by author rather than randomly?",
+                "options": [
+                  "Random splits aren't reproducible, so scores drift between runs",
+                  "Same-author reviews share a voice, so random splits leak it into test",
+                  "Grouped splits put more rows in train, so the model sees more styles",
+                  "Each repository uses its own tokenizer settings, so rows can't be mixed"
+                ],
+                "answer": 1,
+                "explanation": "Reviews by one engineer are stylistically correlated. With a random split the model can 'recognise' a reviewer's voice in test instead of generalising the critique, which inflates eval scores and then disappoints in production. Splitting with Disjoint By Field on author or repository forces generalisation across reviewers and codebases."
+              },
+              {
+                "q": "Why start a review bot in a reviewer-only stage, where a human sees its comments before anything reaches the PR, rather than letting it post blocking reviews on day one?",
+                "options": [
+                  "GitHub hides suggested changes from the PR author until a reviewer approves them",
+                  "Low blast radius: a human decides before any comment can block the merge",
+                  "Blocking reviews need a bigger model and a longer context window",
+                  "Comments in that stage don't count as reviews, so the bot runs faster"
+                ],
+                "answer": 1,
+                "explanation": "The point is containment: a wrong comment costs the reviewer a few seconds and never holds up the merge, so you can measure the bot's hit rate before giving it more power. The tempting idea that GitHub keeps suggested changes invisible to the author is false: suggestions live on review comments the author can see and apply. A real reviewer-only stage posts somewhere the author doesn't see, such as a private channel or a check-run summary for reviewers."
+              },
+              {
+                "q": "What does a 'hard negative' look like for code review (compared to a hard negative for SQL-injection classification)?",
+                "options": [
+                  "A diff with no changed lines, paired with an empty review",
+                  "An LGTM on a diff with a real bug, or a nit-only review that misses it",
+                  "A diff in a programming language the base model never saw in pretraining",
+                  "A correct review reworded so it shares few words with the reference"
+                ],
+                "answer": 1,
+                "explanation": "For code review, hard negatives are the outputs you want the model never to emit: empty praise on a diff that needed feedback, and style nits that miss the actual bug. The code_review_hard_negatives playbook generates both. A reworded correct review is a paraphrase positive, not a negative. For SQL-injection classification, hard negatives are benign inputs that look injection-shaped — what counts as 'hard negative' depends on the task."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">Why does the code-review eval pack lean on LLM-judge as the primary gate instead of F1?</p>
+              <li><p class="quiz__q-text">Why does the code-review rule set lean on an LLM-judge pass rate rather than token F1 as its main gate?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>F1 is too slow to compute</li>
-                  <li>Two valid reviews of the same diff use different words, so token-overlap metrics penalise correct paraphrases — the judge scores theme overlap instead</li>
-                  <li>F1 isn't a real metric</li>
-                  <li>The platform doesn't support F1 for code-review</li>
+                  <li>Token F1 can't be computed on diffs because they mix code and prose</li>
+                  <li>Valid reviews of one diff use different words, so token overlap misses them</li>
+                  <li>A judge is cheaper to run than token F1 on long reviews</li>
+                  <li>BrewSLM only computes F1 for classification projects, not for text output</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Two valid reviews of the same diff use different words, so token-overlap metrics penalise correct paraphrases — the judge scores theme overlap instead</strong> Code review is a many-valid-answers task. Two reviewers writing valid critiques of the same diff will say different things in different words. F1 over tokens would penalise the paraphrase even when the critique theme is identical. The LLM judge scores whether the candidate review hits the same theme as the reference, regardless of wording.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Valid reviews of one diff use different words, so token overlap misses them</strong> Code review is a many-valid-answers task: two good critiques of the same diff share few tokens, so F1 punishes a correct paraphrase. BrewSLM's judge scores each answer 1–5 on a generic correct-and-complete rubric and counts a row as passing at 4 or above; it does not score 'theme' or 'voice' (that would be a custom rubric). Note the judge rule only counts after you adopt the scaffold with Use scaffold and run an LLM Judge eval yourself; the automatic lift check scores exact match.</p></details></li>
               <li><p class="quiz__q-text">Why does the code-review recipe recommend splitting train/val/test by repository or by author rather than randomly?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Random splits are slower</li>
-                  <li>Reviews by the same engineer are stylistically correlated; random splits leak voice between train and test, inflating eval scores 10-15 points without real generalisation</li>
-                  <li>Repos are easier to count than rows</li>
-                  <li>BrewSLM doesn't support random splits</li>
+                  <li>Random splits aren't reproducible, so scores drift between runs</li>
+                  <li>Same-author reviews share a voice, so random splits leak it into test</li>
+                  <li>Grouped splits put more rows in train, so the model sees more styles</li>
+                  <li>Each repository uses its own tokenizer settings, so rows can't be mixed</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Reviews by the same engineer are stylistically correlated; random splits leak voice between train and test, inflating eval scores 10-15 points without real generalisation</strong> Same-author rows in train + test let the model 'recognise' the reviewer's voice rather than generalise the critique reasoning. The leakage inflates F1 and LLM-judge scores at eval time but the gap shows up in production as reviews that don't sound like anyone on your team. Key-based splits force the model to generalise across reviewers / codebases.</p></details></li>
-              <li><p class="quiz__q-text">What does draft-suggestion deployment mode give you that blocking-review mode doesn't?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Same-author reviews share a voice, so random splits leak it into test</strong> Reviews by one engineer are stylistically correlated. With a random split the model can 'recognise' a reviewer's voice in test instead of generalising the critique, which inflates eval scores and then disappoints in production. Splitting with Disjoint By Field on author or repository forces generalisation across reviewers and codebases.</p></details></li>
+              <li><p class="quiz__q-text">Why start a review bot in a reviewer-only stage, where a human sees its comments before anything reaches the PR, rather than letting it post blocking reviews on day one?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Faster inference</li>
-                  <li>Zero false-positive cost — bad suggestions get dismissed by the reviewer and never reach the PR author; the model can be wrong without slowing the team down</li>
-                  <li>Better F1 scores</li>
-                  <li>Larger context windows</li>
+                  <li>GitHub hides suggested changes from the PR author until a reviewer approves them</li>
+                  <li>Low blast radius: a human decides before any comment can block the merge</li>
+                  <li>Blocking reviews need a bigger model and a longer context window</li>
+                  <li>Comments in that stage don't count as reviews, so the bot runs faster</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Zero false-positive cost — bad suggestions get dismissed by the reviewer and never reach the PR author; the model can be wrong without slowing the team down</strong> Draft-suggestion mode surfaces model comments only to the human reviewer, who accepts or dismisses each one before anything is posted. A bad suggestion that gets dismissed is invisible to the PR author — zero blast radius. Blocking-review mode posts comments equivalent to a human review and slows the PR until they're addressed; the cost of a bad blocking comment is high. Start with draft-suggestion; earn the right to block.</p></details></li>
-              <li><p class="quiz__q-text">What does a 'hard negative' look like for code-review (compared to a hard negative for SQL-injection classification)?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Low blast radius: a human decides before any comment can block the merge</strong> The point is containment: a wrong comment costs the reviewer a few seconds and never holds up the merge, so you can measure the bot's hit rate before giving it more power. The tempting idea that GitHub keeps suggested changes invisible to the author is false: suggestions live on review comments the author can see and apply. A real reviewer-only stage posts somewhere the author doesn't see, such as a private channel or a check-run summary for reviewers.</p></details></li>
+              <li><p class="quiz__q-text">What does a 'hard negative' look like for code review (compared to a hard negative for SQL-injection classification)?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A diff with no changes</li>
-                  <li>An LGTM review paired with a diff that has a real issue — or a review that flags trivial style nits while missing the actual bug in the diff</li>
-                  <li>A diff in a language the model has never seen</li>
-                  <li>Two diffs with identical line numbers</li>
+                  <li>A diff with no changed lines, paired with an empty review</li>
+                  <li>An LGTM on a diff with a real bug, or a nit-only review that misses it</li>
+                  <li>A diff in a programming language the base model never saw in pretraining</li>
+                  <li>A correct review reworded so it shares few words with the reference</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. An LGTM review paired with a diff that has a real issue — or a review that flags trivial style nits while missing the actual bug in the diff</strong> For code-review, hard negatives are the failure modes you want the model to avoid emitting: empty-praise reviews on diffs that needed real feedback, and pedantic style-nit reviews that miss the actual bug. The code_review_hard_negatives playbook generates both. Compare to SQL-injection classification where hard negatives are benign queries that LOOK injection-shaped — the shape of 'hard negative' depends on the task.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. An LGTM on a diff with a real bug, or a nit-only review that misses it</strong> For code review, hard negatives are the outputs you want the model never to emit: empty praise on a diff that needed feedback, and style nits that miss the actual bug. The code_review_hard_negatives playbook generates both. A reworded correct review is a paraphrase positive, not a negative. For SQL-injection classification, hard negatives are benign inputs that look injection-shaped — what counts as 'hard negative' depends on the task.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

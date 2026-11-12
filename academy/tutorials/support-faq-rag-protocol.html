@@ -128,26 +128,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "A footnote pointing the human reader to a source"
+              "text": "A footnote the UI renders as a clickable link for the reader"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The chunk's hash in the BM25 index"
+              "text": "The chunk's hash in the BM25 index, copied into the answer"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "A placeholder the deploy script replaces at runtime"
+              "text": "A placeholder the serving layer swaps for a source URL"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "The training signal the model learns to emit when grounded in a retrieved chunk",
+            "text": "A marker the model learns to emit for the chunk it used",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The marker is the discipline signal — the model is trained to emit it whenever its answer is grounded in a specific chunk, so downstream consumers can verify the citation."
+              "text": "The marker is a trained behaviour: the model learns to emit it when its answer rests on a specific retrieved chunk, so downstream code can check the citation. Note that the discipline pack's citation_rate does not look for the marker; it measures token grounding against the retrieved context."
             }
           }
         },
@@ -161,26 +161,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "It's a bigger model"
+              "text": "rag-protocol fine-tunes a bigger base model with more capacity"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It uses larger LoRA rank"
+              "text": "rag-protocol trains with a larger LoRA rank by default"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It runs faster at inference"
+              "text": "rag-protocol answers faster because retrieval replaces generation"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Facts live in the retrieval index, so the corpus can update without retraining",
+            "text": "Facts live in the index, so the FAQ updates without retraining",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "rag-protocol trains the protocol once and lets the index supply the facts; qa-sft bakes facts into the weights and requires retraining when the corpus changes."
+              "text": "rag-protocol trains the protocol once (cite, refuse, hold format) and lets the index supply the facts; a monthly FAQ change is a re-index. qa-sft bakes facts into the weights and needs retraining whenever the corpus changes."
             }
           }
         },
@@ -188,32 +188,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "The discipline pack scores appropriate_refusal_rate at 0.05 after training. What does this mean?",
-          "text": "The discipline pack scores appropriate_refusal_rate at 0.05 after training. What does this mean?",
+          "name": "Your answer key has 60 rows, 6 of them refusals. After training, appropriate_refusal_rate is 0.05. What is the model most likely doing?",
+          "text": "Your answer key has 60 rows, 6 of them refusals. After training, appropriate_refusal_rate is 0.05. What is the model most likely doing?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "The model is refusing on every question, even ones with sufficient context"
-            },
-            {
-              "@type": "Answer",
-              "position": 1,
-              "text": "The model is answering on every question, even ones with insufficient context"
+              "text": "Answering every question, including the six it should refuse"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The model is well-calibrated and refusing only when appropriate"
+              "text": "Refusing exactly when it should; 0.05 is the share of refusal rows"
+            },
+            {
+              "@type": "Answer",
+              "position": 3,
+              "text": "Either blanket behaviour — refusing all or answering all both score 0"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 3,
-            "text": "It could be either — the metric rewards matching the gold's refusal behaviour, so a blanket-refuser AND a blanket-answerer both score 0",
+            "position": 1,
+            "text": "Refusing many of the questions it should answer",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The metric is the rate at which the model's refusal/answer behaviour matches the gold's. Both failure modes score low. Look at gold vs prediction labels to disambiguate."
+              "text": "The metric is the share of rows where the model's refuse/answer choice matches the answer key's. A blanket answerer matches the 54 answerable rows and scores 0.90 (it would even pass a 0.80 rule); a blanket refuser matches the 6 refusal rows and scores 0.10. A score of 0.05 means the choice is flipped on almost every row, and since most rows are answerable, the model is refusing questions it should answer. Because the majority class dominates, also check refusal recall on the refusal rows (per-row rag_pred_is_refusal vs rag_ref_is_refusal)."
             }
           }
         },
@@ -221,32 +221,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "When the post-eval decision engine recommends reroute-to-RAG, what is it telling you?",
-          "text": "When the post-eval decision engine recommends reroute-to-RAG, what is it telling you?",
+          "name": "On this rag-protocol project, Results shows 'This task looks more like a RAG fit', but clicking 'Switch to RAG (keeps your answer key)' fails. What should you do?",
+          "text": "On this rag-protocol project, Results shows 'This task looks more like a RAG fit', but clicking 'Switch to RAG (keeps your answer key)' fails. What should you do?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "The model needs more training"
+              "text": "Wait for the running training Job to finish, then retry the switch"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The base model is too small"
+              "text": "Re-select rag-protocol under Train → Task so the clone sees the recipe"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The gold set is mislabeled"
+              "text": "Delete the trained run so the clone can start from the base model"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "The failure is knowledge-bound — base model + retrieval may outperform more fine-tuning",
+            "text": "Run an Auto-RAG comparison; the switch only clones qa-sft projects",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "When failures correlate with retrieval-shape signals (hallucination, low context recall), the platform recommends the retrieval-first architecture instead of more training cycles."
+              "text": "The one-click switch clones the project into a RAG-first sibling and refuses any source recipe other than qa-sft. On a rag-protocol project, compare the base model plus retrieval against your fine-tune with an Auto-RAG comparison instead. The card itself fires on a low pass rate (below 0.5) plus retrieval-shaped signals such as very diverse answers in the answer key."
             }
           }
         }
@@ -638,52 +638,52 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "What does the citation marker [#1] in a rag-protocol answer represent?",
-    "options": [
-      "A footnote pointing the human reader to a source",
-      "The training signal the model learns to emit when grounded in a retrieved chunk",
-      "The chunk's hash in the BM25 index",
-      "A placeholder the deploy script replaces at runtime"
-    ],
-    "answer": 1,
-    "explanation": "The marker is the discipline signal — the model is trained to emit it whenever its answer is grounded in a specific chunk, so downstream consumers can verify the citation."
-  },
-  {
-    "q": "Why does the rag-protocol recipe outperform qa-sft for an ecommerce FAQ that updates monthly?",
-    "options": [
-      "It's a bigger model",
-      "Facts live in the retrieval index, so the corpus can update without retraining",
-      "It uses larger LoRA rank",
-      "It runs faster at inference"
-    ],
-    "answer": 1,
-    "explanation": "rag-protocol trains the protocol once and lets the index supply the facts; qa-sft bakes facts into the weights and requires retraining when the corpus changes."
-  },
-  {
-    "q": "The discipline pack scores appropriate_refusal_rate at 0.05 after training. What does this mean?",
-    "options": [
-      "The model is refusing on every question, even ones with sufficient context",
-      "The model is answering on every question, even ones with insufficient context",
-      "The model is well-calibrated and refusing only when appropriate",
-      "It could be either — the metric rewards matching the gold's refusal behaviour, so a blanket-refuser AND a blanket-answerer both score 0"
-    ],
-    "answer": 3,
-    "explanation": "The metric is the rate at which the model's refusal/answer behaviour matches the gold's. Both failure modes score low. Look at gold vs prediction labels to disambiguate."
-  },
-  {
-    "q": "When the post-eval decision engine recommends reroute-to-RAG, what is it telling you?",
-    "options": [
-      "The model needs more training",
-      "The failure is knowledge-bound — base model + retrieval may outperform more fine-tuning",
-      "The base model is too small",
-      "The gold set is mislabeled"
-    ],
-    "answer": 1,
-    "explanation": "When failures correlate with retrieval-shape signals (hallucination, low context recall), the platform recommends the retrieval-first architecture instead of more training cycles."
-  }
-]
+            [
+              {
+                "q": "What does the citation marker [#1] in a rag-protocol answer represent?",
+                "options": [
+                  "A footnote the UI renders as a clickable link for the reader",
+                  "A marker the model learns to emit for the chunk it used",
+                  "The chunk's hash in the BM25 index, copied into the answer",
+                  "A placeholder the serving layer swaps for a source URL"
+                ],
+                "answer": 1,
+                "explanation": "The marker is a trained behaviour: the model learns to emit it when its answer rests on a specific retrieved chunk, so downstream code can check the citation. Note that the discipline pack's citation_rate does not look for the marker; it measures token grounding against the retrieved context."
+              },
+              {
+                "q": "Why does the rag-protocol recipe outperform qa-sft for an ecommerce FAQ that updates monthly?",
+                "options": [
+                  "rag-protocol fine-tunes a bigger base model with more capacity",
+                  "Facts live in the index, so the FAQ updates without retraining",
+                  "rag-protocol trains with a larger LoRA rank by default",
+                  "rag-protocol answers faster because retrieval replaces generation"
+                ],
+                "answer": 1,
+                "explanation": "rag-protocol trains the protocol once (cite, refuse, hold format) and lets the index supply the facts; a monthly FAQ change is a re-index. qa-sft bakes facts into the weights and needs retraining whenever the corpus changes."
+              },
+              {
+                "q": "Your answer key has 60 rows, 6 of them refusals. After training, appropriate_refusal_rate is 0.05. What is the model most likely doing?",
+                "options": [
+                  "Answering every question, including the six it should refuse",
+                  "Refusing many of the questions it should answer",
+                  "Refusing exactly when it should; 0.05 is the share of refusal rows",
+                  "Either blanket behaviour — refusing all or answering all both score 0"
+                ],
+                "answer": 1,
+                "explanation": "The metric is the share of rows where the model's refuse/answer choice matches the answer key's. A blanket answerer matches the 54 answerable rows and scores 0.90 (it would even pass a 0.80 rule); a blanket refuser matches the 6 refusal rows and scores 0.10. A score of 0.05 means the choice is flipped on almost every row, and since most rows are answerable, the model is refusing questions it should answer. Because the majority class dominates, also check refusal recall on the refusal rows (per-row rag_pred_is_refusal vs rag_ref_is_refusal)."
+              },
+              {
+                "q": "On this rag-protocol project, Results shows 'This task looks more like a RAG fit', but clicking 'Switch to RAG (keeps your answer key)' fails. What should you do?",
+                "options": [
+                  "Wait for the running training Job to finish, then retry the switch",
+                  "Run an Auto-RAG comparison; the switch only clones qa-sft projects",
+                  "Re-select rag-protocol under Train → Task so the clone sees the recipe",
+                  "Delete the trained run so the clone can start from the base model"
+                ],
+                "answer": 1,
+                "explanation": "The one-click switch clones the project into a RAG-first sibling and refuses any source recipe other than qa-sft. On a rag-protocol project, compare the base model plus retrieval against your fine-tune with an Auto-RAG comparison instead. The card itself fires on a low pass rate (below 0.5) plus retrieval-shaped signals such as very diverse answers in the answer key."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -691,36 +691,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does the citation marker [#1] in a rag-protocol answer represent?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A footnote pointing the human reader to a source</li>
-                  <li>The training signal the model learns to emit when grounded in a retrieved chunk</li>
-                  <li>The chunk's hash in the BM25 index</li>
-                  <li>A placeholder the deploy script replaces at runtime</li>
+                  <li>A footnote the UI renders as a clickable link for the reader</li>
+                  <li>A marker the model learns to emit for the chunk it used</li>
+                  <li>The chunk's hash in the BM25 index, copied into the answer</li>
+                  <li>A placeholder the serving layer swaps for a source URL</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The training signal the model learns to emit when grounded in a retrieved chunk</strong> The marker is the discipline signal — the model is trained to emit it whenever its answer is grounded in a specific chunk, so downstream consumers can verify the citation.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A marker the model learns to emit for the chunk it used</strong> The marker is a trained behaviour: the model learns to emit it when its answer rests on a specific retrieved chunk, so downstream code can check the citation. Note that the discipline pack's citation_rate does not look for the marker; it measures token grounding against the retrieved context.</p></details></li>
               <li><p class="quiz__q-text">Why does the rag-protocol recipe outperform qa-sft for an ecommerce FAQ that updates monthly?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It's a bigger model</li>
-                  <li>Facts live in the retrieval index, so the corpus can update without retraining</li>
-                  <li>It uses larger LoRA rank</li>
-                  <li>It runs faster at inference</li>
+                  <li>rag-protocol fine-tunes a bigger base model with more capacity</li>
+                  <li>Facts live in the index, so the FAQ updates without retraining</li>
+                  <li>rag-protocol trains with a larger LoRA rank by default</li>
+                  <li>rag-protocol answers faster because retrieval replaces generation</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Facts live in the retrieval index, so the corpus can update without retraining</strong> rag-protocol trains the protocol once and lets the index supply the facts; qa-sft bakes facts into the weights and requires retraining when the corpus changes.</p></details></li>
-              <li><p class="quiz__q-text">The discipline pack scores appropriate_refusal_rate at 0.05 after training. What does this mean?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Facts live in the index, so the FAQ updates without retraining</strong> rag-protocol trains the protocol once (cite, refuse, hold format) and lets the index supply the facts; a monthly FAQ change is a re-index. qa-sft bakes facts into the weights and needs retraining whenever the corpus changes.</p></details></li>
+              <li><p class="quiz__q-text">Your answer key has 60 rows, 6 of them refusals. After training, appropriate_refusal_rate is 0.05. What is the model most likely doing?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The model is refusing on every question, even ones with sufficient context</li>
-                  <li>The model is answering on every question, even ones with insufficient context</li>
-                  <li>The model is well-calibrated and refusing only when appropriate</li>
-                  <li>It could be either — the metric rewards matching the gold's refusal behaviour, so a blanket-refuser AND a blanket-answerer both score 0</li>
+                  <li>Answering every question, including the six it should refuse</li>
+                  <li>Refusing many of the questions it should answer</li>
+                  <li>Refusing exactly when it should; 0.05 is the share of refusal rows</li>
+                  <li>Either blanket behaviour — refusing all or answering all both score 0</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. It could be either — the metric rewards matching the gold's refusal behaviour, so a blanket-refuser AND a blanket-answerer both score 0</strong> The metric is the rate at which the model's refusal/answer behaviour matches the gold's. Both failure modes score low. Look at gold vs prediction labels to disambiguate.</p></details></li>
-              <li><p class="quiz__q-text">When the post-eval decision engine recommends reroute-to-RAG, what is it telling you?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Refusing many of the questions it should answer</strong> The metric is the share of rows where the model's refuse/answer choice matches the answer key's. A blanket answerer matches the 54 answerable rows and scores 0.90 (it would even pass a 0.80 rule); a blanket refuser matches the 6 refusal rows and scores 0.10. A score of 0.05 means the choice is flipped on almost every row, and since most rows are answerable, the model is refusing questions it should answer. Because the majority class dominates, also check refusal recall on the refusal rows (per-row rag_pred_is_refusal vs rag_ref_is_refusal).</p></details></li>
+              <li><p class="quiz__q-text">On this rag-protocol project, Results shows 'This task looks more like a RAG fit', but clicking 'Switch to RAG (keeps your answer key)' fails. What should you do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The model needs more training</li>
-                  <li>The failure is knowledge-bound — base model + retrieval may outperform more fine-tuning</li>
-                  <li>The base model is too small</li>
-                  <li>The gold set is mislabeled</li>
+                  <li>Wait for the running training Job to finish, then retry the switch</li>
+                  <li>Run an Auto-RAG comparison; the switch only clones qa-sft projects</li>
+                  <li>Re-select rag-protocol under Train → Task so the clone sees the recipe</li>
+                  <li>Delete the trained run so the clone can start from the base model</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The failure is knowledge-bound — base model + retrieval may outperform more fine-tuning</strong> When failures correlate with retrieval-shape signals (hallucination, low context recall), the platform recommends the retrieval-first architecture instead of more training cycles.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Run an Auto-RAG comparison; the switch only clones qa-sft projects</strong> The one-click switch clones the project into a RAG-first sibling and refuses any source recipe other than qa-sft. On a rag-protocol project, compare the base model plus retrieval against your fine-tune with an Auto-RAG comparison instead. The card itself fires on a low pass rate (below 0.5) plus retrieval-shaped signals such as very diverse answers in the answer key.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

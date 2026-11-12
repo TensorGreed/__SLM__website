@@ -128,26 +128,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Always — qa-sft is simpler so it's the default"
+              "text": "Always — qa-sft is the simpler recipe, so it's the default for QA"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "When you need the model to cite its sources"
+              "text": "When every answer must cite the passage it came from"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "When your corpus updates weekly"
+              "text": "When the knowledge base changes weekly and retraining is cheap"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "When your corpus is small (under ~100 facts), the facts are stable (change less than once a month), and you don't need citations or refusal training",
+            "text": "Small, stable corpus; no citations or refusal training needed",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "qa-sft memorises facts into weights — that works when the corpus is small and stable. When facts change frequently, when you need citations, or when you need clean refusals on out-of-KB questions, rag-protocol is the right pick."
+              "text": "qa-sft trains the answers into the weights. That is workable for a small corpus that rarely changes, but fine-tuning is an inefficient, hallucination-prone way to add facts, so it does not scale to large or fast-moving knowledge. When facts change often, when you need citations, or when you need clean refusals on out-of-scope questions, rag-protocol is the better pick."
             }
           }
         },
@@ -155,32 +155,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why does the qa-sft eval pack require both exact_match AND LLM-judge gates?",
-          "text": "Why does the qa-sft eval pack require both exact_match AND LLM-judge gates?",
+          "name": "You picked the qa-sft task but never clicked Use scaffold under Results → Failures → Pass/fail rules. Which rule set does Results → Verdict score you against?",
+          "text": "You picked the qa-sft task but never clicked Use scaffold under Results → Failures → Pass/fail rules. Which rule set does Results → Verdict score you against?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Redundancy — both measure the same thing"
+              "text": "The qa-sft scaffold: exact match, F1 and LLM-judge all required"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Exact match is the only metric that matters; LLM-judge is decorative"
+              "text": "None — Verdict shows no rules until a scaffold has been saved"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The platform requires three required gates by policy"
+              "text": "The recipe's own pack, applied automatically when you pick the task"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "exact_match is too strict for natural-language answers; the LLM-judge gate catches semantic equivalence (\"Visit Settings → Security\" vs \"Go to Settings, then Security\") that exact_match misses",
+            "text": "evalpack.general.default, where the LLM-judge rule is optional",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "exact_match catches gross drift; LLM-judge catches semantic equivalence the string metric can't see. Together they give you the full picture — high exact_match + low LLM-judge means the model memorised verbatim but is wrong in context; low exact_match + high LLM-judge means the model paraphrased correctly."
+              "text": "Choosing a recipe or task does not switch the rule set. The scaffold (exact match ≥ 0.45, F1 ≥ 0.60, LLM-judge ≥ 0.75 required) is only a draft until you click Use scaffold. Until then Verdict falls back to evalpack.general.default: exact match and F1 required, LLM-judge and safety optional. The scaffold adds a required judge rule because exact match misses correct paraphrases ('Go to Settings, then Security')."
             }
           }
         },
@@ -188,32 +188,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "The post-eval decision engine recommends reroute-to-RAG on your qa-sft project. What does this mean and what happens if you accept?",
-          "text": "The post-eval decision engine recommends reroute-to-RAG on your qa-sft project. What does this mean and what happens if you accept?",
+          "name": "The post-eval decision engine shows 'This task looks more like a RAG fit' on your qa-sft project. What does it mean, and what happens if you click 'Switch to RAG (keeps your answer key)'?",
+          "text": "The post-eval decision engine shows 'This task looks more like a RAG fit' on your qa-sft project. What does it mean, and what happens if you click 'Switch to RAG (keeps your answer key)'?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "The model needs more training epochs"
+              "text": "Your run under-trained; the click restarts training with more epochs"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Your project is deleted and replaced"
+              "text": "The click converts this project in place to the rag-protocol recipe"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Training restarts with new hyperparameters"
+              "text": "The click deletes the fine-tuned run and serves the base model instead"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "The platform detected retrieval-shaped signals (low pass rate + high answer diversity); accepting clones your project as a RAG-first sibling with runtime_config.rag_first=True, carries your gold set forward, and builds a BM25 index — the original qa-sft project stays put for comparison",
+            "text": "Low pass rate plus retrieval-shaped signals; it clones a RAG-first sibling",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Reroute creates a sibling project (the original is preserved). The clone uses the base model + BM25 retrieval — no LoRA — and reuses your gold set. You compare both side-by-side and ship whichever wins."
+              "text": "The card appears when the pass rate is below 0.5 and a retrieval signal fires: the brief mentions retrieval, or the answer key's answers are very diverse (mean pairwise Jaccard below 0.20). Switching creates a new sibling project with rag_first on — the base model answering with retrieval over your answer key, no LoRA — and carries the answer key forward. The original qa-sft project is untouched, so you can compare both. The sibling is not the rag-protocol recipe."
             }
           }
         },
@@ -221,32 +221,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Your gold set contains the same question with three slightly-different canonical answers. What should you do?",
-          "text": "Your gold set contains the same question with three slightly-different canonical answers. What should you do?",
+          "name": "Your answer key contains the same question with three slightly different canonical answers. What should you do?",
+          "text": "Your answer key contains the same question with three slightly different canonical answers. What should you do?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Keep all three — more data is always better"
+              "text": "Keep all three — answer variety helps the model generalise"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Add a fourth canonical answer for balance"
+              "text": "Add a fourth phrasing so no single answer dominates"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Use the paraphrase playbook to generate more variants"
+              "text": "Run the paraphrase playbook to make more variants of each answer"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Pick one canonical version and drop the rest; training on three different answers to the same question teaches the model the question has a distribution of valid responses, which is noise for direct-answer QA",
+            "text": "Keep one canonical answer and drop the other two",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "qa-sft is a memorisation task. You want ONE canonical answer per question, and let the paraphrase playbook generate variation on the QUESTION side. Variation on the answer side is noise — the model learns to emit one of several acceptable answers rather than the canonical one."
+              "text": "qa-sft is a memorisation task: you want one canonical answer per question. Three different answers teach the model that the question has a spread of valid responses, which is noise for direct-answer QA and lowers exact match. Put the variation on the question side (the paraphrase playbook rewrites questions), not the answer side."
             }
           }
         }
@@ -645,52 +645,52 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "When should you pick qa-sft over rag-protocol for a question-answering project?",
-    "options": [
-      "Always — qa-sft is simpler so it's the default",
-      "When your corpus is small (under ~100 facts), the facts are stable (change less than once a month), and you don't need citations or refusal training",
-      "When you need the model to cite its sources",
-      "When your corpus updates weekly"
-    ],
-    "answer": 1,
-    "explanation": "qa-sft memorises facts into weights — that works when the corpus is small and stable. When facts change frequently, when you need citations, or when you need clean refusals on out-of-KB questions, rag-protocol is the right pick."
-  },
-  {
-    "q": "Why does the qa-sft eval pack require both exact_match AND LLM-judge gates?",
-    "options": [
-      "Redundancy — both measure the same thing",
-      "exact_match is too strict for natural-language answers; the LLM-judge gate catches semantic equivalence (\"Visit Settings → Security\" vs \"Go to Settings, then Security\") that exact_match misses",
-      "Exact match is the only metric that matters; LLM-judge is decorative",
-      "The platform requires three required gates by policy"
-    ],
-    "answer": 1,
-    "explanation": "exact_match catches gross drift; LLM-judge catches semantic equivalence the string metric can't see. Together they give you the full picture — high exact_match + low LLM-judge means the model memorised verbatim but is wrong in context; low exact_match + high LLM-judge means the model paraphrased correctly."
-  },
-  {
-    "q": "The post-eval decision engine recommends reroute-to-RAG on your qa-sft project. What does this mean and what happens if you accept?",
-    "options": [
-      "The model needs more training epochs",
-      "The platform detected retrieval-shaped signals (low pass rate + high answer diversity); accepting clones your project as a RAG-first sibling with runtime_config.rag_first=True, carries your gold set forward, and builds a BM25 index — the original qa-sft project stays put for comparison",
-      "Your project is deleted and replaced",
-      "Training restarts with new hyperparameters"
-    ],
-    "answer": 1,
-    "explanation": "Reroute creates a sibling project (the original is preserved). The clone uses the base model + BM25 retrieval — no LoRA — and reuses your gold set. You compare both side-by-side and ship whichever wins."
-  },
-  {
-    "q": "Your gold set contains the same question with three slightly-different canonical answers. What should you do?",
-    "options": [
-      "Keep all three — more data is always better",
-      "Pick one canonical version and drop the rest; training on three different answers to the same question teaches the model the question has a distribution of valid responses, which is noise for direct-answer QA",
-      "Add a fourth canonical answer for balance",
-      "Use the paraphrase playbook to generate more variants"
-    ],
-    "answer": 1,
-    "explanation": "qa-sft is a memorisation task. You want ONE canonical answer per question, and let the paraphrase playbook generate variation on the QUESTION side. Variation on the answer side is noise — the model learns to emit one of several acceptable answers rather than the canonical one."
-  }
-]
+            [
+              {
+                "q": "When should you pick qa-sft over rag-protocol for a question-answering project?",
+                "options": [
+                  "Always — qa-sft is the simpler recipe, so it's the default for QA",
+                  "Small, stable corpus; no citations or refusal training needed",
+                  "When every answer must cite the passage it came from",
+                  "When the knowledge base changes weekly and retraining is cheap"
+                ],
+                "answer": 1,
+                "explanation": "qa-sft trains the answers into the weights. That is workable for a small corpus that rarely changes, but fine-tuning is an inefficient, hallucination-prone way to add facts, so it does not scale to large or fast-moving knowledge. When facts change often, when you need citations, or when you need clean refusals on out-of-scope questions, rag-protocol is the better pick."
+              },
+              {
+                "q": "You picked the qa-sft task but never clicked Use scaffold under Results → Failures → Pass/fail rules. Which rule set does Results → Verdict score you against?",
+                "options": [
+                  "The qa-sft scaffold: exact match, F1 and LLM-judge all required",
+                  "evalpack.general.default, where the LLM-judge rule is optional",
+                  "None — Verdict shows no rules until a scaffold has been saved",
+                  "The recipe's own pack, applied automatically when you pick the task"
+                ],
+                "answer": 1,
+                "explanation": "Choosing a recipe or task does not switch the rule set. The scaffold (exact match ≥ 0.45, F1 ≥ 0.60, LLM-judge ≥ 0.75 required) is only a draft until you click Use scaffold. Until then Verdict falls back to evalpack.general.default: exact match and F1 required, LLM-judge and safety optional. The scaffold adds a required judge rule because exact match misses correct paraphrases ('Go to Settings, then Security')."
+              },
+              {
+                "q": "The post-eval decision engine shows 'This task looks more like a RAG fit' on your qa-sft project. What does it mean, and what happens if you click 'Switch to RAG (keeps your answer key)'?",
+                "options": [
+                  "Your run under-trained; the click restarts training with more epochs",
+                  "Low pass rate plus retrieval-shaped signals; it clones a RAG-first sibling",
+                  "The click converts this project in place to the rag-protocol recipe",
+                  "The click deletes the fine-tuned run and serves the base model instead"
+                ],
+                "answer": 1,
+                "explanation": "The card appears when the pass rate is below 0.5 and a retrieval signal fires: the brief mentions retrieval, or the answer key's answers are very diverse (mean pairwise Jaccard below 0.20). Switching creates a new sibling project with rag_first on — the base model answering with retrieval over your answer key, no LoRA — and carries the answer key forward. The original qa-sft project is untouched, so you can compare both. The sibling is not the rag-protocol recipe."
+              },
+              {
+                "q": "Your answer key contains the same question with three slightly different canonical answers. What should you do?",
+                "options": [
+                  "Keep all three — answer variety helps the model generalise",
+                  "Keep one canonical answer and drop the other two",
+                  "Add a fourth phrasing so no single answer dominates",
+                  "Run the paraphrase playbook to make more variants of each answer"
+                ],
+                "answer": 1,
+                "explanation": "qa-sft is a memorisation task: you want one canonical answer per question. Three different answers teach the model that the question has a spread of valid responses, which is noise for direct-answer QA and lowers exact match. Put the variation on the question side (the paraphrase playbook rewrites questions), not the answer side."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -698,36 +698,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">When should you pick qa-sft over rag-protocol for a question-answering project?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Always — qa-sft is simpler so it's the default</li>
-                  <li>When your corpus is small (under ~100 facts), the facts are stable (change less than once a month), and you don't need citations or refusal training</li>
-                  <li>When you need the model to cite its sources</li>
-                  <li>When your corpus updates weekly</li>
+                  <li>Always — qa-sft is the simpler recipe, so it's the default for QA</li>
+                  <li>Small, stable corpus; no citations or refusal training needed</li>
+                  <li>When every answer must cite the passage it came from</li>
+                  <li>When the knowledge base changes weekly and retraining is cheap</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. When your corpus is small (under ~100 facts), the facts are stable (change less than once a month), and you don't need citations or refusal training</strong> qa-sft memorises facts into weights — that works when the corpus is small and stable. When facts change frequently, when you need citations, or when you need clean refusals on out-of-KB questions, rag-protocol is the right pick.</p></details></li>
-              <li><p class="quiz__q-text">Why does the qa-sft eval pack require both exact_match AND LLM-judge gates?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Small, stable corpus; no citations or refusal training needed</strong> qa-sft trains the answers into the weights. That is workable for a small corpus that rarely changes, but fine-tuning is an inefficient, hallucination-prone way to add facts, so it does not scale to large or fast-moving knowledge. When facts change often, when you need citations, or when you need clean refusals on out-of-scope questions, rag-protocol is the better pick.</p></details></li>
+              <li><p class="quiz__q-text">You picked the qa-sft task but never clicked Use scaffold under Results → Failures → Pass/fail rules. Which rule set does Results → Verdict score you against?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Redundancy — both measure the same thing</li>
-                  <li>exact_match is too strict for natural-language answers; the LLM-judge gate catches semantic equivalence ("Visit Settings → Security" vs "Go to Settings, then Security") that exact_match misses</li>
-                  <li>Exact match is the only metric that matters; LLM-judge is decorative</li>
-                  <li>The platform requires three required gates by policy</li>
+                  <li>The qa-sft scaffold: exact match, F1 and LLM-judge all required</li>
+                  <li>evalpack.general.default, where the LLM-judge rule is optional</li>
+                  <li>None — Verdict shows no rules until a scaffold has been saved</li>
+                  <li>The recipe's own pack, applied automatically when you pick the task</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. exact_match is too strict for natural-language answers; the LLM-judge gate catches semantic equivalence ("Visit Settings → Security" vs "Go to Settings, then Security") that exact_match misses</strong> exact_match catches gross drift; LLM-judge catches semantic equivalence the string metric can't see. Together they give you the full picture — high exact_match + low LLM-judge means the model memorised verbatim but is wrong in context; low exact_match + high LLM-judge means the model paraphrased correctly.</p></details></li>
-              <li><p class="quiz__q-text">The post-eval decision engine recommends reroute-to-RAG on your qa-sft project. What does this mean and what happens if you accept?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. evalpack.general.default, where the LLM-judge rule is optional</strong> Choosing a recipe or task does not switch the rule set. The scaffold (exact match ≥ 0.45, F1 ≥ 0.60, LLM-judge ≥ 0.75 required) is only a draft until you click Use scaffold. Until then Verdict falls back to evalpack.general.default: exact match and F1 required, LLM-judge and safety optional. The scaffold adds a required judge rule because exact match misses correct paraphrases ('Go to Settings, then Security').</p></details></li>
+              <li><p class="quiz__q-text">The post-eval decision engine shows 'This task looks more like a RAG fit' on your qa-sft project. What does it mean, and what happens if you click 'Switch to RAG (keeps your answer key)'?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The model needs more training epochs</li>
-                  <li>The platform detected retrieval-shaped signals (low pass rate + high answer diversity); accepting clones your project as a RAG-first sibling with runtime_config.rag_first=True, carries your gold set forward, and builds a BM25 index — the original qa-sft project stays put for comparison</li>
-                  <li>Your project is deleted and replaced</li>
-                  <li>Training restarts with new hyperparameters</li>
+                  <li>Your run under-trained; the click restarts training with more epochs</li>
+                  <li>Low pass rate plus retrieval-shaped signals; it clones a RAG-first sibling</li>
+                  <li>The click converts this project in place to the rag-protocol recipe</li>
+                  <li>The click deletes the fine-tuned run and serves the base model instead</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The platform detected retrieval-shaped signals (low pass rate + high answer diversity); accepting clones your project as a RAG-first sibling with runtime_config.rag_first=True, carries your gold set forward, and builds a BM25 index — the original qa-sft project stays put for comparison</strong> Reroute creates a sibling project (the original is preserved). The clone uses the base model + BM25 retrieval — no LoRA — and reuses your gold set. You compare both side-by-side and ship whichever wins.</p></details></li>
-              <li><p class="quiz__q-text">Your gold set contains the same question with three slightly-different canonical answers. What should you do?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Low pass rate plus retrieval-shaped signals; it clones a RAG-first sibling</strong> The card appears when the pass rate is below 0.5 and a retrieval signal fires: the brief mentions retrieval, or the answer key's answers are very diverse (mean pairwise Jaccard below 0.20). Switching creates a new sibling project with rag_first on — the base model answering with retrieval over your answer key, no LoRA — and carries the answer key forward. The original qa-sft project is untouched, so you can compare both. The sibling is not the rag-protocol recipe.</p></details></li>
+              <li><p class="quiz__q-text">Your answer key contains the same question with three slightly different canonical answers. What should you do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Keep all three — more data is always better</li>
-                  <li>Pick one canonical version and drop the rest; training on three different answers to the same question teaches the model the question has a distribution of valid responses, which is noise for direct-answer QA</li>
-                  <li>Add a fourth canonical answer for balance</li>
-                  <li>Use the paraphrase playbook to generate more variants</li>
+                  <li>Keep all three — answer variety helps the model generalise</li>
+                  <li>Keep one canonical answer and drop the other two</li>
+                  <li>Add a fourth phrasing so no single answer dominates</li>
+                  <li>Run the paraphrase playbook to make more variants of each answer</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Pick one canonical version and drop the rest; training on three different answers to the same question teaches the model the question has a distribution of valid responses, which is noise for direct-answer QA</strong> qa-sft is a memorisation task. You want ONE canonical answer per question, and let the paraphrase playbook generate variation on the QUESTION side. Variation on the answer side is noise — the model learns to emit one of several acceptable answers rather than the canonical one.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Keep one canonical answer and drop the other two</strong> qa-sft is a memorisation task: you want one canonical answer per question. Three different answers teach the model that the question has a spread of valid responses, which is noise for direct-answer QA and lowers exact match. Put the variation on the question side (the paraphrase playbook rewrites questions), not the answer side.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

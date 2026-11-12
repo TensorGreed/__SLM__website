@@ -124,32 +124,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Which platform layer carries the tightened citation rate floor (0.85) and hallucination cap (0.10) for the legal project?",
-          "text": "Which platform layer carries the tightened citation rate floor (0.85) and hallucination cap (0.10) for the legal project?",
+          "name": "Where do you set the tightened citation-rate floor (0.85) and hallucination cap (0.10) so Results → Verdict actually enforces them?",
+          "text": "Where do you set the tightened citation-rate floor (0.85) and hallucination cap (0.10) so Results → Verdict actually enforces them?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "The domain pack — its overlay block overrides the eval thresholds directly"
+              "text": "In the domain pack's overlay, which overrides the eval rule thresholds"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The recipe — picking rag-protocol pulls in legal thresholds"
+              "text": "In the recipe: picking rag-protocol pulls in legal thresholds"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The retrieval index — the BM25 settings determine the gates"
+              "text": "In the retrieval settings, since the BM25 index drives the rules"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "A custom eval pack (copied from evalpack.rag_protocol.discipline, edited, registered, and selected as the Project rule set on Results → Failures)",
+            "text": "In the scaffolded rule set, then Use scaffold",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Eval pack thresholds live in the eval pack, not the domain pack. Tightening the floors is a copy-edit-register-select flow against the eval-pack registry; the domain pack handles training defaults, dataset split, and registry gates instead."
+              "text": "Rule thresholds live in the rule set, not the domain pack or the recipe. There is no registry for uploading a custom eval pack: the editable route is Results → Failures → Pass/fail rules → Scaffolded pass/fail rule set, where you can add or change rules and then click Use scaffold to make it the project's rule set. (Thresholds in a Domain Profile are the other route.) Check that the scaffold scores the rag metrics you rely on."
             }
           }
         },
@@ -157,32 +157,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why doesn't the domain pack itself swap the canonical refusal phrase from 'I don't have enough context' to 'I can't provide legal advice; consult counsel'?",
-          "text": "Why doesn't the domain pack itself swap the canonical refusal phrase from 'I don't have enough context' to 'I can't provide legal advice; consult counsel'?",
+          "name": "The legal team wants refusals to read 'I can't provide legal advice; consult counsel.' Why does the tutorial keep the canonical refusal fragment and append the legal sentence instead of replacing it?",
+          "text": "The legal team wants refusals to read 'I can't provide legal advice; consult counsel.' Why does the tutorial keep the canonical refusal fragment and append the legal sentence instead of replacing it?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Refusal phrases are immutable in the platform"
+              "text": "The domain pack swaps the phrase at inference time, so training text is ignored"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Refusal phrases come from the recipe, not the pack"
+              "text": "Refusal text is set per recipe, and rag-protocol rejects custom phrasing"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The pack overlay does change the phrase, but only at inference time"
+              "text": "Shorter refusals train faster, so the canonical fragment is kept for speed"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Synthetic playbooks read prompt text from the project's synth config, not from the pack; per-pack refusal customisation is a current gap, so the refusal phrase has to be imprinted via gold + synth playbook-prompt edits",
+            "text": "Refusals are detected by a fixed phrase list; a new phrase counts as an answer",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Domain packs are typed config bundles applied at project-create time; playbook prompts are customised separately. The legal-refusal phrase gets imprinted on the model via the answer key's refusal examples plus playbook-prompt edits in the synth config. If pack-level refusal-phrase customisation becomes widespread enough it'd be a natural future enhancement — but today, the imprint happens through gold and synth."
+              "text": "Both the eval and the refusals playbook recognise a refusal only when the text contains one of a few fixed fragments such as \"don't have enough context\". A legal-only phrase would be scored as an answer, which blinds appropriate_refusal_rate, inflates the hallucination rate and drops the playbook's confidence on those rows. Neither the pack nor any synth config changes that list today, and playbook prompts can't be customised. So: \"I don't have enough context to answer that. I can't provide legal advice; consult counsel.\""
             }
           }
         },
@@ -196,26 +196,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "rag-protocol is a bigger model"
+              "text": "rag-protocol fine-tunes a bigger base model with more legal knowledge"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "qa-sft can't run on small GPUs"
+              "text": "qa-sft can't train on the small GPUs a legal team typically has"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "rag-protocol has access to a frontier API"
+              "text": "rag-protocol forwards hard questions to a hosted frontier model"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Contract terms change with amendments and the model needs an audit-visible citation; qa-sft would bake facts into the weights and require retraining every time a clause is renegotiated",
+            "text": "Clauses change with amendments, and answers need a visible citation",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Legal facts shift with amendments and jurisdiction; rag-protocol keeps facts in the retrieval index and trains the protocol (cite, refuse, hold format). qa-sft would require a full retrain on every amendment, and the audit team wants to see a citation in every answer."
+              "text": "Legal facts shift with amendments and jurisdiction. rag-protocol keeps the facts in the retrieval index and trains the protocol (cite, refuse, hold format), so an amended clause needs a re-index, not a retrain. qa-sft would bake the clauses into the weights and need retraining after every renegotiation, and the audit team wants a citation on every answer."
             }
           }
         },
@@ -229,26 +229,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "A legal pack, a support pack, a healthcare pack, and an ecommerce pack"
+              "text": "Legal, support, healthcare and ecommerce packs under Settings → Tools"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Nothing — packs must always be installed separately"
+              "text": "Nothing — every pack must be imported from a zip before first use"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "A pack per recipe (rag-protocol pack, span-extraction pack, etc.)"
+              "text": "One pack per recipe: a rag-protocol pack, a span-extraction pack, and so on"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Only general-pack-v1, a safe-baseline fallback; vertical packs (including the legal pack this tutorial builds) are user-created and assigned under Settings → Tools → Domain Packs",
+            "text": "Only general-pack-v1, a safe-baseline fallback",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The platform seeds a single default fallback pack (general-pack-v1). Settings → Tools → Domain Packs is where you build vertical packs from the template; assignment writes the overlay into the project manifest. This tutorial walks you through building the legal pack there."
+              "text": "Only general-pack-v1 ships. Vertical packs, including the legal pack this tutorial builds, are user-made under Settings → Tools → Domain Packs. The curated Legal / Customer Support / Healthcare / Finance sets are Domain presets in the New Project dialog's Advanced options, and there are built-in domain eval packs — different layers. Assignment stores the pack id; the overlay is resolved live on each split, train or promote."
             }
           }
         }
@@ -679,89 +679,89 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "Which platform layer carries the tightened citation rate floor (0.85) and hallucination cap (0.10) for the legal project?",
-    "options": [
-      "The domain pack — its overlay block overrides the eval thresholds directly",
-      "A custom eval pack (copied from evalpack.rag_protocol.discipline, edited, registered, and selected as the Project rule set on Results → Failures)",
-      "The recipe — picking rag-protocol pulls in legal thresholds",
-      "The retrieval index — the BM25 settings determine the gates"
-    ],
-    "answer": 1,
-    "explanation": "Eval pack thresholds live in the eval pack, not the domain pack. Tightening the floors is a copy-edit-register-select flow against the eval-pack registry; the domain pack handles training defaults, dataset split, and registry gates instead."
-  },
-  {
-    "q": "Why doesn't the domain pack itself swap the canonical refusal phrase from 'I don't have enough context' to 'I can't provide legal advice; consult counsel'?",
-    "options": [
-      "Refusal phrases are immutable in the platform",
-      "Synthetic playbooks read prompt text from the project's synth config, not from the pack; per-pack refusal customisation is a current gap, so the refusal phrase has to be imprinted via gold + synth playbook-prompt edits",
-      "Refusal phrases come from the recipe, not the pack",
-      "The pack overlay does change the phrase, but only at inference time"
-    ],
-    "answer": 1,
-    "explanation": "Domain packs are typed config bundles applied at project-create time; playbook prompts are customised separately. The legal-refusal phrase gets imprinted on the model via the answer key's refusal examples plus playbook-prompt edits in the synth config. If pack-level refusal-phrase customisation becomes widespread enough it'd be a natural future enhancement — but today, the imprint happens through gold and synth."
-  },
-  {
-    "q": "Why is rag-protocol the right recipe for legal-contract QA rather than qa-sft?",
-    "options": [
-      "rag-protocol is a bigger model",
-      "Contract terms change with amendments and the model needs an audit-visible citation; qa-sft would bake facts into the weights and require retraining every time a clause is renegotiated",
-      "qa-sft can't run on small GPUs",
-      "rag-protocol has access to a frontier API"
-    ],
-    "answer": 1,
-    "explanation": "Legal facts shift with amendments and jurisdiction; rag-protocol keeps facts in the retrieval index and trains the protocol (cite, refuse, hold format). qa-sft would require a full retrain on every amendment, and the audit team wants to see a citation in every answer."
-  },
-  {
-    "q": "What ships out of the box as a BrewSLM domain pack today?",
-    "options": [
-      "A legal pack, a support pack, a healthcare pack, and an ecommerce pack",
-      "Only general-pack-v1, a safe-baseline fallback; vertical packs (including the legal pack this tutorial builds) are user-created and assigned under Settings → Tools → Domain Packs",
-      "Nothing — packs must always be installed separately",
-      "A pack per recipe (rag-protocol pack, span-extraction pack, etc.)"
-    ],
-    "answer": 1,
-    "explanation": "The platform seeds a single default fallback pack (general-pack-v1). Settings → Tools → Domain Packs is where you build vertical packs from the template; assignment writes the overlay into the project manifest. This tutorial walks you through building the legal pack there."
-  }
-]
+            [
+              {
+                "q": "Where do you set the tightened citation-rate floor (0.85) and hallucination cap (0.10) so Results → Verdict actually enforces them?",
+                "options": [
+                  "In the domain pack's overlay, which overrides the eval rule thresholds",
+                  "In the scaffolded rule set, then Use scaffold",
+                  "In the recipe: picking rag-protocol pulls in legal thresholds",
+                  "In the retrieval settings, since the BM25 index drives the rules"
+                ],
+                "answer": 1,
+                "explanation": "Rule thresholds live in the rule set, not the domain pack or the recipe. There is no registry for uploading a custom eval pack: the editable route is Results → Failures → Pass/fail rules → Scaffolded pass/fail rule set, where you can add or change rules and then click Use scaffold to make it the project's rule set. (Thresholds in a Domain Profile are the other route.) Check that the scaffold scores the rag metrics you rely on."
+              },
+              {
+                "q": "The legal team wants refusals to read 'I can't provide legal advice; consult counsel.' Why does the tutorial keep the canonical refusal fragment and append the legal sentence instead of replacing it?",
+                "options": [
+                  "The domain pack swaps the phrase at inference time, so training text is ignored",
+                  "Refusals are detected by a fixed phrase list; a new phrase counts as an answer",
+                  "Refusal text is set per recipe, and rag-protocol rejects custom phrasing",
+                  "Shorter refusals train faster, so the canonical fragment is kept for speed"
+                ],
+                "answer": 1,
+                "explanation": "Both the eval and the refusals playbook recognise a refusal only when the text contains one of a few fixed fragments such as \"don't have enough context\". A legal-only phrase would be scored as an answer, which blinds appropriate_refusal_rate, inflates the hallucination rate and drops the playbook's confidence on those rows. Neither the pack nor any synth config changes that list today, and playbook prompts can't be customised. So: \"I don't have enough context to answer that. I can't provide legal advice; consult counsel.\""
+              },
+              {
+                "q": "Why is rag-protocol the right recipe for legal-contract QA rather than qa-sft?",
+                "options": [
+                  "rag-protocol fine-tunes a bigger base model with more legal knowledge",
+                  "Clauses change with amendments, and answers need a visible citation",
+                  "qa-sft can't train on the small GPUs a legal team typically has",
+                  "rag-protocol forwards hard questions to a hosted frontier model"
+                ],
+                "answer": 1,
+                "explanation": "Legal facts shift with amendments and jurisdiction. rag-protocol keeps the facts in the retrieval index and trains the protocol (cite, refuse, hold format), so an amended clause needs a re-index, not a retrain. qa-sft would bake the clauses into the weights and need retraining after every renegotiation, and the audit team wants a citation on every answer."
+              },
+              {
+                "q": "What ships out of the box as a BrewSLM domain pack today?",
+                "options": [
+                  "Legal, support, healthcare and ecommerce packs under Settings → Tools",
+                  "Only general-pack-v1, a safe-baseline fallback",
+                  "Nothing — every pack must be imported from a zip before first use",
+                  "One pack per recipe: a rag-protocol pack, a span-extraction pack, and so on"
+                ],
+                "answer": 1,
+                "explanation": "Only general-pack-v1 ships. Vertical packs, including the legal pack this tutorial builds, are user-made under Settings → Tools → Domain Packs. The curated Legal / Customer Support / Healthcare / Finance sets are Domain presets in the New Project dialog's Advanced options, and there are built-in domain eval packs — different layers. Assignment stores the pack id; the overlay is resolved live on each split, train or promote."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">Which platform layer carries the tightened citation rate floor (0.85) and hallucination cap (0.10) for the legal project?</p>
+              <li><p class="quiz__q-text">Where do you set the tightened citation-rate floor (0.85) and hallucination cap (0.10) so Results → Verdict actually enforces them?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The domain pack — its overlay block overrides the eval thresholds directly</li>
-                  <li>A custom eval pack (copied from evalpack.rag_protocol.discipline, edited, registered, and selected as the Project rule set on Results → Failures)</li>
-                  <li>The recipe — picking rag-protocol pulls in legal thresholds</li>
-                  <li>The retrieval index — the BM25 settings determine the gates</li>
+                  <li>In the domain pack's overlay, which overrides the eval rule thresholds</li>
+                  <li>In the scaffolded rule set, then Use scaffold</li>
+                  <li>In the recipe: picking rag-protocol pulls in legal thresholds</li>
+                  <li>In the retrieval settings, since the BM25 index drives the rules</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A custom eval pack (copied from evalpack.rag_protocol.discipline, edited, registered, and selected as the Project rule set on Results → Failures)</strong> Eval pack thresholds live in the eval pack, not the domain pack. Tightening the floors is a copy-edit-register-select flow against the eval-pack registry; the domain pack handles training defaults, dataset split, and registry gates instead.</p></details></li>
-              <li><p class="quiz__q-text">Why doesn't the domain pack itself swap the canonical refusal phrase from 'I don't have enough context' to 'I can't provide legal advice; consult counsel'?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. In the scaffolded rule set, then Use scaffold</strong> Rule thresholds live in the rule set, not the domain pack or the recipe. There is no registry for uploading a custom eval pack: the editable route is Results → Failures → Pass/fail rules → Scaffolded pass/fail rule set, where you can add or change rules and then click Use scaffold to make it the project's rule set. (Thresholds in a Domain Profile are the other route.) Check that the scaffold scores the rag metrics you rely on.</p></details></li>
+              <li><p class="quiz__q-text">The legal team wants refusals to read 'I can't provide legal advice; consult counsel.' Why does the tutorial keep the canonical refusal fragment and append the legal sentence instead of replacing it?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Refusal phrases are immutable in the platform</li>
-                  <li>Synthetic playbooks read prompt text from the project's synth config, not from the pack; per-pack refusal customisation is a current gap, so the refusal phrase has to be imprinted via gold + synth playbook-prompt edits</li>
-                  <li>Refusal phrases come from the recipe, not the pack</li>
-                  <li>The pack overlay does change the phrase, but only at inference time</li>
+                  <li>The domain pack swaps the phrase at inference time, so training text is ignored</li>
+                  <li>Refusals are detected by a fixed phrase list; a new phrase counts as an answer</li>
+                  <li>Refusal text is set per recipe, and rag-protocol rejects custom phrasing</li>
+                  <li>Shorter refusals train faster, so the canonical fragment is kept for speed</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Synthetic playbooks read prompt text from the project's synth config, not from the pack; per-pack refusal customisation is a current gap, so the refusal phrase has to be imprinted via gold + synth playbook-prompt edits</strong> Domain packs are typed config bundles applied at project-create time; playbook prompts are customised separately. The legal-refusal phrase gets imprinted on the model via the answer key's refusal examples plus playbook-prompt edits in the synth config. If pack-level refusal-phrase customisation becomes widespread enough it'd be a natural future enhancement — but today, the imprint happens through gold and synth.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Refusals are detected by a fixed phrase list; a new phrase counts as an answer</strong> Both the eval and the refusals playbook recognise a refusal only when the text contains one of a few fixed fragments such as "don't have enough context". A legal-only phrase would be scored as an answer, which blinds appropriate_refusal_rate, inflates the hallucination rate and drops the playbook's confidence on those rows. Neither the pack nor any synth config changes that list today, and playbook prompts can't be customised. So: "I don't have enough context to answer that. I can't provide legal advice; consult counsel."</p></details></li>
               <li><p class="quiz__q-text">Why is rag-protocol the right recipe for legal-contract QA rather than qa-sft?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>rag-protocol is a bigger model</li>
-                  <li>Contract terms change with amendments and the model needs an audit-visible citation; qa-sft would bake facts into the weights and require retraining every time a clause is renegotiated</li>
-                  <li>qa-sft can't run on small GPUs</li>
-                  <li>rag-protocol has access to a frontier API</li>
+                  <li>rag-protocol fine-tunes a bigger base model with more legal knowledge</li>
+                  <li>Clauses change with amendments, and answers need a visible citation</li>
+                  <li>qa-sft can't train on the small GPUs a legal team typically has</li>
+                  <li>rag-protocol forwards hard questions to a hosted frontier model</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Contract terms change with amendments and the model needs an audit-visible citation; qa-sft would bake facts into the weights and require retraining every time a clause is renegotiated</strong> Legal facts shift with amendments and jurisdiction; rag-protocol keeps facts in the retrieval index and trains the protocol (cite, refuse, hold format). qa-sft would require a full retrain on every amendment, and the audit team wants to see a citation in every answer.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Clauses change with amendments, and answers need a visible citation</strong> Legal facts shift with amendments and jurisdiction. rag-protocol keeps the facts in the retrieval index and trains the protocol (cite, refuse, hold format), so an amended clause needs a re-index, not a retrain. qa-sft would bake the clauses into the weights and need retraining after every renegotiation, and the audit team wants a citation on every answer.</p></details></li>
               <li><p class="quiz__q-text">What ships out of the box as a BrewSLM domain pack today?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A legal pack, a support pack, a healthcare pack, and an ecommerce pack</li>
-                  <li>Only general-pack-v1, a safe-baseline fallback; vertical packs (including the legal pack this tutorial builds) are user-created and assigned under Settings → Tools → Domain Packs</li>
-                  <li>Nothing — packs must always be installed separately</li>
-                  <li>A pack per recipe (rag-protocol pack, span-extraction pack, etc.)</li>
+                  <li>Legal, support, healthcare and ecommerce packs under Settings → Tools</li>
+                  <li>Only general-pack-v1, a safe-baseline fallback</li>
+                  <li>Nothing — every pack must be imported from a zip before first use</li>
+                  <li>One pack per recipe: a rag-protocol pack, a span-extraction pack, and so on</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Only general-pack-v1, a safe-baseline fallback; vertical packs (including the legal pack this tutorial builds) are user-created and assigned under Settings → Tools → Domain Packs</strong> The platform seeds a single default fallback pack (general-pack-v1). Settings → Tools → Domain Packs is where you build vertical packs from the template; assignment writes the overlay into the project manifest. This tutorial walks you through building the legal pack there.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Only general-pack-v1, a safe-baseline fallback</strong> Only general-pack-v1 ships. Vertical packs, including the legal pack this tutorial builds, are user-made under Settings → Tools → Domain Packs. The curated Legal / Customer Support / Healthcare / Finance sets are Domain presets in the New Project dialog's Advanced options, and there are built-in domain eval packs — different layers. Assignment stores the pack id; the overlay is resolved live on each split, train or promote.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

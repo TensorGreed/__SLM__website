@@ -123,32 +123,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Your model scores 0.83 accuracy but 0.49 macro_f1, with the per-class F1 gate failing on cancellation. What's the most likely fix?",
-          "text": "Your model scores 0.83 accuracy but 0.49 macro_f1, with the per-class F1 gate failing on cancellation. What's the most likely fix?",
+          "name": "Your model scores 0.83 accuracy but 0.49 macro_f1, with the per-class F1 rule failing on cancellation. What's the most likely fix?",
+          "text": "Your model scores 0.83 accuracy but 0.49 macro_f1, with the per-class F1 rule failing on cancellation. What's the most likely fix?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Train for more epochs"
+              "text": "Train for more epochs so the rare class gets more gradient steps"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "Switch to a larger base model"
+              "position": 2,
+              "text": "Switch to a larger base model with more capacity for rare classes"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Lower the macro_f1 gate threshold"
+              "text": "Lower the macro_f1 threshold so the per-class rule stops failing"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "Run CLASS_BALANCE_FILL on the under-represented classes until normalised entropy ≥ 0.85, then retrain",
+            "position": 1,
+            "text": "Add cancellation rows, real or from Balance class distribution",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "High accuracy + low macro_f1 = the model is acing the majority classes and starving the rare ones. More epochs amplifies the bias; a larger model doesn't fix imbalance. The right fix is to balance the training distribution with CLASS_BALANCE_FILL until the rare class has enough signal to clear the per-class F1 floor."
+              "text": "High accuracy with low macro_f1 means the model aces the majority classes and starves the rare ones. More epochs or a bigger model don't add rare-class signal, and class_weighting=auto already reweights the loss. Add rare-class rows — real tickets, or the Balance class distribution playbook, which fills the rarest class each run — then retrain. The trainability forecast's balance score warns below 0.75 and blocks below 0.50."
             }
           }
         },
@@ -162,26 +162,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "The stratified split is faster"
+              "text": "Stratified batches hold every class, so each epoch trains faster"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Stratification trains faster"
+              "text": "Uniform random splits can put the same ticket in both train and test"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The platform requires three separate datasets"
+              "text": "Stratifying by label is what turns on class weighting for rare classes"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Random split on an imbalanced dataset can put 4 cancellation examples in val and 6 in test — making per-class F1 essentially noise",
+            "text": "A random split can leave val/test with a handful of rare-class rows",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Uniform random splits an imbalanced dataset by row, which is risky for rare classes — an unlucky seed produces val/test sets with too few rare-class examples to compute meaningful per-class F1. Setting Stratify By Field to your label column groups rows by class and splits each group at the same ratios, so every split carries the same per-class proportion as the whole. The post-split manifest's per-class breakdown lets you verify it."
+              "text": "A uniform random split on an imbalanced dataset can, by bad luck, leave val or test with only a few cancellation rows, which makes per-class F1 noise. Stratify By Field on the label column splits each class at the same ratios, so every split carries the overall class mix. The post-split manifest's per-class breakdown lets you check it. Even stratified, a class with ~6 test rows gives a very noisy per-class F1."
             }
           }
         },
@@ -189,32 +189,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What does it mean if you see high accuracy AND high macro_f1 but the post-eval decision engine recommends switching to qa-sft?",
-          "text": "What does it mean if you see high accuracy AND high macro_f1 but the post-eval decision engine recommends switching to qa-sft?",
+          "name": "Your triage eval lands at a 0.83 pass rate. Why does Results show no reroute recommendation card?",
+          "text": "Your triage eval lands at a 0.83 pass rate. Why does Results show no reroute recommendation card?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "The eval pack is broken"
+              "text": "Reroute cards are only built for qa-sft projects, never for classification"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The model needs to be retrained from scratch"
+              "text": "The card stays hidden until you click Use scaffold on the rule set"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Classification can't be deployed when macro_f1 is too high"
+              "text": "The card waits for the second evaluation so it can compare two runs"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "The engine sees signals suggesting your business need may actually be free-text explanations rather than labels — read the 'Why this fired?' disclosure to see exactly what matched",
+            "text": "The engine only recommends a different approach below a 0.5 pass rate",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The post-eval decision engine watches signals across your project shape and surfaces recipe-mismatch recommendations. Expand the 'Why this fired?' disclosure to see the matched_keywords and threshold deltas — if it's pointing at qa-sft, the signals (e.g. ticket bodies that contain rationale-like text in gold) suggest the user wants explanations, not just labels. Investigate; act if right."
+              "text": "The post-eval decision engine returns 'stay the course' whenever the pass rate is at or above 0.5, and the panel then renders nothing. Below 0.5 it checks recipe-agnostic signals (the brief mentions retrieval, answer-key answers are very diverse, the output is a tiny slice of the input) and suggests a RAG-first sibling, iterating in Try it, or more data, listing the signals that fired. It never suggests swapping one recipe for another."
             }
           }
         },
@@ -228,26 +228,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Auto-route everything immediately to maximise the value"
+              "text": "Auto-route everything at once, then add human review for classes users complain about"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Block all tickets until a human approves the model's prediction"
+              "text": "Hold every ticket for a human to approve the model's label until accuracy hits 0.95"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Skip shadow mode if the test-set macro_f1 is high enough"
+              "text": "Skip shadow mode if test macro_f1 clears the rule, and route on the raw top score"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Shadow-mode for two weeks, log model verdict vs human triager's pick, calibrate the high-confidence threshold to where per-class precision ≥ 0.95, only then turn auto-route on for high-confidence predictions and keep mid/low-confidence on human review",
+            "text": "Shadow mode, calibrate confidences, auto-route only the high-precision band",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Test-set metrics don't reflect production traffic distribution. Shadow-mode lets you measure real-world per-band precision before any auto-routing happens. Calibrate thresholds against the band where precision actually exceeds your target. Mid- and low-confidence predictions always go to a human review path — that's the cost of honest uncertainty handling."
+              "text": "Test-set metrics don't reflect production traffic, and a fine-tuned classifier's softmax confidence is usually over-confident. Run in shadow mode, logging the model's label next to the human triager's; calibrate the confidences (for example temperature scaling on the validation split); then auto-route only the confidence band where measured per-class precision meets your target, and keep the rest on human review."
             }
           }
         }
@@ -685,89 +685,89 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "Your model scores 0.83 accuracy but 0.49 macro_f1, with the per-class F1 gate failing on cancellation. What's the most likely fix?",
-    "options": [
-      "Train for more epochs",
-      "Switch to a larger base model",
-      "Run CLASS_BALANCE_FILL on the under-represented classes until normalised entropy ≥ 0.85, then retrain",
-      "Lower the macro_f1 gate threshold"
-    ],
-    "answer": 2,
-    "explanation": "High accuracy + low macro_f1 = the model is acing the majority classes and starving the rare ones. More epochs amplifies the bias; a larger model doesn't fix imbalance. The right fix is to balance the training distribution with CLASS_BALANCE_FILL until the rare class has enough signal to clear the per-class F1 floor."
-  },
-  {
-    "q": "Why set Stratify By Field on Data → Split instead of leaving the default uniform random split?",
-    "options": [
-      "The stratified split is faster",
-      "Random split on an imbalanced dataset can put 4 cancellation examples in val and 6 in test — making per-class F1 essentially noise",
-      "Stratification trains faster",
-      "The platform requires three separate datasets"
-    ],
-    "answer": 1,
-    "explanation": "Uniform random splits an imbalanced dataset by row, which is risky for rare classes — an unlucky seed produces val/test sets with too few rare-class examples to compute meaningful per-class F1. Setting Stratify By Field to your label column groups rows by class and splits each group at the same ratios, so every split carries the same per-class proportion as the whole. The post-split manifest's per-class breakdown lets you verify it."
-  },
-  {
-    "q": "What does it mean if you see high accuracy AND high macro_f1 but the post-eval decision engine recommends switching to qa-sft?",
-    "options": [
-      "The eval pack is broken",
-      "The engine sees signals suggesting your business need may actually be free-text explanations rather than labels — read the 'Why this fired?' disclosure to see exactly what matched",
-      "The model needs to be retrained from scratch",
-      "Classification can't be deployed when macro_f1 is too high"
-    ],
-    "answer": 1,
-    "explanation": "The post-eval decision engine watches signals across your project shape and surfaces recipe-mismatch recommendations. Expand the 'Why this fired?' disclosure to see the matched_keywords and threshold deltas — if it's pointing at qa-sft, the signals (e.g. ticket bodies that contain rationale-like text in gold) suggest the user wants explanations, not just labels. Investigate; act if right."
-  },
-  {
-    "q": "You're shipping the triage model. What's the right deployment sequence?",
-    "options": [
-      "Auto-route everything immediately to maximise the value",
-      "Shadow-mode for two weeks, log model verdict vs human triager's pick, calibrate the high-confidence threshold to where per-class precision ≥ 0.95, only then turn auto-route on for high-confidence predictions and keep mid/low-confidence on human review",
-      "Block all tickets until a human approves the model's prediction",
-      "Skip shadow mode if the test-set macro_f1 is high enough"
-    ],
-    "answer": 1,
-    "explanation": "Test-set metrics don't reflect production traffic distribution. Shadow-mode lets you measure real-world per-band precision before any auto-routing happens. Calibrate thresholds against the band where precision actually exceeds your target. Mid- and low-confidence predictions always go to a human review path — that's the cost of honest uncertainty handling."
-  }
-]
+            [
+              {
+                "q": "Your model scores 0.83 accuracy but 0.49 macro_f1, with the per-class F1 rule failing on cancellation. What's the most likely fix?",
+                "options": [
+                  "Train for more epochs so the rare class gets more gradient steps",
+                  "Add cancellation rows, real or from Balance class distribution",
+                  "Switch to a larger base model with more capacity for rare classes",
+                  "Lower the macro_f1 threshold so the per-class rule stops failing"
+                ],
+                "answer": 1,
+                "explanation": "High accuracy with low macro_f1 means the model aces the majority classes and starves the rare ones. More epochs or a bigger model don't add rare-class signal, and class_weighting=auto already reweights the loss. Add rare-class rows — real tickets, or the Balance class distribution playbook, which fills the rarest class each run — then retrain. The trainability forecast's balance score warns below 0.75 and blocks below 0.50."
+              },
+              {
+                "q": "Why set Stratify By Field on Data → Split instead of leaving the default uniform random split?",
+                "options": [
+                  "Stratified batches hold every class, so each epoch trains faster",
+                  "A random split can leave val/test with a handful of rare-class rows",
+                  "Uniform random splits can put the same ticket in both train and test",
+                  "Stratifying by label is what turns on class weighting for rare classes"
+                ],
+                "answer": 1,
+                "explanation": "A uniform random split on an imbalanced dataset can, by bad luck, leave val or test with only a few cancellation rows, which makes per-class F1 noise. Stratify By Field on the label column splits each class at the same ratios, so every split carries the overall class mix. The post-split manifest's per-class breakdown lets you check it. Even stratified, a class with ~6 test rows gives a very noisy per-class F1."
+              },
+              {
+                "q": "Your triage eval lands at a 0.83 pass rate. Why does Results show no reroute recommendation card?",
+                "options": [
+                  "Reroute cards are only built for qa-sft projects, never for classification",
+                  "The engine only recommends a different approach below a 0.5 pass rate",
+                  "The card stays hidden until you click Use scaffold on the rule set",
+                  "The card waits for the second evaluation so it can compare two runs"
+                ],
+                "answer": 1,
+                "explanation": "The post-eval decision engine returns 'stay the course' whenever the pass rate is at or above 0.5, and the panel then renders nothing. Below 0.5 it checks recipe-agnostic signals (the brief mentions retrieval, answer-key answers are very diverse, the output is a tiny slice of the input) and suggests a RAG-first sibling, iterating in Try it, or more data, listing the signals that fired. It never suggests swapping one recipe for another."
+              },
+              {
+                "q": "You're shipping the triage model. What's the right deployment sequence?",
+                "options": [
+                  "Auto-route everything at once, then add human review for classes users complain about",
+                  "Shadow mode, calibrate confidences, auto-route only the high-precision band",
+                  "Hold every ticket for a human to approve the model's label until accuracy hits 0.95",
+                  "Skip shadow mode if test macro_f1 clears the rule, and route on the raw top score"
+                ],
+                "answer": 1,
+                "explanation": "Test-set metrics don't reflect production traffic, and a fine-tuned classifier's softmax confidence is usually over-confident. Run in shadow mode, logging the model's label next to the human triager's; calibrate the confidences (for example temperature scaling on the validation split); then auto-route only the confidence band where measured per-class precision meets your target, and keep the rest on human review."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">Your model scores 0.83 accuracy but 0.49 macro_f1, with the per-class F1 gate failing on cancellation. What's the most likely fix?</p>
+              <li><p class="quiz__q-text">Your model scores 0.83 accuracy but 0.49 macro_f1, with the per-class F1 rule failing on cancellation. What's the most likely fix?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Train for more epochs</li>
-                  <li>Switch to a larger base model</li>
-                  <li>Run CLASS_BALANCE_FILL on the under-represented classes until normalised entropy ≥ 0.85, then retrain</li>
-                  <li>Lower the macro_f1 gate threshold</li>
+                  <li>Train for more epochs so the rare class gets more gradient steps</li>
+                  <li>Add cancellation rows, real or from Balance class distribution</li>
+                  <li>Switch to a larger base model with more capacity for rare classes</li>
+                  <li>Lower the macro_f1 threshold so the per-class rule stops failing</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Run CLASS_BALANCE_FILL on the under-represented classes until normalised entropy ≥ 0.85, then retrain</strong> High accuracy + low macro_f1 = the model is acing the majority classes and starving the rare ones. More epochs amplifies the bias; a larger model doesn't fix imbalance. The right fix is to balance the training distribution with CLASS_BALANCE_FILL until the rare class has enough signal to clear the per-class F1 floor.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Add cancellation rows, real or from Balance class distribution</strong> High accuracy with low macro_f1 means the model aces the majority classes and starves the rare ones. More epochs or a bigger model don't add rare-class signal, and class_weighting=auto already reweights the loss. Add rare-class rows — real tickets, or the Balance class distribution playbook, which fills the rarest class each run — then retrain. The trainability forecast's balance score warns below 0.75 and blocks below 0.50.</p></details></li>
               <li><p class="quiz__q-text">Why set Stratify By Field on Data → Split instead of leaving the default uniform random split?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The stratified split is faster</li>
-                  <li>Random split on an imbalanced dataset can put 4 cancellation examples in val and 6 in test — making per-class F1 essentially noise</li>
-                  <li>Stratification trains faster</li>
-                  <li>The platform requires three separate datasets</li>
+                  <li>Stratified batches hold every class, so each epoch trains faster</li>
+                  <li>A random split can leave val/test with a handful of rare-class rows</li>
+                  <li>Uniform random splits can put the same ticket in both train and test</li>
+                  <li>Stratifying by label is what turns on class weighting for rare classes</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Random split on an imbalanced dataset can put 4 cancellation examples in val and 6 in test — making per-class F1 essentially noise</strong> Uniform random splits an imbalanced dataset by row, which is risky for rare classes — an unlucky seed produces val/test sets with too few rare-class examples to compute meaningful per-class F1. Setting Stratify By Field to your label column groups rows by class and splits each group at the same ratios, so every split carries the same per-class proportion as the whole. The post-split manifest's per-class breakdown lets you verify it.</p></details></li>
-              <li><p class="quiz__q-text">What does it mean if you see high accuracy AND high macro_f1 but the post-eval decision engine recommends switching to qa-sft?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A random split can leave val/test with a handful of rare-class rows</strong> A uniform random split on an imbalanced dataset can, by bad luck, leave val or test with only a few cancellation rows, which makes per-class F1 noise. Stratify By Field on the label column splits each class at the same ratios, so every split carries the overall class mix. The post-split manifest's per-class breakdown lets you check it. Even stratified, a class with ~6 test rows gives a very noisy per-class F1.</p></details></li>
+              <li><p class="quiz__q-text">Your triage eval lands at a 0.83 pass rate. Why does Results show no reroute recommendation card?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The eval pack is broken</li>
-                  <li>The engine sees signals suggesting your business need may actually be free-text explanations rather than labels — read the 'Why this fired?' disclosure to see exactly what matched</li>
-                  <li>The model needs to be retrained from scratch</li>
-                  <li>Classification can't be deployed when macro_f1 is too high</li>
+                  <li>Reroute cards are only built for qa-sft projects, never for classification</li>
+                  <li>The engine only recommends a different approach below a 0.5 pass rate</li>
+                  <li>The card stays hidden until you click Use scaffold on the rule set</li>
+                  <li>The card waits for the second evaluation so it can compare two runs</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The engine sees signals suggesting your business need may actually be free-text explanations rather than labels — read the 'Why this fired?' disclosure to see exactly what matched</strong> The post-eval decision engine watches signals across your project shape and surfaces recipe-mismatch recommendations. Expand the 'Why this fired?' disclosure to see the matched_keywords and threshold deltas — if it's pointing at qa-sft, the signals (e.g. ticket bodies that contain rationale-like text in gold) suggest the user wants explanations, not just labels. Investigate; act if right.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The engine only recommends a different approach below a 0.5 pass rate</strong> The post-eval decision engine returns 'stay the course' whenever the pass rate is at or above 0.5, and the panel then renders nothing. Below 0.5 it checks recipe-agnostic signals (the brief mentions retrieval, answer-key answers are very diverse, the output is a tiny slice of the input) and suggests a RAG-first sibling, iterating in Try it, or more data, listing the signals that fired. It never suggests swapping one recipe for another.</p></details></li>
               <li><p class="quiz__q-text">You're shipping the triage model. What's the right deployment sequence?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Auto-route everything immediately to maximise the value</li>
-                  <li>Shadow-mode for two weeks, log model verdict vs human triager's pick, calibrate the high-confidence threshold to where per-class precision ≥ 0.95, only then turn auto-route on for high-confidence predictions and keep mid/low-confidence on human review</li>
-                  <li>Block all tickets until a human approves the model's prediction</li>
-                  <li>Skip shadow mode if the test-set macro_f1 is high enough</li>
+                  <li>Auto-route everything at once, then add human review for classes users complain about</li>
+                  <li>Shadow mode, calibrate confidences, auto-route only the high-precision band</li>
+                  <li>Hold every ticket for a human to approve the model's label until accuracy hits 0.95</li>
+                  <li>Skip shadow mode if test macro_f1 clears the rule, and route on the raw top score</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Shadow-mode for two weeks, log model verdict vs human triager's pick, calibrate the high-confidence threshold to where per-class precision ≥ 0.95, only then turn auto-route on for high-confidence predictions and keep mid/low-confidence on human review</strong> Test-set metrics don't reflect production traffic distribution. Shadow-mode lets you measure real-world per-band precision before any auto-routing happens. Calibrate thresholds against the band where precision actually exceeds your target. Mid- and low-confidence predictions always go to a human review path — that's the cost of honest uncertainty handling.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Shadow mode, calibrate confidences, auto-route only the high-precision band</strong> Test-set metrics don't reflect production traffic, and a fine-tuned classifier's softmax confidence is usually over-confident. Run in shadow mode, logging the model's label next to the human triager's; calibrate the confidences (for example temperature scaling on the validation split); then auto-route only the confidence band where measured per-class precision meets your target, and keep the rest on human review.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

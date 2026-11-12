@@ -123,32 +123,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why does the PII span tagger's eval pack tighten the recall floor on SSN and credit-card to 0.98 while leaving PERSON at 0.85?",
-          "text": "Why does the PII span tagger's eval pack tighten the recall floor on SSN and credit-card to 0.98 while leaving PERSON at 0.85?",
+          "name": "You set recall floors of 0.98 on SSN and credit card but 0.85 on PERSON. Why is that asymmetry sensible?",
+          "text": "You set recall floors of 0.98 on SSN and credit card but 0.85 on PERSON. Why is that asymmetry sensible?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "SSNs are easier for the model to learn"
+              "text": "SSNs are easier to learn, so a higher floor costs nothing extra"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Credit-card recall is computed differently"
+              "text": "Recall on structured IDs is computed by regex, so it runs higher"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The 0.98 floor is the platform default"
+              "text": "0.98 is BrewSLM's built-in floor for every numeric entity type"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Missing one SSN is a compliance incident; missing one PERSON of three is a smaller failure, and the FP cost on PERSON is higher because of common-name false-positives",
+            "text": "A missed SSN is a compliance incident; a missed name costs less",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The recall floor is asymmetric on purpose — missed SSNs are real compliance incidents, while missed common-name PERSONs in noisy text are cheap. PERSON precision is the harder constraint because every May/Pat/Will/Iris-as-word is a potential FP."
+              "text": "These floors are a policy you set, not platform defaults: the scaffold starts every type at 0.60, and the compliance bundles suggest 0.95 (PCI-DSS, HIPAA) or 0.90 (GDPR, CCPA). The asymmetry follows miss cost: one leaked SSN or card number is a reportable incident, while a missed common name in noisy text is cheaper and often genuinely ambiguous ('May', 'Will')."
             }
           }
         },
@@ -156,32 +156,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why is sending raw text to a frontier-LLM API to 'redact PII for me' the wrong architecture?",
-          "text": "Why is sending raw text to a frontier-LLM API to 'redact PII for me' the wrong architecture?",
+          "name": "Why is sending raw text to a hosted frontier-model API to 'redact PII for me' the wrong architecture?",
+          "text": "Why is sending raw text to a hosted frontier-model API to 'redact PII for me' the wrong architecture?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Frontier LLMs are too slow"
+              "text": "Hosted frontier models are too slow for per-request redaction"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Frontier LLMs can't extract spans accurately"
+              "text": "Hosted frontier models can't return character offsets for spans"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It costs too much"
+              "text": "Per-token pricing makes it too expensive at any traffic volume"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "It's the privacy paradox — to redact the PII you ship the PII to a third-party API, leaking the data you're trying to protect",
+            "text": "To redact the PII you first have to ship it to a third party",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The whole point of PII tagging is to keep sensitive data inside your network. Routing every byte of raw text through a third-party API defeats the purpose before redaction even runs. A self-hosted small model is the only architecture that doesn't leak the data it's protecting."
+              "text": "The point of PII tagging is to keep sensitive data inside your boundary; routing raw text through a third-party API leaks it before redaction runs. Any architecture that keeps the text in-house avoids that — a self-hosted model of any size, rules, or a contractual zero-retention deployment — and a small self-hosted tagger is a cheap way to get there."
             }
           }
         },
@@ -195,26 +195,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "A string with no PII at all"
+              "text": "A plain sentence with no names, numbers or dates in it at all"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "An obfuscated email like 'alice at example dot com'"
+              "text": "An obfuscated email such as 'alice at example dot com'"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "A row with two emails in it"
+              "text": "A row with two emails, so the model has to find both spans"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "A string that LOOKS like a PII span (a name-shaped word, a number that resembles a phone, a date) but is not PII in its carrier context — e.g. 'May 2024 revenue', '555 5th Avenue', 'Will do'",
+            "text": "PII-looking words that aren't PII in context: 'May 2024 revenue'",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Hard negatives are the precision-defenders: confusable strings that the model must learn to use context to discriminate. 'May' is a PERSON sometimes and a month other times — the carrier sentence is the signal. Obfuscated emails are positives the model should still recall; they go in the paraphrase / cluster-targeted playbooks, not in the hard-negative pile."
+              "text": "Hard negatives defend precision: look-alike strings the model must use context to reject. 'May' is a name in one sentence and a month in another. A plain sentence teaches little. An obfuscated email is still PII — a positive the model should recall. The Hard negatives playbook writes zero-entity look-alike rows; for targeted look-alikes, write them yourself or seed from a failure cluster."
             }
           }
         },
@@ -222,32 +222,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why does the deployed pipeline keep the original text alongside the redacted copy and an audit log instead of redacting-and-destroying in one step?",
-          "text": "Why does the deployed pipeline keep the original text alongside the redacted copy and an audit log instead of redacting-and-destroying in one step?",
+          "name": "Why does the deployed pipeline keep the original text alongside the redacted copy and an audit log, instead of redacting and destroying in one step?",
+          "text": "Why does the deployed pipeline keep the original text alongside the redacted copy and an audit log, instead of redacting and destroying in one step?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "It's a regulatory requirement everywhere"
+              "text": "Regulations everywhere forbid ever deleting the original text"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It makes the redactor faster"
+              "text": "Keeping both copies lets the redactor skip work on re-runs"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It reduces the storage footprint"
+              "text": "The audit log replaces the held-out eval as the quality measure"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Every false-positive permanently corrupts text that may have been important, every false-negative is silent without an audit, and the compliance team needs to be able to answer 'what did you redact?' with examples — auto-redaction without a paper trail is unauditable",
+            "text": "False positives stay recoverable, and compliance can show what was redacted",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Auto-redaction without an audit log is the anti-pattern. The audit log makes the system auditable: false-positives are recoverable from the original, false-negatives are measurable from the held-out eval set, and the compliance team can review what got redacted on demand. The retention policy on the originals is a separate decision the compliance team owns."
+              "text": "Redact-and-destroy is unauditable: every false positive permanently corrupts text that may matter, and nobody can answer 'what did you redact?'. Keeping the original (under a retention policy compliance owns) makes false positives recoverable, and the log lets reviewers sample decisions. False negatives are still measured on the held-out eval set; the log complements it, it does not replace it."
             }
           }
         }
@@ -689,89 +689,89 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "Why does the PII span tagger's eval pack tighten the recall floor on SSN and credit-card to 0.98 while leaving PERSON at 0.85?",
-    "options": [
-      "SSNs are easier for the model to learn",
-      "Missing one SSN is a compliance incident; missing one PERSON of three is a smaller failure, and the FP cost on PERSON is higher because of common-name false-positives",
-      "Credit-card recall is computed differently",
-      "The 0.98 floor is the platform default"
-    ],
-    "answer": 1,
-    "explanation": "The recall floor is asymmetric on purpose — missed SSNs are real compliance incidents, while missed common-name PERSONs in noisy text are cheap. PERSON precision is the harder constraint because every May/Pat/Will/Iris-as-word is a potential FP."
-  },
-  {
-    "q": "Why is sending raw text to a frontier-LLM API to 'redact PII for me' the wrong architecture?",
-    "options": [
-      "Frontier LLMs are too slow",
-      "It's the privacy paradox — to redact the PII you ship the PII to a third-party API, leaking the data you're trying to protect",
-      "Frontier LLMs can't extract spans accurately",
-      "It costs too much"
-    ],
-    "answer": 1,
-    "explanation": "The whole point of PII tagging is to keep sensitive data inside your network. Routing every byte of raw text through a third-party API defeats the purpose before redaction even runs. A self-hosted small model is the only architecture that doesn't leak the data it's protecting."
-  },
-  {
-    "q": "What makes a good hard negative for PII tagging?",
-    "options": [
-      "A string with no PII at all",
-      "A string that LOOKS like a PII span (a name-shaped word, a number that resembles a phone, a date) but is not PII in its carrier context — e.g. 'May 2024 revenue', '555 5th Avenue', 'Will do'",
-      "An obfuscated email like 'alice at example dot com'",
-      "A row with two emails in it"
-    ],
-    "answer": 1,
-    "explanation": "Hard negatives are the precision-defenders: confusable strings that the model must learn to use context to discriminate. 'May' is a PERSON sometimes and a month other times — the carrier sentence is the signal. Obfuscated emails are positives the model should still recall; they go in the paraphrase / cluster-targeted playbooks, not in the hard-negative pile."
-  },
-  {
-    "q": "Why does the deployed pipeline keep the original text alongside the redacted copy and an audit log instead of redacting-and-destroying in one step?",
-    "options": [
-      "It's a regulatory requirement everywhere",
-      "Every false-positive permanently corrupts text that may have been important, every false-negative is silent without an audit, and the compliance team needs to be able to answer 'what did you redact?' with examples — auto-redaction without a paper trail is unauditable",
-      "It makes the redactor faster",
-      "It reduces the storage footprint"
-    ],
-    "answer": 1,
-    "explanation": "Auto-redaction without an audit log is the anti-pattern. The audit log makes the system auditable: false-positives are recoverable from the original, false-negatives are measurable from the held-out eval set, and the compliance team can review what got redacted on demand. The retention policy on the originals is a separate decision the compliance team owns."
-  }
-]
+            [
+              {
+                "q": "You set recall floors of 0.98 on SSN and credit card but 0.85 on PERSON. Why is that asymmetry sensible?",
+                "options": [
+                  "SSNs are easier to learn, so a higher floor costs nothing extra",
+                  "A missed SSN is a compliance incident; a missed name costs less",
+                  "Recall on structured IDs is computed by regex, so it runs higher",
+                  "0.98 is BrewSLM's built-in floor for every numeric entity type"
+                ],
+                "answer": 1,
+                "explanation": "These floors are a policy you set, not platform defaults: the scaffold starts every type at 0.60, and the compliance bundles suggest 0.95 (PCI-DSS, HIPAA) or 0.90 (GDPR, CCPA). The asymmetry follows miss cost: one leaked SSN or card number is a reportable incident, while a missed common name in noisy text is cheaper and often genuinely ambiguous ('May', 'Will')."
+              },
+              {
+                "q": "Why is sending raw text to a hosted frontier-model API to 'redact PII for me' the wrong architecture?",
+                "options": [
+                  "Hosted frontier models are too slow for per-request redaction",
+                  "To redact the PII you first have to ship it to a third party",
+                  "Hosted frontier models can't return character offsets for spans",
+                  "Per-token pricing makes it too expensive at any traffic volume"
+                ],
+                "answer": 1,
+                "explanation": "The point of PII tagging is to keep sensitive data inside your boundary; routing raw text through a third-party API leaks it before redaction runs. Any architecture that keeps the text in-house avoids that — a self-hosted model of any size, rules, or a contractual zero-retention deployment — and a small self-hosted tagger is a cheap way to get there."
+              },
+              {
+                "q": "What makes a good hard negative for PII tagging?",
+                "options": [
+                  "A plain sentence with no names, numbers or dates in it at all",
+                  "PII-looking words that aren't PII in context: 'May 2024 revenue'",
+                  "An obfuscated email such as 'alice at example dot com'",
+                  "A row with two emails, so the model has to find both spans"
+                ],
+                "answer": 1,
+                "explanation": "Hard negatives defend precision: look-alike strings the model must use context to reject. 'May' is a name in one sentence and a month in another. A plain sentence teaches little. An obfuscated email is still PII — a positive the model should recall. The Hard negatives playbook writes zero-entity look-alike rows; for targeted look-alikes, write them yourself or seed from a failure cluster."
+              },
+              {
+                "q": "Why does the deployed pipeline keep the original text alongside the redacted copy and an audit log, instead of redacting and destroying in one step?",
+                "options": [
+                  "Regulations everywhere forbid ever deleting the original text",
+                  "False positives stay recoverable, and compliance can show what was redacted",
+                  "Keeping both copies lets the redactor skip work on re-runs",
+                  "The audit log replaces the held-out eval as the quality measure"
+                ],
+                "answer": 1,
+                "explanation": "Redact-and-destroy is unauditable: every false positive permanently corrupts text that may matter, and nobody can answer 'what did you redact?'. Keeping the original (under a retention policy compliance owns) makes false positives recoverable, and the log lets reviewers sample decisions. False negatives are still measured on the held-out eval set; the log complements it, it does not replace it."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">Why does the PII span tagger's eval pack tighten the recall floor on SSN and credit-card to 0.98 while leaving PERSON at 0.85?</p>
+              <li><p class="quiz__q-text">You set recall floors of 0.98 on SSN and credit card but 0.85 on PERSON. Why is that asymmetry sensible?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>SSNs are easier for the model to learn</li>
-                  <li>Missing one SSN is a compliance incident; missing one PERSON of three is a smaller failure, and the FP cost on PERSON is higher because of common-name false-positives</li>
-                  <li>Credit-card recall is computed differently</li>
-                  <li>The 0.98 floor is the platform default</li>
+                  <li>SSNs are easier to learn, so a higher floor costs nothing extra</li>
+                  <li>A missed SSN is a compliance incident; a missed name costs less</li>
+                  <li>Recall on structured IDs is computed by regex, so it runs higher</li>
+                  <li>0.98 is BrewSLM's built-in floor for every numeric entity type</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Missing one SSN is a compliance incident; missing one PERSON of three is a smaller failure, and the FP cost on PERSON is higher because of common-name false-positives</strong> The recall floor is asymmetric on purpose — missed SSNs are real compliance incidents, while missed common-name PERSONs in noisy text are cheap. PERSON precision is the harder constraint because every May/Pat/Will/Iris-as-word is a potential FP.</p></details></li>
-              <li><p class="quiz__q-text">Why is sending raw text to a frontier-LLM API to 'redact PII for me' the wrong architecture?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A missed SSN is a compliance incident; a missed name costs less</strong> These floors are a policy you set, not platform defaults: the scaffold starts every type at 0.60, and the compliance bundles suggest 0.95 (PCI-DSS, HIPAA) or 0.90 (GDPR, CCPA). The asymmetry follows miss cost: one leaked SSN or card number is a reportable incident, while a missed common name in noisy text is cheaper and often genuinely ambiguous ('May', 'Will').</p></details></li>
+              <li><p class="quiz__q-text">Why is sending raw text to a hosted frontier-model API to 'redact PII for me' the wrong architecture?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Frontier LLMs are too slow</li>
-                  <li>It's the privacy paradox — to redact the PII you ship the PII to a third-party API, leaking the data you're trying to protect</li>
-                  <li>Frontier LLMs can't extract spans accurately</li>
-                  <li>It costs too much</li>
+                  <li>Hosted frontier models are too slow for per-request redaction</li>
+                  <li>To redact the PII you first have to ship it to a third party</li>
+                  <li>Hosted frontier models can't return character offsets for spans</li>
+                  <li>Per-token pricing makes it too expensive at any traffic volume</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. It's the privacy paradox — to redact the PII you ship the PII to a third-party API, leaking the data you're trying to protect</strong> The whole point of PII tagging is to keep sensitive data inside your network. Routing every byte of raw text through a third-party API defeats the purpose before redaction even runs. A self-hosted small model is the only architecture that doesn't leak the data it's protecting.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. To redact the PII you first have to ship it to a third party</strong> The point of PII tagging is to keep sensitive data inside your boundary; routing raw text through a third-party API leaks it before redaction runs. Any architecture that keeps the text in-house avoids that — a self-hosted model of any size, rules, or a contractual zero-retention deployment — and a small self-hosted tagger is a cheap way to get there.</p></details></li>
               <li><p class="quiz__q-text">What makes a good hard negative for PII tagging?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A string with no PII at all</li>
-                  <li>A string that LOOKS like a PII span (a name-shaped word, a number that resembles a phone, a date) but is not PII in its carrier context — e.g. 'May 2024 revenue', '555 5th Avenue', 'Will do'</li>
-                  <li>An obfuscated email like 'alice at example dot com'</li>
-                  <li>A row with two emails in it</li>
+                  <li>A plain sentence with no names, numbers or dates in it at all</li>
+                  <li>PII-looking words that aren't PII in context: 'May 2024 revenue'</li>
+                  <li>An obfuscated email such as 'alice at example dot com'</li>
+                  <li>A row with two emails, so the model has to find both spans</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A string that LOOKS like a PII span (a name-shaped word, a number that resembles a phone, a date) but is not PII in its carrier context — e.g. 'May 2024 revenue', '555 5th Avenue', 'Will do'</strong> Hard negatives are the precision-defenders: confusable strings that the model must learn to use context to discriminate. 'May' is a PERSON sometimes and a month other times — the carrier sentence is the signal. Obfuscated emails are positives the model should still recall; they go in the paraphrase / cluster-targeted playbooks, not in the hard-negative pile.</p></details></li>
-              <li><p class="quiz__q-text">Why does the deployed pipeline keep the original text alongside the redacted copy and an audit log instead of redacting-and-destroying in one step?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. PII-looking words that aren't PII in context: 'May 2024 revenue'</strong> Hard negatives defend precision: look-alike strings the model must use context to reject. 'May' is a name in one sentence and a month in another. A plain sentence teaches little. An obfuscated email is still PII — a positive the model should recall. The Hard negatives playbook writes zero-entity look-alike rows; for targeted look-alikes, write them yourself or seed from a failure cluster.</p></details></li>
+              <li><p class="quiz__q-text">Why does the deployed pipeline keep the original text alongside the redacted copy and an audit log, instead of redacting and destroying in one step?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It's a regulatory requirement everywhere</li>
-                  <li>Every false-positive permanently corrupts text that may have been important, every false-negative is silent without an audit, and the compliance team needs to be able to answer 'what did you redact?' with examples — auto-redaction without a paper trail is unauditable</li>
-                  <li>It makes the redactor faster</li>
-                  <li>It reduces the storage footprint</li>
+                  <li>Regulations everywhere forbid ever deleting the original text</li>
+                  <li>False positives stay recoverable, and compliance can show what was redacted</li>
+                  <li>Keeping both copies lets the redactor skip work on re-runs</li>
+                  <li>The audit log replaces the held-out eval as the quality measure</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Every false-positive permanently corrupts text that may have been important, every false-negative is silent without an audit, and the compliance team needs to be able to answer 'what did you redact?' with examples — auto-redaction without a paper trail is unauditable</strong> Auto-redaction without an audit log is the anti-pattern. The audit log makes the system auditable: false-positives are recoverable from the original, false-negatives are measurable from the held-out eval set, and the compliance team can review what got redacted on demand. The retention policy on the originals is a separate decision the compliance team owns.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. False positives stay recoverable, and compliance can show what was redacted</strong> Redact-and-destroy is unauditable: every false positive permanently corrupts text that may matter, and nobody can answer 'what did you redact?'. Keeping the original (under a retention policy compliance owns) makes false positives recoverable, and the log lets reviewers sample decisions. False negatives are still measured on the held-out eval set; the log complements it, it does not replace it.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

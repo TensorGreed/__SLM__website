@@ -135,26 +135,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "The trained LoRA adapter weights"
+              "text": "The trained LoRA adapter weights from the AP pilot project"
             },
             {
               "@type": "Answer",
               "position": 1,
-              "text": "The eval results from the last training run"
+              "text": "The eval results from the last run, kept as the team's baseline"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The list of specific PO line items in the held-out test split"
+              "text": "The PO line items held out in the AP pilot's test split"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 2,
-            "text": "The dataset_split, training_defaults, and registry_gates that every AP project should inherit",
+            "text": "The dataset split, training defaults and registry gates",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Policy goes in the pack; artefacts go in the project. The dataset split, training defaults, and registry gates are portfolio-wide conventions — they belong in the pack. The trained adapter, the eval results, and the specific data rows are artefacts of one project's run. (Per-entity precision floors as actual gating live in the eval pack — the domain pack only documents the team's per-entity priorities and the evaluator hook's \u003ccode>weights\u003c/code> config.)"
+              "text": "Policy goes in the pack; artefacts go in the project. The split ratios, training defaults and registry gates are portfolio-wide conventions every AP project should inherit. The adapter, the eval results and the specific data rows are artefacts of one project's run."
             }
           }
         },
@@ -162,32 +162,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "You bump the production F1 floor in finance-pack-v1 from 0.78 to 0.80 by editing the contract JSON and saving. What happens to existing projects already assigned to the pack?",
-          "text": "You bump the production F1 floor in finance-pack-v1 from 0.78 to 0.80 by editing the contract JSON and saving. What happens to existing projects already assigned to the pack?",
+          "name": "You bump the production F1 floor in finance-pack-v1 from 0.78 to 0.80 by editing the contract JSON and clicking Save Pack. What happens to projects already assigned to the pack?",
+          "text": "You bump the production F1 floor in finance-pack-v1 from 0.78 to 0.80 by editing the contract JSON and clicking Save Pack. What happens to projects already assigned to the pack?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "All assigned projects re-prepare automatically and re-evaluate against the new floor"
+              "text": "They all re-prepare automatically and are re-scored against 0.80 right away"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The platform refuses the edit because the version wasn't bumped"
+              "text": "The save is refused until you bump the pack's version id"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Existing projects keep the old floor permanently; only newly-assigned projects see the new value"
+              "text": "They keep the 0.78 copied in at assignment; only newly assigned projects see 0.80"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "The overlay is read at prepare / train / promote time; existing projects pick up the new floor on their next prepare/train/promote, not retroactively. You should also bump the version, because no auto-versioning exists",
+            "text": "Each uses 0.80 from its next split, train or promote; past results stay as they were",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Pack overlays are read at prepare / train / promote time — they apply to the next run, not retroactively. Version bumping is a discipline, not an enforcement; the platform won't stop you from editing in place, but the audit trail loses a story if you don't bump. Honest pack maintenance is bump-version, re-assign or re-run, document."
+              "text": "Save Pack updates the pack in place, and a project's effective contract (profile plus pack overlay) is resolved fresh each time it splits, trains or promotes. So every assigned project sees the new floor from its next run; nothing is re-scored retroactively. The tempting idea that the overlay was copied in at assignment is wrong: assignment only stores the pack id. To change one project without moving the others, duplicate the pack under a new version id and reassign. Bumping the version is a discipline the platform does not enforce."
             }
           }
         },
@@ -201,26 +201,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Refusal phrases are not a SOX-permitted artefact"
+              "text": "Pack contracts may not store free text, so the validator rejects the key"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Refusal phrases are immutable and come from the recipe"
+              "text": "Refusal phrases are fixed by the recipe and override any pack setting"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The pack does change the refusal phrase, but only after a full re-training run"
+              "text": "The pack does swap the phrase, but only after a full retraining run"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "The pack contract validator accepts any extra keys, but no platform code reads a refusal phrase out of the pack today. Synth playbooks read prompt text from the project's synth config separately. The honest workaround is gold examples + per-project synth prompt customisation",
+            "text": "No platform code reads a refusal phrase from the pack, so the key does nothing",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The contract validator will accept the field; no behaviour follows. Per-pack refusal customisation would be a natural future enhancement — today, the refusal phrase has to be imprinted via the project's answer key plus synth-prompt edits. Documenting the workaround keeps the pack honest."
+              "text": "The contract validator accepts extra keys, so the field saves fine, but nothing reads it: the refusals playbook's phrase and prompt are fixed in code, and a playbook run takes no prompt text. The phrase has to be taught through the rows themselves (answer-key examples, and synthetic rows edited before you accept them). Per-pack refusal phrases would be a natural future enhancement."
             }
           }
         },
@@ -239,21 +239,21 @@
             {
               "@type": "Answer",
               "position": 1,
-              "text": "A Hook Picker with three dropdowns and a Resync picker from JSON button"
+              "text": "A Hook Picker with a 'Resync picker from JSON' button"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "A Contract JSON textarea for editing overlay sections that don't have first-class form fields"
+              "text": "A Contract JSON textarea for overlay sections without form fields"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 2,
-            "text": "A search/filter bar on the pack list",
+            "text": "A search or filter bar over the pack list",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The panel has no search or filter UI; every installed pack shows, pick from the dropdown or the click list. The Hook Picker, the JSON textarea, and the four-button control set are the panel's actual surface area. Overlay sections beyond dataset_split / training_defaults / registry_gates are JSON-only."
+              "text": "The panel has no search or filter UI; every installed pack shows and you pick from the dropdown. The Hook Picker (with Resync picker from JSON) and the Contract JSON textarea are real; overlay sections beyond dataset_split / training_defaults / registry_gates are JSON-only."
             }
           }
         }
@@ -880,52 +880,52 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "Which of these belongs in the pack (vs the project) for an AP portfolio?",
-    "options": [
-      "The trained LoRA adapter weights",
-      "The eval results from the last training run",
-      "The dataset_split, training_defaults, and registry_gates that every AP project should inherit",
-      "The list of specific PO line items in the held-out test split"
-    ],
-    "answer": 2,
-    "explanation": "Policy goes in the pack; artefacts go in the project. The dataset split, training defaults, and registry gates are portfolio-wide conventions — they belong in the pack. The trained adapter, the eval results, and the specific data rows are artefacts of one project's run. (Per-entity precision floors as actual gating live in the eval pack — the domain pack only documents the team's per-entity priorities and the evaluator hook's <code>weights</code> config.)"
-  },
-  {
-    "q": "You bump the production F1 floor in finance-pack-v1 from 0.78 to 0.80 by editing the contract JSON and saving. What happens to existing projects already assigned to the pack?",
-    "options": [
-      "All assigned projects re-prepare automatically and re-evaluate against the new floor",
-      "The overlay is read at prepare / train / promote time; existing projects pick up the new floor on their next prepare/train/promote, not retroactively. You should also bump the version, because no auto-versioning exists",
-      "The platform refuses the edit because the version wasn't bumped",
-      "Existing projects keep the old floor permanently; only newly-assigned projects see the new value"
-    ],
-    "answer": 1,
-    "explanation": "Pack overlays are read at prepare / train / promote time — they apply to the next run, not retroactively. Version bumping is a discipline, not an enforcement; the platform won't stop you from editing in place, but the audit trail loses a story if you don't bump. Honest pack maintenance is bump-version, re-assign or re-run, document."
-  },
-  {
-    "q": "Why doesn't this tutorial put the AP team's refusal phrase ('I can't extract that field; route to exceptions') directly into the pack contract?",
-    "options": [
-      "Refusal phrases are not a SOX-permitted artefact",
-      "The pack contract validator accepts any extra keys, but no platform code reads a refusal phrase out of the pack today. Synth playbooks read prompt text from the project's synth config separately. The honest workaround is gold examples + per-project synth prompt customisation",
-      "Refusal phrases are immutable and come from the recipe",
-      "The pack does change the refusal phrase, but only after a full re-training run"
-    ],
-    "answer": 1,
-    "explanation": "The contract validator will accept the field; no behaviour follows. Per-pack refusal customisation would be a natural future enhancement — today, the refusal phrase has to be imprinted via the project's answer key plus synth-prompt edits. Documenting the workaround keeps the pack honest."
-  },
-  {
-    "q": "Which of these is NOT something the Domain Packs panel (Settings → Tools) exposes today?",
-    "options": [
-      "A dropdown of every installed pack",
-      "A Hook Picker with three dropdowns and a Resync picker from JSON button",
-      "A search/filter bar on the pack list",
-      "A Contract JSON textarea for editing overlay sections that don't have first-class form fields"
-    ],
-    "answer": 2,
-    "explanation": "The panel has no search or filter UI; every installed pack shows, pick from the dropdown or the click list. The Hook Picker, the JSON textarea, and the four-button control set are the panel's actual surface area. Overlay sections beyond dataset_split / training_defaults / registry_gates are JSON-only."
-  }
-]
+            [
+              {
+                "q": "Which of these belongs in the pack (vs the project) for an AP portfolio?",
+                "options": [
+                  "The trained LoRA adapter weights from the AP pilot project",
+                  "The eval results from the last run, kept as the team's baseline",
+                  "The dataset split, training defaults and registry gates",
+                  "The PO line items held out in the AP pilot's test split"
+                ],
+                "answer": 2,
+                "explanation": "Policy goes in the pack; artefacts go in the project. The split ratios, training defaults and registry gates are portfolio-wide conventions every AP project should inherit. The adapter, the eval results and the specific data rows are artefacts of one project's run."
+              },
+              {
+                "q": "You bump the production F1 floor in finance-pack-v1 from 0.78 to 0.80 by editing the contract JSON and clicking Save Pack. What happens to projects already assigned to the pack?",
+                "options": [
+                  "They all re-prepare automatically and are re-scored against 0.80 right away",
+                  "Each uses 0.80 from its next split, train or promote; past results stay as they were",
+                  "The save is refused until you bump the pack's version id",
+                  "They keep the 0.78 copied in at assignment; only newly assigned projects see 0.80"
+                ],
+                "answer": 1,
+                "explanation": "Save Pack updates the pack in place, and a project's effective contract (profile plus pack overlay) is resolved fresh each time it splits, trains or promotes. So every assigned project sees the new floor from its next run; nothing is re-scored retroactively. The tempting idea that the overlay was copied in at assignment is wrong: assignment only stores the pack id. To change one project without moving the others, duplicate the pack under a new version id and reassign. Bumping the version is a discipline the platform does not enforce."
+              },
+              {
+                "q": "Why doesn't this tutorial put the AP team's refusal phrase ('I can't extract that field; route to exceptions') directly into the pack contract?",
+                "options": [
+                  "Pack contracts may not store free text, so the validator rejects the key",
+                  "No platform code reads a refusal phrase from the pack, so the key does nothing",
+                  "Refusal phrases are fixed by the recipe and override any pack setting",
+                  "The pack does swap the phrase, but only after a full retraining run"
+                ],
+                "answer": 1,
+                "explanation": "The contract validator accepts extra keys, so the field saves fine, but nothing reads it: the refusals playbook's phrase and prompt are fixed in code, and a playbook run takes no prompt text. The phrase has to be taught through the rows themselves (answer-key examples, and synthetic rows edited before you accept them). Per-pack refusal phrases would be a natural future enhancement."
+              },
+              {
+                "q": "Which of these is NOT something the Domain Packs panel (Settings → Tools) exposes today?",
+                "options": [
+                  "A dropdown of every installed pack",
+                  "A Hook Picker with a 'Resync picker from JSON' button",
+                  "A search or filter bar over the pack list",
+                  "A Contract JSON textarea for overlay sections without form fields"
+                ],
+                "answer": 2,
+                "explanation": "The panel has no search or filter UI; every installed pack shows and you pick from the dropdown. The Hook Picker (with Resync picker from JSON) and the Contract JSON textarea are real; overlay sections beyond dataset_split / training_defaults / registry_gates are JSON-only."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -933,36 +933,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Which of these belongs in the pack (vs the project) for an AP portfolio?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The trained LoRA adapter weights</li>
-                  <li>The eval results from the last training run</li>
-                  <li>The dataset_split, training_defaults, and registry_gates that every AP project should inherit</li>
-                  <li>The list of specific PO line items in the held-out test split</li>
+                  <li>The trained LoRA adapter weights from the AP pilot project</li>
+                  <li>The eval results from the last run, kept as the team's baseline</li>
+                  <li>The dataset split, training defaults and registry gates</li>
+                  <li>The PO line items held out in the AP pilot's test split</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The dataset_split, training_defaults, and registry_gates that every AP project should inherit</strong> Policy goes in the pack; artefacts go in the project. The dataset split, training defaults, and registry gates are portfolio-wide conventions — they belong in the pack. The trained adapter, the eval results, and the specific data rows are artefacts of one project's run. (Per-entity precision floors as actual gating live in the eval pack — the domain pack only documents the team's per-entity priorities and the evaluator hook's &lt;code&gt;weights&lt;/code&gt; config.)</p></details></li>
-              <li><p class="quiz__q-text">You bump the production F1 floor in finance-pack-v1 from 0.78 to 0.80 by editing the contract JSON and saving. What happens to existing projects already assigned to the pack?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The dataset split, training defaults and registry gates</strong> Policy goes in the pack; artefacts go in the project. The split ratios, training defaults and registry gates are portfolio-wide conventions every AP project should inherit. The adapter, the eval results and the specific data rows are artefacts of one project's run.</p></details></li>
+              <li><p class="quiz__q-text">You bump the production F1 floor in finance-pack-v1 from 0.78 to 0.80 by editing the contract JSON and clicking Save Pack. What happens to projects already assigned to the pack?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>All assigned projects re-prepare automatically and re-evaluate against the new floor</li>
-                  <li>The overlay is read at prepare / train / promote time; existing projects pick up the new floor on their next prepare/train/promote, not retroactively. You should also bump the version, because no auto-versioning exists</li>
-                  <li>The platform refuses the edit because the version wasn't bumped</li>
-                  <li>Existing projects keep the old floor permanently; only newly-assigned projects see the new value</li>
+                  <li>They all re-prepare automatically and are re-scored against 0.80 right away</li>
+                  <li>Each uses 0.80 from its next split, train or promote; past results stay as they were</li>
+                  <li>The save is refused until you bump the pack's version id</li>
+                  <li>They keep the 0.78 copied in at assignment; only newly assigned projects see 0.80</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The overlay is read at prepare / train / promote time; existing projects pick up the new floor on their next prepare/train/promote, not retroactively. You should also bump the version, because no auto-versioning exists</strong> Pack overlays are read at prepare / train / promote time — they apply to the next run, not retroactively. Version bumping is a discipline, not an enforcement; the platform won't stop you from editing in place, but the audit trail loses a story if you don't bump. Honest pack maintenance is bump-version, re-assign or re-run, document.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Each uses 0.80 from its next split, train or promote; past results stay as they were</strong> Save Pack updates the pack in place, and a project's effective contract (profile plus pack overlay) is resolved fresh each time it splits, trains or promotes. So every assigned project sees the new floor from its next run; nothing is re-scored retroactively. The tempting idea that the overlay was copied in at assignment is wrong: assignment only stores the pack id. To change one project without moving the others, duplicate the pack under a new version id and reassign. Bumping the version is a discipline the platform does not enforce.</p></details></li>
               <li><p class="quiz__q-text">Why doesn't this tutorial put the AP team's refusal phrase ('I can't extract that field; route to exceptions') directly into the pack contract?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Refusal phrases are not a SOX-permitted artefact</li>
-                  <li>The pack contract validator accepts any extra keys, but no platform code reads a refusal phrase out of the pack today. Synth playbooks read prompt text from the project's synth config separately. The honest workaround is gold examples + per-project synth prompt customisation</li>
-                  <li>Refusal phrases are immutable and come from the recipe</li>
-                  <li>The pack does change the refusal phrase, but only after a full re-training run</li>
+                  <li>Pack contracts may not store free text, so the validator rejects the key</li>
+                  <li>No platform code reads a refusal phrase from the pack, so the key does nothing</li>
+                  <li>Refusal phrases are fixed by the recipe and override any pack setting</li>
+                  <li>The pack does swap the phrase, but only after a full retraining run</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The pack contract validator accepts any extra keys, but no platform code reads a refusal phrase out of the pack today. Synth playbooks read prompt text from the project's synth config separately. The honest workaround is gold examples + per-project synth prompt customisation</strong> The contract validator will accept the field; no behaviour follows. Per-pack refusal customisation would be a natural future enhancement — today, the refusal phrase has to be imprinted via the project's answer key plus synth-prompt edits. Documenting the workaround keeps the pack honest.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. No platform code reads a refusal phrase from the pack, so the key does nothing</strong> The contract validator accepts extra keys, so the field saves fine, but nothing reads it: the refusals playbook's phrase and prompt are fixed in code, and a playbook run takes no prompt text. The phrase has to be taught through the rows themselves (answer-key examples, and synthetic rows edited before you accept them). Per-pack refusal phrases would be a natural future enhancement.</p></details></li>
               <li><p class="quiz__q-text">Which of these is NOT something the Domain Packs panel (Settings → Tools) exposes today?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>A dropdown of every installed pack</li>
-                  <li>A Hook Picker with three dropdowns and a Resync picker from JSON button</li>
-                  <li>A search/filter bar on the pack list</li>
-                  <li>A Contract JSON textarea for editing overlay sections that don't have first-class form fields</li>
+                  <li>A Hook Picker with a 'Resync picker from JSON' button</li>
+                  <li>A search or filter bar over the pack list</li>
+                  <li>A Contract JSON textarea for overlay sections without form fields</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. A search/filter bar on the pack list</strong> The panel has no search or filter UI; every installed pack shows, pick from the dropdown or the click list. The Hook Picker, the JSON textarea, and the four-button control set are the panel's actual surface area. Overlay sections beyond dataset_split / training_defaults / registry_gates are JSON-only.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. A search or filter bar over the pack list</strong> The panel has no search or filter UI; every installed pack shows and you pick from the dropdown. The Hook Picker (with Resync picker from JSON) and the Contract JSON textarea are real; overlay sections beyond dataset_split / training_defaults / registry_gates are JSON-only.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->
