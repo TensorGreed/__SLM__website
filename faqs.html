@@ -140,7 +140,7 @@
           "name": "How do I prove what happened in a training run?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "The run_events table is the audit spine. Imports, document uploads, training, eval, export and deployment actions emit events, and every error event carries a stable reason code; the support bundle exports them as JSON. The training manifest captures every input that produced the run, so you can replay an experiment from a frozen artifact."
+            "text": "The run_events table is the audit spine. Imports, document uploads, training starts, training timeouts and dispatch errors, eval, export and deployment actions emit events, and every error event carries a stable reason code; the support bundle exports them as JSON. Other failures of a real training run (a crash, a non-zero exit, a kill signal) show on the experiment's failure banner but do not reach the timeline yet. The training manifest captures every input that produced the run, so you can replay an experiment from a frozen artifact."
           }
         },
         {
@@ -383,8 +383,11 @@
             <summary>How do I prove what happened in a training run?</summary>
             <p>
               The <code>run_events</code> table is the audit spine. Imports, document uploads,
-              training, eval, export and deployment actions emit events, and every error event
-              carries a stable reason code; the support bundle exports them as JSON. The
+              training starts, training timeouts and dispatch errors, eval, export and deployment
+              actions emit events, and every error event carries a stable reason code; the support
+              bundle exports them as JSON. Other failures of a real training run (a crash, a
+              non-zero exit, a kill signal) show on the experiment's failure banner but do not
+              reach the timeline yet. The
               training manifest captures every input that produced the run, so you can replay
               an experiment from a frozen artifact.
             </p>

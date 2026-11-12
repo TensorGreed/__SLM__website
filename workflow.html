@@ -185,7 +185,7 @@
             <p><strong>Inputs:</strong> prepared manifest + base model + the resolved config (shown in a confirm dialog with an estimate before Launch).</p>
             <p><strong>Outputs:</strong> checkpoints + per-step loss / eval traces + adapter weights (or a full model for encoders). Preflight runs first: dependency, memory-fit, capability and rule-policy checks; strict mode blocks, fail-open emits warnings.</p>
             <p><strong>Contract:</strong> preflight → a training job queued to the Celery worker (Redis plus a worker are required with the default <code>TRAINING_BACKEND=external</code>) → checkpoints → when a real run completes, a <code>post_training_lift_eval</code> Job scores the base model and the run on the same test split. Tokenizing and loss masking happen in the trainer. Cancel stops the process.</p>
-            <p><strong>RunEvent:</strong> <code>training</code> / info when a run starts (and on completion for simulate runs; payload: experiment_id, backend). <code>training_dispatch_error</code> / <code>training_runtime_error</code> / <code>training_timeout</code> on failure, and a <code>training_time_limit_projected</code> warning when a run is on pace to hit its time limit.</p>
+            <p><strong>RunEvent:</strong> <code>training</code> / info when a run starts (and on completion for simulate runs; payload: experiment_id, backend). <code>training_dispatch_error</code> and <code>training_timeout</code> on failure (<code>training_runtime_error</code> for simulate runs); other failures of a real run (a crash, a non-zero exit, a kill signal) show on the experiment's failure banner but do not reach the timeline yet. A <code>training_time_limit_projected</code> warning fires when a run is on pace to hit its time limit.</p>
           </article>
           <article class="workflow-step reveal">
             <div class="step-head"><span>08</span><h3>Results</h3></div>
@@ -238,7 +238,7 @@
         <article class="architecture-shell reveal" aria-label="RunEvent stream feeds">
           <div class="arch-lane">
             <span>Producers</span>
-            <p>Imports, document uploads, training, eval, export and deployment write <code>RunEvent</code> rows via <code>emit_event()</code>; the stage cards above say which. Severity is one of info / warning / error / critical, and an error or critical row must carry a reason code from the taxonomy or it is rejected. The taxonomy declares more codes than the stages emit today.</p>
+            <p>Imports, document uploads, training (starts, timeouts and dispatch errors), eval, export and deployment write <code>RunEvent</code> rows via <code>emit_event()</code>; the stage cards above say which. Severity is one of info / warning / error / critical, and an error or critical row must carry a reason code from the taxonomy or it is rejected. The taxonomy declares more codes than the stages emit today.</p>
           </div>
           <div class="arch-lane">
             <span>Consumers</span>
