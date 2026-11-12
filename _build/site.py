@@ -28,8 +28,10 @@ Usage:
                                  # move each quiz's correct option to a slot
                                  # spread evenly over its track (check fails
                                  # when one slot holds > 40% of a track's
-                                 # answers, or the correct option is the
-                                 # longest in > 50% of its questions)
+                                 # answers, the correct option is the
+                                 # longest or shortest in > 40% of its
+                                 # questions, or one length rank holds
+                                 # > 40%; rebalance fixes slots only)
   python3 -m unittest discover -s _build -p 'test_*.py'
                                  # mutation tests for those checks
 
@@ -772,7 +774,7 @@ QUIZ_REGION_RE = re.compile(r"[ \t]*<!--\s*site:quiz\b.*?<!--\s*/site:quiz\s*-->
 # count) in at most this share of the questions; the same cap applies to the
 # shortest option, so the fix does not become the opposite tell.
 QUIZ_MAX_SLOT_SHARE = 0.40
-QUIZ_MAX_LONGEST_SHARE = 0.50
+QUIZ_MAX_LONGEST_SHARE = 0.40
 # No length rank (shortest, 2nd-shortest, ..., longest) may hold more than this
 # share of a track's correct answers either: padding distractors until the
 # answer stops being the longest just moves the tell to the 2nd-longest slot.
