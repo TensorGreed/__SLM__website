@@ -1,0 +1,316 @@
+# Settings for _build/site.py. Per-page facts (title, description, dates) come
+# from the pages themselves; this file holds site-wide values and, at the end,
+# the per-page head overrides.
+
+base_url = "https://brewslm.com/"
+site_name = "BrewSLM"
+
+# Image used for og:image / twitter:image when a page has none and no raster
+# override. Social cards (PNG) arrive with T6.
+default_image = "assets/brewslm-logo.svg"
+default_image_alt = "BrewSLM logo"
+robots = "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
+
+[feed]
+path = "feed.xml"
+title = "BrewSLM engineering blog"
+subtitle = "Engineering notes on small language model fine-tuning infrastructure."
+author = "TensorGreed"
+author_uri = "https://github.com/TensorGreed"
+# Blog posts are the top-level files matching this glob.
+posts = "blog-*.html"
+index = "blog.html"
+
+[sitemap]
+path = "sitemap.xml"
+# Pages kept out of the sitemap (404 is always excluded).
+exclude = []
+
+[notfound]
+path = "404.html"
+# Page whose header and footer the 404 page copies.
+chrome_from = "faqs.html"
+
+# ── Per-page head overrides ───────────────────────────────────────────────
+# Only where a page's social copy differs from its <title> / description or
+# uses its own image. Delete an entry to fall back to the derived value.
+
+[pages."academy/advanced/index.html"]
+og_description = "Advanced techniques for distillation, DPO/ORPO, quantization, multi-task fine-tuning, serving, and observability."
+twitter_description = "Advanced techniques for distillation, DPO/ORPO, quantization, multi-task fine-tuning, serving, and observability."
+
+[pages."academy/advanced/production-feedback-loop.html"]
+og_title = "Production feedback loop — BrewSLM Academy"
+og_description = "Log → tag → augment → retrain: the data-collection half that drift detection triggers but doesn't itself supply."
+twitter_title = "Production feedback loop — BrewSLM Academy"
+twitter_description = "Log → tag → augment → retrain, with runnable code and the privacy + cost honest beat."
+
+[pages."academy/advanced/reasoning-training.html"]
+og_title = "Reasoning training — BrewSLM Academy"
+og_description = "CoT SFT, process supervision, outcome supervision, GRPO — and the honest beat that small-model 'reasoning' is often format-following."
+twitter_title = "Reasoning training — BrewSLM Academy"
+twitter_description = "When \"reasoning\" is real, when it's a tag, and how to tell — with PRM, ORM, and GRPO."
+
+[pages."academy/advanced/speculative-decoding.html"]
+og_description = "A small draft proposes K tokens, the target verifies in one pass, accepted tokens commit. Honest speed-up math and why SLM targets see modest wins."
+twitter_description = "Acceptance rate, EAGLE/Medusa, same-tokenizer constraint, and why KV-cache + batching + quantization beat spec-decoding on SLM targets."
+
+[pages."academy/advanced/structured-pruning.html"]
+og_description = "Remove whole heads, layers, or channels; run a short recovery pass; ship a smaller model with real wall-clock wins — or skip pruning entirely if 4-bit already meets your budget."
+twitter_description = "Heads, layers, channels — what to cut, how to score importance, and why recovery training is not optional."
+
+[pages."academy/advanced/tool-use-fine-tuning.html"]
+og_description = "Train an SLM router for tool calls: data shape, no-tool negatives, valid-tool-call rate, argument-match accuracy."
+twitter_description = "Tool schemas, no-tool path, valid-tool-call rate, argument-match accuracy — with runnable code."
+
+[pages."academy/certificate.html"]
+og_description = "Finish all 81 lessons of the BrewSLM Academy and claim your completion certificate."
+twitter_description = "Finish all 81 lessons of the BrewSLM Academy and claim your completion certificate."
+
+[pages."academy/foundations/architecture-taxonomy.html"]
+og_description = "Three Transformer-family flavours and when to use each. Why decoder-only won for chat and where the others still win."
+twitter_title = "Architecture taxonomy — BrewSLM Academy"
+twitter_description = "Encoder, encoder-decoder, decoder-only — the three Transformer families and what each is for."
+
+[pages."academy/foundations/attention-and-the-transformer.html"]
+og_description = "Self-attention, multi-head attention, and the Transformer block — the architecture behind language models, explained gently."
+twitter_title = "Attention & the Transformer, gently"
+twitter_description = "The architecture behind language models, explained gently."
+
+[pages."academy/foundations/base-vs-instruct-models.html"]
+og_description = "Base models predict the next token from raw text. Instruct models have been aligned to follow instructions. Pick the wrong one and you waste your fine-tune."
+twitter_description = "Two flavours of the same family — base and instruct — behave very differently. Pick wrong and you waste a fine-tune."
+
+[pages."academy/foundations/from-n-grams-to-transformers.html"]
+og_description = "The lineage from n-gram language models through neural LMs, RNNs/LSTMs, to the Transformer — what each step fixed about the one before."
+twitter_description = "Each generation of language model replaced the prior bottleneck. The history makes fine-tuning make sense."
+
+[pages."academy/foundations/how-language-models-work.html"]
+og_description = "Logits, softmax, autoregressive generation, and decoding (temperature, top-p) — what 'generating text' actually means."
+twitter_title = "How language models work: next-token prediction"
+twitter_description = "What 'generating text' actually means, step by step."
+
+[pages."academy/foundations/how-models-learn.html"]
+og_description = "Make 'reduce the loss' precise: gradient descent, learning rate, minibatches, and epochs — the engine behind training."
+twitter_title = "How models learn: loss & gradient descent"
+twitter_description = "Gradient descent, learning rate, minibatches, epochs — the engine behind training."
+
+[pages."academy/foundations/index.html"]
+og_description = "Core ML and LLM concepts for engineers who want to fine-tune a base model on custom data."
+twitter_description = "Core ML and LLM concepts for engineers who want to fine-tune a base model on custom data."
+
+[pages."academy/foundations/llms-vs-slms.html"]
+og_description = "What scale buys and costs, and why a fine-tuned small model can rival a giant one on a narrow task."
+twitter_title = "LLMs vs SLMs: scale, cost, latency"
+twitter_description = "Why a fine-tuned small model can rival a giant one on a narrow task."
+
+[pages."academy/foundations/neural-networks.html"]
+og_description = "Neurons, layers, the forward pass, and what backpropagation does — the model family behind language models."
+twitter_title = "Neural networks in one page"
+twitter_description = "Neurons, layers, the forward pass, and backpropagation."
+
+[pages."academy/foundations/picking-a-base-model.html"]
+og_description = "The smallest SLM that meets your constraints (license, tokenizer, instruct quality, context, size) is the right starting point — not the trendiest."
+twitter_description = "License, tokenizer, instruct quality, context length, size, community — the checklist for picking a base SLM."
+
+[pages."academy/foundations/slm-project-lifecycle.html"]
+og_description = "The data → train → evaluate → iterate → ship → monitor loop, and why data-centric iteration is the real work."
+twitter_title = "The mental model of an SLM project"
+twitter_description = "The full data → train → eval → ship loop for a small-model project."
+
+[pages."academy/foundations/tokens-and-embeddings.html"]
+og_description = "Tokenization, token IDs, embeddings, special tokens, and the context window — how text becomes math."
+twitter_title = "From text to numbers: tokens & embeddings"
+twitter_description = "How text becomes the numbers a model can process."
+
+[pages."academy/foundations/what-is-a-model.html"]
+og_description = "A model is a function with adjustable parameters learned from data. From a two-parameter example to a language model, plus training vs inference."
+twitter_description = "A model is a function with adjustable parameters learned from data."
+
+[pages."academy/glossary.html"]
+og_description = "Plain-language definitions of the core terms in supervised fine-tuning and small language model training."
+twitter_description = "Definitions of the core terms in SFT and SLM training."
+
+[pages."academy/hands-on/experiment-tracking-mlflow-wandb.html"]
+og_description = "The bookkeeping that beats ad-hoc runs every time: what to log, MLflow vs W&B vs TensorBoard, and reproducible-vs-replicable."
+twitter_description = "Without tracking, every run is one-shot. With tracking, you can answer 'why did this regress?' three weeks later."
+
+[pages."academy/hands-on/index.html"]
+og_description = "Runnable tutorial for fine-tuning small language models in Python with a base model, custom dataset, LoRA, and evaluation."
+twitter_description = "Runnable tutorial for fine-tuning small language models in Python with a base model, custom dataset, LoRA, and evaluation."
+
+[pages."academy/hands-on/multi-turn-chat-sft.html"]
+og_title = "Multi-turn chat SFT — BrewSLM Academy"
+og_description = "Train on multi-turn conversations with the loss applied to every assistant turn, not just the last. SFTTrainer + chat-messages data, with the pitfalls."
+twitter_title = "Multi-turn chat SFT — BrewSLM Academy"
+twitter_description = "Loss on every assistant turn, not just the last."
+
+[pages."academy/hands-on/project-gallery.html"]
+og_description = "Six concrete SLM projects, each as a recipe: dataset shape, scoring mode, the twist that matters. Pick one and ship it."
+twitter_title = "Project gallery: 6 SLM use cases — BrewSLM Academy"
+twitter_description = "Six projects, six recipes: sentiment, intent, JSON extractor, PII detector, FAQ, tool-call generator."
+
+[pages."academy/hands-on/public-benchmarks-and-lm-eval-harness.html"]
+og_title = "Public benchmarks & lm-eval-harness — BrewSLM Academy"
+og_description = "Smoke checks for SLMs: MMLU, HellaSwag, ARC, GSM8K, lm-eval-harness — and the contamination caveats you need to know before quoting a number."
+twitter_title = "Public benchmarks & lm-eval-harness — BrewSLM Academy"
+twitter_description = "Useful smoke checks, not truth. What each benchmark measures, how to read it, and where contamination lurks."
+
+[pages."academy/hands-on/qlora-hands-on.html"]
+og_description = "4-bit base loaded via bitsandbytes, LoRA on top, SFTTrainer. The runnable version of Lesson 1.14 — fit a much larger model in the same memory."
+twitter_description = "4-bit base + LoRA on top: fit a larger model in the same GPU."
+
+[pages."academy/hands-on/real-metrics-with-sklearn-evaluate.html"]
+og_description = "Graduate from hand-rolled accuracy to per-class precision/recall/F1, confusion matrix, macro vs micro F1, and HF evaluate."
+twitter_description = "Per-class F1, confusion matrix, macro vs micro — honest reporting in code."
+
+[pages."academy/hands-on/sft-with-trl-trainer.html"]
+og_title = "SFT with TRL's SFTTrainer — BrewSLM Academy"
+og_description = "The same LoRA fine-tune from Lesson 2.5, in 20 lines with TRL's SFTTrainer. What it does for you (chat template, loss mask, PEFT) and what's worth knowing it hides."
+twitter_title = "SFT with TRL's SFTTrainer — BrewSLM Academy"
+twitter_description = "The 20-line SFT loop with TRL."
+
+[pages."academy/hands-on/structured-outputs-with-pydantic.html"]
+og_title = "Structured outputs with pydantic — BrewSLM Academy"
+og_description = "Validate JSON outputs with a Pydantic schema. Compute the valid-JSON rate and per-field accuracy on the valid ones — the honest two-number report."
+twitter_title = "Structured outputs with pydantic — BrewSLM Academy"
+twitter_description = "Validate JSON outputs with Pydantic; report valid-JSON rate + per-field accuracy."
+
+[pages."academy/sft-fundamentals/catastrophic-forgetting.html"]
+og_title = "Catastrophic forgetting — BrewSLM Academy"
+og_description = "SFT on narrow data degrades broader capabilities. What catastrophic forgetting is, when it bites hardest, and the mitigations: LoRA, mixing original data, early stopping, broad eval."
+twitter_title = "Catastrophic forgetting — BrewSLM Academy"
+twitter_description = "Fine-tuning on narrow data can erase broader skills. This lesson covers when it bites and how to mitigate it."
+
+[pages."academy/sft-fundamentals/continued-pretraining.html"]
+og_title = "Continued pretraining — BrewSLM Academy"
+og_description = "When SFT isn't enough: the data shape, recipe, evaluation cadence, and CPT → SFT two-stage pipeline."
+twitter_title = "Continued pretraining — BrewSLM Academy"
+twitter_description = "The right tool when the base model doesn't speak your domain; the wrong tool when it does."
+
+[pages."academy/sft-fundamentals/dataset-formats-in-the-wild.html"]
+og_title = "Dataset formats in the wild — BrewSLM Academy"
+og_description = "JSONL, completion, chat messages, Alpaca, ShareGPT, classification, extraction — the dataset shapes you'll meet, and how to convert between them."
+twitter_title = "Dataset formats in the wild — BrewSLM Academy"
+twitter_description = "The common SFT dataset shapes (JSONL, Alpaca, ShareGPT, chat messages, completion, classification, extraction) and how to convert between them."
+
+[pages."academy/sft-fundamentals/decoding-controls.html"]
+og_description = "Decoding ≠ training. Temperature, top-p, top-k, max_new_tokens, stop tokens, and the repetition penalty shape what an already-trained model produces — and bad outputs often mean a decoding fix, not a retrain."
+twitter_title = "Decoding controls — BrewSLM Academy"
+twitter_description = "Decoding is not training. Tune temperature, top-p, max_new_tokens, stop tokens, and repetition penalty before you reach for a retrain."
+
+[pages."academy/sft-fundamentals/index.html"]
+og_description = "Learn how to fine-tune a base model on custom datasets with SFT, LoRA, and honest evaluation."
+twitter_description = "Learn how to fine-tune a base model on custom datasets with SFT, LoRA, and honest evaluation."
+
+[pages."academy/small-language-model-roadmap.html"]
+og_description = "Roadmap for ML and LLM engineers learning how to fine-tune small language models from a base model on custom data."
+twitter_description = "Roadmap for ML and LLM engineers learning how to fine-tune small language models from a base model on custom data."
+
+[pages."academy/tutorials/building-domain-packs-finance-example.html"]
+og_title = "Building domain packs — the finance / AP pack worked example"
+og_description = "Pack data model end to end. Identity, overlays, hooks, registry gates, versioning, assignment, sharing. Finance / AP pack as the worked example — currency normalisation, three-way-match field harmonisation, per-entity precision floors."
+twitter_title = "Building domain packs — finance / AP pack worked example"
+twitter_description = "The deep BrewSLM Academy reference on packaging your conventions. Finance / AP pack as the worked example."
+
+[pages."academy/tutorials/code-review-nitpicker.html"]
+og_title = "Build a code-review nitpicker with the code-review recipe — end-to-end tutorial"
+og_description = "Train a small LM that comments on PR diffs in your team's voice. LLM-judge eval, draft-suggestion shipping, and the playbooks that teach voice."
+twitter_title = "Build a code-review nitpicker with a small language model"
+twitter_description = "Train a model that comments on PR diffs in your team's voice. LLM-judge eval and draft-suggestion shipping."
+
+[pages."academy/tutorials/customer-ticket-triage.html"]
+og_title = "Build a customer ticket triage classifier with class-imbalance drills — end-to-end tutorial"
+og_description = "Route incoming tickets to the right team automatically with a small fine-tuned classifier. CLASS_BALANCE_FILL drills, per-class F1 floors, confidence-thresholded routing."
+twitter_title = "Customer ticket triage with class-imbalance drills — end-to-end tutorial"
+twitter_description = "Route incoming tickets to the right team with a small fine-tuned classifier. CLASS_BALANCE_FILL, per-class F1 floors, confidence-thresholded routing."
+
+[pages."academy/tutorials/index.html"]
+og_title = "BrewSLM Academy — End-to-end Tutorials"
+og_description = "Hands-on walkthroughs of complete BrewSLM projects, from dataset to deployed model."
+twitter_title = "BrewSLM Academy — End-to-end Tutorials"
+twitter_description = "Hands-on walkthroughs of complete BrewSLM projects."
+
+[pages."academy/tutorials/internal-kb-qa-sft-path.html"]
+og_title = "Internal knowledge-base QA with the qa-sft recipe — end-to-end tutorial"
+og_description = "The simpler path: memorise a small stable knowledge base directly into the model's weights, skip the retrieval index, ship in an afternoon. Plus the honest signal that tells you when to graduate to rag-protocol."
+twitter_title = "Internal knowledge-base QA with qa-sft — end-to-end tutorial"
+twitter_description = "The simpler alternative to RAG for small stable knowledge bases. When memorisation beats retrieval, and how to spot the moment you've outgrown it."
+
+[pages."academy/tutorials/invoice-field-extraction.html"]
+og_title = "Invoice field extraction with the span-extraction recipe — end-to-end tutorial"
+og_description = "Replace your regex-based invoice extractor with a small fine-tuned model that survives layout changes. Span-set eval, per-entity precision floors, inline microservice deployment."
+twitter_title = "Invoice field extraction with span-extraction — end-to-end tutorial"
+twitter_description = "From free-form invoice text to a JSON extractor deployable as an inline microservice. Span-set scoring with per-entity precision floors."
+
+[pages."academy/tutorials/legal-contracts-domain-pack.html"]
+og_title = "Build a legal-contract QA assistant with a custom domain pack — end-to-end tutorial"
+og_description = "Train a small model on contract clauses with the rag-protocol recipe and a custom legal pack: tighter citation discipline, jurisdictional-citation normalisation, and a legal-appropriate refusal phrase."
+twitter_title = "Build a legal-contract QA assistant with a custom domain pack"
+twitter_description = "Rag-protocol recipe + a custom legal pack. End-to-end BrewSLM walkthrough."
+
+[pages."academy/tutorials/pii-span-tagging.html"]
+og_title = "Build a PII span tagger with the span-extraction recipe — end-to-end tutorial"
+og_description = "Train a small, private PII tagger you can run before logs and transcripts leave your network. Per-entity recall floors, Faker-synthesised drills, and an explicit-review redaction pattern."
+twitter_title = "Build a PII span tagger with a small language model"
+twitter_description = "Private PII tagging with per-entity recall floors and explicit-review redaction. End-to-end BrewSLM walkthrough."
+
+[pages."academy/tutorials/setup-brewslm.html"]
+og_title = "Tutorial 0 — Set up BrewSLM and your first project"
+og_description = "Clone, install, run, log in, and tour the main surfaces. The prerequisite for every other BrewSLM Academy tutorial."
+twitter_title = "Tutorial 0 — Set up BrewSLM and your first project"
+twitter_description = "Clone, install, run, log in, tour the surfaces."
+
+[pages."academy/tutorials/sql-injection-classifier.html"]
+og_title = "Build a SQL injection classifier with a small language model — end-to-end tutorial"
+og_description = "Train a fast, private SQLi classifier you can ship inline before your database layer. Hard negatives, adversarial eval, and per-class precision floors."
+twitter_title = "Build a SQL injection classifier with a small language model"
+twitter_description = "Inline SQLi classifier with hard-negative drills, per-class precision floors, and adversarial eval."
+
+[pages."academy/tutorials/support-faq-rag-protocol.html"]
+og_title = "Build a support FAQ assistant with rag-protocol — end-to-end tutorial"
+og_description = "A full BrewSLM walkthrough: from FAQ CSV to a deployed retrieval-grounded assistant that cites its sources and refuses cleanly off-topic."
+twitter_title = "Build a support FAQ assistant with rag-protocol — end-to-end tutorial"
+twitter_description = "A complete BrewSLM walkthrough from FAQ CSV to a deployed retrieval-grounded assistant."
+
+[pages."academy/with-brewslm/eval-pack-and-failure-cluster-reference.html"]
+og_description = "Evaluation Contract v2 gate schema (gate_id / metric_id / operator / threshold / required) and the FailureCluster row keyed on (project_id, stage, reason_code, signature)."
+twitter_description = "The promotability gate schema + the failure cluster row + the augment_from_cluster remediation path."
+
+[pages."academy/with-brewslm/index.html"]
+og_description = "Learn the BrewSLM platform workflow for fine-tuning small language models on custom data."
+twitter_description = "Learn the BrewSLM platform workflow for fine-tuning small language models on custom data."
+
+[pages."academy/with-brewslm/runevent-and-coach-catalogue.html"]
+og_description = "Nine RunEvent stages, the reason-code taxonomy, four severities, plus the Coach action contract (navigate / run_playbook / augment_from_cluster / start_flow / reroute_to_rag)."
+twitter_description = "The lint-gated reason-code taxonomy + the Coach contract behind the inline notices."
+
+[pages."academy/with-brewslm/training-config-reference.html"]
+og_title = "BrewSLM training config reference — Academy"
+og_description = "brewslm.yaml manifest, section by section: workflow / blueprint / domain / model / data_sources / adapters / training_plan / eval_pack / export / deployment. Fields, defaults, what each controls."
+twitter_title = "BrewSLM training config reference — Academy"
+twitter_description = "The brewslm.yaml manifest, section by section. The canonical training config reference."
+
+[pages."blog-irs-pub17-fine-tune-lost-retrieval-won.html"]
+og_image = "assets/blog/irs-pub17/01-passages-check.png"
+
+[pages."blog-irs-pub17-teaching-a-small-model-to-read.html"]
+og_image = "assets/blog/irs-pub17-reader/01-reader-verdict.png"
+og_description = "A 1.5B passage reader beat its base model reading the same passages, 0.688 vs 0.570 on 157 pre-registered questions, all three seeds better. Every number, including the two attempts that missed."
+twitter_description = "A 1.5B passage reader beat its base model reading the same passages, 0.688 vs 0.570 on 157 pre-registered questions, all three seeds better. Every number, including the two attempts that missed."
+
+[pages."blog-ntsb-accident-report-extractor.html"]
+og_image = "assets/blog/ntsb-extractor/01-verdict-three-seeds.png"
+og_description = "0.959 field accuracy on 1,234 pre-registered NTSB test narratives against 0.494 for the base model, null recall 0.976 against 0.545, all three seeds passing. Every number, including where it still fails."
+twitter_description = "0.959 field accuracy on 1,234 pre-registered NTSB test narratives against 0.494 for the base model, null recall 0.976 against 0.545, all three seeds passing."
+
+[pages."blog-schema-introspector-vs-hand-written-converters.html"]
+og_description = "We shipped a 175-line BIO-to-spans converter. Then we threw it away and built a column sniffer. Here's why the sniffer wins."
+twitter_description = "We shipped a 175-line BIO-to-spans converter. Then we threw it away and built a column sniffer. Here's why the sniffer wins."
+
+[pages."blog-sensitive-data-detector-from-zero.html"]
+og_image = "assets/blog/sensitive-data/02-synthetic-span-tools.png"
+
+[pages."blog-task-aware-eval-handler-dispatcher.html"]
+og_description = "One generic pass-rate metric flatters classification and lies about NER. Here's how BrewSLM dispatches to the metric shape that fits."
+twitter_description = "One generic pass-rate metric flatters classification and lies about NER. Here's how BrewSLM dispatches to the metric shape that fits."

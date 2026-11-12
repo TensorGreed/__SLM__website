@@ -9,20 +9,24 @@ The hand-written HTML stays the source of truth. This script only:
   * writes whole generated files: sitemap.xml, feed.xml, 404.html.
 
 Usage:
-  python3 tools/site.py build    # rewrite regions + generated files
-  python3 tools/site.py check    # exit 1 if build would change anything, or a
+  python3 _build/site.py build    # rewrite regions + generated files
+  python3 _build/site.py check    # exit 1 if build would change anything, or a
                                  # link is broken, a page lacks a title, ...
 
-`build` is idempotent: running it twice gives a zero diff. Values inside the
-site:head region (og:title, og:description, twitter:*, og:image, robots) are
-kept when present, so edit them in place; canonical, og:url and image sizes
-are always derived. The first run moves the existing tags into the region.
+`build` is idempotent: running it twice gives a zero diff. The head values
+are derived on every build: og:title / twitter:title from <title>,
+og:description / twitter:description from the meta description, og:image from
+site.toml's default_image. To override one for a page, add a
+[pages."<path>"] table to _build/site.toml (keys: robots, og_title,
+og_description, og_image, og_image_alt, twitter_title, twitter_description).
+The tooling lives in _build/ so /tools/ stays free for site pages.
 """
 from __future__ import annotations
 
 import argparse
 import datetime as dt
 import fnmatch
+import html
 import json
 import os
 import re
@@ -36,10 +40,11 @@ from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
-CFG = tomllib.loads((ROOT / "tools" / "site.toml").read_text(encoding="utf-8"))
+CFG = tomllib.loads((ROOT / "_build" / "site.toml").read_text(encoding="utf-8"))
 BASE = CFG["base_url"].rstrip("/") + "/"
 NOTFOUND = CFG["notfound"]["path"]
-SKIP_DIRS = {".git", ".github", "node_modules", "tools"}
+# Top-level paths that are not site pages (this tooling lives in _build/).
+SKIP_DIRS = {".git", ".github", "node_modules", "_build"}
 RASTER = (".png", ".jpg", ".jpeg", ".gif", ".webp")
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link",
         "meta", "param", "source", "track", "wbr"}
@@ -50,7 +55,7 @@ VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link",
 def discover() -> list[str]:
     out = []
     for d, dirs, files in os.walk(ROOT):
-        dirs[:] = sorted(x for x in dirs if x not in SKIP_DIRS)
+        dirs[:] = sorted(x for x in dirs if not (d == str(ROOT) and x in SKIP_DIRS) and x != ".git")
         for f in files:
             if f.endswith(".html"):
                 rel = os.path.relpath(os.path.join(d, f), ROOT).replace(os.sep, "/")
@@ -110,7 +115,6 @@ class Scan(HTMLParser):
         self.jsonld: list[str] = []
         self._in_ld = False
         self._buf: list[str] = []
-        self.main_imgs: list[tuple[str, str]] = []
 
     def _classes(self):
         return set().union(*(c for _, c in self.stack)) if self.stack else set()
@@ -132,8 +136,6 @@ class Scan(HTMLParser):
             self.links.append((a["href"], "link", line))
         elif tag in ("img", "script", "source") and a.get("src"):
             self.links.append((a["src"], tag, line))
-        if tag == "img" and a.get("src") and any(t == "main" for t, _ in self.stack):
-            self.main_imgs.append((a["src"], a.get("alt", "")))
         if re.fullmatch(r"h[1-6]", tag):
             self.headings.append(int(tag[1]))
         if tag == "table":
@@ -261,6 +263,12 @@ def managed_key(tag: str):
     return None
 
 
+KNOWN = {"robots", "canonical", "feed", "analytics", "og:type", "og:site_name", "og:title",
+         "og:description", "og:url", "og:image", "og:image:width", "og:image:height",
+         "og:image:alt", "article:published_time", "article:modified_time", "twitter:card",
+         "twitter:title", "twitter:description", "twitter:image", "twitter:image:alt"}
+
+
 def esc(v: str) -> str:
     return v.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
@@ -276,101 +284,103 @@ def line_span(text: str, start: int, end: int) -> tuple[int, int]:
     return start, end
 
 
+OVERRIDE_KEYS = ("robots", "og_title", "og_description", "og_image", "og_image_alt",
+                 "twitter_title", "twitter_description")
+
+
+def head_values(rel: str, s: "Scan") -> dict:
+    """The managed head values for a page: derived on every build from its
+    <title>, meta description and site.toml, unless site.toml's [pages."<rel>"]
+    table overrides a key."""
+    ov = CFG.get("pages", {}).get(rel, {})
+    unknown = set(ov) - set(OVERRIDE_KEYS)
+    if unknown:
+        raise SystemExit(f"site.toml [pages.\"{rel}\"]: unknown key(s) {sorted(unknown)}")
+    ptype = page_type(rel)
+    v = {"canonical": url_of(rel)}
+    v["robots"] = ov.get("robots", CFG["robots"])
+    v["og_type"] = "article" if ptype in ("post", "lesson", "tutorial") else "website"
+    v["og_title"] = ov.get("og_title", s.title or "")
+    v["og_description"] = ov.get("og_description", s.metas.get("description", ""))
+    img = ov.get("og_image", CFG["default_image"])
+    v["og_image"] = img if urlparse(img).scheme else BASE + img.lstrip("/")
+    default_alt = CFG["default_image_alt"] if img == CFG["default_image"] else v["og_title"]
+    v["og_image_alt"] = ov.get("og_image_alt", default_alt)
+    v["twitter_title"] = ov.get("twitter_title", v["og_title"])
+    v["twitter_description"] = ov.get("twitter_description", v["og_description"])
+    lf = local_file_for_url(v["og_image"])
+    v["image_size"] = image_size(lf) if lf is not None else None
+    v["published"] = jsonld_field(s, "datePublished")
+    v["modified"] = jsonld_field(s, "dateModified")
+    return v
+
+
+def comment_spans(head: str) -> list[tuple[int, int]]:
+    """HTML comments in the head other than the site:head markers."""
+    return [c.span() for c in re.finditer(r"<!--.*?-->", head, re.S)
+            if not re.match(r"<!--\s*/?site:head\b", c.group(0))]
+
+
 def build_head(rel: str, text: str) -> str:
     m = re.search(r"<head\b[^>]*>(.*?)</head>", text, re.S | re.I)
     if not m:
         return text
     h0, h1 = m.span(1)
     head = text[h0:h1]
-    found: dict[str, str] = {}
+    comments = comment_spans(head)
+    extra: list[str] = []      # og:/article:/twitter: tags this script does not generate
     spans = []
     for t in TAG_RE.finditer(head):
+        if any(a <= t.start() < b for a, b in comments):
+            continue           # commented-out tags are left alone
         k = managed_key(t.group(0))
         if not k:
             continue
-        if k != "marker":
+        if k not in KNOWN and k != "marker":
             _, a = tag_attrs(t.group(0))
-            v = a.get("src") if k == "analytics" else a.get("href") if k in ("canonical", "feed") else a.get("content", "")
-            found.setdefault(k, v)
+            attr = "name" if k.startswith("twitter:") else "property"
+            extra.append(f'<meta {attr}="{esc(k)}" content="{esc(a.get("content", ""))}" />')
         spans.append(line_span(head, *t.span()))
-    if not spans:
-        return text
-    indent = re.match(r"\n?([ \t]*)", head[spans[0][0]:]).group(1)
+    if spans:
+        ins = spans[0][0]
+        indent = re.match(r"\n?([ \t]*)", head[ins:]).group(1)
+    else:              # no anchor yet: append the region at the end of <head>
+        ins = len(head.rstrip())
+        indent = (re.findall(r"\n([ \t]*)\S", head) or ["    "])[-1]
 
-    s = scan(text)
-    ptype = page_type(rel)
-    title = s.title or ""
-    desc = s.metas.get("description", "")
-    canonical = url_of(rel)
-
-    def get(k, default):
-        v = found.get(k)
-        return v if v else default
-
-    image = found.get("og:image")
-    image_alt_default = None
-    if not image:
-        for src, alt in s.main_imgs:
-            if src.lower().split("?")[0].endswith(RASTER):
-                image = urljoin(canonical, src)
-                image_alt_default = alt if 0 < len(alt) <= 160 else None
-                break
-    if not image:
-        image, image_alt_default = BASE + CFG["default_image"], CFG["default_image_alt"]
-    if image == BASE + CFG["default_image"]:
-        image_alt_default = CFG["default_image_alt"]
-    og_title = get("og:title", title)
-    og_desc = get("og:description", desc)
-    image_alt = get("og:image:alt", image_alt_default or og_title)
-    size = None
-    lf = local_file_for_url(image)
-    if lf is not None:
-        size = image_size(lf)
-
-    published = jsonld_field(s, "datePublished") or found.get("article:published_time")
-    modified = jsonld_field(s, "dateModified") or found.get("article:modified_time")
-    og_type = get("og:type", "article" if ptype in ("post", "lesson", "tutorial") else "website")
-
-    lines = ["<!-- site:head: generated by tools/site.py; values are kept, structure is rebuilt -->"]
-    lines.append(f'<meta name="robots" content="{esc(get("robots", "index,follow,max-image-preview:large,max-snippet:-1"))}" />')
-    lines.append(f'<link rel="canonical" href="{esc(canonical)}" />')
+    v = head_values(rel, scan(text))
+    lines = ["<!-- site:head: generated by _build/site.py from <title>, meta description and "
+             "_build/site.toml; edit those, not these tags -->"]
+    lines.append(f'<meta name="robots" content="{esc(v["robots"])}" />')
+    lines.append(f'<link rel="canonical" href="{esc(v["canonical"])}" />')
     lines.append(f'<link rel="alternate" type="application/atom+xml" title="{esc(CFG["feed"]["title"])}" '
                  f'href="{esc(BASE + CFG["feed"]["path"])}" />')
-    lines.append(f'<meta property="og:type" content="{esc(og_type)}" />')
+    lines.append(f'<meta property="og:type" content="{v["og_type"]}" />')
     lines.append(f'<meta property="og:site_name" content="{esc(CFG["site_name"])}" />')
-    lines.append(f'<meta property="og:title" content="{esc(og_title)}" />')
-    lines.append(f'<meta property="og:description" content="{esc(og_desc)}" />')
-    lines.append(f'<meta property="og:url" content="{esc(canonical)}" />')
-    lines.append(f'<meta property="og:image" content="{esc(image)}" />')
-    if size:
-        lines.append(f'<meta property="og:image:width" content="{size[0]}" />')
-        lines.append(f'<meta property="og:image:height" content="{size[1]}" />')
-    lines.append(f'<meta property="og:image:alt" content="{esc(image_alt)}" />')
-    if og_type == "article" and published:
-        lines.append(f'<meta property="article:published_time" content="{esc(published)}" />')
-    if og_type == "article" and modified:
-        lines.append(f'<meta property="article:modified_time" content="{esc(modified)}" />')
+    lines.append(f'<meta property="og:title" content="{esc(v["og_title"])}" />')
+    lines.append(f'<meta property="og:description" content="{esc(v["og_description"])}" />')
+    lines.append(f'<meta property="og:url" content="{esc(v["canonical"])}" />')
+    lines.append(f'<meta property="og:image" content="{esc(v["og_image"])}" />')
+    if v["image_size"]:
+        lines.append(f'<meta property="og:image:width" content="{v["image_size"][0]}" />')
+        lines.append(f'<meta property="og:image:height" content="{v["image_size"][1]}" />')
+    lines.append(f'<meta property="og:image:alt" content="{esc(v["og_image_alt"])}" />')
+    if v["og_type"] == "article" and v["published"]:
+        lines.append(f'<meta property="article:published_time" content="{esc(str(v["published"]))}" />')
+    if v["og_type"] == "article" and v["modified"]:
+        lines.append(f'<meta property="article:modified_time" content="{esc(str(v["modified"]))}" />')
+    lines += extra
     lines.append('<meta name="twitter:card" content="summary_large_image" />')
-    lines.append(f'<meta name="twitter:title" content="{esc(get("twitter:title", og_title))}" />')
-    lines.append(f'<meta name="twitter:description" content="{esc(get("twitter:description", og_desc))}" />')
-    lines.append(f'<meta name="twitter:image" content="{esc(get("twitter:image", image))}" />')
-    lines.append(f'<meta name="twitter:image:alt" content="{esc(get("twitter:image:alt", image_alt))}" />')
-    # Any other og:/article:/twitter: tag written by hand is kept as-is.
-    known = {"robots", "canonical", "feed", "analytics", "og:type", "og:site_name", "og:title",
-             "og:description", "og:url", "og:image", "og:image:width", "og:image:height",
-             "og:image:alt", "article:published_time", "article:modified_time", "twitter:card",
-             "twitter:title", "twitter:description", "twitter:image", "twitter:image:alt"}
-    for k in sorted(set(found) - known):
-        attr = "name" if k.startswith("twitter:") else "property"
-        lines.insert(-5, f'<meta {attr}="{esc(k)}" content="{esc(found[k])}" />')
-    analytics = found.get("analytics") or rel_prefix(rel) + "assets/analytics.js"
-    lines.append(f'<script defer src="{esc(analytics)}"></script>')
+    lines.append(f'<meta name="twitter:title" content="{esc(v["twitter_title"])}" />')
+    lines.append(f'<meta name="twitter:description" content="{esc(v["twitter_description"])}" />')
+    lines.append(f'<meta name="twitter:image" content="{esc(v["og_image"])}" />')
+    lines.append(f'<meta name="twitter:image:alt" content="{esc(v["og_image_alt"])}" />')
+    lines.append(f'<script defer src="{rel_prefix(rel)}assets/analytics.js"></script>')
     lines.append("<!-- /site:head -->")
 
     new_head = head
     for a, b in reversed(spans):
         new_head = new_head[:a] + new_head[b:]
-    ins = spans[0][0]
     block = "".join(f"\n{indent}{ln}" for ln in lines)
     new_head = new_head[:ins] + block + new_head[ins:]
     return text[:h0] + new_head + text[h1:]
@@ -491,9 +501,20 @@ def build_404() -> str:
     header = re.search(r'[ \t]*<header class="site-header">.*?</header>', src, re.S).group(0)
     footer = re.search(r'[ \t]*<footer class="site-footer">.*?</footer>', src, re.S).group(0)
 
+    src_url = url_of(CFG["notfound"]["chrome_from"])
+
+    def to_root(m: re.Match) -> str:
+        """Any relative href/src becomes root-relative, so it works at any depth."""
+        val = html.unescape(m.group(2))
+        if val.startswith(("#", "/")) or urlparse(val).scheme:
+            return m.group(0)
+        u = urlparse(urljoin(src_url, val))
+        path = u.path + (f"?{u.query}" if u.query else "") + (f"#{u.fragment}" if u.fragment else "")
+        return f'{m.group(1)}="{esc(path)}"'
+
     def absolutize(chunk: str) -> str:
         chunk = chunk.replace(' aria-current="page"', "")
-        return re.sub(r'((?:href|src)=")\./', r"\1/", chunk)
+        return re.sub(r'\b(href|src)="([^"]*)"', to_root, chunk)
     header, footer = absolutize(header), absolutize(footer)
     s = scan(src)
     gtag = re.search(r'[ \t]*<script async src="https://www\.googletagmanager\.com/[^"]*"></script>', src)
@@ -504,7 +525,7 @@ def build_404() -> str:
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- generated by tools/site.py build; edit the template there -->
+    <!-- generated by _build/site.py build; edit the template there -->
     <title>Page not found · {esc(CFG["site_name"])}</title>
     <meta name="description" content="This page does not exist. Try the BrewSLM home page, the Academy or the blog." />
     <meta name="robots" content="noindex,follow" />
@@ -606,7 +627,7 @@ def cmd_check(args) -> int:
         if rel == CFG["sitemap"]["path"] and cur is not None and strip_lastmod(cur) == strip_lastmod(text):
             warns.append(f"{rel}: lastmod dates differ from git (run build after committing to refresh)")
         else:
-            errors.append(f"{rel}: out of date, run `python3 tools/site.py build`")
+            errors.append(f"{rel}: out of date, run `python3 _build/site.py build`")
     for rel, text in gen.items():
         if rel.endswith(".xml"):
             try:
@@ -623,7 +644,12 @@ def cmd_check(args) -> int:
             if target and not (ROOT / target).is_file() and target != NOTFOUND:
                 errors.append(f"{rel}:{line}: broken link {href}")
         if rel == NOTFOUND:
+            for val in re.findall(r'\b(?:href|src)="([^"]*)"', text):
+                if not (val.startswith(("#", "/")) or urlparse(html.unescape(val)).scheme):
+                    errors.append(f"{rel}: relative URL {val!r} breaks below the site root")
             continue
+        if not re.search(r"<!--\s*site:head\b", text) or "<!-- /site:head -->" not in text:
+            errors.append(f"{rel}: no <!-- site:head --> region (does the page have a <head>?)")
         if not s.title:
             errors.append(f"{rel}: missing <title>")
         elif len(s.title) > 60:
