@@ -157,9 +157,59 @@
   }
 
   /* ── quiz engine ─────────────────────────────────────────────────── */
+  /* Options are shown in a per-visitor, per-question order: a random seed is
+   * kept once in this browser, so the order is stable across reloads but the
+   * correct answer is not always in the same slot. Answers are tracked by the
+   * option's authored index (the order in the page's JSON, which is also the
+   * no-JS fallback order), so scoring and stored progress don't depend on the
+   * shuffle. */
+  var SEED_KEY = "brewslm_academy_seed";
+  function visitorSeed() {
+    try {
+      if (storageOk) {
+        var s = window.localStorage.getItem(SEED_KEY);
+        if (!s) {
+          s = String(Math.floor(Math.random() * 4294967296));
+          window.localStorage.setItem(SEED_KEY, s);
+        }
+        return s;
+      }
+    } catch (e) { /* fall through */ }
+    if (!memoryFallback[SEED_KEY]) memoryFallback[SEED_KEY] = String(Math.floor(Math.random() * 4294967296));
+    return memoryFallback[SEED_KEY];
+  }
+  function hash32(str) {            // FNV-1a
+    var h = 2166136261;
+    for (var i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return h >>> 0;
+  }
+  function rng(seed) {              // mulberry32
+    var a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) >>> 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function shuffledOrder(n, seedText) {
+    var order = [];
+    for (var i = 0; i < n; i++) order.push(i);
+    var rand = rng(hash32(seedText));
+    for (var j = n - 1; j > 0; j--) {
+      var k = Math.floor(rand() * (j + 1));
+      var tmp = order[j]; order[j] = order[k]; order[k] = tmp;
+    }
+    return order;
+  }
+
   function initQuizzes() {
     var blocks = Array.prototype.slice.call(document.querySelectorAll("[data-quiz]"));
-    blocks.forEach(function (block) {
+    var seed = blocks.length ? visitorSeed() : "";
+    blocks.forEach(function (block, bi) {
       var dataEl = block.querySelector('script[type="application/json"]');
       if (!dataEl) return;
       var questions;
@@ -169,28 +219,32 @@
 
       var form = document.createElement("form");
       form.className = "quiz__form";
-      var state = questions.map(function () { return null; });
+      form.noValidate = true;
+      var state = questions.map(function () { return null; });   // chosen authored index per question
 
       questions.forEach(function (q, qi) {
-        var qWrap = document.createElement("div");
+        var options = q.options || [];
+        var qWrap = document.createElement("fieldset");
         qWrap.className = "quiz__q";
-        var qText = document.createElement("p");
+        var qText = document.createElement("legend");
         qText.className = "quiz__q-text";
         qText.textContent = (qi + 1) + ". " + q.q;
         qWrap.appendChild(qText);
 
         var opts = document.createElement("div");
         opts.className = "quiz__options";
-        (q.options || []).forEach(function (optText, oi) {
+        var order = shuffledOrder(options.length, seed + "|" + lessonId + "|" + bi + "|" + qi + "|" + q.q);
+        order.forEach(function (oi) {
           var label = document.createElement("label");
           label.className = "quiz__option";
+          label.setAttribute("data-option", String(oi));
           var input = document.createElement("input");
           input.type = "radio";
-          input.name = "q" + qi;
+          input.name = "quiz" + bi + "-q" + qi;
           input.value = String(oi);
           input.addEventListener("change", function () { state[qi] = oi; });
           var span = document.createElement("span");
-          span.textContent = optText;
+          span.textContent = options[oi];
           label.appendChild(input);
           label.appendChild(span);
           opts.appendChild(label);
@@ -213,6 +267,8 @@
 
       var result = document.createElement("p");
       result.className = "quiz__result";
+      result.setAttribute("role", "status");
+      result.setAttribute("aria-live", "polite");
       form.appendChild(result);
 
       form.addEventListener("submit", function (e) {
@@ -221,14 +277,22 @@
         var qWraps = form.querySelectorAll(".quiz__q");
         questions.forEach(function (q, qi) {
           var chosen = state[qi];
-          var labels = qWraps[qi].querySelectorAll(".quiz__option");
+          var labels = Array.prototype.slice.call(qWraps[qi].querySelectorAll(".quiz__option"));
+          function labelFor(oi) {
+            for (var i = 0; i < labels.length; i++) {
+              if (labels[i].getAttribute("data-option") === String(oi)) return labels[i];
+            }
+            return null;
+          }
           labels.forEach(function (l) { l.classList.remove("is-correct", "is-wrong"); });
+          var right = labelFor(q.answer);
           if (chosen === q.answer) {
             score++;
-            if (labels[chosen]) labels[chosen].classList.add("is-correct");
+            if (right) right.classList.add("is-correct");
           } else {
-            if (chosen != null && labels[chosen]) labels[chosen].classList.add("is-wrong");
-            if (labels[q.answer]) labels[q.answer].classList.add("is-correct");
+            var wrong = chosen != null ? labelFor(chosen) : null;
+            if (wrong) wrong.classList.add("is-wrong");
+            if (right) right.classList.add("is-correct");
           }
           var exp = qWraps[qi].querySelector(".quiz__explanation");
           if (exp) exp.classList.add("is-shown");
@@ -240,6 +304,7 @@
         AcademyProgress.recordQuiz(lessonId, score, questions.length);
       });
 
+      block.classList.add("is-interactive");
       block.appendChild(form);
     });
   }
@@ -259,6 +324,11 @@
     var done = manifest.filter(function (m) { return AcademyProgress.isComplete(m.id); });
     var doneCount = done.length;
     var earned = total > 0 && doneCount === total;
+
+    // the lesson count comes from the manifest (the build writes the same number into the page)
+    Array.prototype.forEach.call(root.querySelectorAll("[data-cert-total]"), function (el) {
+      el.textContent = String(total);
+    });
 
     // progress numbers
     var pctEl = root.querySelector("[data-cert-pct]");
