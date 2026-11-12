@@ -305,11 +305,11 @@
 
         <h2>Lever 2: RAG (supply knowledge at inference)</h2>
         <p><strong>Retrieval-augmented generation</strong> keeps the model fixed but, at question time, <em>retrieves</em> relevant documents from your own data and pastes them into the prompt. The model then answers using that supplied context. RAG is the right tool when the problem is <em>knowledge</em>: facts the model never saw, private documents, or information that changes often (you update the document store, not the model).</p>
-        <p>It changes nothing about the model's behavior or format — it only changes what the model knows <em>for that one call</em>. Get the retrieval wrong and the answer is wrong; get it right and even a small model can answer questions about your latest docs.</p>
+        <p>It changes none of the model's parameters — it only changes what the model knows <em>for that one call</em>. Get the retrieval wrong and the answer is wrong; get it right and even a small model can answer questions about your latest docs.</p>
 
         <h2>Lever 3: Fine-tuning / SFT (change the parameters on examples)</h2>
         <p><strong>Supervised fine-tuning</strong> continues training the base model on examples of <em>your</em> inputs paired with the outputs you want. Unlike prompting and RAG, this actually changes the parameters, so the new behavior is baked in — no per-call example tokens, consistent format, learned style and task shape. It's the right lever when the problem is <em>behavior or form</em>: "always output strict JSON," "classify into these labels," "extract spans in this schema," "respond in this voice."</p>
-        <p>It costs a training run (a GPU and some examples), and it does not, by itself, teach the model fresh facts reliably — that's RAG's job. The headline of this whole Academy: with a modest dataset, SFT can make a <em>small</em> model excellent at one specific task.</p>
+        <p>It costs a training run (a GPU and some examples). Fine-tuning is reliable for behaviour and an inefficient, hallucination-prone way to add new facts: in published comparisons retrieval beat fine-tuning for injecting knowledge (<a class="inline-link" href="https://arxiv.org/abs/2312.05934" target="_blank" rel="noopener noreferrer">Ovadia et al. 2023</a>), and new facts learned through fine-tuning were learned slowly and made the model more likely to hallucinate (<a class="inline-link" href="https://arxiv.org/abs/2405.05904" target="_blank" rel="noopener noreferrer">Gekhman et al. 2024</a>). We saw the same in our own <a class="inline-link" href="../../blog-irs-pub17-fine-tune-lost-retrieval-won.html">IRS Publication 17 project</a>, where retrieved passages beat the fine-tune. Facts are RAG's job. The headline of this whole Academy: with a modest dataset, SFT can make a <em>small</em> model excellent at one specific task.</p>
 
         <h2>Lever 4: (Continued) pretraining (build base ability)</h2>
         <p>The heaviest lever: train on a very large corpus of raw text to build broad capability or deep domain fluency (e.g., adapting a general model to legal or biomedical language). This is what creates base models in the first place. <strong>Continued pretraining</strong> extends a base model on a big domain corpus before any task-specific fine-tuning. It's expensive — lots of data, lots of compute — and rarely the first thing you reach for. Most practitioners never need it; they start from someone else's pretrained base and fine-tune.</p>
@@ -349,7 +349,7 @@
         </div>
 
         <h2>Where we go next</h2>
-        <p>You now know <em>why</em> you'd fine-tune. The last Foundations lesson asks a money question: given that fine-tuning a small model is so effective for a narrow task, when should you pick a small model over a giant one at all?</p>
+        <p>You now know <em>why</em> you'd fine-tune. The next lesson asks a money question: given that fine-tuning a small model is so effective for a narrow task, when should you pick a small model over a giant one at all?</p>
 
         <section class="key-terms">
           <h2>Key terms</h2>
