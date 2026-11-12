@@ -223,43 +223,43 @@
       <ol class="track-index-lessons">
           <li>
             <a class="track-index-lessons__title" href="from-script-to-platform.html">1. From script to platform: the BrewSLM lifecycle</a>
-            <p class="track-index-lessons__desc">You fine-tuned a model by hand in Track 2. This track re-runs that exact pipeline through BrewSLM, mapping each by-hand step to a platform surface. It opens with the eleven-stage lifecycle and why every stage emits a RunEvent.</p>
+            <p class="track-index-lessons__desc">You fine-tuned a model by hand in Track 2. This track re-runs that exact pipeline through BrewSLM, mapping each by-hand step to a platform surface. It opens with the eleven-stage lifecycle (a teaching model of the flow) and the RunEvent audit stream that import, training, evaluation, export and deploy write to.</p>
           </li>
           <li>
             <a class="track-index-lessons__title" href="ingest-and-map.html">2. Ingest &amp; map your data with per-row accountability</a>
-            <p class="track-index-lessons__desc">Stages 01–04 of the BrewSLM lifecycle: ingest from a source locator, introspect the data&#x27;s shape into a ranked mapping proposal, dry-run the mapping to preview accepted and rejected rows, and commit — replacing the hand-built dataset list from Track 2 with an auditable import.</p>
+            <p class="track-index-lessons__desc">Stages 01–04 of the BrewSLM lifecycle: ingest from a source locator, introspect the data&#x27;s shape into a ranked mapping proposal, preview the mapping to see accepted and rejected rows, and commit — replacing the hand-built dataset list from Track 2 with an auditable import. Imported rows land already accepted and skip the review queue, so the preview is your review.</p>
           </li>
           <li>
             <a class="track-index-lessons__title" href="synthetic-data-and-review.html">3. Synthetic data and the review queue</a>
-            <p class="track-index-lessons__desc">When you don&#x27;t have enough rows, BrewSLM generates them with recipe-aware synthetic playbooks, lands each row as review_status pending, and lets you approve or bulk-drop rejected rows grouped by reason — the platform answer to Track 2&#x27;s &#x27;in practice, hundreds more rows&#x27;.</p>
+            <p class="track-index-lessons__desc">When you don&#x27;t have enough rows, BrewSLM generates them with recipe-aware synthetic playbooks, lands each row as review_status pending, and lets you accept or reject them in bulk, grouped by source, verdict or reason — the platform answer to Track 2&#x27;s &#x27;in practice, hundreds more rows&#x27;.</p>
           </li>
           <li>
             <a class="track-index-lessons__title" href="clean-prepare-manifest.html">4. Clean and prepare: the manifest is the source of truth</a>
-            <p class="track-index-lessons__desc">Stages 05–06: optional cleaning (PII findings, quality scores, chunks) and Prepare, which builds prepared/manifest.json plus train and eval splits carrying the task_profile and scoring_mode — replacing the by-hand tokenize/collate/split with a single declarative artifact everything downstream reads from.</p>
+            <p class="track-index-lessons__desc">Stages 05–06: optional cleaning (PII findings, quality scores, chunks) and Prepare, which writes the train / val / test split files plus prepared/manifest.json recording the rows, task_profile, scoring_mode and file hashes — replacing the by-hand split with a record of exactly what each run trained and was scored on.</p>
           </li>
           <li>
             <a class="track-index-lessons__title" href="recipes-and-handlers.html">5. Recipes and task handlers: the training config without the code</a>
-            <p class="track-index-lessons__desc">A recipe captures everything you set in TrainingArguments and LoraConfig — base model, LoRA knobs, learning rate, schedule, precision — as declarative config, while the task-handler dispatcher routes the manifest&#x27;s task profile to the right handler that knows how to tokenize, mask, and score it.</p>
+            <p class="track-index-lessons__desc">The training config (TrainingConfig) holds what you set in TrainingArguments and LoraConfig — LoRA knobs, learning rate, schedule, batch, precision — with defaults you can override; &quot;recipe&quot; names three different things (task type, training preset, pipeline preset); and the eval dispatcher routes the manifest&#x27;s task profile to the handler that builds eval prompts and scores outputs. The trainer, not the handler, tokenizes and masks.</p>
           </li>
           <li>
             <a class="track-index-lessons__title" href="preflight-and-trainability.html">6. Preflight and the trainability forecast</a>
-            <p class="track-index-lessons__desc">Stage 07 runs before you spend a GPU-hour: dependency, memory-fit, capability, and gate-policy checks that return pass/fail, a blocker list, and a generated train plan — the readiness line on the Train form, and the platform answer to Track 2&#x27;s environment setup and the OOM you&#x27;d otherwise hit at step one.</p>
+            <p class="track-index-lessons__desc">Stage 07 runs before you spend a GPU-hour: dependency and capability checks that return errors (which block the launch) and warnings (which don&#x27;t), plus a heuristic low / medium / high VRAM-risk estimate and, on request, a train plan — the readiness line on the Train form, and the platform answer to Track 2&#x27;s environment setup and the OOM you&#x27;d otherwise hit at step one.</p>
           </li>
           <li>
             <a class="track-index-lessons__title" href="training-jobs-and-monitoring.html">7. Train: jobs, the bell, and the delta-from-baseline curve</a>
-            <p class="track-index-lessons__desc">Stage 08 runs your recipe as a watched background Job from the Train form: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into each run&#x27;s live dashboard (a warm-started run also gets a delta-from-baseline series), and named RunEvents capture completion or failure modes like training_oom and training_cancelled.</p>
+            <p class="track-index-lessons__desc">Stage 08 runs your recipe as a watched background Job from the Train form: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into each run&#x27;s live dashboard (a warm-started run also gets a delta-from-baseline series), and a failed run gets a failure banner naming the cause (timeout, killed by a signal, non-zero exit, error) with its log tail.</p>
           </li>
           <li>
             <a class="track-index-lessons__title" href="eval-packs-and-failure-clusters.html">8. Evaluate: eval packs, gates, failure clusters &amp; remediation</a>
-            <p class="track-index-lessons__desc">Stage 09 scores the trained model with an eval pack whose declared gates decide promotability, produces task-aware metrics from the handler&#x27;s score(), groups the misses into failure clusters, and proposes remediation — the platform form of Track 2&#x27;s evaluate-by-hand and Track 1&#x27;s quality gate.</p>
+            <p class="track-index-lessons__desc">Stage 09 scores the trained model with an eval pack whose gates (the pass/fail rules) turn metrics into PASS / FAIL on Results → Verdict, produces task-aware metrics from the handler&#x27;s score(), groups the misses into failure clusters by reason and output pattern, and proposes remediation — the platform form of Track 2&#x27;s evaluate-by-hand and Track 1&#x27;s quality gate.</p>
           </li>
           <li>
             <a class="track-index-lessons__title" href="auto-rag-and-reroute.html">9. When fine-tuning isn&#x27;t the answer: auto-RAG &amp; reroute-to-RAG</a>
-            <p class="track-index-lessons__desc">Sometimes the eval says fine-tuning won&#x27;t get there. BrewSLM&#x27;s post-eval decision engine can recommend retrieval: auto-RAG builds a BM25 index at training completion and prepends top-K passages at inference, and reroute-to-RAG clones the project into a retrieval-first sibling that uses the base model plus retrieval, no LoRA.</p>
+            <p class="track-index-lessons__desc">Sometimes the eval says fine-tuning won&#x27;t get there. BrewSLM can recommend retrieval two ways: a heuristic post-eval recommender, and a measured verdict when the base model plus passages beats the fine-tune on the same judge. Auto-RAG builds a BM25 index over the training rows at training completion and prepends top-K passages at inference, and reroute-to-RAG clones the project into a retrieval-first sibling that uses the base model plus retrieval, no LoRA.</p>
           </li>
           <li>
             <a class="track-index-lessons__title" href="export-deploy-coach.html">10. Capstone B: export, deploy &amp; Coach end-to-end</a>
-            <p class="track-index-lessons__desc">Stages 10–11 close the lifecycle: export to GGUF, ONNX, Hugging Face, TensorRT-LLM or Docker from Ship → Package, then deploy a versioned endpoint with smoke checks and drift checks — while the inline Coach notices thread the whole flow. The capstone re-runs the Track 2 sentiment task through BrewSLM and compares.</p>
+            <p class="track-index-lessons__desc">Stages 10–11 close the lifecycle: compress first when you want GGUF or ONNX, export (GGUF, ONNX, Hugging Face, TensorRT-LLM or Docker) from Ship → Package with its smoke tests, then deploy a versioned endpoint and run on-demand drift checks — while the inline Coach notices thread the whole flow. The capstone re-runs the Track 2 sentiment task through BrewSLM and compares.</p>
           </li>
           <li>
             <a class="track-index-lessons__title" href="training-config-reference.html">11. Training config reference (brewslm.yaml manifest)</a>
@@ -267,11 +267,11 @@
           </li>
           <li>
             <a class="track-index-lessons__title" href="runevent-and-coach-catalogue.html">12. RunEvent taxonomy &amp; Coach catalogue</a>
-            <p class="track-index-lessons__desc">The canonical RunEvent schema (nine stages, four severities), the lint-gated reason-code taxonomy by stage, plus the Coach contract behind the inline Coach notices: eight workflow stages, three severities, and the five action kinds (navigate / run_playbook / augment_from_cluster / start_flow / reroute_to_rag).</p>
+            <p class="track-index-lessons__desc">The canonical RunEvent schema (nine stages, four severities), the reason-code taxonomy by stage (validated at emit time for error and critical events; which codes are emitted today), plus the Coach contract behind the inline Coach notices: eight workflow stages, three severities, and the five action kinds (navigate / run_playbook / augment_from_cluster / start_flow / reroute_to_rag).</p>
           </li>
           <li>
             <a class="track-index-lessons__title" href="eval-pack-and-failure-cluster-reference.html">13. Eval pack &amp; failure cluster schema reference</a>
-            <p class="track-index-lessons__desc">The Evaluation Contract v2 gate schema (gate_id, metric_id, operator, threshold, required) and how gates decide promotability. Plus the FailureCluster row keyed on (project_id, stage, reason_code, signature) and the augment_from_cluster remediation path.</p>
+            <p class="track-index-lessons__desc">The Evaluation Contract v2 gate schema (only metric_id is required; gate_id, operator, threshold and required have defaults), the per-gate result reasons, and where gates are enforced (at export, through the project&#x27;s gate policy, off by default). Plus the FailureCluster row keyed on (project_id, stage, reason_code, signature) and the augment_from_cluster remediation path.</p>
           </li>
       </ol>
     </main>

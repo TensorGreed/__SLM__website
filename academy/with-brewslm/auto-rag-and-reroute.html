@@ -299,11 +299,12 @@
 
         <p>Track 0 taught the choice between fine-tuning and retrieval; Track 2 lesson 2.7 ended with "if there's no lift, revisit the data." But sometimes the honest answer is that the task is knowledge-bound, not behavior-bound — no amount of fine-tuning teaches facts the model should be <em>looking up</em>. BrewSLM has surfaces for exactly that.</p>
 
-        <h2>The post-eval decision engine</h2>
-        <p>After evaluation, a <strong>decision engine</strong> reads the results and the failure clusters and recommends a next move. If the failures look like missing knowledge (the model is fluent but wrong on facts) rather than missing behavior, it can recommend <strong>retrieval</strong> instead of another training round — the platform telling you, with evidence, that you're holding the wrong tool. You meet the recommendation as a Coach notice at the top of <strong>Results</strong> and as the reroute panel on <strong>Results → Failures</strong>, which stays hidden until there is a failing eval to act on.</p>
+        <h2>Two signals: a heuristic lead and a measured verdict</h2>
+        <p>After evaluation, a <strong>post-eval decision engine</strong> recommends a next move: <code>stay_the_course</code>, <code>try_rag</code>, <code>try_prompt_engineering</code> or <code>expand_data</code>. It is a heuristic. When the pass rate is 0.5 or more it says <code>stay_the_course</code>; below that it looks at three signals — retrieval-style phrases in the project's brief, how unique the answer-key answers are from each other, and how short the outputs are compared with the inputs — and recommends retrieval when the task <em>looks</em> retrieval-shaped. It does not read the failure clusters or the model's wrong answers. You meet it as the reroute panel on <strong>Results → Failures</strong> (hidden on <code>stay_the_course</code>) and, for <code>try_rag</code>, as a Coach notice at the top of <strong>Results</strong>.</p>
+        <p>The evidence-based signal is a Coach notice of its own, <code>eval:passages-beat-finetune</code>: "Retrieval over your documents beats the fine-tune". It fires when the <strong>base model answering from your document passages</strong> scores higher than your fine-tune <strong>under the same judge</strong> — the platform telling you, with a measurement, that you're holding the wrong tool. Treat the first as a lead to test and the second as the result of the test.</p>
 
         <h2>Auto-RAG — retrieval bolted onto your model</h2>
-        <p>At training completion, the auto-RAG service builds a <strong>BM25 index</strong> over your corpus. Then the chat on <strong>Results → Try it</strong> <strong>prepends the top-K retrieved passages</strong> to the prompt before generation, so the model answers with relevant context in front of it. You can compare side by side — same model, with retrieval vs without — from the <em>Auto-RAG comparison</em> card on <strong>Results → Compare</strong>, which starts the same harness as a background Job (tracked in the bell) and shows the two arms as cards:</p>
+        <p>At training completion, the auto-RAG service builds a <strong>BM25 index</strong> over the project's <strong>training rows</strong> — never the answer key or the validation / test split. (It used to index the answer key, so retrieval could hand the model the scored question together with its answer: a leak that inflated the score.) Document passages, when the project has documents, are indexed too. Then the chat on <strong>Results → Try it</strong> <strong>prepends the top-K retrieved passages</strong> to the prompt before generation, so the model answers with relevant context in front of it. You can compare side by side — same model, with retrieval vs without — from the <em>Auto-RAG comparison</em> card on <strong>Results → Compare</strong>, which starts the same harness as a background Job (tracked in the bell) and shows the two arms as cards:</p>
         <pre class="code-block"><code>$ python -m scripts.auto_rag_ab --project 1
 # builds/loads the BM25 index, runs the held-out split with and without
 # top-K retrieval, and reports the metric delta from retrieval</code></pre>
@@ -318,21 +319,22 @@
 
         <div class="callout callout--warning">
           <p class="callout__label">The honest-metrics point</p>
-          <p>The decision engine recommending RAG is not a failure of your fine-tune — it's the platform refusing to let you grind epochs against a problem training can't solve. Knowing <em>when not to fine-tune</em> is as valuable as knowing how, and it's the through-line from Track 0's pretraining-vs-fine-tuning-vs-RAG lesson.</p>
+          <p>A retrieval verdict is not a failure of your fine-tune — it's the platform, once it has measured base + passages against your run, refusing to let you grind epochs against a problem training can't solve. Knowing <em>when not to fine-tune</em> is as valuable as knowing how, and it's the through-line from Track 0's pretraining-vs-fine-tuning-vs-RAG lesson.</p>
         </div>
 
         <p>Whichever path clears the pass/fail rules — a fine-tuned adapter or a retrieval-first project — the last stage is getting it out into the world. Export, deploy, and the assistant that's been guiding the whole flow are the final lesson.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>When eval failures are knowledge-bound, the <strong>decision engine</strong> recommends retrieval. <strong>Auto-RAG</strong> prepends top-K BM25 passages to test the lift; <strong>reroute-to-RAG</strong> clones a base-model-plus-retrieval sibling with no LoRA. The platform helps you choose the right tool, not just turn the fine-tuning crank harder.</p>
+          <p>The <strong>decision engine</strong> flags retrieval-shaped tasks by heuristic; the <code>eval:passages-beat-finetune</code> Coach notice measures it — base model + passages beating the fine-tune on the same judge. <strong>Auto-RAG</strong> prepends top-K BM25 passages to test the lift; <strong>reroute-to-RAG</strong> clones a base-model-plus-retrieval sibling with no LoRA. The platform helps you choose the right tool, not just turn the fine-tuning crank harder.</p>
         </div>
 
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
-            <dt>post-eval decision engine</dt><dd>Reads eval results + clusters and recommends the next move — including retrieval over more training.</dd>
-            <dt>auto-RAG</dt><dd>Builds a BM25 index at training completion and prepends top-K retrieved passages at inference (Results → Try it; the comparison on Results → Compare).</dd>
+            <dt>post-eval decision engine</dt><dd>A heuristic recommender (pass rate, brief wording, answer diversity, output/input length) that returns stay_the_course / try_rag / try_prompt_engineering / expand_data. It does not read failure clusters.</dd>
+            <dt>passages-beat-finetune</dt><dd>The Coach notice that fires when the base model answering from document passages beats the fine-tune under the same judge — the measured case for retrieval.</dd>
+            <dt>auto-RAG</dt><dd>Builds a BM25 index over the training rows (never the answer key) at training completion and prepends top-K retrieved passages at inference (Results → Try it; the comparison on Results → Compare).</dd>
             <dt>BM25</dt><dd>Keyword (lexical) retrieval — fast and dependency-light; the retrieval baseline.</dd>
             <dt>reroute-to-RAG</dt><dd>Clones the project into a retrieval-first sibling (rag_first=True) using base model + retrieval, no LoRA.</dd>
             <dt>knowledge-bound vs behavior-bound</dt><dd>Whether failures are missing facts (use retrieval) or missing behavior (fine-tune).</dd>
