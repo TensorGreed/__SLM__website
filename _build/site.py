@@ -5,7 +5,12 @@ The hand-written HTML stays the source of truth. This script only:
 
   * rewrites marker-delimited regions inside pages
       <!-- site:head ... -->  ...  <!-- /site:head -->
-    (canonical, robots, Open Graph, Twitter, feed link, deferred analytics);
+    (canonical, robots, Open Graph, Twitter, feed link, deferred analytics),
+      <!-- site:jsonld ... -->  ...  <!-- /site:jsonld -->
+    (schema.org JSON-LD per page type, read from what the page shows: h1,
+    breadcrumb, lesson meta, quiz, FAQ, glossary, blog cards; hand-written
+    HowTo and SoftwareApplication blocks outside the region are kept as-is,
+    any other hand-written JSON-LD block is replaced by the region);
   * writes whole generated files: sitemap.xml, feed.xml, 404.html.
 
 Usage:
@@ -285,7 +290,7 @@ def line_span(text: str, start: int, end: int) -> tuple[int, int]:
 
 
 OVERRIDE_KEYS = ("robots", "og_title", "og_description", "og_image", "og_image_alt",
-                 "twitter_title", "twitter_description")
+                 "twitter_title", "twitter_description", "date_modified")
 
 
 def head_values(rel: str, s: "Scan") -> dict:
@@ -386,6 +391,342 @@ def build_head(rel: str, text: str) -> str:
     return text[:h0] + new_head + text[h1:]
 
 
+# ── visible-content facts ─────────────────────────────────────────────────
+# Everything the JSON-LD says is read from what a visitor sees on the page
+# (h1, breadcrumb, lesson meta, quiz, FAQ, glossary, blog cards), plus the
+# meta description and the few site-wide facts in site.toml.
+
+_BLOCK_TAGS = r"br|p|li|ul|ol|div|dd|dt|tr|td|th|h[1-6]|section|article|pre|table|summary|details|blockquote"
+
+
+def text_of(fragment: str) -> str:
+    """Visible text of an HTML fragment: tags dropped, entities decoded,
+    whitespace collapsed (block tags count as a space)."""
+    s = re.sub(r"<!--.*?-->|<script\b.*?</script>|<style\b.*?</style>", " ", fragment, flags=re.S | re.I)
+    s = re.sub(rf"</?(?:{_BLOCK_TAGS})\b[^>]*>", " ", s, flags=re.I)
+    s = re.sub(r"<[^>]+>", "", s)
+    return " ".join(html.unescape(s).split())
+
+
+def norm_url(u: str) -> str:
+    """Absolute URL with a trailing index.html folded to the directory."""
+    p = urlparse(u)
+    path = p.path[: -len("index.html")] if p.path.endswith("/index.html") else p.path
+    return f"{p.scheme}://{p.netloc}{path}" + (f"#{p.fragment}" if p.fragment else "")
+
+
+def abs_url(rel: str, href: str) -> str:
+    return norm_url(urljoin(url_of(rel), html.unescape(href)))
+
+
+def body_of(text: str) -> str:
+    i = text.find("<body")
+    return text[i:] if i != -1 else text
+
+
+def main_of(text: str) -> str:
+    m = re.search(r"<main\b[^>]*>(.*?)</main>", text, re.S | re.I)
+    return m.group(1) if m else body_of(text)
+
+
+def first(pattern: str, text: str, flags=re.S):
+    m = re.search(pattern, text, flags)
+    return m.group(1) if m else None
+
+
+def duration_minutes(s) -> int | None:
+    """Minutes in a visible time ('~9 min', '~2.5 hours total') or an ISO 8601
+    duration ('PT2H30M')."""
+    if not s:
+        return None
+    m = re.fullmatch(r"PT(?:(\d+)H)?(?:(\d+)M)?", str(s).strip())
+    if m and (m.group(1) or m.group(2)):
+        return int(m.group(1) or 0) * 60 + int(m.group(2) or 0)
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(minutes?|mins?|hours?|hrs?|h)\b", str(s), re.I)
+    if not m:
+        return None
+    n = float(m.group(1))
+    return round(n * 60) if m.group(2).lower().startswith("h") else round(n)
+
+
+def iso_duration(minutes: int) -> str:
+    h, m = divmod(minutes, 60)
+    return "PT" + (f"{h}H" if h else "") + (f"{m}M" if m or not h else "")
+
+
+class Facts:
+    """What a visitor can read on one page."""
+
+    def __init__(self, rel: str, text: str):
+        self.rel, self.text = rel, text
+        self.url = url_of(rel)
+        s = scan(text)
+        self.title = s.title or ""
+        self.description = s.metas.get("description", "")
+        body = body_of(text)
+        self.h1 = text_of(first(r"<h1\b[^>]*>(.*?)</h1>", body) or "")
+        self.crumbs = self._crumbs(body)
+        self.level = text_of(first(r"<strong>Level:</strong>(.*?)</span>", body) or "") or None
+        self.time = text_of(first(r"<strong>(?:Read time|Time):</strong>(.*?)</span>", body) or "") or None
+        self.outcome = text_of(first(r'class="lesson-header__outcome"[^>]*>(.*?)</p>', body) or "") or None
+        self.published = first(r'class="blog-post-meta"[^>]*>\s*<time datetime="([^"]+)"', body)
+        q = first(r"<section\b[^>]*\bdata-quiz\b[^>]*>.*?<script type=\"application/json\">(.*?)</script>", body)
+        self.quiz = json.loads(q) if q else None
+        self.quiz_title = text_of(first(r'class="quiz__title"[^>]*>(.*?)</h2>', body) or "") or None
+
+    def _crumbs(self, body: str) -> list[tuple[str, str]]:
+        nav = first(r'<nav class="breadcrumb[^"]*"[^>]*>(.*?)</nav>', body)
+        if not nav:
+            return []
+        out = []
+        for li in re.findall(r"<li\b[^>]*>(.*?)</li>", nav, re.S):
+            href = first(r'<a\b[^>]*href="([^"]*)"', li)
+            out.append((text_of(li), abs_url(self.rel, href) if href is not None else self.url))
+        return out
+
+    def faq(self) -> list[tuple[str, str]]:
+        out = []
+        for d in re.findall(r"<details\b[^>]*>(.*?)</details>", main_of(self.text), re.S):
+            q = first(r"<summary\b[^>]*>(.*?)</summary>", d) or ""
+            a = re.sub(r"<summary\b[^>]*>.*?</summary>", "", d, flags=re.S)
+            out.append((text_of(q), text_of(a)))
+        return out
+
+    def terms(self) -> list[tuple[str, str, str]]:
+        """Glossary (id, term, definition), in page order."""
+        return [(i, text_of(t), text_of(d)) for i, t, d in re.findall(
+            r'<dt\b[^>]*\bid="([^"]+)"[^>]*>(.*?)</dt>\s*<dd\b[^>]*>(.*?)</dd>', main_of(self.text), re.S)]
+
+    def cards(self) -> list[tuple[str, str]]:
+        """Blog index cards: (headline, absolute post URL)."""
+        out = []
+        for c in re.findall(r'<article class="blog-card[^"]*"[^>]*>(.*?)</article>', main_of(self.text), re.S):
+            h = text_of(first(r"<h3\b[^>]*>(.*?)</h3>", c) or "")
+            href = first(r'<a\b[^>]*href="([^"]+)"[^>]*>\s*Read\b', c) or first(r'<a\b[^>]*href="([^"]+)"', c)
+            out.append((h, abs_url(self.rel, href or "")))
+        return out
+
+    def child_pages(self, pages: list[str], want) -> list[str]:
+        """Pages (rels) linked from <main>, in order of first link, that `want` accepts."""
+        out = []
+        for href in re.findall(r'<a\b[^>]*href="([^"]+)"', main_of(self.text)):
+            target = resolve_link(self.rel, html.unescape(href))
+            if target in pages and target != self.rel and want(target) and target not in out:
+                out.append(target)
+        return out
+
+
+def page_name(f: Facts) -> str:
+    """A page's name from its <title>, without the site suffix."""
+    return re.split(r"\s+[—·|]\s+(?:BrewSLM\b.*)$", f.title)[0].strip() or f.h1
+
+
+# ── JSON-LD (site:jsonld region) ───────────────────────────────────────────
+
+LD_SCRIPT_RE = re.compile(r'<script\b[^>]*type="application/ld\+json"[^>]*>(.*?)</script>', re.S | re.I)
+LD_REGION_RE = re.compile(r"<!--\s*site:jsonld\b.*?<!--\s*/site:jsonld\s*-->", re.S)
+# Hand-written blocks of these types stay outside the region, untouched.
+KEEP_LD = {"HowTo", "SoftwareApplication"}
+ORG_ID = BASE + "#organization"
+SITE_ID = BASE + "#website"
+ACADEMY_URL = BASE + "academy/"
+
+
+def ld_types(o) -> set[str]:
+    t = o.get("@type") if isinstance(o, dict) else None
+    return set(t) if isinstance(t, list) else ({t} if t else set())
+
+
+def org_ref() -> dict:
+    o = CFG["org"]
+    return {"@type": "Organization", "@id": ORG_ID, "name": o["name"], "url": BASE}
+
+
+def course_ref(url: str, name: str) -> dict:
+    return {"@type": "Course", "@id": url + "#course", "name": name, "url": url}
+
+
+def academy_ref() -> dict:
+    return course_ref(ACADEMY_URL, CFG["academy"]["name"])
+
+
+def breadcrumb_ld(f: Facts):
+    if not f.crumbs:
+        return None
+    items = list(f.crumbs)
+    if items[0][1] != BASE:
+        items.insert(0, ("Home", BASE))
+    return {"@type": "BreadcrumbList", "itemListElement": [
+        {"@type": "ListItem", "position": i, "name": n, "item": u} for i, (n, u) in enumerate(items, 1)]}
+
+
+def quiz_ld(f: Facts) -> dict:
+    qs = []
+    for q in f.quiz:
+        opts = q["options"]
+        ans = {"@type": "Answer", "position": q["answer"], "text": opts[q["answer"]]}
+        if q.get("explanation"):
+            ans["answerExplanation"] = {"@type": "Comment", "text": q["explanation"]}
+        qs.append({
+            "@type": "Question", "eduQuestionType": "Multiple choice",
+            "learningResourceType": "Practice problem", "name": q["q"], "text": q["q"],
+            "suggestedAnswer": [{"@type": "Answer", "position": i, "text": o}
+                                for i, o in enumerate(opts) if i != q["answer"]],
+            "acceptedAnswer": ans})
+    return {"@type": "Quiz", "name": f"{f.quiz_title or 'Quiz'}: {f.h1}",
+            "about": {"@type": "Thing", "name": f.h1}, "url": f.url,
+            "educationalLevel": f.level.capitalize() if f.level else None, "hasPart": qs}
+
+
+def jsonld_blocks(rel: str, facts: dict[str, "Facts"], pages: list[str]) -> list[dict]:
+    """The generated JSON-LD objects for one page."""
+    f, pt = facts[rel], page_type(rel)
+    blocks: list[dict] = []
+    org = org_ref()
+    if pt == "home":
+        o = CFG["org"]
+        blocks.append({"@type": "Organization", "@id": ORG_ID, "name": o["name"], "url": BASE,
+                       "logo": {"@type": "ImageObject", "url": BASE + o["logo"]},
+                       "sameAs": o["same_as"]})
+        blocks.append({"@type": "WebSite", "@id": SITE_ID, "name": CFG["site_name"], "url": BASE,
+                       "description": f.description, "inLanguage": "en", "publisher": {"@id": ORG_ID}})
+    elif pt == "post":
+        ov = CFG.get("pages", {}).get(rel, {})
+        img = head_values(rel, scan(f.text))["og_image"]
+        blocks.append({
+            "@type": "BlogPosting", "@id": f.url + "#article", "headline": f.h1,
+            "description": f.description, "url": f.url, "mainEntityOfPage": f.url,
+            "datePublished": f.published, "dateModified": ov.get("date_modified", f.published),
+            "image": img, "inLanguage": "en", "author": org,
+            "publisher": {**org, "logo": {"@type": "ImageObject", "url": BASE + CFG["org"]["logo"]}},
+            "isPartOf": {"@type": "Blog", "@id": url_of(CFG["feed"]["index"]) + "#blog"}})
+    elif pt == "blog_index":
+        posts = []
+        for headline, u in f.cards():
+            prel = resolve_link(rel, u)
+            posts.append({"@type": "BlogPosting", "headline": headline, "url": u,
+                          "datePublished": facts[prel].published if prel in facts else None})
+        blocks.append({"@type": "Blog", "@id": f.url + "#blog", "name": CFG["feed"]["title"],
+                       "description": f.description, "url": f.url, "inLanguage": "en",
+                       "publisher": org, "blogPost": posts})
+    elif pt == "academy_index":
+        tracks = [f"academy/{t}/index.html" for t in CFG["academy"]["course_tracks"]]
+        blocks.append({
+            **academy_ref(), "description": f.description, "inLanguage": "en",
+            "isAccessibleForFree": True, "provider": org,
+            "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD", "category": "Free"},
+            "hasPart": [{**course_ref(url_of(t), facts[t].h1), "isAccessibleForFree": True} for t in tracks]})
+    elif pt == "track_index":
+        d = rel.rsplit("/", 1)[0] + "/"
+        kids = f.child_pages(pages, lambda t: t.startswith(d) and t.count("/") == d.count("/")
+                             and page_type(t) in ("lesson", "tutorial"))
+        parts = [{"@type": "LearningResource", "position": i, "name": facts[k].h1, "url": url_of(k)}
+                 for i, k in enumerate(kids, 1)]
+        if rel.split("/")[1] in CFG["academy"]["course_tracks"]:
+            blocks.append({**course_ref(f.url, f.h1), "description": f.description, "inLanguage": "en",
+                           "isAccessibleForFree": True, "provider": org, "isPartOf": academy_ref(),
+                           "hasPart": parts})
+        else:
+            blocks.append({"@type": "CollectionPage", "name": f.h1, "description": f.description,
+                           "url": f.url, "inLanguage": "en", "isPartOf": academy_ref(), "hasPart": parts})
+    elif pt in ("lesson", "tutorial"):
+        track = rel.rsplit("/", 1)[0] + "/index.html"
+        part_of = (course_ref(url_of(track), facts[track].h1)
+                   if rel.split("/")[1] in CFG["academy"]["course_tracks"] and track in facts
+                   else {"@type": "CollectionPage", "name": facts[track].h1, "url": url_of(track)}
+                   if track in facts else academy_ref())
+        mins = duration_minutes(f.time)
+        lr = {"@type": ["LearningResource", "Article"], "@id": f.url + "#lesson",
+              "name": f.h1, "headline": f.h1, "description": f.description, "url": f.url,
+              "mainEntityOfPage": f.url, "inLanguage": "en",
+              "learningResourceType": "Tutorial" if pt == "tutorial" else "Lesson",
+              "educationalLevel": f.level.capitalize() if f.level else None,
+              "timeRequired": iso_duration(mins) if mins else None,
+              # The visible "After this lesson you can ..." line; tutorials open
+              # with a long overview instead, so they carry no teaches.
+              "teaches": f.outcome if pt == "lesson" else None, "isAccessibleForFree": True,
+              "isPartOf": part_of, "author": org, "publisher": org}
+        blocks.append(lr)
+        if f.quiz:
+            blocks.append(quiz_ld(f))
+    elif pt == "glossary":
+        set_id = f.url + "#terms"
+        blocks.append({"@type": "DefinedTermSet", "@id": set_id, "name": page_name(f),
+                       "description": f.description, "url": f.url, "inLanguage": "en",
+                       "hasDefinedTerm": [{"@type": "DefinedTerm", "@id": f"{f.url}#{i}", "name": t,
+                                           "description": d, "url": f"{f.url}#{i}",
+                                           "inDefinedTermSet": {"@id": set_id}}
+                                          for i, t, d in f.terms()]})
+    elif rel == CFG["faq"]["path"]:
+        blocks.append({"@type": "FAQPage", "name": f.h1, "description": f.description, "url": f.url,
+                       "inLanguage": "en", "isPartOf": {"@id": SITE_ID},
+                       "mainEntity": [{"@type": "Question", "name": q,
+                                       "acceptedAnswer": {"@type": "Answer", "text": a}}
+                                      for q, a in f.faq()]})
+    elif pt in ("top_level", "certificate", "roadmap", "academy_page"):
+        page = {"@type": "WebPage", "name": f.h1, "description": f.description, "url": f.url,
+                "inLanguage": "en", "isPartOf": academy_ref() if rel.startswith("academy/") else {"@id": SITE_ID}}
+        if pt == "certificate":
+            page["about"] = academy_ref()
+        blocks.append(page)
+    bc = breadcrumb_ld(f)
+    if bc:
+        blocks.append(bc)
+    return [{"@context": "https://schema.org", **prune(b)} for b in blocks]
+
+
+def prune(o):
+    """Drop None values (a fact the page doesn't show is left out, not invented)."""
+    if isinstance(o, dict):
+        return {k: prune(v) for k, v in o.items() if v is not None}
+    if isinstance(o, list):
+        return [prune(x) for x in o]
+    return o
+
+
+def ld_json(o: dict, indent: str) -> str:
+    s = json.dumps(o, ensure_ascii=False, indent=2).replace("<", "\\u003c")
+    return "\n".join(indent + ln for ln in s.splitlines())
+
+
+def build_jsonld(rel: str, text: str, facts: dict, pages: list[str]) -> str:
+    """Replace the site:jsonld region (and, on the first run, the hand-written
+    blocks it supersedes) with freshly generated blocks."""
+    m = re.search(r"<head\b[^>]*>(.*?)</head>", text, re.S | re.I)
+    if not m:
+        return text
+    h0, h1 = m.span(1)
+    head = text[h0:h1]
+    spans = [r.span() for r in LD_REGION_RE.finditer(head)]
+    for s in LD_SCRIPT_RE.finditer(head):
+        if any(a <= s.start() < b for a, b in spans):
+            continue
+        try:
+            types = ld_types(json.loads(s.group(1)))
+        except ValueError:
+            types = set()
+        if not types & KEEP_LD:
+            spans.append(s.span())
+    spans = sorted(line_span(head, a, b) for a, b in spans)
+    if spans:
+        ins = spans[0][0]
+        indent = re.match(r"\n?([ \t]*)", head[ins:]).group(1)
+    else:
+        ins = len(head.rstrip())
+        indent = (re.findall(r"\n([ \t]*)\S", head) or ["    "])[-1]
+    blocks = jsonld_blocks(rel, facts, pages)
+    lines = [f"{indent}<!-- site:jsonld: generated by _build/site.py from the visible page and "
+             f"_build/site.toml; edit those, not these blocks -->"]
+    for b in blocks:
+        lines += [f'{indent}<script type="application/ld+json">', ld_json(b, indent), f"{indent}</script>"]
+    lines.append(f"{indent}<!-- /site:jsonld -->")
+    new_head = head
+    for a, b in reversed(spans):
+        new_head = new_head[:a] + new_head[b:]
+    new_head = new_head[:ins] + "".join("\n" + ln for ln in lines) + new_head[ins:]
+    return text[:h0] + new_head + text[h1:]
+
+
 # ── generated files ────────────────────────────────────────────────────────
 
 def git(*args) -> subprocess.CompletedProcess:
@@ -398,7 +739,9 @@ def git_show(rev: str, rel: str):
 
 
 def content_key(text: str) -> str:
-    """Page text minus everything this script owns, whitespace-collapsed."""
+    """Page text minus everything this script owns (and all JSON-LD, which is
+    metadata, not content), whitespace-collapsed."""
+    text = LD_SCRIPT_RE.sub("", LD_REGION_RE.sub("", text))
     m = re.search(r"<head\b[^>]*>(.*?)</head>", text, re.S | re.I)
     if m:
         head = m.group(1)
@@ -570,7 +913,9 @@ def render() -> tuple[dict[str, str], dict[str, str]]:
     """Return ({rel: new text} for pages, {rel: new text} for generated files)."""
     pages = discover()
     old = {p: (ROOT / p).read_text(encoding="utf-8") for p in pages}
-    new = {p: build_head(p, t) for p, t in old.items()}
+    facts = {p: Facts(p, t) for p, t in old.items()}
+    pset = set(pages)
+    new = {p: build_head(p, build_jsonld(p, t, facts, pset)) for p, t in old.items()}
     gen = {
         CFG["sitemap"]["path"]: build_sitemap(pages, new),
         CFG["feed"]["path"]: build_feed(new),
