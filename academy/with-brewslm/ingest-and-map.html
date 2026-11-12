@@ -301,7 +301,7 @@
 
         <h2>01 Ingest — source locators</h2>
         <p>In the workspace all four stages run from <strong>Data → Sources</strong> (<code>/project/&lt;id&gt;/data?step=data</code>): upload files there, or open the <em>Import dataset (auto-mapping)</em> card and press <em>Import dataset →</em> for the wizard this lesson describes. You don't write a loader; you name a source. A <strong>locator</strong> says where the rows live:</p>
-        <figure class="academy-figure"><img src="../../assets/screens/workspace/data-sources.png" alt="The Data page on step 1 Sources: two Coach notices at the top, a 'No documents yet? Write sample documents' card, and an 'Import dataset (auto-mapping)' card that says to point at a JSONL, CSV, HuggingFace dataset or Kaggle competition, with an 'Import dataset' button." loading="lazy" width="1600" height="1000" /><figcaption>Data → Sources: the <em>Import dataset (auto-mapping)</em> card opens the locator → introspect → dry-run → commit wizard.</figcaption></figure>
+        <figure class="academy-figure"><img src="../../assets/screens/workspace/data-sources.png" alt="The Data page on step 1 Sources: two Coach notices at the top, a 'No documents yet? Write sample documents' card, and an 'Import dataset (auto-mapping)' card that says to point at a JSONL, CSV, HuggingFace dataset or Kaggle competition, with an 'Import dataset' button." loading="lazy" width="1600" height="1000" /><figcaption>Data → Sources: the <em>Import dataset (auto-mapping)</em> card opens a four-step wizard (1. Source · 2. Task type · 3. Map · 4. Preview &amp; Confirm) that walks the locator → introspect → dry-run → commit flow.</figcaption></figure>
         <pre class="code-block"><code>hf:imdb:train            # a Hugging Face dataset + split
 jsonl:/path/to/data.jsonl
 kaggle:competition:slug</code></pre>
@@ -312,26 +312,30 @@ kaggle:competition:slug</code></pre>
 
         <h2>03 Map (dry-run) — preview before you commit</h2>
         <p>Before writing anything, a dry-run shows a sample of accepted rows and a <strong>full rejection breakdown grouped by reason</strong>. Every input row becomes either a <code>TransformedRow</code> or a <code>RejectedRow</code> with a stable reason code — the per-row accountability your list of dicts never had.</p>
-        <pre class="code-block"><code>$ python -m app.cli.dataset_import run \
-    --locator hf:imdb:train --project 1 --auto --limit 5000 --dry-run
+        <p>In the wizard that is step 4, <em>Preview &amp; Confirm</em>. From the command line it is the <code>preview</code> subcommand (run from <code>backend/</code>; <code>--project</code> is optional for a preview). The numbers below are illustrative; the reason codes are the real ones the classification mapper emits:</p>
+        <pre class="code-block"><code>$ cd backend &amp;&amp; python -m app.cli.dataset_import preview \
+    --locator hf:imdb:train --auto --limit 5000
 
-accepted: 4,812
-rejected:   188
-  empty_text ............ 121
-  label_out_of_vocab ....  54
-  duplicate .............  13</code></pre>
+source=hf  mapper=label_to_classification  target_task_profile=classification
+accepted=4812  rejected=188  dry_run=True
+rejection breakdown:
+  missing_text             121
+  label_not_allowed        54
+  parse_error              13</code></pre>
+        <p>The <code>run</code> subcommand takes the same flags but has no dry-run mode: it <em>writes</em> the accepted rows (and needs <code>--project</code>). Preview first, then run.</p>
         <div class="callout callout--note">
           <p class="callout__label">A pattern you'll see everywhere</p>
-          <p>Rejected rows are never all-or-nothing. They're grouped by reason and individually selectable, so you can bulk-drop the genuine junk and rescue the rows that were rejected for a fixable reason. This is the platform version of the data hygiene you learned in Track 1.</p>
+          <p>Rejections are never all-or-nothing and never silent: you see every rejection grouped by reason, with sample rows for each. Rejected import rows are never written, so there is nothing to rescue after the fact &mdash; if a reason points at something fixable (a wrong column in the mapping, a label missing from the allowed set), fix the source or the mapping and re-run. This is the platform version of the data hygiene you learned in Track 1.</p>
         </div>
 
         <h2>04 Map (commit) — write it down, emit the event</h2>
         <p>After you confirm, the mapped rows are appended to the project's dataset, and the stage emits its RunEvent — the first durable trace in your audit spine:</p>
         <pre class="code-block"><code>RunEvent: ingestion / dataset_import_run   (severity: info)
-  payload: { source, mapper, accepted: 4812, rejected: 188,
-             written_path, config_id }
-  on error → dataset_import_failed</code></pre>
-        <p>One nuance worth knowing: bulk-dropping in the UI affects only the <em>sample</em> rendered to you; the true accepted/rejected counts are preserved in the audit row, so the numbers never lie. Imported rows land in the project's synthetic dataset, so you will meet them again in the review queue (<strong>Data → Labels → Details → Review queue</strong>). With data ingested and mapped, the next lesson covers the platform's answer to "in practice, hundreds more rows" — generating synthetic data and reviewing it.</p>
+  payload: { source_id, locator, mapper_id, target_task_profile,
+             accepted_count: 4812, rejected_count: 188,
+             rejection_counts, written_path, config_id }
+  on error → dataset_import_failed   (severity: error)</code></pre>
+        <p>One nuance worth knowing: bulk-dropping in the UI affects only the <em>sample</em> rendered to you; the true accepted/rejected counts are preserved in the audit row, so the numbers never lie. Imported rows land in the project's synthetic dataset already accepted. Unlike generated rows they skip the review queue (<strong>Data → Labels → Details → Review queue</strong> lists only rows waiting for review) and go into your next split as training data, so the dry-run is your review. With data ingested and mapped, the next lesson covers the platform's answer to "in practice, hundreds more rows" — generating synthetic data and reviewing it.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
@@ -344,9 +348,9 @@ rejected:   188
             <dt>source locator</dt><dd>A string naming where rows live (hf:id:split, jsonl:/path, kaggle:...).</dd>
             <dt>Introspect</dt><dd>Sampling rows to propose a task mapping; never auto-picks below 0.80 confidence.</dd>
             <dt>ProposedMapping</dt><dd>The top mapping proposal with a confidence and rationale.</dd>
-            <dt>Map (dry-run)</dt><dd>A preview of accepted rows plus a full rejection breakdown, before writing.</dd>
+            <dt>Map (dry-run)</dt><dd>A preview of accepted rows plus a full rejection breakdown, before writing (the wizard's Preview &amp; Confirm step, or the CLI's <code>preview</code> subcommand). For imports it is the only review.</dd>
             <dt>RejectedRow</dt><dd>An input row that failed mapping, tagged with a stable reason code.</dd>
-            <dt>dataset_import RunEvent</dt><dd>The audit event emitted on commit, carrying accepted/rejected counts and the written path.</dd>
+            <dt>dataset_import RunEvent</dt><dd>The audit event (<code>dataset_import_run</code>, stage ingestion) emitted on commit, carrying <code>accepted_count</code>, <code>rejected_count</code>, <code>rejection_counts</code> and the written path.</dd>
           </dl>
         </section>
 
