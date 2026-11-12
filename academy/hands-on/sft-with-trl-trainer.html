@@ -297,13 +297,13 @@
           </div>
         </header>
 
-        <p>In Lesson 2.5 you built a LoRA fine-tune from raw <code>Trainer</code>, with a manual tokenize function, a hand-built loss mask, and an explicit <code>DataCollatorForSeq2Seq</code>. That was deliberate — you should know what's happening when you click Train. But for a normal SFT run, the standard tool is TRL's <code>SFTTrainer</code>, which wraps that whole loop. Same training, same outputs, dramatically less code.</p>
+        <p>In Lessons 2.4–2.5 you built a LoRA fine-tune from raw <code>Trainer</code>, with a manual tokenize function, a hand-built loss mask, and an explicit <code>DataCollatorForSeq2Seq</code>. That was deliberate — you should know what's happening when you click Train. But for a normal SFT run, the standard tool is TRL's <code>SFTTrainer</code>, which wraps that whole loop. The same recipe, dramatically less code. (Not bit-identical results: SFTTrainer brings its own collator and EOS handling.)</p>
 
         <h2>Why SFTTrainer exists</h2>
-        <p>Look at what Lesson 2.5 made you write by hand: apply the chat template; tokenize each example; build <code>input_ids</code>, <code>attention_mask</code>, and <code>labels</code> with the prompt masked to -100; choose a collator; pass a <code>peft_config</code> through a <code>get_peft_model</code> call. None of that is task-specific. <strong>SFTTrainer absorbs all of it</strong> and lets you describe what you have (a dataset of chat messages) and what you want (a LoRA fine-tune), in a handful of lines.</p>
+        <p>Look at what Lessons 2.4–2.5 made you write by hand: apply the chat template; tokenize each example; build <code>input_ids</code>, <code>attention_mask</code>, and <code>labels</code> with the prompt masked to -100; choose a collator; pass a <code>peft_config</code> through a <code>get_peft_model</code> call. None of that is task-specific. <strong>SFTTrainer absorbs all of it</strong> and lets you describe what you have (a dataset of prompts and completions) and what you want (a LoRA fine-tune), in a handful of lines.</p>
 
         <h2>Same data, same model, same LoRA</h2>
-        <p>We reuse the same model, tokenizer, and LoRA config from 2.2 / 2.5. The only thing that changes is the dataset shape: SFTTrainer prefers <strong>chat messages format</strong> (Lesson 1.20) — a list of <code>{role, content}</code> dicts per row.</p>
+        <p>We reuse the same model, tokenizer, and LoRA config from 2.2 / 2.5. The only thing that changes is the dataset shape. SFTTrainer reads chat-style rows (Lesson 1.20): lists of <code>{role, content}</code> dicts. Which keys you put them under decides what gets masked. Use the <strong>conversational prompt-completion</strong> shape — the user turn under <code>prompt</code>, the assistant turn under <code>completion</code> — and SFTTrainer computes the loss on the completion only. Put the whole conversation under a single <code>messages</code> key instead and, by default, it trains on every token, system and user turns included (see the warning below).</p>
         <pre class="code-block"><code>import torch
 from datasets import Dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -315,18 +315,16 @@ tok = AutoTokenizer.from_pretrained(MODEL_ID)
 if tok.pad_token is None: tok.pad_token = tok.eos_token
 model = AutoModelForCausalLM.from_pretrained(MODEL_ID, dtype=torch.bfloat16)
 
-# data — chat messages per row
+# data — conversational prompt-completion rows
 raw = [
     {"prompt": "Classify the sentiment as positive or negative: I loved it.",      "completion": "positive"},
     {"prompt": "Classify the sentiment as positive or negative: Broken on arrival.", "completion": "negative"},
     # ...
 ]
 def to_chat(row):
-    return {"messages": [
-        {"role": "user",      "content": row["prompt"]},
-        {"role": "assistant", "content": row["completion"]},
-    ]}
-ds = Dataset.from_list(raw).map(to_chat, remove_columns=["prompt", "completion"])
+    return {"prompt":     [{"role": "user",      "content": row["prompt"]}],
+            "completion": [{"role": "assistant", "content": row["completion"]}]}
+ds = Dataset.from_list(raw).map(to_chat)   # replaces the string columns with message lists
 
 # LoRA — same config as Lesson 2.5
 lora = LoraConfig(
@@ -336,7 +334,10 @@ lora = LoraConfig(
 
         <h2>The 20-line version</h2>
         <p>This is the SFT loop you wrote by hand, in twenty lines. Everything from Lesson 2.5 is in here — just expressed declaratively.</p>
-        <pre class="code-block"><code>trainer = SFTTrainer(
+        <pre class="code-block"><code>use_bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()   # Lesson 2.1
+use_fp16 = torch.cuda.is_available() and not use_bf16
+
+trainer = SFTTrainer(
     model=model,
     args=SFTConfig(
         output_dir="sft-out",
@@ -345,28 +346,34 @@ lora = LoraConfig(
         learning_rate=2e-4,
         num_train_epochs=3,
         lr_scheduler_type="cosine",
-        warmup_ratio=0.03,
-        bf16=True,
+        warmup_steps=0.03,                    # fraction of total steps (warmup_ratio is gone)
+        bf16=use_bf16,
+        fp16=use_fp16,
         logging_steps=5,
         save_strategy="epoch",
-        max_seq_length=256,
-        completion_only_loss=True,            # build the loss mask for us
+        max_length=256,                       # renamed from max_seq_length in TRL 1.x
+        completion_only_loss=True,            # mask the prompt; prompt-completion rows only
         report_to=[],
     ),
     train_dataset=ds,
     processing_class=tok,                     # SFTTrainer applies the chat template
     peft_config=lora,                         # attach LoRA — no get_peft_model() call needed
 )
+# required check before you train: which tokens carry loss?
+batch = next(iter(trainer.get_train_dataloader()))
+ids, labels = batch["input_ids"][0], batch["labels"][0]
+print(repr(tok.decode(ids[labels != -100])))  # expect only the answer: 'positive&lt;|im_end|&gt;\n'
+
 trainer.train()
 trainer.save_model("sft-out/adapter")</code></pre>
 
         <h2>What SFTTrainer does for you</h2>
         <ul>
           <li><strong>Chat template application.</strong> Given <code>messages</code>, it calls <code>tok.apply_chat_template</code> on every row — you don't render special tokens by hand.</li>
-          <li><strong>Loss mask.</strong> <code>completion_only_loss=True</code> sets non-assistant tokens to -100, so cross-entropy is computed only on the assistant turn. Same effect as Lesson 2.4's manual masking, with one knob.</li>
+          <li><strong>Loss mask.</strong> On prompt-completion rows, <code>completion_only_loss</code> (on by default for that shape) sets every prompt token to -100, so cross-entropy is computed only on the completion. Same effect as Lesson 2.4's manual masking, with one knob. It does nothing on a <code>messages</code> dataset; for multi-turn data see Lesson 2.14.</li>
           <li><strong>PEFT integration.</strong> Passing <code>peft_config</code> wraps the model in LoRA internally; no separate <code>get_peft_model</code> call.</li>
           <li><strong>Padding + collation.</strong> A sensible default collator handles padding and labels-as-input-ids without you choosing one.</li>
-          <li><strong>Optional sequence packing.</strong> Set <code>packing=True</code> in <code>SFTConfig</code> and short examples are concatenated to fill <code>max_seq_length</code>, saving compute on padding (Lesson 1.12 territory).</li>
+          <li><strong>Optional sequence packing.</strong> Set <code>packing=True</code> in <code>SFTConfig</code> and short examples are concatenated to fill <code>max_length</code>, saving compute on padding (Lesson 1.6 territory).</li>
         </ul>
 
         <div class="callout callout--note">
@@ -375,9 +382,9 @@ trainer.save_model("sft-out/adapter")</code></pre>
         </div>
 
         <h2>When raw Trainer beats SFTTrainer</h2>
-        <p>SFTTrainer is the right tool ~90% of the time. The cases where you go back to raw <code>Trainer</code>:</p>
+        <p>In our experience SFTTrainer is the right tool for most ordinary fine-tunes (a rule of thumb, not a measured share). The cases where you go back to raw <code>Trainer</code>:</p>
         <ul>
-          <li><strong>Custom loss.</strong> Distillation (Track 4, Lesson 4.3) needs an <code>α·CE + (1−α)·T²·KL</code> loss against captured teacher logprobs — SFTTrainer doesn't support it; the <code>kd_trainer</code> in Track 4 wraps raw <code>Trainer</code>.</li>
+          <li><strong>Custom loss.</strong> Distillation (Track 4, Lesson 4.3) needs an <code>α·CE + (1−α)·T²·KL</code> loss against captured teacher logprobs. TRL does ship dedicated distillation trainers, but Track 4 builds the loss by hand on raw <code>Trainer</code> so you can see every term.</li>
           <li><strong>Non-chat data shapes.</strong> If your task is a pure classifier head with no chat wrapping, the SFT framing is wrong; use raw <code>Trainer</code> with your own preprocessing.</li>
           <li><strong>Custom masking.</strong> Loss only on specific tokens, or a curriculum that masks different things in different phases — you want raw <code>Trainer</code>.</li>
           <li><strong>Debugging exactly what gets masked.</strong> When something's not learning and you suspect the mask, going back to the manual version (Lesson 2.4) gives you full visibility.</li>
@@ -385,12 +392,12 @@ trainer.save_model("sft-out/adapter")</code></pre>
 
         <div class="callout callout--warning">
           <p class="callout__label">Honest beat — the wrapper has assumptions</p>
-          <p><code>completion_only_loss</code> depends on your model's chat template having a clean assistant-turn boundary that <code>apply_chat_template</code> emits consistently. On most instruct models this is fine; on a few obscure or custom-chat-template models it isn't, and the mask silently includes prompt tokens or excludes some assistant tokens. The check: train a few steps, dump one batch's <code>labels</code>, and confirm the non-(-100) positions are exactly the assistant tokens. Same check we did in Lesson 2.4 — still cheap, still worth it.</p>
+          <p><code>completion_only_loss</code> only masks <strong>prompt-completion</strong> rows. Give the same config a dataset with a single <code>messages</code> column and, in current TRL, it raises no error and no warning, and trains on every token: SmolLM2's default system message, the user turn and the label alike. That is exactly the bug Lesson 2.4 taught you to avoid. The option meant for <code>messages</code> data, <code>assistant_only_loss=True</code>, only works when the chat template marks assistant turns with <code>{% generation %}</code> tags, and SmolLM2's template doesn't (TRL raises a <code>ValueError</code>). Hence the label dump in the code above: it is a required step, not an optional one. If it prints anything besides the answer, stop and fix the data shape.</p>
         </div>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p><strong>SFTTrainer is the SFT loop you wrote by hand, packaged.</strong> Chat template, loss mask, LoRA wiring, padding — all handled when you declare the dataset shape and the training config. Reach for raw <code>Trainer</code> only when you need a loss or a mask SFTTrainer doesn't model; for ordinary fine-tunes, the 20-line version is the right default.</p>
+          <p><strong>SFTTrainer is the SFT loop you wrote by hand, packaged.</strong> Chat template, loss mask, LoRA wiring, padding — all handled when you declare the dataset shape and the training config. The dataset shape is part of that declaration: prompt-completion rows get the mask, a bare <code>messages</code> column doesn't. Reach for raw <code>Trainer</code> only when you need a loss or a mask SFTTrainer doesn't model; for ordinary fine-tunes, the 20-line version is the right default.</p>
         </div>
 
         <p>The next lesson keeps the SFTTrainer pattern and adds memory: QLoRA via bitsandbytes lets you fine-tune a much larger model in the same VRAM you've been using.</p>
@@ -398,12 +405,12 @@ trainer.save_model("sft-out/adapter")</code></pre>
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
-            <dt>TRL</dt><dd>Hugging Face's preference- and SFT-training library. Provides <code>SFTTrainer</code>, <code>DPOTrainer</code>, <code>ORPOTrainer</code>.</dd>
+            <dt>TRL</dt><dd>Hugging Face's preference- and SFT-training library. Its stable trainers include <code>SFTTrainer</code>, <code>DPOTrainer</code>, <code>GRPOTrainer</code>, <code>KTOTrainer</code>, <code>RLOOTrainer</code> and <code>RewardTrainer</code>; newer ones such as ORPO live under <code>trl.experimental</code>.</dd>
             <dt>SFTTrainer</dt><dd>A wrapper around HF <code>Trainer</code> that handles chat-template, loss mask, padding, and PEFT for SFT.</dd>
-            <dt>SFTConfig</dt><dd>SFTTrainer's training-args object; superset of <code>TrainingArguments</code> with SFT-specific fields (<code>max_seq_length</code>, <code>completion_only_loss</code>, <code>packing</code>).</dd>
-            <dt>completion_only_loss</dt><dd>SFTConfig field; when <code>True</code>, builds the loss mask so cross-entropy ignores everything except assistant tokens.</dd>
+            <dt>SFTConfig</dt><dd>SFTTrainer's training-args object; superset of <code>TrainingArguments</code> with SFT-specific fields (<code>max_length</code>, formerly <code>max_seq_length</code>; <code>completion_only_loss</code>; <code>packing</code>).</dd>
+            <dt>completion_only_loss</dt><dd>SFTConfig field; on prompt-completion data (the default there), masks the prompt so cross-entropy covers only the completion. It has no effect on a <code>messages</code> dataset.</dd>
             <dt>peft_config</dt><dd>SFTTrainer argument; pass a <code>LoraConfig</code> and SFTTrainer attaches LoRA internally (no <code>get_peft_model</code>).</dd>
-            <dt>packing</dt><dd>SFTConfig field; when <code>True</code>, concatenates short examples to <code>max_seq_length</code> to save compute on padding.</dd>
+            <dt>packing</dt><dd>SFTConfig field; when <code>True</code>, concatenates short examples to <code>max_length</code> to save compute on padding.</dd>
           </dl>
         </section>
 

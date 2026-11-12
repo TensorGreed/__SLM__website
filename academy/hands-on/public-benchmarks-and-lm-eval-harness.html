@@ -297,50 +297,53 @@
           </div>
         </header>
 
-        <p>Every SLM model card carries a constellation of three-letter benchmark names — MMLU, HSWAG, ARC, GSM8K — followed by a percentage. They&#x27;re convenient. They let you compare against the base, against the previous fine-tune, and against the wider model landscape with one number per axis. They are also widely misread: as the goal of fine-tuning rather than a smoke check, as a measure of your task quality rather than a sanity bar, and (worst) as ground truth in cases where the benchmark has leaked into pretraining. This lesson covers what each benchmark actually measures, how to run them, and how to read the numbers without being misled.</p>
+        <p>Every SLM model card carries a constellation of benchmark names — MMLU, HellaSwag, ARC, GSM8K — followed by a percentage. They&#x27;re convenient. They let you compare against the base, against the previous fine-tune, and against the wider model landscape with one number per axis. They are also widely misread: as the goal of fine-tuning rather than a smoke check, as a measure of your task quality rather than a sanity bar, and (worst) as ground truth in cases where the benchmark has leaked into pretraining. This lesson covers what each benchmark actually measures, how to run them, and how to read the numbers without being misled.</p>
 
         <h2>What the standard benchmarks measure</h2>
         <ul>
           <li><strong>MMLU</strong> (Massive Multitask Language Understanding) — multiple-choice questions across 57 subjects from elementary to professional. The closest thing to a general "what does this model know?" score. Usually reported 5-shot.</li>
-          <li><strong>HellaSwag</strong> — pick the most plausible continuation of a short scenario from four options. Tests commonsense / world-model. Usually 10-shot; zero-shot scores look very different.</li>
+          <li><strong>HellaSwag</strong> — pick the most plausible continuation of a short scenario from four options. Tests commonsense / world-model. Often reported 10-shot, but it is one of the least shot-sensitive benchmarks: GPT-3 scored 78.9 zero-shot vs 79.3 few-shot (Brown et al. 2020, arXiv:2005.14165). State the shot count anyway.</li>
           <li><strong>ARC</strong> (Easy / Challenge) — grade-school science MCQs. ARC-Challenge filters for questions retrieval-based methods couldn&#x27;t solve, making it harder.</li>
           <li><strong>GSM8K</strong> — grade-school math word problems requiring multi-step arithmetic reasoning. The shape that most predicts whether a chain-of-thought-style instruct model is doing real work.</li>
           <li><strong>TruthfulQA</strong> — questions designed to elicit common misconceptions; scores how often the model resists the wrong-but-popular answer.</li>
           <li><strong>WinoGrande</strong> — Winograd-style pronoun resolution; lightweight commonsense reasoning.</li>
         </ul>
         <p>None of these is your task. None of them measures the thing your fine-tune is supposed to do. They measure the substrate the fine-tune sits on top of.</p>
+        <p>This is the 2023 "standard set" (the first Open LLM Leaderboard). Larger models saturated it, so the leaderboard's 2024 version moved to IFEval, BBH, MATH, GPQA, MuSR and MMLU-Pro, and MMLU itself has documented label errors (Gema et al. 2024, MMLU-Redux, arXiv:2406.04127). Pick by model size: a 135M model scores near the floor on GSM8K (SmolLM2-135M's model card reports 1.4 at 5-shot), so GSM8K can't detect a regression there. For models this small, use what their card reports: HellaSwag, ARC, PIQA, WinoGrande, MMLU in its cloze form.</p>
 
         <h2>Few-shot vs zero-shot</h2>
-        <p>Almost every reported benchmark number has a shot count attached: MMLU 5-shot, HellaSwag 10-shot, GSM8K 8-shot CoT. The shot count is the number of labelled in-context examples prepended to the prompt before the question. The difference between zero-shot and 5-shot can be 20+ percentage points; reporting one and calling it the other is the most common honest-mistake in benchmark tables.</p>
+        <p>Almost every reported benchmark number has a shot count attached: MMLU 5-shot, HellaSwag 10-shot, GSM8K 8-shot CoT. The shot count is the number of labelled in-context examples prepended to the prompt before the question. On some tasks the difference between zero-shot and 5-shot is large, on others (HellaSwag) it is small; either way, reporting one and calling it the other is the most common honest-mistake in benchmark tables.</p>
         <p>Read the convention with the score:</p>
         <ul>
           <li><strong>Zero-shot</strong> tells you what the model knows without help. The honest measure of a base model&#x27;s knowledge.</li>
           <li><strong>Few-shot</strong> tells you how well the model picks up a task from examples. The honest measure of in-context learning. Higher numbers, but they&#x27;re measuring a different thing.</li>
-          <li>An instruct model usually wins on zero-shot vs its base; a base model often wins on few-shot vs an instruct, because instruct training rewards templated single-shot completions over learning from in-context examples.</li>
+          <li>Instruct and base checkpoints can rank differently at different shot counts, and the direction varies by model and task. A common explanation is that instruct training favours templated single-turn answers over in-context learning, but treat that as a hypothesis to check, not a rule.</li>
         </ul>
 
         <h2>lm-evaluation-harness, the standard tool</h2>
-        <p>EleutherAI&#x27;s <code>lm-evaluation-harness</code> is the de-facto runner for these benchmarks. It supports hundreds of tasks under a unified evaluator, lets you point at a local Hugging Face checkpoint or a hosted endpoint, and reports per-task accuracy + standard error. It is what nearly every public model card was scored with.</p>
+        <p>EleutherAI&#x27;s <code>lm-evaluation-harness</code> is the de-facto runner for these benchmarks. It supports hundreds of tasks under a unified evaluator, lets you point at a local Hugging Face checkpoint or a hosted endpoint, and reports per-task accuracy + standard error. It is a widely used runner for public model-card numbers.</p>
         <pre class="code-block"><code># install
 pip install lm-eval
 
-# evaluate a local checkpoint on the standard smoke-check set
-lm_eval \
-  --model hf \
-  --model_args pretrained=./runs/sft-v3,dtype=bfloat16 \
-  --tasks mmlu,hellaswag,arc_easy,arc_challenge,gsm8k \
-  --num_fewshot 5 \
-  --batch_size 16 \
-  --output_path eval/sft-v3.json
+TASKS=hellaswag,arc_easy,arc_challenge,piqa,winogrande
 
-# compare against the base — same flags, different checkpoint
-lm_eval \
+# the base: the same Instruct checkpoint you fine-tuned from (Lesson 2.2)
+lm-eval run \
   --model hf \
-  --model_args pretrained=HuggingFaceTB/SmolLM2-135M,dtype=bfloat16 \
-  --tasks mmlu,hellaswag,arc_easy,arc_challenge,gsm8k \
-  --num_fewshot 5 \
+  --model_args pretrained=HuggingFaceTB/SmolLM2-135M-Instruct,dtype=bfloat16 \
+  --tasks $TASKS \
   --batch_size 16 \
-  --output_path eval/base.json</code></pre>
+  --output_path eval/base
+
+# your fine-tune: the same base plus your LoRA adapter
+# (or pretrained=sft-out/merged for the merged model from Lesson 2.8)
+lm-eval run \
+  --model hf \
+  --model_args pretrained=HuggingFaceTB/SmolLM2-135M-Instruct,peft=sft-out/adapter,dtype=bfloat16 \
+  --tasks $TASKS \
+  --batch_size 16 \
+  --output_path eval/sft</code></pre>
+        <p>Three choices in those commands are deliberate. The base is the <strong>Instruct</strong> checkpoint, because that is what you fine-tuned; comparing against the raw pretrained model would mix your change with the model's own instruction tuning. There is <strong>no <code>--num_fewshot</code></strong>, so every task runs at its own default (0-shot for these five); one <code>--num_fewshot</code> flag applies to every task in the list, so to match a published 10-shot HellaSwag number, run that task on its own with <code>--num_fewshot 10</code>. And both runs use the same prompt format. For chat-tuned checkpoints you can add <code>--apply_chat_template</code> (it turns on <code>--fewshot_as_multiturn</code> by default); if you do, add it to both runs. The older <code>lm_eval --model …</code> form without <code>run</code> still works.</p>
         <p>The output JSON has per-task accuracy and a standard error you should always report — a 0.4-point delta with a 0.6-point standard error is noise, not progress.</p>
 
         <h2>How to read the numbers</h2>
@@ -349,14 +352,14 @@ lm_eval \
           <li><strong>Base vs SFT, same shot count</strong> — does SFT preserve substrate knowledge? A modest drop is normal (the fine-tune narrowed the model toward your task). A large drop on MMLU / HellaSwag is catastrophic forgetting; revisit Lesson 1.22&#x27;s mitigations.</li>
           <li><strong>Your fine-tune vs same-size peer models</strong> — places you in the landscape. Useful as a "do I have a competitive substrate?" check; not useful as a fine-tune goal.</li>
           <li><strong>Across versions of your own fine-tune</strong> — for tracking regressions. If MMLU drops by 3 points between two runs, something changed in your data or recipe that you want to understand.</li>
-          <li><strong>Against the lm-eval-harness <em>standard error</em>, not its average</strong> — a difference smaller than the SE is statistical noise, not a result.</li>
+          <li><strong>Against the noise, not just the average</strong> — the stderr lm-eval reports is a per-model sampling error that assumes independent items; it is not the error of the <em>difference</em> between two models. Two runs on the same items need a paired comparison: compute a confidence interval on the per-item difference. As a rough guide, deltas under about 2–3× the reported SE can't be told apart from noise (Miller 2024, "Adding Error Bars to Evals", arXiv:2411.00640).</li>
         </ol>
 
         <h2>Why your gold set still matters more</h2>
         <p>Three reasons the public benchmarks are insufficient on their own:</p>
         <ul>
           <li><strong>They measure substrate, not your task.</strong> A 5-point MMLU bump tells you nothing about whether your sentiment classifier is more accurate or your JSON extractor parses more reliably. Your task is your task.</li>
-          <li><strong>They are multiple-choice or short-answer.</strong> Real outputs are free-form. MMLU accuracy correlates loosely with free-form helpfulness; LLM-as-a-judge (Lesson 16) and your gold set close the gap.</li>
+          <li><strong>They are multiple-choice or short-answer.</strong> Real outputs are free-form. MMLU accuracy correlates loosely with free-form helpfulness; LLM-as-a-judge (Lesson 2.16) and your gold set close the gap.</li>
           <li><strong>They&#x27;re contaminated.</strong> Which brings us to —</li>
         </ul>
 
@@ -365,14 +368,14 @@ lm_eval \
         <ul>
           <li><strong>MMLU</strong> has substantial overlap with publicly indexed test-bank questions; many model families have shown the canonical-vs-paraphrased gap.</li>
           <li><strong>HellaSwag</strong> contexts and ARC questions have appeared verbatim in pretraining web scrapes.</li>
-          <li><strong>GSM8K</strong> — the original 8,500 problems have shown up in code repositories, blog posts, and instruction-tuning datasets. The GSM8K-Hard / GSM-Symbolic re-renderings exist specifically to test whether a model learned the structure or memorised the corpus.</li>
+          <li><strong>GSM8K</strong> — the original 8,500 problems have shown up in code repositories, blog posts, and instruction-tuning datasets. Re-renderings such as GSM-Hard (Gao et al. 2022) and GSM-Symbolic (Mirzadeh et al. 2024, arXiv:2410.05229), and the freshly written GSM1k (Zhang et al. 2024, arXiv:2405.00332), exist specifically to test whether a model learned the structure or memorised the corpus.</li>
         </ul>
         <p>Mitigations when you actually need a reliable number:</p>
         <ul>
           <li>Run a paraphrased / re-rendered variant of the benchmark alongside the canonical one. A large canonical-paraphrased gap is the contamination tell.</li>
-          <li>Read the model card&#x27;s contamination section if there is one. Many recent SLMs (Phi, SmolLM) publish n-gram overlap checks.</li>
+          <li>Read the model card&#x27;s contamination section if there is one. Many recent small-model reports publish decontamination or n-gram overlap checks.</li>
           <li>Treat public benchmarks as <strong>relative</strong>, not absolute. Your fine-tune&#x27;s delta vs your own base is harder to game than the absolute score.</li>
-          <li>Keep a small, <strong>private</strong>, never-published task gold set. That number is the one that matters.</li>
+          <li>Keep a small, <strong>private</strong>, never-published task gold set. That number is the one that matters. Private means less exposed to pretraining contamination, not immune: your own training rows can overlap the gold set (exact or near-duplicate), and a model that writes training data can copy examples from its prompt into it. Check train↔gold overlap before you trust the score.</li>
         </ul>
 
         <div class="callout callout--warning">
@@ -382,7 +385,7 @@ lm_eval \
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>Public benchmarks are useful — for placing your model in the landscape, for catching catastrophic regressions during fine-tuning, for a shared vocabulary with the wider community. They are <em>not</em> useful as the truth, the project goal, or a substitute for a task-specific gold set. Run them with <strong>lm-evaluation-harness</strong> with the shot count published, report the <strong>standard error</strong>, watch for the <strong>canonical-vs-paraphrased</strong> contamination signature, and remember that your private gold set is the one that the user pays for.</p>
+          <p>Public benchmarks are useful — for placing your model in the landscape, for catching catastrophic regressions during fine-tuning, for a shared vocabulary with the wider community. They are <em>not</em> useful as the truth, the project goal, or a substitute for a task-specific gold set. Run them with <strong>lm-evaluation-harness</strong> with the shot count published, compare against the checkpoint you actually fine-tuned, judge deltas against the <strong>noise of the difference</strong>, watch for the <strong>canonical-vs-paraphrased</strong> contamination signature, and remember that your private gold set is the one that the user pays for.</p>
         </div>
 
         <p>The next lesson covers the bookkeeping that makes all this comparable across runs three weeks from now: experiment tracking with MLflow and W&amp;B.</p>
@@ -390,13 +393,13 @@ lm_eval \
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
-            <dt>lm-evaluation-harness</dt><dd>EleutherAI&#x27;s open-source benchmark runner — the standard tool used to produce the MMLU / HellaSwag / ARC / GSM8K numbers in model cards.</dd>
+            <dt>lm-evaluation-harness</dt><dd>EleutherAI&#x27;s open-source benchmark runner — a widely used tool for the MMLU / HellaSwag / ARC / GSM8K numbers in model cards.</dd>
             <dt>MMLU</dt><dd>Massive Multitask Language Understanding: ~14k multiple-choice questions across 57 subjects. Usually reported 5-shot. The standard substrate-knowledge benchmark.</dd>
-            <dt>HellaSwag</dt><dd>Commonsense scenario-continuation MCQs; usually 10-shot. Tests world-model plausibility.</dd>
+            <dt>HellaSwag</dt><dd>Commonsense scenario-continuation MCQs; often reported 10-shot, though it changes little with shot count. Tests world-model plausibility.</dd>
             <dt>ARC</dt><dd>AI2 Reasoning Challenge: grade-school science MCQs in Easy / Challenge splits.</dd>
             <dt>GSM8K</dt><dd>Grade-school math word problems requiring multi-step arithmetic; the standard chain-of-thought benchmark.</dd>
-            <dt>Few-shot vs zero-shot</dt><dd>Few-shot prepends N labelled examples to the prompt; zero-shot prepends none. Different shot counts produce very different scores; the shot count must be reported with the number.</dd>
-            <dt>Standard error (lm-eval)</dt><dd>The lm-evaluation-harness reports SE alongside accuracy. A delta smaller than the SE is noise, not a result.</dd>
+            <dt>Few-shot vs zero-shot</dt><dd>Few-shot prepends N labelled examples to the prompt; zero-shot prepends none. Different shot counts can produce very different scores on some tasks; the shot count must be reported with the number.</dd>
+            <dt>Standard error (lm-eval)</dt><dd>The per-model sampling error lm-evaluation-harness reports alongside accuracy, assuming independent items. To compare two models, use a paired interval on the difference; deltas under ~2–3× the reported SE are not distinguishable from noise.</dd>
             <dt>Benchmark contamination</dt><dd>The benchmark&#x27;s questions or answers appeared in the model&#x27;s pretraining corpus; the model memorised rather than reasoned. The tell is a large gap between canonical and paraphrased versions of the same question.</dd>
             <dt>Substrate vs task</dt><dd>Public benchmarks measure the substrate of general capability the fine-tune sits on; your gold set measures the task itself. Both matter, in that order.</dd>
           </dl>

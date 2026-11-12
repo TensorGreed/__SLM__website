@@ -326,9 +326,8 @@ class Invoice(BaseModel):
         <p>Required fields have no default. Optional fields have a default (often <code>None</code>). Types are checked at parse time. Nested types compose.</p>
 
         <h2>Parse with validation</h2>
-        <p>Wrap parsing in a single function that returns the validated object or <code>None</code> if anything went wrong. The two failure modes (bad JSON, bad schema) are distinct exceptions; record which it was.</p>
-        <pre class="code-block"><code>import json
-from dataclasses import dataclass
+        <p>Wrap parsing in a single function that returns the validated object or <code>None</code> if anything went wrong. Pydantic v2's <code>model_validate_json</code> does both steps in one call and raises a <code>ValidationError</code> either way; the error type <code>json_invalid</code> tells the two failure modes (bad JSON, bad schema) apart, so record which it was. Don't use <code>json.loads</code> followed by <code>Invoice(**data)</code>: when the model emits valid JSON that isn't an object, such as a list or a bare string, <code>Invoice(**data)</code> raises a <code>TypeError</code> that escapes the <code>except</code> and aborts the whole eval.</p>
+        <pre class="code-block"><code>from dataclasses import dataclass
 
 @dataclass
 class ParseResult:
@@ -337,24 +336,31 @@ class ParseResult:
 
 def parse(text: str) -> ParseResult:
     try:
-        data = json.loads(text)
-    except json.JSONDecodeError:
-        return ParseResult(None, "json")
-    try:
-        return ParseResult(Invoice(**data), None)
-    except ValidationError:
-        return ParseResult(None, "schema")</code></pre>
+        return ParseResult(Invoice.model_validate_json(text), None)
+    except ValidationError as e:
+        bad_json = any(err["type"] == "json_invalid" for err in e.errors())
+        return ParseResult(None, "json" if bad_json else "schema")</code></pre>
         <p>Tracking which failure happened tells you where to focus. Lots of "json" failures = a decoding / format problem (Lesson 1.19). Lots of "schema" failures = a training problem (the model has learned a slightly different shape).</p>
 
         <h2>Compute the valid-JSON rate + failure breakdown</h2>
-        <pre class="code-block"><code># Run the model on the gold set (predict() from Lesson 2.7)
-results = [parse(predict(tuned, ex["prompt"])) for ex in gold]
+        <p>Don't reuse Lesson 2.7's <code>predict()</code> here. It stops after 8 new tokens and lowercases the output, which is right for a one-word label and fatal for JSON: almost every invoice gets cut off mid-object, and every string value (<code>invoice_number</code>, <code>customer</code>) changes case, so even good parses score as wrong. Use a JSON variant with room to finish and no normalising:</p>
+        <pre class="code-block"><code>@torch.no_grad()
+def predict_json(model, prompt, max_new_tokens=512):
+    msgs = [{"role": "user", "content": prompt}]
+    text = tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
+    ids = tok(text, return_tensors="pt").to(model.device)
+    out = model.generate(**ids, max_new_tokens=max_new_tokens, do_sample=False,
+                         pad_token_id=tok.pad_token_id)
+    return tok.decode(out[0][ids["input_ids"].shape[1]:], skip_special_tokens=True).strip()   # no .lower()
+
+# Run the model on the gold set
+results = [parse(predict_json(tuned, ex["prompt"])) for ex in gold]
 
 valid = [r for r in results if r.obj is not None]
 n_json_fail   = sum(1 for r in results if r.failure == "json")
 n_schema_fail = sum(1 for r in results if r.failure == "schema")
 
-print(f"valid-JSON rate    : {len(valid)/len(results):.0%}")
+print(f"valid-JSON rate    : {len(valid)/len(results):.0%}")   # parsed AND matched the schema
 print(f"json failures      : {n_json_fail}  ({n_json_fail/len(results):.0%})")
 print(f"schema failures    : {n_schema_fail}  ({n_schema_fail/len(results):.0%})")</code></pre>
 
@@ -393,14 +399,14 @@ per-field accuracy (over 95 valid parses):
 
         <div class="callout callout--warning">
           <p class="callout__label">Honest beat — the two-number report</p>
-          <p>The honest summary of this run is <strong>"95% valid-JSON, with 61% accuracy on <code>total</code> among valid parses."</strong> Not "95% accurate." Anyone who reads the headline "95% valid-JSON" and assumes the values are right will deploy a model that hallucinates totals 39% of the time. <strong>Always report the valid-JSON rate <em>and</em> per-field accuracy, side by side.</strong> If you only have room for one number, it's macro per-field accuracy across the full gold set (counting failed parses as zero) — that single number can't lie in either direction.</p>
+          <p>The honest summary of this run is <strong>"95% valid-JSON, with 61% accuracy on <code>total</code> among valid parses."</strong> Not "95% accurate." Anyone who reads the headline "95% valid-JSON" and assumes the values are right will deploy a model that hallucinates totals 39% of the time. <strong>Always report the valid-JSON rate <em>and</em> per-field accuracy, side by side.</strong> If you only have room for one number, make it macro per-field accuracy across the full gold set (counting failed parses as zero) — harder to game than either number alone. Even that can hide one critical field behind four easy ones, so report the fields that matter most (here, <code>total</code>) individually.</p>
         </div>
 
         <h2>Repairing failures vs retraining</h2>
         <p>When the model's outputs have JSON failures, before retraining check the cheap things:</p>
         <ul>
           <li><strong>Decoding</strong> (Lesson 1.19): lower temperature, set a stop token, cap <code>max_new_tokens</code>. A model emitting prose <em>after</em> the JSON is often a stop-token / max-tokens issue.</li>
-          <li><strong>Trailing commas / partial JSON</strong>: a small "repair on parse fail" step (regex strip prose, try parse again) can rescue 50% of <code>json</code> failures cheaply.</li>
+          <li><strong>Trailing commas / partial JSON</strong>: a small "repair on parse fail" step (regex strip prose, try parse again) often rescues a useful share of <code>json</code> failures cheaply. Count the repaired rows separately so the repair doesn't hide a decoding problem.</li>
           <li><strong>Schema drift</strong>: if many parses succeed but a specific field is consistently wrong, it's a training-data problem. Audit the training examples for that field.</li>
         </ul>
 

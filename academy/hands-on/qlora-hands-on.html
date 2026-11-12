@@ -302,18 +302,24 @@
         <h2>The setup: bitsandbytes</h2>
         <p>QLoRA needs one extra library beyond Lesson 2.10's stack: <strong>bitsandbytes</strong>, which provides the 4-bit quantization kernels Transformers loads through <code>BitsAndBytesConfig</code>.</p>
         <pre class="code-block"><code>pip install bitsandbytes</code></pre>
+        <div class="callout callout--note">
+          <p class="callout__label">Needs a CUDA GPU</p>
+          <p>This is the one lesson in the track that won't run on CPU: the 4-bit training path in bitsandbytes needs an NVIDIA GPU. The code below was checked against the current library versions but not executed here; the memory figures are worked out from the model's shape, not measured.</p>
+        </div>
 
         <h2>Configure 4-bit loading</h2>
-        <p>Three knobs matter: the quantization scheme (<strong>NF4</strong> — 4-bit Normal Float, the QLoRA default), <strong>double quantization</strong> (quantize the quantization constants too, saving a bit more), and the <strong>compute dtype</strong> (the dtype for the activations and gradients on top of the quantized weights — bf16 on modern GPUs).</p>
+        <p>Three knobs matter: the quantization scheme (<strong>NF4</strong> — 4-bit Normal Float, the QLoRA default), <strong>double quantization</strong> (quantize the quantization constants too, saving a bit more), and the <strong>compute dtype</strong> (the dtype for the activations and gradients on top of the quantized weights — bf16 on modern GPUs, fp16 on a T4 or V100).</p>
         <pre class="code-block"><code>import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 MODEL_ID = "Qwen/Qwen2.5-1.5B-Instruct"      # ~1.5B params, Apache-2 license
+use_bf16 = torch.cuda.is_bf16_supported()     # False on T4 / V100
+compute_dtype = torch.bfloat16 if use_bf16 else torch.float16
 
 bnb = BitsAndBytesConfig(
     load_in_4bit=True,
     bnb_4bit_quant_type="nf4",                # the QLoRA default
-    bnb_4bit_compute_dtype=torch.bfloat16,    # activations + grads in bf16
+    bnb_4bit_compute_dtype=compute_dtype,     # activations + grads in 16-bit
     bnb_4bit_use_double_quant=True,           # quantize the quant constants
 )
 
@@ -327,7 +333,7 @@ model = AutoModelForCausalLM.from_pretrained(
 )</code></pre>
 
         <h2>Prepare the model for adapter training</h2>
-        <p>One required call: <code>prepare_model_for_kbit_training</code> from peft. It sets up gradient checkpointing (Lesson 1.15), casts the LayerNorm and embedding layers to a numerically stable dtype, and disables certain optimizer states the quantized base can't carry. Forgetting this is the most common QLoRA-doesn't-train bug.</p>
+        <p>One required call: <code>prepare_model_for_kbit_training</code> from peft. It freezes every base parameter, upcasts all the parameters that weren't quantized (norms, embeddings) from 16-bit to fp32 for numerical stability, makes the input embeddings pass gradients through, and turns on gradient checkpointing (Lesson 1.16). It does nothing to the optimizer. The fp32 upcast costs memory: on this model the 233M-parameter embedding table alone grows from about 0.47 GB to 0.93 GB. Forgetting the call is the most common QLoRA-doesn't-train bug.</p>
         <pre class="code-block"><code>from peft import LoraConfig, prepare_model_for_kbit_training
 
 model = prepare_model_for_kbit_training(model)
@@ -343,7 +349,7 @@ lora = LoraConfig(
         <h2>Train it — same SFTTrainer as Lesson 2.10</h2>
         <p>From here on it's the SFT pipeline you know. The only thing the trainer sees that's different is that the base is 4-bit and the adapter sits on top.</p>
         <pre class="code-block"><code>from trl import SFTConfig, SFTTrainer
-# `ds` from Lesson 2.10's to_chat helper
+# `ds` from Lesson 2.10's to_chat helper (prompt-completion rows)
 
 trainer = SFTTrainer(
     model=model,
@@ -354,46 +360,49 @@ trainer = SFTTrainer(
         learning_rate=2e-4,
         num_train_epochs=3,
         lr_scheduler_type="cosine",
-        warmup_ratio=0.03,
-        bf16=True,
+        warmup_steps=0.03,                    # fraction of total steps
+        bf16=use_bf16,
+        fp16=not use_bf16,
         logging_steps=5,
         save_strategy="epoch",
-        max_seq_length=512,
-        completion_only_loss=True,
+        max_length=512,                       # formerly max_seq_length
+        completion_only_loss=True,            # masks the prompt on prompt-completion rows
         report_to=[],
     ),
     train_dataset=ds,
     processing_class=tok,
     peft_config=lora,
 )
+batch = next(iter(trainer.get_train_dataloader()))   # same label dump as Lesson 2.10
+print(repr(tok.decode(batch["input_ids"][0][batch["labels"][0] != -100])))
 trainer.train()
 trainer.save_model("qlora-out/adapter")</code></pre>
 
         <h2>Why this fits — the memory math made concrete</h2>
         <p>From Lesson 1.15: the dominant memory cost during training is gradients + optimizer states on the trainable parameters, plus the model weights themselves. QLoRA changes both halves:</p>
         <ul>
-          <li>The <strong>1.5B base in 4-bit</strong> takes <code>1.5e9 × 0.5 bytes ≈ 0.75 GB</code>. Compare to bf16 (3 GB) or fp32 (6 GB).</li>
+          <li>The <strong>1.5B base in 4-bit</strong> takes about 1.2–1.6 GB, not the naive <code>1.5e9 × 0.5 bytes ≈ 0.75 GB</code>. bitsandbytes quantizes only the <code>Linear</code> layers (about 1.3B parameters, ~0.65 GB at 4 bits); the tied 151,936 × 1,536 embedding table (~233M parameters) stays in 16-bit and is then upcast to fp32 by <code>prepare_model_for_kbit_training</code>. Compare to bf16 (3 GB) or fp32 (6 GB) for the whole model.</li>
           <li>The <strong>base is frozen</strong> — no gradient memory, no optimizer state for it.</li>
-          <li>The <strong>LoRA adapter</strong> trains; for the wider <code>target_modules</code> above on a 1.5B model, that's a few million parameters with bf16 gradients + AdamW state — maybe ~80 MB.</li>
-          <li><strong>Activations + KV cache</strong> at sequence length 512, batch 4 — a few GB.</li>
+          <li>The <strong>LoRA adapter</strong> trains. With r=16 on all seven projections of this model (28 layers, hidden 1,536, MLP 8,960, two 128-wide KV heads) that's about 18.5M parameters. For a quantized base, SFTTrainer casts them to bf16 (as the QLoRA paper did), so weights + gradients + AdamW's two moments come to about 8 bytes each: roughly 150 MB. Left in peft's default fp32 it would be about 16 bytes each, roughly 300 MB.</li>
+          <li><strong>Activations</strong> at sequence length 512, batch 4 — this is the part that varies most with sequence length, batch size and gradient checkpointing. Measure it on your card with <code>torch.cuda.max_memory_allocated()</code> rather than trusting an estimate.</li>
         </ul>
-        <p>Total: comfortably under 12 GB. A model that would have needed ~24 GB to LoRA-fine-tune at full precision fits in the budget of a consumer GPU.</p>
+        <p>Weights plus adapter come to about 2 GB, which leaves most of a consumer GPU for activations. For scale: <em>full</em> fine-tuning of this model with AdamW in mixed precision needs about 16 bytes per parameter, ~24 GB before activations, while plain LoRA on a bf16 base needs about 3 GB of weights. At 1.5B, QLoRA's saving over LoRA is a couple of GB; it starts to decide what fits at 7B and up, where the bf16 base alone is around 15 GB.</p>
 
         <div class="callout callout--warning">
           <p class="callout__label">Honest beat — 4-bit isn't free</p>
-          <p>QLoRA usually loses ~1–2 points on whatever metric you're tracking compared to LoRA on a full-precision base of the same size. Sometimes more on the hardest examples. <strong>Re-evaluate after a QLoRA run</strong> — don't assume the metric you measured on the bf16 base will hold. The right framing: QLoRA lets you fine-tune a <em>larger</em> model in the same VRAM; the trade isn't "free 4×" but "smaller-precision 1.5B vs full-precision 350M, whichever wins on your eval."</p>
+          <p>The QLoRA paper (Dettmers et al. 2023, arXiv:2305.14314) found that NF4 with double quantization matched 16-bit LoRA and full fine-tuning on its benchmarks. Your task isn't their benchmarks, and the quantization error lands differently on different models and data. <strong>Re-evaluate after a QLoRA run</strong> on the same gold set — don't assume the metric you measured on the bf16 base will hold. The right framing: QLoRA lets you fine-tune a <em>larger</em> model in the same VRAM; the trade isn't "free 4×" but "smaller-precision 1.5B vs full-precision 350M, whichever wins on your eval."</p>
         </div>
 
         <h2>Inference notes</h2>
         <p>For inference you have two choices, mirroring Lesson 2.8:</p>
         <ul>
           <li><strong>Load 4-bit at inference too</strong> — keep the quantization config, load the base in 4-bit, attach the adapter with <code>PeftModel.from_pretrained</code>. Same memory budget as training.</li>
-          <li><strong>Merge and dequantize</strong> — for production serving, merge the adapter into a bf16 (or full-precision) base; you lose the memory win, but adapter merging into a quantized base isn't supported cleanly. The honest path for serving is to keep base + adapter separate or to convert the merged model to GGUF/AWQ for deployment (Track 4.6).</li>
+          <li><strong>Merge into a 16-bit base</strong> — for production serving, reload the base in bf16 (not 4-bit), attach the adapter, then <code>merge_and_unload()</code>. peft can merge straight into the 4-bit model, but it has to re-quantize the merged weights, which adds rounding error, so reloading in 16-bit is the recommended path. From the merged model you can quantize again for deployment, e.g. GGUF or AWQ (Lesson 4.6).</li>
         </ul>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>QLoRA is <strong>SFTTrainer with two changes</strong>: load the base via <code>BitsAndBytesConfig</code> (NF4 + double quant + bf16 compute), and call <code>prepare_model_for_kbit_training</code> before attaching LoRA. That's it. The win is fitting a model 4–10× larger in the same VRAM. The cost is a small re-evaluable quality drop.</p>
+          <p>QLoRA is <strong>SFTTrainer with two changes</strong>: load the base via <code>BitsAndBytesConfig</code> (NF4 + double quant + bf16 compute), and call <code>prepare_model_for_kbit_training</code> before attaching LoRA. That's it. The win grows with model size: the base's quantized layers take about a quarter of their bf16 memory. The possible cost is some quality, which the QLoRA paper didn't see on its benchmarks; check it on yours.</p>
         </div>
 
         <p>You can now train at scales the small model can't reach. Next: graduate Lesson 2.7's hand-rolled accuracy into real, per-class metrics with sklearn and HF <code>evaluate</code>.</p>

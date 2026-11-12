@@ -310,7 +310,7 @@ model = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.bfloat16)
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model = model.to(device)</code></pre>
-        <p><code>from_pretrained</code> downloads the weights (cached after the first run) and builds the model. We load in <strong>bf16</strong> to halve memory (Track 1's mixed-precision lesson) and move it onto the GPU.</p>
+        <p><code>from_pretrained</code> downloads the weights (cached after the first run) and builds the model. We load the weights in <strong>bf16</strong>, which takes half the memory of fp32, and move the model onto the GPU (or leave it on CPU). This is plain 16-bit storage, not mixed precision: mixed precision (Track 1) is fp32 master weights with 16-bit compute. The LoRA adapter you add in Lesson 2.5 is kept in fp32 by peft.</p>
 
         <h2>Inspect what you loaded</h2>
         <pre class="code-block"><code>n_params = sum(p.numel() for p in model.parameters())
@@ -321,10 +321,10 @@ print("layers:", cfg.num_hidden_layers)
 print("hidden size:", cfg.hidden_size)
 print("vocab size:", cfg.vocab_size)
 print("context length:", cfg.max_position_embeddings)</code></pre>
-        <p>You should see ~135M parameters and the architectural numbers from Track 0 made concrete: a stack of Transformer layers, a hidden size (the embedding width), the vocabulary size, and the context window. This is the function whose parameters we'll nudge.</p>
+        <p>You should see ~135M parameters and the architectural numbers from Track 0 made concrete: a stack of Transformer layers, a hidden size (the embedding width), the vocabulary size, and the context window (SmolLM2 prints 8192 here; the length you actually train at is set later by your own truncation limit). This is the function whose parameters we'll nudge.</p>
 
         <h2>Set the pad token</h2>
-        <p>Batching needs a padding token (Track 1's tokenization lesson). Many base tokenizers don't define one, so set it to the end-of-sequence token:</p>
+        <p>Batching needs a padding token (Track 1's tokenization lesson). Many base tokenizers don't define one, so set it to the end-of-sequence token. SmolLM2-135M-Instruct already sets <code>pad_token</code> to <code>&lt;|im_end|&gt;</code> (the same id as EOS), so for this model the branch below does nothing; keep it for models that need it. Pad = EOS is safe here because Lesson 2.4 masks padding out of the loss by position, so the real end-of-turn token is still supervised.</p>
         <pre class="code-block"><code>if tok.pad_token is None:
     tok.pad_token = tok.eos_token
     model.config.pad_token_id = tok.pad_token_id</code></pre>
@@ -332,11 +332,13 @@ print("context length:", cfg.max_position_embeddings)</code></pre>
         <p>Before fine-tuning, confirm the base model runs and see how it handles our task <em>untuned</em> — this is your baseline (Track 1's evaluation lesson).</p>
         <pre class="code-block"><code>messages = [{"role": "user", "content": "Classify the sentiment as positive or negative: I loved this movie."}]
 text = tok.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+print(text)   # note the system message the template adds for you
 inputs = tok(text, return_tensors="pt").to(device)
 
 out = model.generate(**inputs, max_new_tokens=16, do_sample=False)
-print(tok.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True))</code></pre>
-        <p>Notice we use <code>apply_chat_template</code> with <code>add_generation_prompt=True</code> — exactly the chat-template discipline from Track 1. The untuned model may answer correctly, verbosely, or off-format; that's fine. The point of fine-tuning is to make it answer <em>reliably</em> and <em>concisely</em> in our format. Next, we build the data that will teach it to.</p>
+print(tok.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True))
+# untuned, on CPU: "I would say that the sentiment of this statement is positive."</code></pre>
+        <p>Notice we use <code>apply_chat_template</code> with <code>add_generation_prompt=True</code> — exactly the chat-template discipline from Track 1. Printing <code>text</code> also shows something easy to miss: SmolLM2's template silently inserts a default system message ("You are a helpful AI assistant named SmolLM, trained by Hugging Face") when you don't pass one. It costs tokens and it is part of every prompt you train on. The untuned model may answer correctly, verbosely, or off-format; here it is right but wordy, which a strict "exact label" check scores as wrong. That's fine. The point of fine-tuning is to make it answer <em>reliably</em> and <em>concisely</em> in our format. Next, we build the data that will teach it to.</p>
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
           <p>Loading is two objects: a <strong>tokenizer</strong> (text ↔ token IDs, plus the chat template) and a <strong>model</strong> (the parameters). Always load them from the same <code>model_id</code> so they match, and always sanity-check the base before training so you have a baseline.</p>

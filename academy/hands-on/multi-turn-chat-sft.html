@@ -312,12 +312,39 @@
   # ... more conversations
 ]
 ds = Dataset.from_list(raw)</code></pre>
-        <p>Two messages per conversation become four, six, ten. Sequence lengths grow; you'll usually want a larger <code>max_seq_length</code> than the single-turn lessons used.</p>
+        <p>Two messages per conversation become four, six, ten. Sequence lengths grow; you'll usually want a larger <code>max_length</code> than the single-turn lessons used.</p>
 
         <h2>Loss on every assistant turn</h2>
-        <p>With <code>completion_only_loss=True</code>, SFTTrainer's chat-template-aware preprocessing masks <strong>every</strong> non-assistant token: system message, user turns, all the chat-template special tokens, and pad tokens. What remains unmasked is each assistant turn's content — including the assistant's <em>earlier</em> replies in the same conversation, not just the final one. This is the right default for chat fine-tuning: the model learns how to handle every turn position it'll see in production.</p>
-        <pre class="code-block"><code>from trl import SFTConfig, SFTTrainer
+        <p>The goal: mask <strong>every</strong> non-assistant token — system message, user turns, the chat-template role headers, and padding — and supervise each assistant turn's content, including the assistant's <em>earlier</em> replies in the same conversation, not just the final one. That is the usual choice for chat fine-tuning: the model learns how to handle every turn position it'll see in production.</p>
+        <p>Lesson 2.10's trick doesn't work here. <code>completion_only_loss</code> only masks prompt-completion rows; on a <code>messages</code> dataset it silently trains on every token, system and user turns included. The setting built for <code>messages</code> data is <code>assistant_only_loss=True</code>. It asks the chat template which tokens belong to the assistant, and the template answers through <code>{% generation %}…{% endgeneration %}</code> tags around each assistant reply. Most stock templates, SmolLM2's included, don't have those tags, and TRL raises a <code>ValueError</code> rather than guess. So we write a training copy of SmolLM2's template with the tags added, and check that it renders exactly the same text as the original:</p>
+        <pre class="code-block"><code># SmolLM2's chat template, plus {% generation %} tags around each assistant reply
+TRAIN_TEMPLATE = (
+    "{% for message in messages %}"
+    "{% if loop.first and messages[0]['role'] != 'system' %}"
+    "{{ '&lt;|im_start|&gt;system\nYou are a helpful AI assistant named SmolLM, trained by Hugging Face&lt;|im_end|&gt;\n' }}"
+    "{% endif %}"
+    "{% if message['role'] == 'assistant' %}"
+    "{{ '&lt;|im_start|&gt;assistant\n' }}"
+    "{% generation %}{{ message['content'] + '&lt;|im_end|&gt;' }}{% endgeneration %}"
+    "{{ '\n' }}"
+    "{% else %}"
+    "{{ '&lt;|im_start|&gt;' + message['role'] + '\n' + message['content'] + '&lt;|im_end|&gt;\n' }}"
+    "{% endif %}"
+    "{% endfor %}"
+    "{% if add_generation_prompt %}{{ '&lt;|im_start|&gt;assistant\n' }}{% endif %}"
+)
+# the training template must render exactly what the model sees at inference
+msgs = raw[0]["messages"]
+assert (tok.apply_chat_template(msgs, tokenize=False, chat_template=TRAIN_TEMPLATE)
+        == tok.apply_chat_template(msgs, tokenize=False))
+tok.chat_template = TRAIN_TEMPLATE</code></pre>
+        <p>The end-of-turn token <code>&lt;|im_end|&gt;</code> sits inside the tags on purpose: supervising it is what teaches the model to stop. If you can't change the template, the fallback is the manual mask from Lesson 2.4, extended to every assistant turn: render the conversation up to each assistant reply, and set everything outside the replies to -100.</p>
+        <pre class="code-block"><code>import torch
+from trl import SFTConfig, SFTTrainer
 from peft import LoraConfig
+
+use_bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()   # Lesson 2.1
+use_fp16 = torch.cuda.is_available() and not use_bf16
 
 lora = LoraConfig(
     r=16, lora_alpha=32, lora_dropout=0.05,
@@ -333,22 +360,23 @@ trainer = SFTTrainer(
         learning_rate=2e-4,
         num_train_epochs=3,
         lr_scheduler_type="cosine",
-        warmup_ratio=0.03,
-        bf16=True,
+        warmup_steps=0.03,                        # fraction of total steps
+        bf16=use_bf16,
+        fp16=use_fp16,
         logging_steps=5,
         save_strategy="epoch",
-        max_seq_length=2048,                      # multi-turn conversations need it
-        completion_only_loss=True,                # mask all non-assistant tokens
+        max_length=2048,                          # multi-turn conversations need it
+        assistant_only_loss=True,                 # supervise only the {% generation %} spans
         report_to=[],
     ),
     train_dataset=ds,
-    processing_class=tok,
+    processing_class=tok,                     # carries TRAIN_TEMPLATE
     peft_config=lora,
 )
 trainer.train()</code></pre>
 
         <h2>Verify the mask — the cheap check that catches the loud bug</h2>
-        <p>Same check from Lesson 2.4 / 2.10, now more important: pull a batch, decode the unmasked positions, confirm they correspond to assistant turns only.</p>
+        <p>Same check from Lesson 2.4 / 2.10, now more important — run it every time, before you train: pull a batch, decode the unmasked positions, confirm they correspond to assistant turns only.</p>
         <pre class="code-block"><code># after building the trainer, before .train()
 batch = next(iter(trainer.get_train_dataloader()))
 ids    = batch["input_ids"][0].tolist()
@@ -357,27 +385,28 @@ labels = batch["labels"][0].tolist()
 # the tokens the model is supervised on
 unmasked = [i for i, l in zip(ids, labels) if l != -100]
 print(tok.decode(unmasked))
-# Should be the concatenation of every assistant turn's content.
-# If you see "user:" or system text in there, the mask is wrong.</code></pre>
+# Should be every assistant reply, each ending in &lt;|im_end|&gt;:
+# "I can help — what's the order number?&lt;|im_end|&gt;Thanks. I see the order. ..."
+# If you see user or system text in there, the mask is wrong.</code></pre>
 
         <h2>Pitfalls specific to multi-turn</h2>
         <ul>
-          <li><strong>Context-window pressure.</strong> Multi-turn conversations are long. If your <code>max_seq_length</code> is too small, examples get truncated and the last assistant turn (which often carries the resolution) is what gets cut off. Set <code>max_seq_length</code> from the actual length distribution in your training data, not a guess.</li>
+          <li><strong>Context-window pressure.</strong> Multi-turn conversations are long. If your <code>max_length</code> is too small, examples get truncated, and because TRL keeps the start of each sequence and cuts the end, the last assistant turn (which often carries the resolution) is what gets cut off. Set <code>max_length</code> from the actual length distribution in your training data, not a guess, and drop or split conversations that still don't fit.</li>
           <li><strong>Role bleed.</strong> If the chat template doesn't have crisp role markers (or your data is missing the explicit <code>role</code> field), the loss mask can leak into user turns and the model starts mimicking the user voice in its replies. The mask-verification check above catches this immediately.</li>
           <li><strong>Sample composition.</strong> Five turns of "OK", "OK", "OK", "OK", "Done." is technically multi-turn data and teaches the model nothing useful. Curate for conversations where each turn carries real signal.</li>
         </ul>
 
         <div class="callout callout--warning">
           <p class="callout__label">Honest beat — what multi-turn training doesn't do</p>
-          <p>Training on multi-turn data does <strong>not</strong> make the model "better at long conversations" in some general sense. It makes the model better at <em>your</em> turn structure on conversations resembling the ones in your data. Long-range coherence (remembering what was said 20 turns ago, keeping a stable persona over time) is mostly a property of the base model and its context window — fine-tuning on a few hundred multi-turn examples won't move it. If long-conversation behaviour is your goal, also evaluate broadly on out-of-domain conversations (Lesson 1.21's broad eval); the gains and the regressions both live there.</p>
+          <p>Training on multi-turn data does <strong>not</strong> make the model "better at long conversations" in some general sense. It makes the model better at <em>your</em> turn structure on conversations resembling the ones in your data. Long-range coherence (remembering what was said 20 turns ago, keeping a stable persona over time) is mostly a property of the base model and its context window — fine-tuning on a few hundred multi-turn examples won't move it. If long-conversation behaviour is your goal, also evaluate broadly on out-of-domain conversations (Lesson 1.22's broad eval); the gains and the regressions both live there.</p>
         </div>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>Multi-turn SFT is single-turn SFT with a richer mask: <strong>every</strong> assistant turn is supervised, <strong>every</strong> user / system span is -100. SFTTrainer + <code>completion_only_loss=True</code> handles it for you on chat-messages data; the only changes from single-turn are a larger <code>max_seq_length</code> and a smaller batch. The mask-verification check is still the cheapest catch for the loudest bug.</p>
+          <p>Multi-turn SFT is single-turn SFT with a richer mask: <strong>every</strong> assistant turn is supervised, <strong>every</strong> user / system span is -100. On chat-messages data SFTTrainer does it with <code>assistant_only_loss=True</code>, but only if the chat template marks the assistant turns with <code>{% generation %}</code> tags; <code>completion_only_loss</code> does nothing there. Beyond that, the changes from single-turn are a larger <code>max_length</code> and a smaller batch. The mask-verification check is still the cheapest catch for the loudest bug.</p>
         </div>
 
-        <p>You can now train on every shape of SFT data you'll meet. The last Track 2 lesson is the project gallery: six different SLM tasks, each expressed as a recipe you can pick up and run with the techniques you've learned.</p>
+        <p>You can now train on every shape of SFT data you'll meet. Next is the project gallery: six different SLM tasks, each expressed as a recipe you can pick up and run with the techniques you've learned. The track then closes with three evaluation-and-operations lessons: LLM judges, public benchmarks and experiment tracking.</p>
 
         <section class="key-terms">
           <h2>Key terms</h2>
@@ -386,7 +415,8 @@ print(tok.decode(unmasked))
             <dt>Per-turn loss mask</dt><dd>Loss applied to every assistant token in the conversation; user / system / chat-template tokens set to -100.</dd>
             <dt>Mask verification</dt><dd>Decoding the unmasked positions of a training batch to confirm they correspond to assistant turns only; cheapest catch for a silent mask bug.</dd>
             <dt>Role bleed</dt><dd>Mask leaking into user turns so the model is supervised on (and starts mimicking) user-voice text.</dd>
-            <dt>Context-window pressure</dt><dd>Long multi-turn conversations approaching <code>max_seq_length</code>; truncation cuts the final assistant turn first, eating the resolution.</dd>
+            <dt>Context-window pressure</dt><dd>Long multi-turn conversations approaching <code>max_length</code>; TRL keeps the start and truncates the end, so the final assistant turn is cut first, eating the resolution.</dd>
+            <dt>assistant_only_loss</dt><dd>SFTConfig field for <code>messages</code> data; supervises only the tokens the chat template wraps in <code>{% generation %}</code> tags, and fails if the template has none.</dd>
           </dl>
         </section>
 

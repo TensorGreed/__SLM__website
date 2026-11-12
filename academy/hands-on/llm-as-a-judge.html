@@ -311,7 +311,7 @@
         <h2>Two judging modes</h2>
         <h3>Pairwise A/B (preferred)</h3>
         <p>Show the judge a prompt and two candidate outputs. Ask which is better, given the rubric. Aggregate win-rates across many prompts. This is the more reliable mode — discriminating between two outputs is a task LLMs do well; the comparative signal compounds, and you don&#x27;t need a stable absolute scale.</p>
-        <p>The cost: <strong>position bias</strong> — judges have a measurable preference for "A" or "B" regardless of content. The mitigation is mandatory: for every pair, ask the judge twice with the order swapped, and count a win only when the judge picks the same candidate in both orders. Half the runs is a tie; the other half is your signal.</p>
+        <p>The cost: <strong>position bias</strong> — judges have a measurable preference for "A" or "B" regardless of content. The mitigation is mandatory: for every pair, ask the judge twice with the order swapped, and count a win only when the judge picks the same <em>candidate</em> in both orders. Pairs where the two orders disagree are "inconsistent"; how many there are is an empirical number, not a fixed share, and it is worth reporting as your measured position bias.</p>
 
         <h3>Absolute single-output scoring</h3>
         <p>Show the judge one output and ask for a numeric score (1–5, 0–10, etc.) against the rubric. Easier to aggregate — averages, distributions, gates — but the scale is unstable: drift in the rubric, drift in the judge model, drift in your own intuition over time. Use absolute scoring when you need a one-shot gate ("does the output clear the bar?") or to track a single model over time, not to compare models against each other.</p>
@@ -340,30 +340,42 @@ Return ONLY a JSON object matching this schema. No prose outside it.
 }
 """
 
-# render and call twice with order swapped
-for (order, a, b) in [("forward", out_x, out_y), ("reverse", out_y, out_x)]:
-    judgement = judge_model.chat(RUBRIC + render_pair(prompt, a, b))
-    parsed = json.loads(judgement)
-    record(order, parsed)
+from typing import Literal
+from pydantic import BaseModel
 
-# count a win only when both orders agree
-win = forward.winner == reverse.winner and forward.winner != "tie"</code></pre>
+class Judgement(BaseModel):
+    winner: Literal["A", "B", "tie"]
+    scores: dict
+    reasoning: str
+
+def judge(prompt, first, second):
+    raw = judge_model.chat(RUBRIC + render_pair(prompt, first, second))
+    return Judgement.model_validate_json(raw)   # raises on chatty or fenced output: log and count it
+
+fw = judge(prompt, out_x, out_y)   # forward: A = x, B = y
+rv = judge(prompt, out_y, out_x)   # reverse: A = y, B = x
+
+# map the letters back to candidates BEFORE comparing
+fw_pick = {"A": "x", "B": "y", "tie": "tie"}[fw.winner]
+rv_pick = {"A": "y", "B": "x", "tie": "tie"}[rv.winner]
+result = fw_pick if fw_pick == rv_pick else "inconsistent"   # "x", "y", "tie" or "inconsistent"</code></pre>
+        <p>The mapping is the whole point. In the reverse call, "A" is <code>out_y</code>, so comparing raw letters gets it backwards: a judge that always says "A" (pure position bias) would match itself and score a win, while a judge that genuinely prefers x (forward "A", reverse "B") would score nothing. Mapped to candidates, the always-"A" judge comes out <code>"inconsistent"</code>, which is what it is. The parsing step is Lesson 2.13's pattern: a Pydantic model instead of a bare <code>json.loads</code>.</p>
         <p>The constraints that matter in this pattern: <strong>JSON only, no prose</strong>, <strong>fixed schema</strong>, <strong>swap-order check</strong>, <strong>structured numeric fields</strong> for aggregation. Skip any of these and you&#x27;re hand-cleaning judge output for the rest of the project.</p>
 
         <h2>The three classic biases</h2>
         <ul>
           <li><strong>Position bias</strong> — judges favour the first (or sometimes second) option presented. Mitigate with mandatory order-swap and "both must agree" win counting.</li>
           <li><strong>Length bias</strong> — judges tend to prefer the longer answer when in doubt, treating verbosity as effort. Mitigate by including <em>concision</em> as an explicit rubric dimension and by checking the win-rate correlation against output length on a held-out slice — if a 1-point length difference systematically predicts the winner, you have length bias.</li>
-          <li><strong>Style / family bias</strong> — judges trained by the same lab as one candidate tend to favour that candidate&#x27;s style. The mitigation is judge selection: never use the same model family as either candidate, and ideally use two judges from different labs and only treat agreed-on wins as wins.</li>
+          <li><strong>Style / family bias (self-preference)</strong> — judges can favour outputs from their own model family, and outputs they themselves would have written (Zheng et al. 2023, arXiv:2306.05685; Panickssery et al. 2024, arXiv:2404.13076). The mitigation is judge selection: avoid the same model family as either candidate, and ideally use two judges from different families and only treat agreed-on wins as wins. Position bias (Wang et al. 2023, arXiv:2305.17926) and length bias (Dubois et al. 2024, arXiv:2404.04475) are the better-documented two.</li>
         </ul>
 
         <h2>Judge-model selection</h2>
-        <p>The rules of thumb that hold up:</p>
+        <p>Rules of thumb — heuristics, not laws, so check them with the calibration step below:</p>
         <ul>
-          <li>The judge must be <strong>strictly stronger</strong> than every candidate. A weaker model judges by surface markers (length, hedging, formality) more than by content.</li>
-          <li>The judge must not be in the same family as any candidate — Gemini judges Gemini favourably, GPT judges GPT favourably, Claude judges Claude favourably. The pattern is robust enough that "what family is the judge in?" is the first question to ask of any LLM-as-judge result.</li>
-          <li>If your candidates are SLMs (135M–7B), a 70B-class judge is enough; you don&#x27;t need a frontier model just to outclass them. The marginal precision past that point doesn&#x27;t pay back the cost.</li>
-          <li>Pin the judge model and decoding config. A judge with temperature=0.7 will flip on the same prompt; use temperature=0 and pin the model version.</li>
+          <li>Prefer a judge that is <strong>clearly stronger</strong> than every candidate. A weaker model tends to judge by surface markers (length, hedging, formality) more than by content.</li>
+          <li>Avoid a judge from the same family as any candidate: judges tend to prefer outputs from their own model family. The evidence is mixed (Zheng et al. measured it for some judges and flagged limited data), but it is cheap to avoid, so "what family is the judge in?" is a fair first question to ask of any LLM-as-judge result.</li>
+          <li>If your candidates are SLMs (135M–7B), a much larger open model may be enough; you may not need a frontier model just to outclass them. Whether it is enough for your rubric is what calibration tells you.</li>
+          <li>Pin the judge model and decoding config. A judge with temperature=0.7 will flip on the same prompt; use temperature=0 and pin the model version — but temperature 0 is not fully deterministic on many serving stacks, so log the raw judge output and run the calibration set twice to measure the judge&#x27;s agreement with itself.</li>
         </ul>
 
         <h2>Calibration against a human-rated set</h2>
@@ -372,13 +384,13 @@ win = forward.winner == reverse.winner and forward.winner != "tie"</code></pre>
           <li>Take 50–200 pairs from your eval set.</li>
           <li>Have 2–3 humans (you, a colleague, a contractor — anyone with the domain context) independently rate each pair against the same rubric the judge is using. Resolve disagreements; this becomes your <strong>human-rated gold-of-the-gold</strong>.</li>
           <li>Run the judge over the same pairs.</li>
-          <li>Compute inter-judge agreement (judge vs human) — Cohen&#x27;s κ for categorical, Spearman ρ for ordinal. Anything below κ ≈ 0.4 / ρ ≈ 0.5 means the judge is not measuring what you think it&#x27;s measuring; revise the rubric, swap the judge, or accept that this dimension needs human evaluation.</li>
+          <li>Compute agreement between judge and humans — Cohen&#x27;s κ for categorical verdicts, weighted κ or Krippendorff&#x27;s α for ordinal scores. Spearman ρ is a useful secondary check but measures correlation, not agreement: a judge that always scores one point higher gets ρ = 1. Landis &amp; Koch (1977) call κ of 0.41–0.60 "moderate"; treat κ ≈ 0.4 as a floor, not a target. Below it, the judge is not measuring what you think it&#x27;s measuring; revise the rubric, swap the judge, or accept that this dimension needs human evaluation.</li>
           <li>Pin the human set. Re-run it whenever you change the rubric, the judge model, or the candidate population.</li>
         </ol>
 
         <div class="callout callout--warning">
-          <p class="callout__label">Honest beat — LLM judges agree with each other more than they agree with humans</p>
-          <p>Two judge models will often correlate 0.8+ with each other while correlating only 0.4–0.6 with human raters. Reporting "two judges agreed on the same winner" sounds rigorous and is often a vanity statistic; both judges are sharing the same length / style / position biases. The numbers that matter are judge-vs-human agreement on your calibration set. If you don&#x27;t have that, you don&#x27;t have an eval — you have an aesthetic.</p>
+          <p class="callout__label">Honest beat — judges agreeing with each other proves little</p>
+          <p>On MT-Bench, Zheng et al. (2023) found a strong judge agreed with human experts about as often as the experts agreed with each other (85% vs 81% on non-tie votes). That is a result for their judge, task and rubric, not a guarantee for yours. And reporting "two judges agreed on the same winner" sounds rigorous but is often a vanity statistic: both judges can share the same length / style / position biases. The numbers that matter are judge-vs-human agreement on your calibration set. If you don&#x27;t have that, you don&#x27;t have an eval — you have an aesthetic.</p>
         </div>
 
         <h2>Aggregation and reporting</h2>
@@ -406,7 +418,7 @@ win = forward.winner == reverse.winner and forward.winner != "tie"</code></pre>
             <dt>Length bias</dt><dd>The judge&#x27;s tendency to prefer the longer answer, treating verbosity as effort. Mitigated by including <em>concision</em> in the rubric and checking length / win-rate correlation.</dd>
             <dt>Style / family bias</dt><dd>The judge&#x27;s tendency to prefer outputs from the same model family it was trained from. Mitigated by judge selection — never reuse a candidate&#x27;s family.</dd>
             <dt>JSON-schema rubric</dt><dd>The pattern of requiring the judge to return a fixed-schema JSON object so per-dimension scores are machine-aggregatable. No free-text outside the schema.</dd>
-            <dt>Judge calibration</dt><dd>Comparing judge scores against a small human-rated set (50–200 pairs) and reporting the agreement (Cohen&#x27;s κ, Spearman ρ). Required to interpret any aggregate judge metric.</dd>
+            <dt>Judge calibration</dt><dd>Comparing judge scores against a small human-rated set (50–200 pairs) and reporting the agreement (Cohen&#x27;s κ, or weighted κ / Krippendorff&#x27;s α for ordinal scores). Required to interpret any aggregate judge metric.</dd>
             <dt>Inter-judge agreement</dt><dd>Correlation between two judge models. Always higher than judge-vs-human; reporting it instead of human calibration is a vanity metric.</dd>
           </dl>
         </section>
