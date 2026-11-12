@@ -92,17 +92,17 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "The programming language"
+              "text": "The maximum context window length"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The tokenizer"
+              "text": "Whether it was instruction-tuned"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The decoding strategy"
+              "text": "The number of training tokens it saw"
             }
           ],
           "acceptedAnswer": {
@@ -111,7 +111,7 @@
             "text": "The parameter count",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Size = parameter count, which then drives memory, latency, and cost."
+              "text": "Size means parameter count, which then drives memory, latency and cost. Small models can have long context windows and see trillions of training tokens."
             }
           }
         },
@@ -125,17 +125,17 @@
             {
               "@type": "Answer",
               "position": 1,
-              "text": "~27 GB"
+              "text": "~0.54 GB"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "~140 GB"
+              "text": "~0.135 GB"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "~2 bytes total"
+              "text": "~27 GB"
             }
           ],
           "acceptedAnswer": {
@@ -144,7 +144,7 @@
             "text": "~0.27 GB",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "135M × 2 bytes ≈ 0.27 GB for weights (training needs several times more)."
+              "text": "135M × 2 bytes ≈ 0.27 GB for the weights alone. 0.54 GB would be fp32 (4 bytes) and 0.135 GB one byte per parameter. Training needs much more: a full fine-tune with mixed-precision AdamW is roughly 16 bytes per parameter plus activations."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "On a single narrow, high-volume task, a fine-tuned small model can…",
-          "text": "On a single narrow, high-volume task, a fine-tuned small model can…",
+          "name": "On one narrow, high-volume task, what can a fine-tuned small model do?",
+          "text": "On one narrow, high-volume task, what can a fine-tuned small model do?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Never compete with a large model"
+              "text": "Beat a much larger model across every task, not just the narrow one"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Only work with RAG"
+              "text": "Only match a larger model if trained on more tokens than it was"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Require a data center"
+              "text": "Learn broad world knowledge that a larger model lacks"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Match or beat a much larger model at far lower cost/latency",
+            "text": "Match a much larger model on that task at a fraction of the cost",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Fine-tuning concentrates a small model's capacity on your task; this is the course's thesis."
+              "text": "Fine-tuning concentrates a small model's capacity on one task, where it can match a much larger model at far lower cost and latency. It can also lose (broad knowledge, multi-step reasoning, long-tail inputs), so measure it on your task."
             }
           }
         },
@@ -191,26 +191,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Always pick the biggest model"
+              "text": "Pick the largest model your budget allows, to be safe"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Whichever has more parameters"
+              "text": "Pick by leaderboard rank on general benchmarks"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Whichever is newest"
+              "text": "Pick the newest model, since it saw more data"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Quality-per-dollar (and per-millisecond) for your specific task",
+            "text": "Quality per dollar and per millisecond on your task",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Decide on quality-per-cost for your task — which requires actually evaluating both."
+              "text": "Decide on quality per unit of cost and latency for your task, which means evaluating the candidates on your own data. General leaderboards don't measure your task."
             }
           }
         }
@@ -364,10 +364,50 @@
           <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
           <script type="application/json">
             [
-              { "q": "What is the primary axis distinguishing an LLM from an SLM?", "options": ["The programming language", "The parameter count", "The tokenizer", "The decoding strategy"], "answer": 1, "explanation": "Size = parameter count, which then drives memory, latency, and cost." },
-              { "q": "Roughly how much GPU memory do a 135M model's weights need at bf16 (2 bytes/param)?", "options": ["~0.27 GB", "~27 GB", "~140 GB", "~2 bytes total"], "answer": 0, "explanation": "135M × 2 bytes ≈ 0.27 GB for weights (training needs several times more)." },
-              { "q": "On a single narrow, high-volume task, a fine-tuned small model can…", "options": ["Never compete with a large model", "Match or beat a much larger model at far lower cost/latency", "Only work with RAG", "Require a data center"], "answer": 1, "explanation": "Fine-tuning concentrates a small model's capacity on your task; this is the course's thesis." },
-              { "q": "The best way to frame the LLM-vs-SLM choice is…", "options": ["Always pick the biggest model", "Quality-per-dollar (and per-millisecond) for your specific task", "Whichever has more parameters", "Whichever is newest"], "answer": 1, "explanation": "Decide on quality-per-cost for your task — which requires actually evaluating both." }
+              {
+                "q": "What is the primary axis distinguishing an LLM from an SLM?",
+                "options": [
+                  "The maximum context window length",
+                  "The parameter count",
+                  "Whether it was instruction-tuned",
+                  "The number of training tokens it saw"
+                ],
+                "answer": 1,
+                "explanation": "Size means parameter count, which then drives memory, latency and cost. Small models can have long context windows and see trillions of training tokens."
+              },
+              {
+                "q": "Roughly how much GPU memory do a 135M model's weights need at bf16 (2 bytes/param)?",
+                "options": [
+                  "~0.27 GB",
+                  "~0.54 GB",
+                  "~0.135 GB",
+                  "~27 GB"
+                ],
+                "answer": 0,
+                "explanation": "135M × 2 bytes ≈ 0.27 GB for the weights alone. 0.54 GB would be fp32 (4 bytes) and 0.135 GB one byte per parameter. Training needs much more: a full fine-tune with mixed-precision AdamW is roughly 16 bytes per parameter plus activations."
+              },
+              {
+                "q": "On one narrow, high-volume task, what can a fine-tuned small model do?",
+                "options": [
+                  "Beat a much larger model across every task, not just the narrow one",
+                  "Match a much larger model on that task at a fraction of the cost",
+                  "Only match a larger model if trained on more tokens than it was",
+                  "Learn broad world knowledge that a larger model lacks"
+                ],
+                "answer": 1,
+                "explanation": "Fine-tuning concentrates a small model's capacity on one task, where it can match a much larger model at far lower cost and latency. It can also lose (broad knowledge, multi-step reasoning, long-tail inputs), so measure it on your task."
+              },
+              {
+                "q": "The best way to frame the LLM-vs-SLM choice is…",
+                "options": [
+                  "Pick the largest model your budget allows, to be safe",
+                  "Quality per dollar and per millisecond on your task",
+                  "Pick by leaderboard rank on general benchmarks",
+                  "Pick the newest model, since it saw more data"
+                ],
+                "answer": 1,
+                "explanation": "Decide on quality per unit of cost and latency for your task, which means evaluating the candidates on your own data. General leaderboards don't measure your task."
+              }
             ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
@@ -376,36 +416,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What is the primary axis distinguishing an LLM from an SLM?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The programming language</li>
+                  <li>The maximum context window length</li>
                   <li>The parameter count</li>
-                  <li>The tokenizer</li>
-                  <li>The decoding strategy</li>
+                  <li>Whether it was instruction-tuned</li>
+                  <li>The number of training tokens it saw</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The parameter count</strong> Size = parameter count, which then drives memory, latency, and cost.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The parameter count</strong> Size means parameter count, which then drives memory, latency and cost. Small models can have long context windows and see trillions of training tokens.</p></details></li>
               <li><p class="quiz__q-text">Roughly how much GPU memory do a 135M model's weights need at bf16 (2 bytes/param)?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>~0.27 GB</li>
+                  <li>~0.54 GB</li>
+                  <li>~0.135 GB</li>
                   <li>~27 GB</li>
-                  <li>~140 GB</li>
-                  <li>~2 bytes total</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. ~0.27 GB</strong> 135M × 2 bytes ≈ 0.27 GB for weights (training needs several times more).</p></details></li>
-              <li><p class="quiz__q-text">On a single narrow, high-volume task, a fine-tuned small model can…</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. ~0.27 GB</strong> 135M × 2 bytes ≈ 0.27 GB for the weights alone. 0.54 GB would be fp32 (4 bytes) and 0.135 GB one byte per parameter. Training needs much more: a full fine-tune with mixed-precision AdamW is roughly 16 bytes per parameter plus activations.</p></details></li>
+              <li><p class="quiz__q-text">On one narrow, high-volume task, what can a fine-tuned small model do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Never compete with a large model</li>
-                  <li>Match or beat a much larger model at far lower cost/latency</li>
-                  <li>Only work with RAG</li>
-                  <li>Require a data center</li>
+                  <li>Beat a much larger model across every task, not just the narrow one</li>
+                  <li>Match a much larger model on that task at a fraction of the cost</li>
+                  <li>Only match a larger model if trained on more tokens than it was</li>
+                  <li>Learn broad world knowledge that a larger model lacks</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Match or beat a much larger model at far lower cost/latency</strong> Fine-tuning concentrates a small model's capacity on your task; this is the course's thesis.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Match a much larger model on that task at a fraction of the cost</strong> Fine-tuning concentrates a small model's capacity on one task, where it can match a much larger model at far lower cost and latency. It can also lose (broad knowledge, multi-step reasoning, long-tail inputs), so measure it on your task.</p></details></li>
               <li><p class="quiz__q-text">The best way to frame the LLM-vs-SLM choice is…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Always pick the biggest model</li>
-                  <li>Quality-per-dollar (and per-millisecond) for your specific task</li>
-                  <li>Whichever has more parameters</li>
-                  <li>Whichever is newest</li>
+                  <li>Pick the largest model your budget allows, to be safe</li>
+                  <li>Quality per dollar and per millisecond on your task</li>
+                  <li>Pick by leaderboard rank on general benchmarks</li>
+                  <li>Pick the newest model, since it saw more data</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Quality-per-dollar (and per-millisecond) for your specific task</strong> Decide on quality-per-cost for your task — which requires actually evaluating both.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Quality per dollar and per millisecond on your task</strong> Decide on quality per unit of cost and latency for your task, which means evaluating the candidates on your own data. General leaderboards don't measure your task.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

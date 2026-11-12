@@ -95,26 +95,26 @@
             {
               "@type": "Answer",
               "position": 1,
-              "text": "Encoder-decoder"
+              "text": "Decoder-only, trained to predict the next token left to right"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Decoder-only"
+              "text": "Encoder-decoder, trained by corrupting and regenerating spans"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "None of the above"
+              "text": "A hybrid of attention layers and state-space layers"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 0,
-            "text": "Encoder-only — bidirectional attention, trained with masked language modelling",
+            "text": "Encoder-only, trained with masked language modelling",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "BERT is the canonical encoder-only model. Bidirectional attention + MLM pretraining."
+              "text": "BERT is the canonical encoder-only model: bidirectional attention, pretrained by masking about 15% of tokens and predicting them. Span corruption is T5's objective; left-to-right next-token prediction is the decoder-only recipe."
             }
           }
         },
@@ -128,26 +128,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Encoder-only"
+              "text": "Encoder-only, with a classification head on top"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Decoder-only"
+              "text": "Decoder-only, pretrained on next-token prediction over web text"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Neural n-gram"
+              "text": "A recurrent sequence-to-sequence LSTM with attention"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Encoder-decoder — an encoder reads input, a decoder generates the target sequence",
+            "text": "Encoder-decoder, pretrained with span corruption",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "T5 is the canonical encoder-decoder model; its pretraining objective is span corruption."
+              "text": "T5 is the canonical encoder-decoder: an encoder reads the input, a decoder writes the target, and pretraining corrupts spans of text for the decoder to restore."
             }
           }
         },
@@ -155,32 +155,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why did decoder-only win for chat?",
-          "text": "Why did decoder-only win for chat?",
+          "name": "Which account best explains why decoder-only models became the default for chat?",
+          "text": "Which account best explains why decoder-only models became the default for chat?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "They're the newest"
+              "text": "Only a decoder-only model can generate text token by token"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "They have more parameters by definition"
+              "text": "Encoder-decoders cannot be prompted and show no in-context learning at all"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "They use less memory"
+              "text": "Decoder-only models were shown to scale better in every setting, including after multitask fine-tuning"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Simplest pretraining objective + in-context learning emerged + better empirical scaling — together",
+            "text": "A simple objective, strong prompting ability, and where the field invested",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Simplicity, the in-context-learning emergent property, and continued scaling gains together made decoder-only the default for chat."
+              "text": "It was a mix of reasons: one simple objective over raw text, prompting ability that grew with scale, and where the field put its compute. Encoder-decoders also generate token by token and also learn in context, and Wang et al. 2022 (arXiv 2204.05832) found encoder-decoders best after multitask fine-tuning, so 'better everywhere' overclaims."
             }
           }
         },
@@ -188,32 +188,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "You need a binary text classifier with a fixed label set. The right starting point is…",
-          "text": "You need a binary text classifier with a fixed label set. The right starting point is…",
+          "name": "You need a binary text classifier with a fixed label set. The usual first choice, on cost and quality, is…",
+          "text": "You need a binary text classifier with a fixed label set. The usual first choice, on cost and quality, is…",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Fine-tune a 7B decoder-only Llama"
+              "text": "A 7B decoder-only chat model fine-tuned to print the label as text"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "A T5 encoder-decoder"
+              "text": "A T5 encoder-decoder trained to generate the label as a word"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Train an n-gram model"
+              "text": "A pair of n-gram models, one per class, picking the likelier one"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "A small encoder-only model (BERT-class) with a classification head — usually faster, often better, and far cheaper",
+            "text": "A small encoder-only model with a classification head",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "For classification with a fixed label set, an encoder-only model with a classification head is the natural shape and usually wins on cost and quality."
+              "text": "A fixed label set is exactly what an encoder with a classification head is shaped for, and it is usually faster, cheaper, and as good or better. A decoder LLM can do the job, but every call costs far more."
             }
           }
         }
@@ -476,49 +476,88 @@
               {
                 "q": "Which family is BERT in?",
                 "options": [
-                  "Encoder-only — bidirectional attention, trained with masked language modelling",
-                  "Encoder-decoder",
-                  "Decoder-only",
-                  "None of the above"
+                  "Encoder-only, trained with masked language modelling",
+                  "Decoder-only, trained to predict the next token left to right",
+                  "Encoder-decoder, trained by corrupting and regenerating spans",
+                  "A hybrid of attention layers and state-space layers"
                 ],
                 "answer": 0,
-                "explanation": "BERT is the canonical encoder-only model. Bidirectional attention + MLM pretraining."
+                "explanation": "BERT is the canonical encoder-only model: bidirectional attention, pretrained by masking about 15% of tokens and predicting them. Span corruption is T5's objective; left-to-right next-token prediction is the decoder-only recipe."
               },
               {
                 "q": "Which family is T5 in?",
                 "options": [
-                  "Encoder-only",
-                  "Encoder-decoder — an encoder reads input, a decoder generates the target sequence",
-                  "Decoder-only",
-                  "Neural n-gram"
+                  "Encoder-only, with a classification head on top",
+                  "Encoder-decoder, pretrained with span corruption",
+                  "Decoder-only, pretrained on next-token prediction over web text",
+                  "A recurrent sequence-to-sequence LSTM with attention"
                 ],
                 "answer": 1,
-                "explanation": "T5 is the canonical encoder-decoder model; its pretraining objective is span corruption."
+                "explanation": "T5 is the canonical encoder-decoder: an encoder reads the input, a decoder writes the target, and pretraining corrupts spans of text for the decoder to restore."
               },
               {
-                "q": "Why did decoder-only win for chat?",
+                "q": "Which account best explains why decoder-only models became the default for chat?",
                 "options": [
-                  "They're the newest",
-                  "Simplest pretraining objective + in-context learning emerged + better empirical scaling — together",
-                  "They have more parameters by definition",
-                  "They use less memory"
+                  "Only a decoder-only model can generate text token by token",
+                  "A simple objective, strong prompting ability, and where the field invested",
+                  "Encoder-decoders cannot be prompted and show no in-context learning at all",
+                  "Decoder-only models were shown to scale better in every setting, including after multitask fine-tuning"
                 ],
                 "answer": 1,
-                "explanation": "Simplicity, the in-context-learning emergent property, and continued scaling gains together made decoder-only the default for chat."
+                "explanation": "It was a mix of reasons: one simple objective over raw text, prompting ability that grew with scale, and where the field put its compute. Encoder-decoders also generate token by token and also learn in context, and Wang et al. 2022 (arXiv 2204.05832) found encoder-decoders best after multitask fine-tuning, so 'better everywhere' overclaims."
               },
               {
-                "q": "You need a binary text classifier with a fixed label set. The right starting point is…",
+                "q": "You need a binary text classifier with a fixed label set. The usual first choice, on cost and quality, is…",
                 "options": [
-                  "Fine-tune a 7B decoder-only Llama",
-                  "A small encoder-only model (BERT-class) with a classification head — usually faster, often better, and far cheaper",
-                  "A T5 encoder-decoder",
-                  "Train an n-gram model"
+                  "A 7B decoder-only chat model fine-tuned to print the label as text",
+                  "A small encoder-only model with a classification head",
+                  "A T5 encoder-decoder trained to generate the label as a word",
+                  "A pair of n-gram models, one per class, picking the likelier one"
                 ],
                 "answer": 1,
-                "explanation": "For classification with a fixed label set, an encoder-only model with a classification head is the natural shape and usually wins on cost and quality."
+                "explanation": "A fixed label set is exactly what an encoder with a classification head is shaped for, and it is usually faster, cheaper, and as good or better. A decoder LLM can do the job, but every call costs far more."
               }
             ]
           </script>
+          <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
+          <noscript>
+            <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
+            <ol class="quiz__static">
+              <li><p class="quiz__q-text">Which family is BERT in?</p>
+                <ol class="quiz__static-options" type="A">
+                  <li>Encoder-only, trained with masked language modelling</li>
+                  <li>Decoder-only, trained to predict the next token left to right</li>
+                  <li>Encoder-decoder, trained by corrupting and regenerating spans</li>
+                  <li>A hybrid of attention layers and state-space layers</li>
+                </ol>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Encoder-only, trained with masked language modelling</strong> BERT is the canonical encoder-only model: bidirectional attention, pretrained by masking about 15% of tokens and predicting them. Span corruption is T5's objective; left-to-right next-token prediction is the decoder-only recipe.</p></details></li>
+              <li><p class="quiz__q-text">Which family is T5 in?</p>
+                <ol class="quiz__static-options" type="A">
+                  <li>Encoder-only, with a classification head on top</li>
+                  <li>Encoder-decoder, pretrained with span corruption</li>
+                  <li>Decoder-only, pretrained on next-token prediction over web text</li>
+                  <li>A recurrent sequence-to-sequence LSTM with attention</li>
+                </ol>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Encoder-decoder, pretrained with span corruption</strong> T5 is the canonical encoder-decoder: an encoder reads the input, a decoder writes the target, and pretraining corrupts spans of text for the decoder to restore.</p></details></li>
+              <li><p class="quiz__q-text">Which account best explains why decoder-only models became the default for chat?</p>
+                <ol class="quiz__static-options" type="A">
+                  <li>Only a decoder-only model can generate text token by token</li>
+                  <li>A simple objective, strong prompting ability, and where the field invested</li>
+                  <li>Encoder-decoders cannot be prompted and show no in-context learning at all</li>
+                  <li>Decoder-only models were shown to scale better in every setting, including after multitask fine-tuning</li>
+                </ol>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A simple objective, strong prompting ability, and where the field invested</strong> It was a mix of reasons: one simple objective over raw text, prompting ability that grew with scale, and where the field put its compute. Encoder-decoders also generate token by token and also learn in context, and Wang et al. 2022 (arXiv 2204.05832) found encoder-decoders best after multitask fine-tuning, so 'better everywhere' overclaims.</p></details></li>
+              <li><p class="quiz__q-text">You need a binary text classifier with a fixed label set. The usual first choice, on cost and quality, is…</p>
+                <ol class="quiz__static-options" type="A">
+                  <li>A 7B decoder-only chat model fine-tuned to print the label as text</li>
+                  <li>A small encoder-only model with a classification head</li>
+                  <li>A T5 encoder-decoder trained to generate the label as a word</li>
+                  <li>A pair of n-gram models, one per class, picking the likelier one</li>
+                </ol>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A small encoder-only model with a classification head</strong> A fixed label set is exactly what an encoder with a classification head is shaped for, and it is usually faster, cheaper, and as good or better. A decoder LLM can do the job, but every call costs far more.</p></details></li>
+            </ol>
+          </noscript>
+          <!-- /site:quiz -->
         </section>
 
         <section class="related-lessons" aria-label="Related lessons">

@@ -95,26 +95,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "At deploy, when you're ready to ship"
+              "text": "At deploy time, once you know where the model will run"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Only if you plan to redistribute the model"
+              "text": "Only if you plan to redistribute the weights, not for internal use"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It doesn't matter for fine-tuned derivatives"
+              "text": "Never; a fine-tune counts as a new model with its own licence"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Before training, because a fine-tune doesn't reset the parent's terms",
+            "text": "Before training, since the fine-tune inherits the parent's terms",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The parent licence travels with every derivative — including your fine-tune. Catching a non-commercial restriction at deploy is a wasted run."
+              "text": "The parent licence travels with every derivative, including your fine-tune, and many restrict use, not just redistribution. Finding a non-commercial clause at deploy time means a wasted run."
             }
           }
         },
@@ -122,32 +122,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why does the tokenizer matter when distillation is on the roadmap?",
-          "text": "Why does the tokenizer matter when distillation is on the roadmap?",
+          "name": "Distillation is on your roadmap. When must teacher and student share a tokenizer?",
+          "text": "Distillation is on your roadmap. When must teacher and student share a tokenizer?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "It determines training speed"
+              "text": "For any distillation, including training on the teacher's generated text"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Distillation only works with SentencePiece"
+              "text": "Never; token ids mean the same thing across model families"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The tokenizer is irrelevant to distillation"
+              "text": "Only for speculative decoding, never for distillation"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Offline distillation captures the teacher's top-k token ids; teacher and student must share a tokenizer for those ids to mean the same tokens",
+            "text": "For logit-level distillation that matches the teacher's token probabilities",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The same-tokenizer assumption (Track 4, Lesson 4.2) is what makes offline KD's captured ids meaningful to the student."
+              "text": "Logit-level distillation compares the teacher's and student's probabilities token id by token id, so the ids must mean the same tokens. Sequence-level distillation trains on the teacher's text and works across tokenizers, and cross-tokenizer logit methods exist (Universal Logit Distillation, arXiv 2402.12030)."
             }
           }
         },
@@ -161,26 +161,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Use the largest model that fits on your GPU"
+              "text": "The largest model that fits on your GPU, to leave headroom on quality"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Always pick 7B for serious work"
+              "text": "A 7B model, since smaller ones can't be fine-tuned well"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Pick whatever's newest"
+              "text": "Whichever model was released most recently"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Default to the smallest model that plausibly works; step up only when the eval makes the case",
+            "text": "The smallest model that plausibly works, stepping up on evidence",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Bigger costs more memory, more latency, and more money on every request, forever. Step up only with evidence the small model can't clear the bar."
+              "text": "Bigger costs more memory, latency and money on every request: a 7B model is about 7x a 1B model and about 50x a 135M one. Step up only when the eval shows the small model can't clear the bar."
             }
           }
         },
@@ -188,32 +188,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Your eval shows the 135M model is plateaued well below your gold-set gate even after honest data work. The right move is…",
-          "text": "Your eval shows the 135M model is plateaued well below your gold-set gate even after honest data work. The right move is…",
+          "name": "Your eval shows the 135M model has plateaued well below your gold-set gate, even after honest data work. The right move is…",
+          "text": "Your eval shows the 135M model has plateaued well below your gold-set gate, even after honest data work. The right move is…",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "More epochs — eventually it'll get there"
+              "text": "Keep training for more epochs until the training loss reaches zero"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Drop the gold-set gate"
+              "text": "Lower the gold-set gate to the score it reaches"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Train a separate model for each row"
+              "text": "Raise the learning rate so it escapes the plateau"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Step up to a larger base (or switch to RAG / distillation) — honest about the size ceiling",
+            "text": "Step up to a larger base, or try RAG or distillation",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Small-first can fail. When the eval makes the case, step up — or change architecture (RAG, distill from a bigger teacher). Don't grind epochs against a ceiling."
+              "text": "Small-first can fail. When the eval makes the case, step up a size or change approach (retrieval, distillation from a bigger teacher). Grinding epochs toward zero training loss just overfits, and lowering the gate hides the problem."
             }
           }
         }
@@ -471,46 +471,46 @@
               {
                 "q": "When should you check the base model's licence?",
                 "options": [
-                  "At deploy, when you're ready to ship",
-                  "Before training, because a fine-tune doesn't reset the parent's terms",
-                  "Only if you plan to redistribute the model",
-                  "It doesn't matter for fine-tuned derivatives"
+                  "At deploy time, once you know where the model will run",
+                  "Before training, since the fine-tune inherits the parent's terms",
+                  "Only if you plan to redistribute the weights, not for internal use",
+                  "Never; a fine-tune counts as a new model with its own licence"
                 ],
                 "answer": 1,
-                "explanation": "The parent licence travels with every derivative — including your fine-tune. Catching a non-commercial restriction at deploy is a wasted run."
+                "explanation": "The parent licence travels with every derivative, including your fine-tune, and many restrict use, not just redistribution. Finding a non-commercial clause at deploy time means a wasted run."
               },
               {
-                "q": "Why does the tokenizer matter when distillation is on the roadmap?",
+                "q": "Distillation is on your roadmap. When must teacher and student share a tokenizer?",
                 "options": [
-                  "It determines training speed",
-                  "Offline distillation captures the teacher's top-k token ids; teacher and student must share a tokenizer for those ids to mean the same tokens",
-                  "Distillation only works with SentencePiece",
-                  "The tokenizer is irrelevant to distillation"
+                  "For any distillation, including training on the teacher's generated text",
+                  "For logit-level distillation that matches the teacher's token probabilities",
+                  "Never; token ids mean the same thing across model families",
+                  "Only for speculative decoding, never for distillation"
                 ],
                 "answer": 1,
-                "explanation": "The same-tokenizer assumption (Track 4, Lesson 4.2) is what makes offline KD's captured ids meaningful to the student."
+                "explanation": "Logit-level distillation compares the teacher's and student's probabilities token id by token id, so the ids must mean the same tokens. Sequence-level distillation trains on the teacher's text and works across tokenizers, and cross-tokenizer logit methods exist (Universal Logit Distillation, arXiv 2402.12030)."
               },
               {
                 "q": "What's the default approach to model size?",
                 "options": [
-                  "Use the largest model that fits on your GPU",
-                  "Default to the smallest model that plausibly works; step up only when the eval makes the case",
-                  "Always pick 7B for serious work",
-                  "Pick whatever's newest"
+                  "The largest model that fits on your GPU, to leave headroom on quality",
+                  "The smallest model that plausibly works, stepping up on evidence",
+                  "A 7B model, since smaller ones can't be fine-tuned well",
+                  "Whichever model was released most recently"
                 ],
                 "answer": 1,
-                "explanation": "Bigger costs more memory, more latency, and more money on every request, forever. Step up only with evidence the small model can't clear the bar."
+                "explanation": "Bigger costs more memory, latency and money on every request: a 7B model is about 7x a 1B model and about 50x a 135M one. Step up only when the eval shows the small model can't clear the bar."
               },
               {
-                "q": "Your eval shows the 135M model is plateaued well below your gold-set gate even after honest data work. The right move is…",
+                "q": "Your eval shows the 135M model has plateaued well below your gold-set gate, even after honest data work. The right move is…",
                 "options": [
-                  "More epochs — eventually it'll get there",
-                  "Step up to a larger base (or switch to RAG / distillation) — honest about the size ceiling",
-                  "Drop the gold-set gate",
-                  "Train a separate model for each row"
+                  "Keep training for more epochs until the training loss reaches zero",
+                  "Step up to a larger base, or try RAG or distillation",
+                  "Lower the gold-set gate to the score it reaches",
+                  "Raise the learning rate so it escapes the plateau"
                 ],
                 "answer": 1,
-                "explanation": "Small-first can fail. When the eval makes the case, step up — or change architecture (RAG, distill from a bigger teacher). Don't grind epochs against a ceiling."
+                "explanation": "Small-first can fail. When the eval makes the case, step up a size or change approach (retrieval, distillation from a bigger teacher). Grinding epochs toward zero training loss just overfits, and lowering the gate hides the problem."
               }
             ]
           </script>
@@ -520,36 +520,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">When should you check the base model's licence?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>At deploy, when you're ready to ship</li>
-                  <li>Before training, because a fine-tune doesn't reset the parent's terms</li>
-                  <li>Only if you plan to redistribute the model</li>
-                  <li>It doesn't matter for fine-tuned derivatives</li>
+                  <li>At deploy time, once you know where the model will run</li>
+                  <li>Before training, since the fine-tune inherits the parent's terms</li>
+                  <li>Only if you plan to redistribute the weights, not for internal use</li>
+                  <li>Never; a fine-tune counts as a new model with its own licence</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Before training, because a fine-tune doesn't reset the parent's terms</strong> The parent licence travels with every derivative — including your fine-tune. Catching a non-commercial restriction at deploy is a wasted run.</p></details></li>
-              <li><p class="quiz__q-text">Why does the tokenizer matter when distillation is on the roadmap?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Before training, since the fine-tune inherits the parent's terms</strong> The parent licence travels with every derivative, including your fine-tune, and many restrict use, not just redistribution. Finding a non-commercial clause at deploy time means a wasted run.</p></details></li>
+              <li><p class="quiz__q-text">Distillation is on your roadmap. When must teacher and student share a tokenizer?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It determines training speed</li>
-                  <li>Offline distillation captures the teacher's top-k token ids; teacher and student must share a tokenizer for those ids to mean the same tokens</li>
-                  <li>Distillation only works with SentencePiece</li>
-                  <li>The tokenizer is irrelevant to distillation</li>
+                  <li>For any distillation, including training on the teacher's generated text</li>
+                  <li>For logit-level distillation that matches the teacher's token probabilities</li>
+                  <li>Never; token ids mean the same thing across model families</li>
+                  <li>Only for speculative decoding, never for distillation</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Offline distillation captures the teacher's top-k token ids; teacher and student must share a tokenizer for those ids to mean the same tokens</strong> The same-tokenizer assumption (Track 4, Lesson 4.2) is what makes offline KD's captured ids meaningful to the student.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. For logit-level distillation that matches the teacher's token probabilities</strong> Logit-level distillation compares the teacher's and student's probabilities token id by token id, so the ids must mean the same tokens. Sequence-level distillation trains on the teacher's text and works across tokenizers, and cross-tokenizer logit methods exist (Universal Logit Distillation, arXiv 2402.12030).</p></details></li>
               <li><p class="quiz__q-text">What's the default approach to model size?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Use the largest model that fits on your GPU</li>
-                  <li>Default to the smallest model that plausibly works; step up only when the eval makes the case</li>
-                  <li>Always pick 7B for serious work</li>
-                  <li>Pick whatever's newest</li>
+                  <li>The largest model that fits on your GPU, to leave headroom on quality</li>
+                  <li>The smallest model that plausibly works, stepping up on evidence</li>
+                  <li>A 7B model, since smaller ones can't be fine-tuned well</li>
+                  <li>Whichever model was released most recently</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Default to the smallest model that plausibly works; step up only when the eval makes the case</strong> Bigger costs more memory, more latency, and more money on every request, forever. Step up only with evidence the small model can't clear the bar.</p></details></li>
-              <li><p class="quiz__q-text">Your eval shows the 135M model is plateaued well below your gold-set gate even after honest data work. The right move is…</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The smallest model that plausibly works, stepping up on evidence</strong> Bigger costs more memory, latency and money on every request: a 7B model is about 7x a 1B model and about 50x a 135M one. Step up only when the eval shows the small model can't clear the bar.</p></details></li>
+              <li><p class="quiz__q-text">Your eval shows the 135M model has plateaued well below your gold-set gate, even after honest data work. The right move is…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>More epochs — eventually it'll get there</li>
-                  <li>Step up to a larger base (or switch to RAG / distillation) — honest about the size ceiling</li>
-                  <li>Drop the gold-set gate</li>
-                  <li>Train a separate model for each row</li>
+                  <li>Keep training for more epochs until the training loss reaches zero</li>
+                  <li>Step up to a larger base, or try RAG or distillation</li>
+                  <li>Lower the gold-set gate to the score it reaches</li>
+                  <li>Raise the learning rate so it escapes the plateau</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Step up to a larger base (or switch to RAG / distillation) — honest about the size ceiling</strong> Small-first can fail. When the eval makes the case, step up — or change architecture (RAG, distill from a bigger teacher). Don't grind epochs against a ceiling.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Step up to a larger base, or try RAG or distillation</strong> Small-first can fail. When the eval makes the case, step up a size or change approach (retrieval, distillation from a bigger teacher). Grinding epochs toward zero training loss just overfits, and lowering the gate hides the problem.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

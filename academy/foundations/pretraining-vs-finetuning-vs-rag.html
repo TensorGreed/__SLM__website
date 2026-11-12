@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Which lever supplies private or frequently-changing facts without retraining?",
-          "text": "Which lever supplies private or frequently-changing facts without retraining?",
+          "name": "Which lever supplies private or frequently changing facts without retraining?",
+          "text": "Which lever supplies private or frequently changing facts without retraining?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Prompting alone"
+              "text": "Fine-tuning on the documents every week"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Fine-tuning"
+              "text": "Continued pretraining on the documents"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Continued pretraining"
+              "text": "A system prompt describing the task"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "RAG",
+            "text": "Retrieval-augmented generation (RAG)",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "RAG retrieves your documents at inference and adds them to the prompt; the model isn't changed."
+              "text": "RAG retrieves your documents at inference and adds them to the prompt; no parameters change. Fine-tuning is reliable for behaviour but an inefficient, hallucination-prone way to add new facts (Ovadia et al. 2023, arXiv 2312.05934; Gekhman et al. 2024, arXiv 2405.05904)."
             }
           }
         },
@@ -125,12 +125,12 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "RAG"
+              "text": "RAG over a library of example JSON outputs"
             },
             {
               "@type": "Answer",
               "position": 1,
-              "text": "Continued pretraining"
+              "text": "Continued pretraining on JSON files"
             },
             {
               "@type": "Answer",
@@ -144,7 +144,7 @@
             "text": "Fine-tuning (SFT)",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Consistent behavior/format is exactly what SFT bakes into the parameters."
+              "text": "Consistent behaviour and output format is exactly what SFT bakes into the parameters. Retrieval supplies facts, not a reliable habit."
             }
           }
         },
@@ -158,17 +158,17 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Both change the model's parameters"
+              "text": "Both update the model's weights with your documents"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Both require a GPU to train"
+              "text": "Both need a GPU training run before use"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Both teach new domain grammar"
+              "text": "Both teach the model new facts permanently"
             }
           ],
           "acceptedAnswer": {
@@ -177,7 +177,7 @@
             "text": "Both leave the model fixed and change its input",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Prompting and RAG steer a fixed model by changing what you feed it; they don't update parameters."
+              "text": "Prompting and RAG steer a fixed model by changing what you feed it. They change behaviour per call, but no parameters change, so nothing persists between calls."
             }
           }
         },
@@ -191,26 +191,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "It never works"
+              "text": "It can only be done by the lab that pretrained the base model"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "It is the cheapest option"
+              "position": 2,
+              "text": "It cannot shift a model's domain vocabulary or style at all, only facts"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It only runs on laptops"
+              "text": "It replaces the tokenizer, so the model must be retrained from scratch"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "It is expensive (lots of data + compute) and most tasks don't need it",
+            "position": 1,
+            "text": "It needs lots of data and compute, and most tasks don't need it",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Pretraining is the heaviest lever; most practitioners fine-tune an existing base instead."
+              "text": "Continued pretraining is the heaviest lever: lots of raw text and compute. Anyone with the weights can run it, and shifting domain vocabulary and style is what it is good at, but most tasks are served by fine-tuning or retrieval."
             }
           }
         }
@@ -367,48 +367,88 @@
           <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
           <script type="application/json">
             [
-              { "q": "Which lever supplies private or frequently-changing facts without retraining?", "options": ["Prompting alone", "RAG", "Fine-tuning", "Continued pretraining"], "answer": 1, "explanation": "RAG retrieves your documents at inference and adds them to the prompt; the model isn't changed." },
-              { "q": "You need a model to always output strict JSON in a fixed schema, on every call. Best lever?", "options": ["RAG", "Continued pretraining", "Fine-tuning (SFT)", "A bigger context window"], "answer": 2, "explanation": "Consistent behavior/format is exactly what SFT bakes into the parameters." },
-              { "q": "What do prompting and RAG have in common?", "options": ["Both change the model's parameters", "Both leave the model fixed and change its input", "Both require a GPU to train", "Both teach new domain grammar"], "answer": 1, "explanation": "Prompting and RAG steer a fixed model by changing what you feed it; they don't update parameters." },
-              { "q": "Why is continued pretraining usually NOT the first lever you reach for?", "options": ["It never works", "It is the cheapest option", "It is expensive (lots of data + compute) and most tasks don't need it", "It only runs on laptops"], "answer": 2, "explanation": "Pretraining is the heaviest lever; most practitioners fine-tune an existing base instead." }
+              {
+                "q": "Which lever supplies private or frequently changing facts without retraining?",
+                "options": [
+                  "Fine-tuning on the documents every week",
+                  "Retrieval-augmented generation (RAG)",
+                  "Continued pretraining on the documents",
+                  "A system prompt describing the task"
+                ],
+                "answer": 1,
+                "explanation": "RAG retrieves your documents at inference and adds them to the prompt; no parameters change. Fine-tuning is reliable for behaviour but an inefficient, hallucination-prone way to add new facts (Ovadia et al. 2023, arXiv 2312.05934; Gekhman et al. 2024, arXiv 2405.05904)."
+              },
+              {
+                "q": "You need a model to always output strict JSON in a fixed schema, on every call. Best lever?",
+                "options": [
+                  "RAG over a library of example JSON outputs",
+                  "Continued pretraining on JSON files",
+                  "Fine-tuning (SFT)",
+                  "A bigger context window"
+                ],
+                "answer": 2,
+                "explanation": "Consistent behaviour and output format is exactly what SFT bakes into the parameters. Retrieval supplies facts, not a reliable habit."
+              },
+              {
+                "q": "What do prompting and RAG have in common?",
+                "options": [
+                  "Both update the model's weights with your documents",
+                  "Both leave the model fixed and change its input",
+                  "Both need a GPU training run before use",
+                  "Both teach the model new facts permanently"
+                ],
+                "answer": 1,
+                "explanation": "Prompting and RAG steer a fixed model by changing what you feed it. They change behaviour per call, but no parameters change, so nothing persists between calls."
+              },
+              {
+                "q": "Why is continued pretraining usually NOT the first lever you reach for?",
+                "options": [
+                  "It can only be done by the lab that pretrained the base model",
+                  "It needs lots of data and compute, and most tasks don't need it",
+                  "It cannot shift a model's domain vocabulary or style at all, only facts",
+                  "It replaces the tokenizer, so the model must be retrained from scratch"
+                ],
+                "answer": 1,
+                "explanation": "Continued pretraining is the heaviest lever: lots of raw text and compute. Anyone with the weights can run it, and shifting domain vocabulary and style is what it is good at, but most tasks are served by fine-tuning or retrieval."
+              }
             ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">Which lever supplies private or frequently-changing facts without retraining?</p>
+              <li><p class="quiz__q-text">Which lever supplies private or frequently changing facts without retraining?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Prompting alone</li>
-                  <li>RAG</li>
-                  <li>Fine-tuning</li>
-                  <li>Continued pretraining</li>
+                  <li>Fine-tuning on the documents every week</li>
+                  <li>Retrieval-augmented generation (RAG)</li>
+                  <li>Continued pretraining on the documents</li>
+                  <li>A system prompt describing the task</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. RAG</strong> RAG retrieves your documents at inference and adds them to the prompt; the model isn't changed.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Retrieval-augmented generation (RAG)</strong> RAG retrieves your documents at inference and adds them to the prompt; no parameters change. Fine-tuning is reliable for behaviour but an inefficient, hallucination-prone way to add new facts (Ovadia et al. 2023, arXiv 2312.05934; Gekhman et al. 2024, arXiv 2405.05904).</p></details></li>
               <li><p class="quiz__q-text">You need a model to always output strict JSON in a fixed schema, on every call. Best lever?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>RAG</li>
-                  <li>Continued pretraining</li>
+                  <li>RAG over a library of example JSON outputs</li>
+                  <li>Continued pretraining on JSON files</li>
                   <li>Fine-tuning (SFT)</li>
                   <li>A bigger context window</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Fine-tuning (SFT)</strong> Consistent behavior/format is exactly what SFT bakes into the parameters.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Fine-tuning (SFT)</strong> Consistent behaviour and output format is exactly what SFT bakes into the parameters. Retrieval supplies facts, not a reliable habit.</p></details></li>
               <li><p class="quiz__q-text">What do prompting and RAG have in common?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Both change the model's parameters</li>
+                  <li>Both update the model's weights with your documents</li>
                   <li>Both leave the model fixed and change its input</li>
-                  <li>Both require a GPU to train</li>
-                  <li>Both teach new domain grammar</li>
+                  <li>Both need a GPU training run before use</li>
+                  <li>Both teach the model new facts permanently</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Both leave the model fixed and change its input</strong> Prompting and RAG steer a fixed model by changing what you feed it; they don't update parameters.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Both leave the model fixed and change its input</strong> Prompting and RAG steer a fixed model by changing what you feed it. They change behaviour per call, but no parameters change, so nothing persists between calls.</p></details></li>
               <li><p class="quiz__q-text">Why is continued pretraining usually NOT the first lever you reach for?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It never works</li>
-                  <li>It is the cheapest option</li>
-                  <li>It is expensive (lots of data + compute) and most tasks don't need it</li>
-                  <li>It only runs on laptops</li>
+                  <li>It can only be done by the lab that pretrained the base model</li>
+                  <li>It needs lots of data and compute, and most tasks don't need it</li>
+                  <li>It cannot shift a model's domain vocabulary or style at all, only facts</li>
+                  <li>It replaces the tokenizer, so the model must be retrained from scratch</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. It is expensive (lots of data + compute) and most tasks don't need it</strong> Pretraining is the heaviest lever; most practitioners fine-tune an existing base instead.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. It needs lots of data and compute, and most tasks don't need it</strong> Continued pretraining is the heaviest lever: lots of raw text and compute. Anyone with the weights can run it, and shifting domain vocabulary and style is what it is good at, but most tasks are served by fine-tuning or retrieval.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

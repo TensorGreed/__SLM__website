@@ -92,26 +92,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "It is too small"
+              "text": "Because a few hundred rows are too few to change the weights at all"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "To save GPU memory"
+              "text": "Because labelled rows cost too much to spend on training"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Because it has no labels"
+              "text": "To keep the training run small enough to fit in memory"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "So evaluation measures real generalization, not memorization",
+            "text": "So evaluation measures generalisation, not memorisation",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "If you train on your eval data the model can memorize it and your metrics become meaningless."
+              "text": "If you train on your eval rows the model can memorise them and the metric stops meaning anything. Even untouched, a set you consult on every decision gets overfit by your choices, which is why BrewSLM splits the answer key into practice (GOLD_DEV) and final (GOLD_TEST) rows."
             }
           }
         },
@@ -125,17 +125,17 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Buy a bigger GPU"
+              "text": "Improve results mainly by tuning hyperparameters on the gold set"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Only change the learning rate"
+              "text": "Collect as much data as possible before looking at any failures"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Train for more epochs blindly"
+              "text": "Store all training data in one central database"
             }
           ],
           "acceptedAnswer": {
@@ -144,7 +144,7 @@
             "text": "Improve results mainly by fixing the data, guided by failures",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Most quality gains come from better data; the loop centers on evaluate → understand → fix data."
+              "text": "Most quality gains come from better data. The loop is evaluate, read the failures, fix the data, retrain."
             }
           }
         },
@@ -158,26 +158,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "The model file got larger"
+              "text": "Latency rises because the serving GPU is shared"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The GPU is idle"
+              "text": "The model's weights slowly change while it serves requests"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The vocabulary changed"
+              "text": "A newer base model is released by its publisher"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Live inputs drift away from the training distribution and quality drops",
+            "text": "Live inputs drift from the training data and quality drops",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Drift — real-world data diverging from training data — degrades quality and triggers another iteration."
+              "text": "Drift, where real-world inputs diverge from the training data, degrades quality and triggers another iteration. Weights don't change while serving; latency is a serving problem, not a data one."
             }
           }
         },
@@ -191,26 +191,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Skips evaluation"
+              "text": "Runs the same loop through BrewSLM's workspace UI"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Only uses RAG"
+              "text": "Covers only theory, with no code to run"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Trains frontier models"
+              "text": "Trains a much larger model than Track 3 uses"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Runs the whole loop by hand in PyTorch/Transformers, no platform",
+            "text": "Runs the loop by hand in PyTorch and Transformers",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Track 2 builds the loop by hand so nothing is magic; Track 3 then automates it with BrewSLM."
+              "text": "Track 2 builds the loop by hand so nothing is hidden; Track 3 then runs it with BrewSLM."
             }
           }
         }
@@ -374,10 +374,50 @@
           <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
           <script type="application/json">
             [
-              { "q": "Why must the gold set never be trained on?", "options": ["It is too small", "So evaluation measures real generalization, not memorization", "To save GPU memory", "Because it has no labels"], "answer": 1, "explanation": "If you train on your eval data the model can memorize it and your metrics become meaningless." },
-              { "q": "What does 'data-centric' iteration mean?", "options": ["Buy a bigger GPU", "Improve results mainly by fixing the data, guided by failures", "Only change the learning rate", "Train for more epochs blindly"], "answer": 1, "explanation": "Most quality gains come from better data; the loop centers on evaluate → understand → fix data." },
-              { "q": "What signals that you should loop back from Monitor to Data?", "options": ["The model file got larger", "Live inputs drift away from the training distribution and quality drops", "The GPU is idle", "The vocabulary changed"], "answer": 1, "explanation": "Drift — real-world data diverging from training data — degrades quality and triggers another iteration." },
-              { "q": "In this Academy, what does Track 2 do that Track 3 does not?", "options": ["Skips evaluation", "Runs the whole loop by hand in PyTorch/Transformers, no platform", "Only uses RAG", "Trains frontier models"], "answer": 1, "explanation": "Track 2 builds the loop by hand so nothing is magic; Track 3 then automates it with BrewSLM." }
+              {
+                "q": "Why must the gold set never be trained on?",
+                "options": [
+                  "Because a few hundred rows are too few to change the weights at all",
+                  "So evaluation measures generalisation, not memorisation",
+                  "Because labelled rows cost too much to spend on training",
+                  "To keep the training run small enough to fit in memory"
+                ],
+                "answer": 1,
+                "explanation": "If you train on your eval rows the model can memorise them and the metric stops meaning anything. Even untouched, a set you consult on every decision gets overfit by your choices, which is why BrewSLM splits the answer key into practice (GOLD_DEV) and final (GOLD_TEST) rows."
+              },
+              {
+                "q": "What does 'data-centric' iteration mean?",
+                "options": [
+                  "Improve results mainly by tuning hyperparameters on the gold set",
+                  "Improve results mainly by fixing the data, guided by failures",
+                  "Collect as much data as possible before looking at any failures",
+                  "Store all training data in one central database"
+                ],
+                "answer": 1,
+                "explanation": "Most quality gains come from better data. The loop is evaluate, read the failures, fix the data, retrain."
+              },
+              {
+                "q": "What signals that you should loop back from Monitor to Data?",
+                "options": [
+                  "Latency rises because the serving GPU is shared",
+                  "Live inputs drift from the training data and quality drops",
+                  "The model's weights slowly change while it serves requests",
+                  "A newer base model is released by its publisher"
+                ],
+                "answer": 1,
+                "explanation": "Drift, where real-world inputs diverge from the training data, degrades quality and triggers another iteration. Weights don't change while serving; latency is a serving problem, not a data one."
+              },
+              {
+                "q": "In this Academy, what does Track 2 do that Track 3 does not?",
+                "options": [
+                  "Runs the same loop through BrewSLM's workspace UI",
+                  "Runs the loop by hand in PyTorch and Transformers",
+                  "Covers only theory, with no code to run",
+                  "Trains a much larger model than Track 3 uses"
+                ],
+                "answer": 1,
+                "explanation": "Track 2 builds the loop by hand so nothing is hidden; Track 3 then runs it with BrewSLM."
+              }
             ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
@@ -386,36 +426,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Why must the gold set never be trained on?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It is too small</li>
-                  <li>So evaluation measures real generalization, not memorization</li>
-                  <li>To save GPU memory</li>
-                  <li>Because it has no labels</li>
+                  <li>Because a few hundred rows are too few to change the weights at all</li>
+                  <li>So evaluation measures generalisation, not memorisation</li>
+                  <li>Because labelled rows cost too much to spend on training</li>
+                  <li>To keep the training run small enough to fit in memory</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. So evaluation measures real generalization, not memorization</strong> If you train on your eval data the model can memorize it and your metrics become meaningless.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. So evaluation measures generalisation, not memorisation</strong> If you train on your eval rows the model can memorise them and the metric stops meaning anything. Even untouched, a set you consult on every decision gets overfit by your choices, which is why BrewSLM splits the answer key into practice (GOLD_DEV) and final (GOLD_TEST) rows.</p></details></li>
               <li><p class="quiz__q-text">What does 'data-centric' iteration mean?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Buy a bigger GPU</li>
+                  <li>Improve results mainly by tuning hyperparameters on the gold set</li>
                   <li>Improve results mainly by fixing the data, guided by failures</li>
-                  <li>Only change the learning rate</li>
-                  <li>Train for more epochs blindly</li>
+                  <li>Collect as much data as possible before looking at any failures</li>
+                  <li>Store all training data in one central database</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Improve results mainly by fixing the data, guided by failures</strong> Most quality gains come from better data; the loop centers on evaluate → understand → fix data.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Improve results mainly by fixing the data, guided by failures</strong> Most quality gains come from better data. The loop is evaluate, read the failures, fix the data, retrain.</p></details></li>
               <li><p class="quiz__q-text">What signals that you should loop back from Monitor to Data?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The model file got larger</li>
-                  <li>Live inputs drift away from the training distribution and quality drops</li>
-                  <li>The GPU is idle</li>
-                  <li>The vocabulary changed</li>
+                  <li>Latency rises because the serving GPU is shared</li>
+                  <li>Live inputs drift from the training data and quality drops</li>
+                  <li>The model's weights slowly change while it serves requests</li>
+                  <li>A newer base model is released by its publisher</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Live inputs drift away from the training distribution and quality drops</strong> Drift — real-world data diverging from training data — degrades quality and triggers another iteration.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Live inputs drift from the training data and quality drops</strong> Drift, where real-world inputs diverge from the training data, degrades quality and triggers another iteration. Weights don't change while serving; latency is a serving problem, not a data one.</p></details></li>
               <li><p class="quiz__q-text">In this Academy, what does Track 2 do that Track 3 does not?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Skips evaluation</li>
-                  <li>Runs the whole loop by hand in PyTorch/Transformers, no platform</li>
-                  <li>Only uses RAG</li>
-                  <li>Trains frontier models</li>
+                  <li>Runs the same loop through BrewSLM's workspace UI</li>
+                  <li>Runs the loop by hand in PyTorch and Transformers</li>
+                  <li>Covers only theory, with no code to run</li>
+                  <li>Trains a much larger model than Track 3 uses</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Runs the whole loop by hand in PyTorch/Transformers, no platform</strong> Track 2 builds the loop by hand so nothing is magic; Track 3 then automates it with BrewSLM.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Runs the loop by hand in PyTorch and Transformers</strong> Track 2 builds the loop by hand so nothing is hidden; Track 3 then runs it with BrewSLM.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

@@ -92,26 +92,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "The model's parameters"
+              "text": "The updated values of the model's parameters"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The learning rate"
+              "text": "The step size used for each parameter update"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The next token"
+              "text": "The percentage of training examples the model gets exactly right"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "A single number measuring how wrong predictions are",
+            "text": "A single number measuring how wrong the predictions are",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "A loss function collapses 'how wrong are we' into one number to minimize."
+              "text": "A loss collapses 'how wrong are we' into one number to minimise. Accuracy is a metric you report; it is not smooth enough to take gradients of, which is why training minimises a loss instead."
             }
           }
         },
@@ -125,17 +125,17 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "In the direction of the gradient (loss increases fastest)"
+              "text": "Along the gradient, the direction where loss rises fastest"
             },
             {
               "@type": "Answer",
               "position": 1,
-              "text": "Randomly until the loss drops"
+              "text": "In random directions, keeping any step that lowers the loss"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Only once, after seeing all the data"
+              "text": "Straight to the minimum, solved in one step from the gradient"
             }
           ],
           "acceptedAnswer": {
@@ -144,7 +144,7 @@
             "text": "Opposite the gradient, scaled by the learning rate",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Step opposite the gradient (downhill), scaled by the learning rate."
+              "text": "The gradient points uphill, so you step the opposite way, scaled by the learning rate, and repeat many times. In practice the optimiser is usually AdamW, which adapts the step per parameter, but the idea is the same."
             }
           }
         },
@@ -158,17 +158,17 @@
             {
               "@type": "Answer",
               "position": 1,
-              "text": "Too many epochs"
+              "text": "Training for too many epochs"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The dataset is too small"
+              "text": "The dataset is too small to learn from"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The batch size is 8"
+              "text": "A batch size of 8 is too small for stable gradients"
             }
           ],
           "acceptedAnswer": {
@@ -177,7 +177,7 @@
             "text": "Learning rate too high",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Exploding/NaN loss is the classic symptom of too large a learning rate."
+              "text": "Exploding or NaN loss is most often a learning rate that is too high. Other causes: fp16 overflow, a bad row, or a batch where every label is masked. Too many epochs causes overfitting, not NaN."
             }
           }
         },
@@ -191,17 +191,17 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "One minibatch"
+              "text": "One parameter update from a single minibatch"
             },
             {
               "@type": "Answer",
               "position": 1,
-              "text": "One parameter update"
+              "text": "One forward and backward pass of one example"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "One layer of the network"
+              "text": "The time it takes the loss to stop falling"
             }
           ],
           "acceptedAnswer": {
@@ -210,7 +210,7 @@
             "text": "One full pass through the training data",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "An epoch is one complete pass over the training set; training usually runs a few epochs."
+              "text": "An epoch is one complete pass over the training set. A single update from one minibatch is a step; an epoch is many steps."
             }
           }
         }
@@ -373,10 +373,50 @@
           <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
           <script type="application/json">
             [
-              { "q": "What does a loss function produce?", "options": ["The model's parameters", "A single number measuring how wrong predictions are", "The learning rate", "The next token"], "answer": 1, "explanation": "A loss function collapses 'how wrong are we' into one number to minimize." },
-              { "q": "Gradient descent updates parameters by moving them…", "options": ["In the direction of the gradient (loss increases fastest)", "Randomly until the loss drops", "Opposite the gradient, scaled by the learning rate", "Only once, after seeing all the data"], "answer": 2, "explanation": "Step opposite the gradient (downhill), scaled by the learning rate." },
-              { "q": "Your loss jumps to NaN after a few steps. Most likely cause?", "options": ["Learning rate too high", "Too many epochs", "The dataset is too small", "The batch size is 8"], "answer": 0, "explanation": "Exploding/NaN loss is the classic symptom of too large a learning rate." },
-              { "q": "What is an epoch?", "options": ["One minibatch", "One parameter update", "One full pass through the training data", "One layer of the network"], "answer": 2, "explanation": "An epoch is one complete pass over the training set; training usually runs a few epochs." }
+              {
+                "q": "What does a loss function produce?",
+                "options": [
+                  "The updated values of the model's parameters",
+                  "A single number measuring how wrong the predictions are",
+                  "The step size used for each parameter update",
+                  "The percentage of training examples the model gets exactly right"
+                ],
+                "answer": 1,
+                "explanation": "A loss collapses 'how wrong are we' into one number to minimise. Accuracy is a metric you report; it is not smooth enough to take gradients of, which is why training minimises a loss instead."
+              },
+              {
+                "q": "Gradient descent updates parameters by moving them…",
+                "options": [
+                  "Along the gradient, the direction where loss rises fastest",
+                  "In random directions, keeping any step that lowers the loss",
+                  "Opposite the gradient, scaled by the learning rate",
+                  "Straight to the minimum, solved in one step from the gradient"
+                ],
+                "answer": 2,
+                "explanation": "The gradient points uphill, so you step the opposite way, scaled by the learning rate, and repeat many times. In practice the optimiser is usually AdamW, which adapts the step per parameter, but the idea is the same."
+              },
+              {
+                "q": "Your loss jumps to NaN after a few steps. Most likely cause?",
+                "options": [
+                  "Learning rate too high",
+                  "Training for too many epochs",
+                  "The dataset is too small to learn from",
+                  "A batch size of 8 is too small for stable gradients"
+                ],
+                "answer": 0,
+                "explanation": "Exploding or NaN loss is most often a learning rate that is too high. Other causes: fp16 overflow, a bad row, or a batch where every label is masked. Too many epochs causes overfitting, not NaN."
+              },
+              {
+                "q": "What is an epoch?",
+                "options": [
+                  "One parameter update from a single minibatch",
+                  "One forward and backward pass of one example",
+                  "One full pass through the training data",
+                  "The time it takes the loss to stop falling"
+                ],
+                "answer": 2,
+                "explanation": "An epoch is one complete pass over the training set. A single update from one minibatch is a step; an epoch is many steps."
+              }
             ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
@@ -385,36 +425,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does a loss function produce?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The model's parameters</li>
-                  <li>A single number measuring how wrong predictions are</li>
-                  <li>The learning rate</li>
-                  <li>The next token</li>
+                  <li>The updated values of the model's parameters</li>
+                  <li>A single number measuring how wrong the predictions are</li>
+                  <li>The step size used for each parameter update</li>
+                  <li>The percentage of training examples the model gets exactly right</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A single number measuring how wrong predictions are</strong> A loss function collapses 'how wrong are we' into one number to minimize.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A single number measuring how wrong the predictions are</strong> A loss collapses 'how wrong are we' into one number to minimise. Accuracy is a metric you report; it is not smooth enough to take gradients of, which is why training minimises a loss instead.</p></details></li>
               <li><p class="quiz__q-text">Gradient descent updates parameters by moving them…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>In the direction of the gradient (loss increases fastest)</li>
-                  <li>Randomly until the loss drops</li>
+                  <li>Along the gradient, the direction where loss rises fastest</li>
+                  <li>In random directions, keeping any step that lowers the loss</li>
                   <li>Opposite the gradient, scaled by the learning rate</li>
-                  <li>Only once, after seeing all the data</li>
+                  <li>Straight to the minimum, solved in one step from the gradient</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Opposite the gradient, scaled by the learning rate</strong> Step opposite the gradient (downhill), scaled by the learning rate.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Opposite the gradient, scaled by the learning rate</strong> The gradient points uphill, so you step the opposite way, scaled by the learning rate, and repeat many times. In practice the optimiser is usually AdamW, which adapts the step per parameter, but the idea is the same.</p></details></li>
               <li><p class="quiz__q-text">Your loss jumps to NaN after a few steps. Most likely cause?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Learning rate too high</li>
-                  <li>Too many epochs</li>
-                  <li>The dataset is too small</li>
-                  <li>The batch size is 8</li>
+                  <li>Training for too many epochs</li>
+                  <li>The dataset is too small to learn from</li>
+                  <li>A batch size of 8 is too small for stable gradients</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Learning rate too high</strong> Exploding/NaN loss is the classic symptom of too large a learning rate.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Learning rate too high</strong> Exploding or NaN loss is most often a learning rate that is too high. Other causes: fp16 overflow, a bad row, or a batch where every label is masked. Too many epochs causes overfitting, not NaN.</p></details></li>
               <li><p class="quiz__q-text">What is an epoch?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>One minibatch</li>
-                  <li>One parameter update</li>
+                  <li>One parameter update from a single minibatch</li>
+                  <li>One forward and backward pass of one example</li>
                   <li>One full pass through the training data</li>
-                  <li>One layer of the network</li>
+                  <li>The time it takes the loss to stop falling</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. One full pass through the training data</strong> An epoch is one complete pass over the training set; training usually runs a few epochs.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. One full pass through the training data</strong> An epoch is one complete pass over the training set. A single update from one minibatch is a step; an epoch is many steps.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

@@ -92,26 +92,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Memorize the dataset"
+              "text": "Look up its meaning in a fixed table of word definitions"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Skip the activation function"
+              "text": "Process the sequence one position at a time, like an RNN"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Increase the vocabulary"
+              "text": "Attend only to tokens inside a small fixed window around it"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Pull information from other relevant tokens in the sequence",
+            "text": "Mix in information from other relevant tokens",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Self-attention mixes in information from other tokens, weighted by learned relevance."
+              "text": "Self-attention lets each token pull in information from other tokens in the sequence, weighted by learned relevance, and it does so for all positions in parallel rather than one step at a time."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "In attention, the 'query/key/value' projections are…",
-          "text": "In attention, the 'query/key/value' projections are…",
+          "name": "In attention, the query, key and value projections are…",
+          "text": "In attention, the query, key and value projections are…",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Hand-written rules"
+              "text": "Fixed similarity rules chosen by the model's designers"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Parts of the tokenizer"
+              "text": "Lookups into the tokenizer's vocabulary for each token"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The loss function"
+              "text": "Random projections that are set once and never updated"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Learned parameters trained by gradient descent",
+            "text": "Learned weight matrices trained by gradient descent",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Q/K/V come from learned weight matrices; the relationships emerge during training."
+              "text": "Q, K and V come from learned weight matrices. Which tokens attend to which is not hand-written; it emerges as those matrices are trained."
             }
           }
         },
@@ -158,26 +158,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "To save memory"
+              "text": "So the model can attend to more tokens than its context window"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "To make the vocabulary larger"
+              "text": "So each head handles its own slice of the input sequence"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "To avoid the context window"
+              "text": "To cut compute, since each head skips most of the tokens"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "So different heads can specialize in different relationships at once",
+            "text": "So different heads can track different relationships at once",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Each head can capture a different kind of relationship in parallel."
+              "text": "Each head has its own projections, so heads can specialise in different relationships in parallel. Every head sees the whole sequence (heads split the hidden dimension, not the positions), and heads do not extend the context window."
             }
           }
         },
@@ -191,26 +191,26 @@
             {
               "@type": "Answer",
               "position": 1,
-              "text": "Tokens attend to every token including future ones"
+              "text": "Each token attends to every token, including later ones"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "No token attends to any other"
+              "text": "Padding is ignored, but all real tokens see each other"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Only the first token attends"
+              "text": "Each token attends only to the token immediately before it"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 0,
-            "text": "Tokens attend only to earlier tokens, not ahead",
+            "text": "Each token attends only to itself and earlier tokens",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Causal masking prevents peeking ahead, which is what makes next-token prediction a fair objective."
+              "text": "The causal mask blocks attention to later positions, so the model cannot peek at the token it is being trained to predict. Seeing every token is encoder-style attention; ignoring padding is a separate padding mask."
             }
           }
         }
@@ -371,10 +371,50 @@
           <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
           <script type="application/json">
             [
-              { "q": "What does self-attention let a token do?", "options": ["Memorize the dataset", "Pull information from other relevant tokens in the sequence", "Skip the activation function", "Increase the vocabulary"], "answer": 1, "explanation": "Self-attention mixes in information from other tokens, weighted by learned relevance." },
-              { "q": "In attention, the 'query/key/value' projections are…", "options": ["Hand-written rules", "Learned parameters trained by gradient descent", "Parts of the tokenizer", "The loss function"], "answer": 1, "explanation": "Q/K/V come from learned weight matrices; the relationships emerge during training." },
-              { "q": "Why use multiple attention heads?", "options": ["To save memory", "So different heads can specialize in different relationships at once", "To make the vocabulary larger", "To avoid the context window"], "answer": 1, "explanation": "Each head can capture a different kind of relationship in parallel." },
-              { "q": "What does the causal mask enforce in a decoder-only model?", "options": ["Tokens attend only to earlier tokens, not ahead", "Tokens attend to every token including future ones", "No token attends to any other", "Only the first token attends"], "answer": 0, "explanation": "Causal masking prevents peeking ahead, which is what makes next-token prediction a fair objective." }
+              {
+                "q": "What does self-attention let a token do?",
+                "options": [
+                  "Look up its meaning in a fixed table of word definitions",
+                  "Mix in information from other relevant tokens",
+                  "Process the sequence one position at a time, like an RNN",
+                  "Attend only to tokens inside a small fixed window around it"
+                ],
+                "answer": 1,
+                "explanation": "Self-attention lets each token pull in information from other tokens in the sequence, weighted by learned relevance, and it does so for all positions in parallel rather than one step at a time."
+              },
+              {
+                "q": "In attention, the query, key and value projections are…",
+                "options": [
+                  "Fixed similarity rules chosen by the model's designers",
+                  "Learned weight matrices trained by gradient descent",
+                  "Lookups into the tokenizer's vocabulary for each token",
+                  "Random projections that are set once and never updated"
+                ],
+                "answer": 1,
+                "explanation": "Q, K and V come from learned weight matrices. Which tokens attend to which is not hand-written; it emerges as those matrices are trained."
+              },
+              {
+                "q": "Why use multiple attention heads?",
+                "options": [
+                  "So the model can attend to more tokens than its context window",
+                  "So different heads can track different relationships at once",
+                  "So each head handles its own slice of the input sequence",
+                  "To cut compute, since each head skips most of the tokens"
+                ],
+                "answer": 1,
+                "explanation": "Each head has its own projections, so heads can specialise in different relationships in parallel. Every head sees the whole sequence (heads split the hidden dimension, not the positions), and heads do not extend the context window."
+              },
+              {
+                "q": "What does the causal mask enforce in a decoder-only model?",
+                "options": [
+                  "Each token attends only to itself and earlier tokens",
+                  "Each token attends to every token, including later ones",
+                  "Padding is ignored, but all real tokens see each other",
+                  "Each token attends only to the token immediately before it"
+                ],
+                "answer": 0,
+                "explanation": "The causal mask blocks attention to later positions, so the model cannot peek at the token it is being trained to predict. Seeing every token is encoder-style attention; ignoring padding is a separate padding mask."
+              }
             ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
@@ -383,36 +423,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does self-attention let a token do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Memorize the dataset</li>
-                  <li>Pull information from other relevant tokens in the sequence</li>
-                  <li>Skip the activation function</li>
-                  <li>Increase the vocabulary</li>
+                  <li>Look up its meaning in a fixed table of word definitions</li>
+                  <li>Mix in information from other relevant tokens</li>
+                  <li>Process the sequence one position at a time, like an RNN</li>
+                  <li>Attend only to tokens inside a small fixed window around it</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Pull information from other relevant tokens in the sequence</strong> Self-attention mixes in information from other tokens, weighted by learned relevance.</p></details></li>
-              <li><p class="quiz__q-text">In attention, the 'query/key/value' projections are…</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Mix in information from other relevant tokens</strong> Self-attention lets each token pull in information from other tokens in the sequence, weighted by learned relevance, and it does so for all positions in parallel rather than one step at a time.</p></details></li>
+              <li><p class="quiz__q-text">In attention, the query, key and value projections are…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Hand-written rules</li>
-                  <li>Learned parameters trained by gradient descent</li>
-                  <li>Parts of the tokenizer</li>
-                  <li>The loss function</li>
+                  <li>Fixed similarity rules chosen by the model's designers</li>
+                  <li>Learned weight matrices trained by gradient descent</li>
+                  <li>Lookups into the tokenizer's vocabulary for each token</li>
+                  <li>Random projections that are set once and never updated</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Learned parameters trained by gradient descent</strong> Q/K/V come from learned weight matrices; the relationships emerge during training.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Learned weight matrices trained by gradient descent</strong> Q, K and V come from learned weight matrices. Which tokens attend to which is not hand-written; it emerges as those matrices are trained.</p></details></li>
               <li><p class="quiz__q-text">Why use multiple attention heads?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>To save memory</li>
-                  <li>So different heads can specialize in different relationships at once</li>
-                  <li>To make the vocabulary larger</li>
-                  <li>To avoid the context window</li>
+                  <li>So the model can attend to more tokens than its context window</li>
+                  <li>So different heads can track different relationships at once</li>
+                  <li>So each head handles its own slice of the input sequence</li>
+                  <li>To cut compute, since each head skips most of the tokens</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. So different heads can specialize in different relationships at once</strong> Each head can capture a different kind of relationship in parallel.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. So different heads can track different relationships at once</strong> Each head has its own projections, so heads can specialise in different relationships in parallel. Every head sees the whole sequence (heads split the hidden dimension, not the positions), and heads do not extend the context window.</p></details></li>
               <li><p class="quiz__q-text">What does the causal mask enforce in a decoder-only model?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Tokens attend only to earlier tokens, not ahead</li>
-                  <li>Tokens attend to every token including future ones</li>
-                  <li>No token attends to any other</li>
-                  <li>Only the first token attends</li>
+                  <li>Each token attends only to itself and earlier tokens</li>
+                  <li>Each token attends to every token, including later ones</li>
+                  <li>Padding is ignored, but all real tokens see each other</li>
+                  <li>Each token attends only to the token immediately before it</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Tokens attend only to earlier tokens, not ahead</strong> Causal masking prevents peeking ahead, which is what makes next-token prediction a fair objective.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Each token attends only to itself and earlier tokens</strong> The causal mask blocks attention to later positions, so the model cannot peek at the token it is being trained to predict. Seeing every token is encoder-style attention; ignoring padding is a separate padding mask.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

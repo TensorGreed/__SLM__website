@@ -95,17 +95,17 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Follow instructions in a chat template"
+              "text": "Follow instructions written in a chat template"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Refuse harmful requests"
+              "text": "Answer prompts in the way human raters preferred"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Match a teacher model's distribution"
+              "text": "Match a larger teacher model's output distribution"
             }
           ],
           "acceptedAnswer": {
@@ -114,7 +114,7 @@
             "text": "Predict the next token in raw text",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "A base model comes out of pretraining: predict the next token over piles of raw text. Anything chatbot-like is added later, during alignment training."
+              "text": "A base model comes out of pretraining: predict the next token over huge amounts of raw text. Instruction-following and preference training come later, during alignment."
             }
           }
         },
@@ -122,32 +122,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why does an instruct model expect a chat template and a base model doesn't?",
-          "text": "Why does an instruct model expect a chat template and a base model doesn't?",
+          "name": "Why does an instruct model's output quality usually drop when you skip its chat template?",
+          "text": "Why does an instruct model's output quality usually drop when you skip its chat template?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Because instruct models are larger"
+              "text": "The tokenizer refuses to encode text that lacks the template"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Because the chat template is required by every tokenizer"
+              "text": "The template adds extra parameters the model needs to run"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Because base models don't have a tokenizer"
+              "text": "The template is what switches the model from base weights to instruct weights"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Because the chat template's role markers were part of the alignment training, and the model learned what they mean",
+            "text": "Its alignment training used that template's role markers",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Instruct models were trained inside the chat template; the role markers mean 'assistant's turn' to them. Base models never saw that contract."
+              "text": "Instruct models were aligned on conversations wrapped in the template; the role markers tell them whose turn it is. Base models may ship a template too (Qwen2.5-1.5B base ships ChatML), but they were not aligned to it, so don't rely on them behaving like an assistant."
             }
           }
         },
@@ -155,32 +155,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "You want to fine-tune for sentiment classification. Which version is the usual starting point?",
-          "text": "You want to fine-tune for sentiment classification. Which version is the usual starting point?",
+          "name": "You want to fine-tune for sentiment classification. Which version is the usual default starting point?",
+          "text": "You want to fine-tune for sentiment classification. Which version is the usual default starting point?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "The base model, because it has more raw knowledge"
+              "text": "The base model, because instruct models cannot be fine-tuned further"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Either is fine; they perform identically after a fine-tune"
+              "text": "Either; after a fine-tune, base and instruct always score the same"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Neither — start with random weights"
+              "text": "Neither; train a fresh model from random weights on your labels"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "The instruct model, because it already follows instructions and respects the chat template",
+            "text": "The instruct model, so your data only has to teach the task",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Fine-tuning the instruct version means your data only has to teach the task, not instruction-following itself."
+              "text": "Starting from instruct means your rows teach the task, not instruction-following too. It is a default, not a law: with thousands of rows and a narrow output format the gap shrinks, and a base model avoids inherited refusals and chattiness."
             }
           }
         },
@@ -188,32 +188,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What is the 'alignment tax'?",
-          "text": "What is the 'alignment tax'?",
+          "name": "In the research literature, what does 'alignment tax' refer to?",
+          "text": "In the research literature, what does 'alignment tax' refer to?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "A licence fee charged by the model vendor"
+              "text": "A licence fee owed for using a model that has been aligned"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "The compute cost of running RLHF"
+              "position": 2,
+              "text": "The extra compute spent running preference training on top of pretraining"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The latency penalty of using a chat template"
+              "text": "The added latency of wrapping every prompt in a chat template"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "The cost of the instruct model's baked-in choices (refusals, hedges, style) when they fight your task",
+            "position": 1,
+            "text": "Capability lost on some benchmarks as a side effect of alignment",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Someone else's alignment travels with the model. When it helps, great; when it fights your task, you push against it — sometimes successfully, sometimes not."
+              "text": "Ouyang et al. 2022 (arXiv 2203.02155) reported performance regressions on public NLP datasets after RLHF and called them the alignment tax. Inherited refusals, hedges and style that fight your task are a related but separate idea: inherited behaviour."
             }
           }
         }
@@ -452,46 +452,46 @@
               {
                 "q": "What is the training objective that produces a base model?",
                 "options": [
-                  "Follow instructions in a chat template",
+                  "Follow instructions written in a chat template",
                   "Predict the next token in raw text",
-                  "Refuse harmful requests",
-                  "Match a teacher model's distribution"
+                  "Answer prompts in the way human raters preferred",
+                  "Match a larger teacher model's output distribution"
                 ],
                 "answer": 1,
-                "explanation": "A base model comes out of pretraining: predict the next token over piles of raw text. Anything chatbot-like is added later, during alignment training."
+                "explanation": "A base model comes out of pretraining: predict the next token over huge amounts of raw text. Instruction-following and preference training come later, during alignment."
               },
               {
-                "q": "Why does an instruct model expect a chat template and a base model doesn't?",
+                "q": "Why does an instruct model's output quality usually drop when you skip its chat template?",
                 "options": [
-                  "Because instruct models are larger",
-                  "Because the chat template's role markers were part of the alignment training, and the model learned what they mean",
-                  "Because the chat template is required by every tokenizer",
-                  "Because base models don't have a tokenizer"
+                  "The tokenizer refuses to encode text that lacks the template",
+                  "Its alignment training used that template's role markers",
+                  "The template adds extra parameters the model needs to run",
+                  "The template is what switches the model from base weights to instruct weights"
                 ],
                 "answer": 1,
-                "explanation": "Instruct models were trained inside the chat template; the role markers mean 'assistant's turn' to them. Base models never saw that contract."
+                "explanation": "Instruct models were aligned on conversations wrapped in the template; the role markers tell them whose turn it is. Base models may ship a template too (Qwen2.5-1.5B base ships ChatML), but they were not aligned to it, so don't rely on them behaving like an assistant."
               },
               {
-                "q": "You want to fine-tune for sentiment classification. Which version is the usual starting point?",
+                "q": "You want to fine-tune for sentiment classification. Which version is the usual default starting point?",
                 "options": [
-                  "The base model, because it has more raw knowledge",
-                  "The instruct model, because it already follows instructions and respects the chat template",
-                  "Either is fine; they perform identically after a fine-tune",
-                  "Neither — start with random weights"
+                  "The base model, because instruct models cannot be fine-tuned further",
+                  "The instruct model, so your data only has to teach the task",
+                  "Either; after a fine-tune, base and instruct always score the same",
+                  "Neither; train a fresh model from random weights on your labels"
                 ],
                 "answer": 1,
-                "explanation": "Fine-tuning the instruct version means your data only has to teach the task, not instruction-following itself."
+                "explanation": "Starting from instruct means your rows teach the task, not instruction-following too. It is a default, not a law: with thousands of rows and a narrow output format the gap shrinks, and a base model avoids inherited refusals and chattiness."
               },
               {
-                "q": "What is the 'alignment tax'?",
+                "q": "In the research literature, what does 'alignment tax' refer to?",
                 "options": [
-                  "A licence fee charged by the model vendor",
-                  "The compute cost of running RLHF",
-                  "The cost of the instruct model's baked-in choices (refusals, hedges, style) when they fight your task",
-                  "The latency penalty of using a chat template"
+                  "A licence fee owed for using a model that has been aligned",
+                  "Capability lost on some benchmarks as a side effect of alignment",
+                  "The extra compute spent running preference training on top of pretraining",
+                  "The added latency of wrapping every prompt in a chat template"
                 ],
-                "answer": 2,
-                "explanation": "Someone else's alignment travels with the model. When it helps, great; when it fights your task, you push against it — sometimes successfully, sometimes not."
+                "answer": 1,
+                "explanation": "Ouyang et al. 2022 (arXiv 2203.02155) reported performance regressions on public NLP datasets after RLHF and called them the alignment tax. Inherited refusals, hedges and style that fight your task are a related but separate idea: inherited behaviour."
               }
             ]
           </script>
@@ -501,36 +501,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What is the training objective that produces a base model?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Follow instructions in a chat template</li>
+                  <li>Follow instructions written in a chat template</li>
                   <li>Predict the next token in raw text</li>
-                  <li>Refuse harmful requests</li>
-                  <li>Match a teacher model's distribution</li>
+                  <li>Answer prompts in the way human raters preferred</li>
+                  <li>Match a larger teacher model's output distribution</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Predict the next token in raw text</strong> A base model comes out of pretraining: predict the next token over piles of raw text. Anything chatbot-like is added later, during alignment training.</p></details></li>
-              <li><p class="quiz__q-text">Why does an instruct model expect a chat template and a base model doesn't?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Predict the next token in raw text</strong> A base model comes out of pretraining: predict the next token over huge amounts of raw text. Instruction-following and preference training come later, during alignment.</p></details></li>
+              <li><p class="quiz__q-text">Why does an instruct model's output quality usually drop when you skip its chat template?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Because instruct models are larger</li>
-                  <li>Because the chat template's role markers were part of the alignment training, and the model learned what they mean</li>
-                  <li>Because the chat template is required by every tokenizer</li>
-                  <li>Because base models don't have a tokenizer</li>
+                  <li>The tokenizer refuses to encode text that lacks the template</li>
+                  <li>Its alignment training used that template's role markers</li>
+                  <li>The template adds extra parameters the model needs to run</li>
+                  <li>The template is what switches the model from base weights to instruct weights</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Because the chat template's role markers were part of the alignment training, and the model learned what they mean</strong> Instruct models were trained inside the chat template; the role markers mean 'assistant's turn' to them. Base models never saw that contract.</p></details></li>
-              <li><p class="quiz__q-text">You want to fine-tune for sentiment classification. Which version is the usual starting point?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Its alignment training used that template's role markers</strong> Instruct models were aligned on conversations wrapped in the template; the role markers tell them whose turn it is. Base models may ship a template too (Qwen2.5-1.5B base ships ChatML), but they were not aligned to it, so don't rely on them behaving like an assistant.</p></details></li>
+              <li><p class="quiz__q-text">You want to fine-tune for sentiment classification. Which version is the usual default starting point?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The base model, because it has more raw knowledge</li>
-                  <li>The instruct model, because it already follows instructions and respects the chat template</li>
-                  <li>Either is fine; they perform identically after a fine-tune</li>
-                  <li>Neither — start with random weights</li>
+                  <li>The base model, because instruct models cannot be fine-tuned further</li>
+                  <li>The instruct model, so your data only has to teach the task</li>
+                  <li>Either; after a fine-tune, base and instruct always score the same</li>
+                  <li>Neither; train a fresh model from random weights on your labels</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The instruct model, because it already follows instructions and respects the chat template</strong> Fine-tuning the instruct version means your data only has to teach the task, not instruction-following itself.</p></details></li>
-              <li><p class="quiz__q-text">What is the 'alignment tax'?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The instruct model, so your data only has to teach the task</strong> Starting from instruct means your rows teach the task, not instruction-following too. It is a default, not a law: with thousands of rows and a narrow output format the gap shrinks, and a base model avoids inherited refusals and chattiness.</p></details></li>
+              <li><p class="quiz__q-text">In the research literature, what does 'alignment tax' refer to?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A licence fee charged by the model vendor</li>
-                  <li>The compute cost of running RLHF</li>
-                  <li>The cost of the instruct model's baked-in choices (refusals, hedges, style) when they fight your task</li>
-                  <li>The latency penalty of using a chat template</li>
+                  <li>A licence fee owed for using a model that has been aligned</li>
+                  <li>Capability lost on some benchmarks as a side effect of alignment</li>
+                  <li>The extra compute spent running preference training on top of pretraining</li>
+                  <li>The added latency of wrapping every prompt in a chat template</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The cost of the instruct model's baked-in choices (refusals, hedges, style) when they fight your task</strong> Someone else's alignment travels with the model. When it helps, great; when it fights your task, you push against it — sometimes successfully, sometimes not.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Capability lost on some benchmarks as a side effect of alignment</strong> Ouyang et al. 2022 (arXiv 2203.02155) reported performance regressions on public NLP datasets after RLHF and called them the alignment tax. Inherited refusals, hedges and style that fight your task are a related but separate idea: inherited behaviour.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

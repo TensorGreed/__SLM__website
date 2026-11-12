@@ -92,26 +92,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Subwords are easier to read"
+              "text": "Whole-word vocabularies cannot represent punctuation or numbers"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Whole words train faster"
+              "text": "Subword splits always line up with the word's prefixes and suffixes"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Subwords use less memory at inference only"
+              "text": "Subwords make every word exactly one token long"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "A fixed-size vocabulary can still spell any string, including unseen words",
+            "text": "A fixed vocabulary can still spell any string, even unseen words",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Subwords give a fixed vocabulary that composes to represent any string, including rare/novel words."
+              "text": "Subwords give a fixed-size vocabulary that composes into any string, including rare and novel words (byte-level BPE can spell any byte sequence). Splits follow frequency, not grammar: 'tokenization' happens to split as token + ization, but many words split oddly."
             }
           }
         },
@@ -125,26 +125,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "The raw characters"
+              "text": "The raw UTF-8 characters of the text"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The English words"
+              "text": "Pre-computed sentence vectors from a separate encoder"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The loss"
+              "text": "One-hot vectors of whole English words"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "A list of integer token IDs (then mapped to embeddings)",
+            "text": "Integer token IDs, which index the embedding table",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Tokens map to integer IDs, which the embedding table turns into vectors that enter the network."
+              "text": "Tokens map to integer IDs, and the embedding table turns each ID into a vector. IDs differ per tokenizer."
             }
           }
         },
@@ -158,26 +158,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "A compressed image"
+              "text": "A fixed vector assigned by the tokenizer before training starts"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The token's position in the sentence"
+              "text": "The token's position number in the sentence"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "A special token"
+              "text": "A compressed copy of the text the token came from"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "A learned vector representing a token; similar tokens are nearby",
+            "text": "A learned vector per token; similar tokens end up nearby",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Embeddings are learned per-token vectors; training places similar tokens close together."
+              "text": "Embeddings are learned per-token vectors; training places similar tokens close together. Position is separate information that the model adds on (for example RoPE)."
             }
           }
         },
@@ -191,17 +191,17 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "The model's parameter count"
+              "text": "The number of distinct tokens in the model's vocabulary"
             },
             {
               "@type": "Answer",
               "position": 1,
-              "text": "How fast training runs"
+              "text": "The number of tokens the model saw during pretraining"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The vocabulary size"
+              "text": "The number of answer tokens, not counting the prompt"
             }
           ],
           "acceptedAnswer": {
@@ -210,7 +210,7 @@
             "text": "The maximum number of tokens processed at once",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The context window caps how many tokens (prompt + generation) fit at once."
+              "text": "The context window caps how many tokens fit at once, and that includes the prompt as well as the generated answer."
             }
           }
         }
@@ -366,10 +366,50 @@
           <p class="quiz__intro">Four questions. Answers are saved to this browser.</p>
           <script type="application/json">
             [
-              { "q": "Why do modern tokenizers use subwords rather than whole words?", "options": ["Subwords are easier to read", "A fixed-size vocabulary can still spell any string, including unseen words", "Whole words train faster", "Subwords use less memory at inference only"], "answer": 1, "explanation": "Subwords give a fixed vocabulary that composes to represent any string, including rare/novel words." },
-              { "q": "What actually enters the model after tokenization?", "options": ["The raw characters", "A list of integer token IDs (then mapped to embeddings)", "The English words", "The loss"], "answer": 1, "explanation": "Tokens map to integer IDs, which the embedding table turns into vectors that enter the network." },
-              { "q": "What is an embedding?", "options": ["A compressed image", "A learned vector representing a token; similar tokens are nearby", "The token's position in the sentence", "A special token"], "answer": 1, "explanation": "Embeddings are learned per-token vectors; training places similar tokens close together." },
-              { "q": "What does the context window limit?", "options": ["The model's parameter count", "How fast training runs", "The maximum number of tokens processed at once", "The vocabulary size"], "answer": 2, "explanation": "The context window caps how many tokens (prompt + generation) fit at once." }
+              {
+                "q": "Why do modern tokenizers use subwords rather than whole words?",
+                "options": [
+                  "Whole-word vocabularies cannot represent punctuation or numbers",
+                  "A fixed vocabulary can still spell any string, even unseen words",
+                  "Subword splits always line up with the word's prefixes and suffixes",
+                  "Subwords make every word exactly one token long"
+                ],
+                "answer": 1,
+                "explanation": "Subwords give a fixed-size vocabulary that composes into any string, including rare and novel words (byte-level BPE can spell any byte sequence). Splits follow frequency, not grammar: 'tokenization' happens to split as token + ization, but many words split oddly."
+              },
+              {
+                "q": "What actually enters the model after tokenization?",
+                "options": [
+                  "The raw UTF-8 characters of the text",
+                  "Integer token IDs, which index the embedding table",
+                  "Pre-computed sentence vectors from a separate encoder",
+                  "One-hot vectors of whole English words"
+                ],
+                "answer": 1,
+                "explanation": "Tokens map to integer IDs, and the embedding table turns each ID into a vector. IDs differ per tokenizer."
+              },
+              {
+                "q": "What is an embedding?",
+                "options": [
+                  "A fixed vector assigned by the tokenizer before training starts",
+                  "A learned vector per token; similar tokens end up nearby",
+                  "The token's position number in the sentence",
+                  "A compressed copy of the text the token came from"
+                ],
+                "answer": 1,
+                "explanation": "Embeddings are learned per-token vectors; training places similar tokens close together. Position is separate information that the model adds on (for example RoPE)."
+              },
+              {
+                "q": "What does the context window limit?",
+                "options": [
+                  "The number of distinct tokens in the model's vocabulary",
+                  "The number of tokens the model saw during pretraining",
+                  "The maximum number of tokens processed at once",
+                  "The number of answer tokens, not counting the prompt"
+                ],
+                "answer": 2,
+                "explanation": "The context window caps how many tokens fit at once, and that includes the prompt as well as the generated answer."
+              }
             ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
@@ -378,36 +418,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Why do modern tokenizers use subwords rather than whole words?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Subwords are easier to read</li>
-                  <li>A fixed-size vocabulary can still spell any string, including unseen words</li>
-                  <li>Whole words train faster</li>
-                  <li>Subwords use less memory at inference only</li>
+                  <li>Whole-word vocabularies cannot represent punctuation or numbers</li>
+                  <li>A fixed vocabulary can still spell any string, even unseen words</li>
+                  <li>Subword splits always line up with the word's prefixes and suffixes</li>
+                  <li>Subwords make every word exactly one token long</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A fixed-size vocabulary can still spell any string, including unseen words</strong> Subwords give a fixed vocabulary that composes to represent any string, including rare/novel words.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A fixed vocabulary can still spell any string, even unseen words</strong> Subwords give a fixed-size vocabulary that composes into any string, including rare and novel words (byte-level BPE can spell any byte sequence). Splits follow frequency, not grammar: 'tokenization' happens to split as token + ization, but many words split oddly.</p></details></li>
               <li><p class="quiz__q-text">What actually enters the model after tokenization?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The raw characters</li>
-                  <li>A list of integer token IDs (then mapped to embeddings)</li>
-                  <li>The English words</li>
-                  <li>The loss</li>
+                  <li>The raw UTF-8 characters of the text</li>
+                  <li>Integer token IDs, which index the embedding table</li>
+                  <li>Pre-computed sentence vectors from a separate encoder</li>
+                  <li>One-hot vectors of whole English words</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A list of integer token IDs (then mapped to embeddings)</strong> Tokens map to integer IDs, which the embedding table turns into vectors that enter the network.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Integer token IDs, which index the embedding table</strong> Tokens map to integer IDs, and the embedding table turns each ID into a vector. IDs differ per tokenizer.</p></details></li>
               <li><p class="quiz__q-text">What is an embedding?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A compressed image</li>
-                  <li>A learned vector representing a token; similar tokens are nearby</li>
-                  <li>The token's position in the sentence</li>
-                  <li>A special token</li>
+                  <li>A fixed vector assigned by the tokenizer before training starts</li>
+                  <li>A learned vector per token; similar tokens end up nearby</li>
+                  <li>The token's position number in the sentence</li>
+                  <li>A compressed copy of the text the token came from</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A learned vector representing a token; similar tokens are nearby</strong> Embeddings are learned per-token vectors; training places similar tokens close together.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A learned vector per token; similar tokens end up nearby</strong> Embeddings are learned per-token vectors; training places similar tokens close together. Position is separate information that the model adds on (for example RoPE).</p></details></li>
               <li><p class="quiz__q-text">What does the context window limit?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The model's parameter count</li>
-                  <li>How fast training runs</li>
+                  <li>The number of distinct tokens in the model's vocabulary</li>
+                  <li>The number of tokens the model saw during pretraining</li>
                   <li>The maximum number of tokens processed at once</li>
-                  <li>The vocabulary size</li>
+                  <li>The number of answer tokens, not counting the prompt</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The maximum number of tokens processed at once</strong> The context window caps how many tokens (prompt + generation) fit at once.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The maximum number of tokens processed at once</strong> The context window caps how many tokens fit at once, and that includes the prompt as well as the generated answer.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->
