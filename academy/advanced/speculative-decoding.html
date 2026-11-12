@@ -347,7 +347,8 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 target_id = "HuggingFaceTB/SmolLM2-1.7B-Instruct"
 draft_id  = "HuggingFaceTB/SmolLM2-135M-Instruct"   # same family, same tokenizer
-dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
+dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported(including_emulation=False) \
+    else (torch.float16 if torch.cuda.is_available() else torch.float32)
 
 tok    = AutoTokenizer.from_pretrained(target_id)
 target = AutoModelForCausalLM.from_pretrained(target_id, dtype=dtype, device_map="auto")

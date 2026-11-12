@@ -304,7 +304,7 @@
         <pre class="code-block"><code>pip install bitsandbytes</code></pre>
         <div class="callout callout--note">
           <p class="callout__label">Needs a CUDA GPU</p>
-          <p>This is the one lesson in the track that won't run on CPU: the 4-bit training path in bitsandbytes needs an NVIDIA GPU. The code below was checked against the current library versions but not executed here; the memory figures are worked out from the model's shape, not measured.</p>
+          <p>This is the one lesson in the track that won't run on CPU: the 4-bit training path in bitsandbytes needs an NVIDIA GPU. The code below was checked against the current library versions but not executed here; the memory figures are worked out from the model's shape, not measured. On a T4 or V100 the compute dtype below is fp16, but TRL still casts the adapter to bf16 for a quantized model (<code>sft_trainer.py</code>, TRL 1.17), which those GPUs only emulate; the snippet is untested there, so on pre-Ampere GPUs prefer plain LoRA from Lesson 2.10.</p>
         </div>
 
         <h2>Configure 4-bit loading</h2>
