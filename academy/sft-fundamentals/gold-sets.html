@@ -313,12 +313,13 @@
         <ul>
           <li><strong>Coverage</strong> — include the common cases <em>and</em> the hard/edge cases that matter; the gold set should probe where the model is likely to fail, not just where it's easy.</li>
           <li><strong>Label quality</strong> — verify every answer; a gold set with wrong labels gives confidently wrong guidance. It's better to have 100 impeccable examples than 1,000 sloppy ones.</li>
-          <li><strong>Size</strong> — big enough that the metric is stable run-to-run, small enough to curate by hand and inspect failures individually. A few dozen to a few hundred is common for a narrow task.</li>
+          <li><strong>Size</strong> — big enough that the metric is stable run-to-run, small enough to curate by hand and inspect failures individually. Know what your size can resolve: at 80% accuracy the 95% confidence interval is about ±11 points on 50 rows, ±8 on 100 and ±4.5 on 300, so a few dozen rows can't separate two models 5 points apart. A few hundred is a sensible target for a narrow task.</li>
           <li><strong>Isolation</strong> — store it separately and guard it from ever entering training (and from leakage via near-duplicates).</li>
         </ul>
 
         <h2>Gold set vs test split</h2>
-        <p>They overlap in spirit but differ in trust and use. The <strong>test split</strong> is a held-out sample for a final, broad estimate. The <strong>gold set</strong> is a hand-curated instrument you consult repeatedly to steer the project — the thing you stare at when deciding what to fix next. In practice the gold set is where data-centric iteration (Track 0, Lesson 9) gets its signal: you read the gold-set failures, fix the training data accordingly, and retrain.</p>
+        <p>They overlap in spirit but differ in trust and use. The <strong>test split</strong> is a held-out sample for a final, broad estimate. The <strong>gold set</strong> is a hand-curated instrument you use to steer the project — the thing you stare at when deciding what to fix next. In practice the gold set is where data-centric iteration (Track 0, Lesson 9) gets its signal: you read the gold-set failures, fix the training data accordingly, and retrain.</p>
+        <p>There is a catch: every time you look at a set and change something because of it, your choices fit that set a little more, and its score drifts upward without the model getting better (adaptive overfitting). So split the gold set in two. A <strong>practice</strong> part you consult freely while iterating, and a <strong>final</strong> part you score once, at the end, for the number you report. BrewSLM models exactly this: a practice answer key and a final answer key held back for the final grade.</p>
         <p>With clean data and a trustworthy gold set in hand, you're ready to actually train. The next lessons open up the training loop, the loss, and the knobs that govern it.</p>
 
         <section class="key-terms">

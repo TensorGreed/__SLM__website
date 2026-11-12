@@ -287,7 +287,7 @@
 
       <article class="lesson-article">
         <header class="lesson-header">
-          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 19</span>
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · 1C · Lesson 19</span>
           <h1>Decoding controls: temperature, top-p, stop tokens</h1>
           <p class="lesson-header__outcome">After this lesson you can name what each decoding knob does (temperature, top-p, top-k, max_new_tokens, stop tokens, repetition penalty), tune them for a use case, and recognise when a bad output is a decoding problem rather than a training problem.</p>
           <div class="lesson-meta">
@@ -309,7 +309,7 @@
         <h2>Temperature: sharpen or flatten the distribution</h2>
         <p><strong>Temperature</strong> (<code>T</code>) divides the logits before softmax. <code>T = 1</code> is the trained distribution. <code>T &lt; 1</code> sharpens — high-probability tokens become more likely, low-probability tokens become less. <code>T &gt; 1</code> flattens — more variety, more risk. Extremes are easy to reason about: <code>T → 0</code> approaches greedy; <code>T → ∞</code> approaches uniform random.</p>
         <ul>
-          <li><strong>Classification / extraction:</strong> <code>T = 0</code> (or greedy). Deterministic, no surprises.</li>
+          <li><strong>Classification / extraction:</strong> greedy (<code>do_sample=False</code>; temperature is then ignored — in HF, <code>temperature=0</code> with sampling on raises an error). Deterministic, no surprises.</li>
           <li><strong>FAQ / structured chat:</strong> <code>T ≈ 0.2–0.4</code>. Slight variety; still anchored to high-confidence tokens.</li>
           <li><strong>Creative / open-ended:</strong> <code>T ≈ 0.7–1.0</code>. The model takes risks.</li>
           <li><strong>&gt; 1.2:</strong> rarely useful. Output is plausible-looking gibberish more often than it's interesting.</li>
@@ -327,12 +327,13 @@
         <p><strong>Stop tokens</strong> tell the model to halt generation when it produces a particular token (often the chat template's end-of-turn marker, e.g. <code>&lt;|im_end|&gt;</code>). Without one — or with the wrong one — the model keeps going past your answer and emits the next user turn it imagines, or just trails off. Instruct models bake their end tokens into the tokenizer; chat templates set them automatically.</p>
         <p><strong>max_new_tokens</strong> is a hard cap. Always set it. A chat answer with a forgotten stop token and no cap will fill its context window with hallucinated conversation. For a classification task that emits one label, <code>max_new_tokens = 4</code> is fine; for a chat answer, 256–512.</p>
 
-        <h2>Repetition penalty: small fix for a common bug</h2>
-        <p>Sometimes a model loops: it generates a phrase, then re-generates it, then re-generates it. The <strong>repetition penalty</strong> reduces the probability of any token that has already appeared in the output. A small value (<code>1.05</code>–<code>1.15</code>) usually breaks the loop with no quality cost. Don't go above ~<code>1.3</code> — you'll start suppressing legitimately repeated words like "the."</p>
+        <h2>Repetition penalty: a fix for loops, with a catch</h2>
+        <p>Sometimes a model loops: it generates a phrase, then re-generates it, then re-generates it. The <strong>repetition penalty</strong> reduces the probability of any token that has already appeared in the sequence — and in Hugging Face Transformers that sequence is all of <code>input_ids</code>, <strong>the prompt included</strong>. So the penalty pushes the model away from copying its input. For open-ended generation a small value (around <code>1.1</code>) can break a loop; check it on your gold set. For extraction, classification, QA over a supplied context and JSON output, copying the input is the job: keep it at <code>1.0</code> (off). BrewSLM learned this the hard way — evals inherited a model's shipped penalty of 1.1 and returned spurious nulls on an extraction task — and now pins <code>repetition_penalty=1.0</code> for every eval.</p>
+        <p>Watch for penalties you didn't set: a model's <code>generation_config.json</code> can apply one silently, even under greedy decoding. Print the model's generation config before you trust an eval.</p>
 
         <div class="callout callout--warning">
           <p class="callout__label">Honest beat — repetitive output is two different bugs</p>
-          <p><strong>Repetitive output can mean a decoding problem or a training problem.</strong> First, check decoding: turn on <code>repetition_penalty=1.1</code> or switch from greedy to <code>top_p=0.9</code> sampling. If the variety returns, it was the decoding rule trapping you in a locally-likely loop — no retrain needed. If the model still loops with healthy decoding, it has overfit on repetitive training data and a retrain on more diverse examples is the right answer. Knowing which costs you a five-minute experiment instead of a five-hour rerun.</p>
+          <p><strong>Repetitive output can mean a decoding problem or a training problem.</strong> First, check decoding: for open-ended generation, switch from greedy to <code>top_p=0.9</code> sampling or try a mild <code>repetition_penalty</code> (~1.1). If the variety returns, it was the decoding rule trapping you in a locally-likely loop — no retrain needed. If the model still loops with healthy decoding, look at training: a missing EOS in the training targets (Lesson 1.3) or repetitive training data, and retrain with that fixed. Knowing which costs you a five-minute experiment instead of a five-hour rerun.</p>
         </div>
 
         <h2>Time to first token (TTFT) and streaming</h2>
@@ -340,7 +341,7 @@
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>Decoding is not training. Before you retrain, try greedy vs sampling, <code>temperature ≈ 0.7</code>, <code>top_p ≈ 0.9</code>, a stop token, <code>max_new_tokens</code>, and a small <code>repetition_penalty</code>. Most "bad output" complaints have a decoding fix that costs five minutes. Save the retrain for when the model genuinely doesn't know.</p>
+          <p>Decoding is not training. Before you retrain, try greedy vs sampling, <code>temperature ≈ 0.7</code>, <code>top_p ≈ 0.9</code>, a stop token, <code>max_new_tokens</code>, and — for open-ended generation only — a small <code>repetition_penalty</code>. Most "bad output" complaints have a decoding fix that costs five minutes. Save the retrain for when the model genuinely doesn't know.</p>
         </div>
 
         <p>Decoding lives at inference time, but it interacts with everything you've trained. Track 2 will pick the actual values in code; Lesson 1.20 covers another pre-training-time concern: the dataset format you've been handed.</p>
@@ -355,7 +356,7 @@
             <dt>Top-k</dt><dd>Keep only the <code>k</code> most likely tokens and sample from that subset.</dd>
             <dt>max_new_tokens</dt><dd>Hard cap on how many tokens the model may emit per call. Always set it.</dd>
             <dt>Stop tokens</dt><dd>Tokens that signal end-of-generation. Instruct models bake one into the chat template; without it the model rambles.</dd>
-            <dt>Repetition penalty</dt><dd>A scalar that reduces probability of tokens already in the output. Small values (1.05–1.15) break loops without quality loss.</dd>
+            <dt>Repetition penalty</dt><dd>A scalar that reduces the probability of tokens already in the sequence, prompt included. Mild values (~1.1) can break loops in open-ended generation; keep 1.0 for extraction, classification and structured output.</dd>
             <dt>Time to first token (TTFT)</dt><dd>Latency from request send to first generated character. Dominates perceived chat UX.</dd>
           </dl>
         </section>
