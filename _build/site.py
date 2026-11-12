@@ -16,7 +16,11 @@ The hand-written HTML stays the source of truth. This script only:
 Usage:
   python3 _build/site.py build    # rewrite regions + generated files
   python3 _build/site.py check    # exit 1 if build would change anything, or a
-                                 # link is broken, a page lacks a title, ...
+                                 # link is broken, a page lacks a title, a
+                                 # JSON-LD node lacks a required property or
+                                 # disagrees with the visible page, ...
+  python3 _build/site.py check -v # ... and list over-budget pages and the
+                                 # JSON-LD node count per type
 
 `build` is idempotent: running it twice gives a zero diff. The head values
 are derived on every build: og:title / twitter:title from <title>,
@@ -907,10 +911,246 @@ def build_404() -> str:
 """
 
 
+# ── JSON-LD check (shape + agreement with the visible page) ────────────────
+
+# Properties each top-level node must carry (Google's required/recommended set
+# for the rich result where there is one; schema.org essentials otherwise).
+LD_REQUIRED = {
+    "Organization": ["name", "url", "logo"],
+    "WebSite": ["name", "url"],
+    "SoftwareApplication": ["name", "applicationCategory", "offers"],
+    "BlogPosting": ["headline", "description", "datePublished", "dateModified", "author", "publisher",
+                    "image", "mainEntityOfPage"],
+    "Blog": ["name", "url", "blogPost"],
+    "Course": ["name", "description", "provider", "url"],
+    "LearningResource": ["name", "url", "learningResourceType", "isPartOf"],
+    "Article": ["headline", "author"],
+    "Quiz": ["about", "hasPart"],
+    "FAQPage": ["mainEntity"],
+    "BreadcrumbList": ["itemListElement"],
+    "HowTo": ["name", "step"],
+    "DefinedTermSet": ["name", "hasDefinedTerm"],
+    "WebPage": ["name", "url"],
+    "CollectionPage": ["name", "url"],
+}
+# Types each page type must carry.
+LD_EXPECTED = {
+    "home": {"Organization", "WebSite"},
+    "post": {"BlogPosting", "BreadcrumbList"},
+    "blog_index": {"Blog", "BreadcrumbList"},
+    "academy_index": {"Course", "BreadcrumbList"},
+    "track_index": {"BreadcrumbList"},
+    "lesson": {"LearningResource", "Article", "BreadcrumbList"},
+    "tutorial": {"LearningResource", "Article", "HowTo", "BreadcrumbList"},
+    "glossary": {"DefinedTermSet", "BreadcrumbList"},
+    "certificate": {"WebPage", "BreadcrumbList"},
+    "roadmap": {"WebPage", "BreadcrumbList"},
+    "academy_page": {"BreadcrumbList"},
+    "top_level": {"BreadcrumbList"},
+}
+DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?")
+
+
+def ld_nodes(text: str) -> tuple[list[dict], list[str]]:
+    """Top-level JSON-LD nodes of a page (blocks, lists and @graph flattened)."""
+    nodes, errs = [], []
+    for raw in LD_SCRIPT_RE.findall(text):
+        try:
+            o = json.loads(raw)
+        except ValueError as e:
+            errs.append(f"does not parse ({e})")
+            continue
+        for x in (o if isinstance(o, list) else [o]):
+            if not isinstance(x, dict):
+                errs.append("block is not an object")
+                continue
+            ctx = x.get("@context")
+            if ctx not in ("https://schema.org", "https://schema.org/", "http://schema.org"):
+                errs.append(f"{x.get('@type')}: @context is {ctx!r}, want https://schema.org")
+            nodes += [{**g, "@context": ctx} for g in x["@graph"]] if "@graph" in x else [x]
+    return nodes, errs
+
+
+def ids_on(text: str) -> set[str]:
+    return set(re.findall(r'\bid="([^"]+)"', text))
+
+
+def check_jsonld(rel: str, text: str, facts: dict, pages: set[str], texts: dict) -> tuple[list[str], list[str]]:
+    """Errors for one page's JSON-LD, and the types it carries."""
+    f, pt = facts[rel], page_type(rel)
+    errs: list[str] = []
+    nodes, perr = ld_nodes(text)
+    errs += perr
+    page_ids = ids_on(text)
+
+    def err(msg):
+        errs.append(msg)
+
+    def need(node, keys, what):
+        for k in keys:
+            v = node.get(k)
+            if v is None or v == "" or v == []:
+                err(f"{what}: missing {k}")
+
+    def internal(u, what, anchors=False):
+        """An absolute brewslm.com URL must point at a real page (and anchor)."""
+        if not isinstance(u, str):
+            return
+        if not u.startswith(BASE):
+            if not urlparse(u).scheme:
+                err(f"{what}: {u!r} is not an absolute URL")
+            return
+        target = resolve_link(rel, u)
+        if target and not (ROOT / target).is_file():
+            err(f"{what}: {u} has no page")
+        frag = urlparse(u).fragment
+        if anchors and frag and target:
+            ids = page_ids if target == rel else ids_on(texts.get(target, ""))
+            if frag not in ids:
+                err(f"{what}: {u} has no #{frag} on the page")
+
+    def walk_urls(o, path):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if k in ("url", "item", "mainEntityOfPage", "image") and isinstance(v, str):
+                    internal(v, f"{path}.{k}")
+                elif k in ("datePublished", "dateModified") and not (isinstance(v, str) and DATE_RE.fullmatch(v)):
+                    err(f"{path}.{k}: {v!r} is not an ISO 8601 date")
+                elif k in ("timeRequired", "totalTime") and duration_minutes(v) is None:
+                    err(f"{path}.{k}: {v!r} is not an ISO 8601 duration")
+                else:
+                    walk_urls(v, f"{path}.{k}")
+        elif isinstance(o, list):
+            for i, v in enumerate(o):
+                walk_urls(v, f"{path}[{i}]")
+
+    found: list[str] = []
+    for n in nodes:
+        types = ld_types(n)
+        if not types:
+            err("node without @type")
+            continue
+        found += sorted(types)
+        name = "+".join(sorted(types))
+        for t in types:
+            if t not in LD_REQUIRED:
+                err(f"{name}: no shape rule for @type {t} (add one to LD_REQUIRED)")
+            need(n, LD_REQUIRED.get(t, []), name)
+        walk_urls(n, name)
+        for k in ("author", "publisher", "provider"):
+            if isinstance(n.get(k), dict) and set(n[k]) != {"@id"} and not n[k].get("name"):
+                err(f"{name}.{k}: missing name")
+
+        # ── agreement with the visible page ──
+        main_url = n.get("url")
+        if types & {"BlogPosting", "Blog", "LearningResource", "HowTo", "DefinedTermSet", "WebPage",
+                    "CollectionPage", "FAQPage", "WebSite", "SoftwareApplication"} or \
+                (types == {"Course"} and pt in ("academy_index", "track_index")):
+            if main_url != f.url:
+                err(f"{name}.url {main_url!r} is not this page ({f.url})")
+            if "description" in n and n["description"] != f.description and not types & {"SoftwareApplication"}:
+                err(f"{name}.description differs from the meta description")
+        heading = n.get("headline") if types & {"BlogPosting", "Article"} else n.get("name")
+        if (types & {"BlogPosting", "LearningResource", "HowTo", "WebPage", "CollectionPage", "FAQPage"}
+                or (types == {"Course"} and pt == "track_index")) and heading != f.h1:
+            err(f"{name} name/headline {heading!r} is not the h1 {f.h1!r}")
+        if "Article" in types and n.get("headline") != f.h1:
+            err(f"{name}.headline {n.get('headline')!r} is not the h1")
+        if "BlogPosting" in types and pt == "post":
+            if n.get("datePublished") != f.published:
+                err(f"BlogPosting.datePublished {n.get('datePublished')!r} is not the visible date {f.published!r}")
+            if str(n.get("dateModified", "")) < str(n.get("datePublished", "")):
+                err("BlogPosting.dateModified is before datePublished")
+        if "LearningResource" in types:
+            if f.level and str(n.get("educationalLevel", "")).lower() != f.level.lower():
+                err(f"educationalLevel {n.get('educationalLevel')!r} is not the visible level {f.level!r}")
+            if duration_minutes(n.get("timeRequired")) != duration_minutes(f.time):
+                err(f"timeRequired {n.get('timeRequired')!r} is not the visible time {f.time!r}")
+        if "HowTo" in types:
+            if duration_minutes(n.get("totalTime")) != duration_minutes(f.time):
+                err(f"HowTo.totalTime {n.get('totalTime')!r} is not the visible time {f.time!r}")
+            for i, s in enumerate(n.get("step", [])):
+                if not (s.get("name") or s.get("text")):
+                    err(f"HowTo.step[{i}]: missing name/text")
+                internal(s.get("url"), f"HowTo.step[{i}].url", anchors=True)
+        if "Quiz" in types:
+            want = [(q["q"], q["options"][q["answer"]],
+                     sorted(o for i, o in enumerate(q["options"]) if i != q["answer"])) for q in f.quiz or []]
+            got = []
+            for q in n.get("hasPart", []):
+                if not (q.get("text") and q.get("eduQuestionType")):
+                    err(f"Quiz question {q.get('name')!r}: missing text/eduQuestionType")
+                got.append((q.get("text"), (q.get("acceptedAnswer") or {}).get("text"),
+                            sorted(a.get("text") for a in q.get("suggestedAnswer", []))))
+            if got != want:
+                err(f"Quiz ({len(got)} questions) differs from the visible quiz ({len(want)})")
+        if "FAQPage" in types:
+            got = [(q.get("name"), (q.get("acceptedAnswer") or {}).get("text")) for q in n.get("mainEntity", [])]
+            if not got or any(not a or not b for a, b in got):
+                err("FAQPage: a question without name or answer text")
+            if got != f.faq():
+                err(f"FAQPage ({len(got)} Q&As) differs from the visible FAQ ({len(f.faq())})")
+        if "DefinedTermSet" in types:
+            got = []
+            for t in n.get("hasDefinedTerm", []):
+                if not (t.get("name") and t.get("description")):
+                    err(f"DefinedTerm {t.get('name')!r}: missing name/description")
+                internal(t.get("url"), f"DefinedTerm {t.get('name')!r}.url", anchors=True)
+                got.append((urlparse(t.get("url", "")).fragment, t.get("name"), t.get("description")))
+            if got != f.terms():
+                err(f"DefinedTermSet ({len(got)} terms) differs from the visible glossary ({len(f.terms())})")
+        if "Blog" in types:
+            got = [(p.get("headline"), p.get("url")) for p in n.get("blogPost", [])]
+            if got != f.cards():
+                err(f"Blog.blogPost ({len(got)}) differs from the visible post cards ({len(f.cards())})")
+            posts = {url_of(p) for p in pages if page_type(p) == "post"}
+            if {u for _, u in got} != posts:
+                err("Blog.blogPost does not list every post")
+        if types == {"Course"} and pt == "track_index":
+            d = rel.rsplit("/", 1)[0] + "/"
+            kids = f.child_pages(pages, lambda t: t.startswith(d) and page_type(t) in ("lesson", "tutorial"))
+            if [(p.get("name"), p.get("url")) for p in n.get("hasPart", [])] != \
+                    [(facts[k].h1, url_of(k)) for k in kids]:
+                err("Course.hasPart differs from the lessons the track page lists")
+        if types == {"Course"} and pt == "academy_index":
+            linked = {url_of(t) for t in f.child_pages(pages, lambda t: page_type(t) == "track_index")}
+            for p in n.get("hasPart", []):
+                if p.get("url") not in linked:
+                    err(f"Course.hasPart {p.get('url')} is not linked from the academy page")
+        if "BreadcrumbList" in types:
+            items = n.get("itemListElement", [])
+            if [it.get("position") for it in items] != list(range(1, len(items) + 1)):
+                err("BreadcrumbList positions are not 1..n")
+            if len(items) < 2:
+                err("BreadcrumbList has fewer than 2 items")
+            want = breadcrumb_ld(f)
+            if want is None:
+                err("BreadcrumbList but no visible .breadcrumb on the page")
+            elif [(i.get("name"), i.get("item")) for i in items] != \
+                    [(i["name"], i["item"]) for i in want["itemListElement"]]:
+                err("BreadcrumbList differs from the visible breadcrumb")
+
+    have = set(found)
+    want = set(LD_EXPECTED.get(pt, set()))
+    if rel == CFG["faq"]["path"]:
+        want.add("FAQPage")
+    if f.quiz:
+        want.add("Quiz")
+    if f.crumbs:
+        want.add("BreadcrumbList")
+    for t in sorted(want - have):
+        err(f"missing {t} for a {pt} page")
+    for t in ("BreadcrumbList", "Organization", "WebSite", "FAQPage", "Quiz", "DefinedTermSet"):
+        if found.count(t) > 1:
+            err(f"{found.count(t)} {t} nodes (want 1)")
+    return [f"{rel}: JSON-LD {e}" for e in errs], found
+
+
 # ── build / check ──────────────────────────────────────────────────────────
 
-def render() -> tuple[dict[str, str], dict[str, str]]:
-    """Return ({rel: new text} for pages, {rel: new text} for generated files)."""
+def render() -> tuple[dict[str, str], dict[str, str], dict[str, "Facts"]]:
+    """Return ({rel: new text} for pages, {rel: new text} for generated files,
+    {rel: visible facts} for pages)."""
     pages = discover()
     old = {p: (ROOT / p).read_text(encoding="utf-8") for p in pages}
     facts = {p: Facts(p, t) for p, t in old.items()}
@@ -921,7 +1161,7 @@ def render() -> tuple[dict[str, str], dict[str, str]]:
         CFG["feed"]["path"]: build_feed(new),
         NOTFOUND: build_404(),
     }
-    return new, gen
+    return new, gen, facts
 
 
 def write_all(files: dict[str, str]) -> list[str]:
@@ -935,7 +1175,7 @@ def write_all(files: dict[str, str]) -> list[str]:
 
 
 def cmd_build(_args) -> int:
-    pages, gen = render()
+    pages, gen, _ = render()
     written = write_all(pages) + write_all(gen)
     print(f"build: {len(written)} file(s) written" + (": " + ", ".join(written[:12]) if written else ""))
     if len(written) > 12:
@@ -963,7 +1203,13 @@ def resolve_link(rel: str, href: str):
 def cmd_check(args) -> int:
     errors: list[str] = []
     warns: list[str] = []
-    pages, gen = render()
+    pages, gen, facts = render()
+    ld_types_seen: dict[str, int] = {}
+    for rel, text in pages.items():
+        e, found = check_jsonld(rel, text, facts, set(pages), pages)
+        errors += e
+        for t in found:
+            ld_types_seen[t] = ld_types_seen.get(t, 0) + 1
     for rel, text in list(pages.items()) + list(gen.items()):
         p = ROOT / rel
         cur = p.read_text(encoding="utf-8") if p.exists() else None
@@ -1029,6 +1275,8 @@ def cmd_check(args) -> int:
         print("warning:", w)
     for e in errors:
         print("error:", e)
+    if args.verbose:
+        print("JSON-LD nodes:", ", ".join(f"{k} {v}" for k, v in sorted(ld_types_seen.items())))
     print(f"check: {len(pages)} pages, {len(errors)} error(s), {len(warns)} warning(s)")
     return 1 if errors else 0
 
