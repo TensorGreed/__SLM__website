@@ -301,34 +301,40 @@
 
         <h2>The four consumers</h2>
         <ul>
-          <li><strong>Weights</strong> — the parameters themselves. ≈ params × bytes-per-param. At bf16 (2 bytes), a 1B model ≈ 2&nbsp;GB.</li>
-          <li><strong>Gradients</strong> — one per trainable parameter, same size as the weights you're training. Full fine-tuning: another ≈ 2&nbsp;GB for a 1B model.</li>
-          <li><strong>Optimizer state</strong> — AdamW keeps two extra values per trainable parameter (and often in 32-bit), so roughly <em>8 bytes</em> per trainable parameter — frequently the <em>largest</em> single consumer. For a 1B model fully fine-tuned, ≈ 8&nbsp;GB.</li>
-          <li><strong>Activations</strong> — intermediate values from the forward pass, kept for the backward pass. These scale with batch size and sequence length (not parameter count), and can be large.</li>
+          <li><strong>Weights</strong> — the parameters themselves. ≈ params × bytes-per-param. At bf16 (2 bytes), a 1B model ≈ 2&nbsp;GB. (GB here means 10<sup>9</sup> bytes; 2&nbsp;GB is 1.86&nbsp;GiB.)</li>
+          <li><strong>Gradients</strong> — one per <em>trainable</em> parameter. In standard mixed-precision training they're kept in fp32: 4 bytes each, ≈ 4&nbsp;GB for a fully fine-tuned 1B model.</li>
+          <li><strong>Optimizer state</strong> — AdamW keeps two extra values per trainable parameter, in fp32, so <em>8 bytes</em> per trainable parameter — the <em>largest</em> single per-parameter consumer. For a 1B model fully fine-tuned, ≈ 8&nbsp;GB.</li>
+          <li><strong>Activations</strong> — intermediate values from the forward pass, kept for the backward pass. They scale with batch size × sequence length × the model's width and depth. On top sits the <strong>logits</strong> tensor, batch × sequence × vocabulary, often in fp32: one 2,048-token sequence with a 152k vocabulary is about 1.2&nbsp;GB of logits on its own. For small models with big vocabularies that is frequently the largest single allocation.</li>
         </ul>
 
         <h2>Why full fine-tuning needs several times the model size</h2>
-        <p>Add the first three for a fully-fine-tuned 1B model at bf16: ~2 (weights) + ~2 (gradients) + ~8 (AdamW state) = ~12&nbsp;GB <em>before activations</em>. That's the rule of thumb "full fine-tuning needs several times the model's size in memory." It's why a model whose weights fit easily can still refuse to train.</p>
+        <p>Standard mixed-precision training with AdamW keeps an fp32 <em>master copy</em> of the weights (4 bytes) and computes with a 16-bit copy (2), plus fp32 gradients (4) and two fp32 Adam moments (8). That is about <strong>16–18 bytes per parameter</strong> — 16–18&nbsp;GB for a fully fine-tuned 1B model <em>before activations</em> (the ZeRO paper counts 16; Hugging Face's memory-anatomy guide counts 18). That's the rule of thumb "full fine-tuning needs several times the model's size in memory", and it's why a model whose weights fit easily can still refuse to train.</p>
+        <p>You'll also see "~12 bytes per parameter" quoted: that's pure-bf16 weights and gradients with fp32 Adam moments and no master copy. It's a legitimate setup, but not the default, so label it if you use it.</p>
         <div class="callout callout--key">
           <p class="callout__label">Where LoRA saves</p>
-          <p>With LoRA the base is frozen, so gradients and optimizer state exist only for the <em>tiny</em> adapter — the ~2&nbsp;GB + ~8&nbsp;GB above nearly vanish. You pay full weight memory (and can quarter that with QLoRA's 4-bit base) plus a sliver for the adapter. This is the concrete reason LoRA fits where full fine-tuning doesn't.</p>
+          <p>With LoRA the base is frozen, so gradients and optimizer state exist only for the <em>small</em> adapter, and the frozen base can be loaded straight in bf16 at 2 bytes per parameter (or 4-bit with QLoRA). That is the concrete reason LoRA fits where full fine-tuning doesn't. What LoRA does <em>not</em> shrink is activations: backprop still runs through every frozen layer, so activation and logits memory is about the same as in full fine-tuning.</p>
+          <p>A measured example: a 30B-parameter mixture-of-experts model with LoRA r=16 on q, k, v and o has 13,369,344 trainable parameters (0.04%), and the adapter's gradients and AdamW state come to about 0.2&nbsp;GB. The bf16 weights are about 57&nbsp;GiB, yet the run peaked at about 77&nbsp;GiB: the other ~20&nbsp;GiB is activations, logits and runtime overhead. (An MoE needs memory for <em>all</em> its experts, not only the ~3B parameters active per token.)</p>
         </div>
 
-        <h2>Mixed precision</h2>
-        <p><strong>Mixed precision</strong> stores and computes most things in 16-bit (bf16/fp16) instead of 32-bit, roughly halving weight, gradient, and activation memory while keeping training stable. <strong>bf16</strong> is preferred on modern GPUs for its numerical range. It's nearly free quality-wise and standard practice.</p>
+        <h2>Mixed precision and 16-bit weights</h2>
+        <p>Two different things get called "16-bit", and they save different memory:</p>
+        <ul>
+          <li><strong>Loading a frozen base in bf16</strong> (<code>dtype=torch.bfloat16</code>) halves the weight memory compared with fp32. Since nothing trains those weights, no fp32 copy is needed. This is the usual LoRA setup, and what BrewSLM does.</li>
+          <li><strong>Mixed-precision training</strong> (bf16/fp16 autocast) computes matmuls in 16-bit while keeping fp32 master weights for the parameters being trained. It mainly saves <em>activation</em> memory and speeds up matmuls; for trained weights it adds a 16-bit copy, so their memory goes <em>up</em> to about 1.5×. <strong>bf16</strong> is preferred on modern GPUs for its numerical range, and it's nearly free quality-wise.</li>
+        </ul>
 
         <h2>Managing activations</h2>
-        <p>Activations are the lever you control at run time. They grow with <strong>batch size × sequence length</strong>, so the two biggest knobs for fitting a run are exactly those. <strong>Gradient checkpointing</strong> (next lesson) trades compute to shrink activation memory dramatically. Combined with the earlier lessons: pick <code>max_seq_length</code> from your data, set a per-device batch that fits, and recover the effective batch with gradient accumulation.</p>
-        <p>You now have a mental calculator: weights + gradients + optimizer state + activations, scaled by precision. When the sum exceeds your GPU, you get an OOM — and the next lesson is the field guide to surviving exactly that.</p>
+        <p>Activations are the lever you control at run time. For a given model, they grow with <strong>batch size × sequence length</strong> — how many tokens flow through per step — so the two biggest knobs for fitting a run are exactly those. <strong>Gradient checkpointing</strong> (next lesson) trades compute to shrink activation memory dramatically. Combined with the earlier lessons: pick <code>max_seq_length</code> from your data, set a per-device batch that fits, and recover the effective batch with gradient accumulation. Leave headroom for the CUDA context (roughly 0.5–1&nbsp;GB) and allocator fragmentation.</p>
+        <p>You now have a mental calculator: weights + gradients + optimizer state + activations (with the logits), scaled by precision. When the sum exceeds your GPU, you get an OOM — and the next lesson is the field guide to surviving exactly that.</p>
 
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
             <dt>Weights memory</dt><dd>≈ params × bytes-per-param (2 bytes at bf16).</dd>
-            <dt>Gradient memory</dt><dd>One value per trainable parameter (≈ weights size for the trained params).</dd>
-            <dt>Optimizer state</dt><dd>AdamW's ~8 bytes per trainable parameter — often the biggest consumer in full fine-tuning.</dd>
-            <dt>Activations</dt><dd>Forward-pass intermediates kept for backprop; scale with batch size × sequence length.</dd>
-            <dt>Mixed precision (bf16)</dt><dd>Computing/storing in 16-bit to roughly halve memory with stable training.</dd>
+            <dt>Gradient memory</dt><dd>One value per trainable parameter (4 bytes each in standard mixed precision).</dd>
+            <dt>Optimizer state</dt><dd>AdamW's ~8 bytes per trainable parameter — the biggest per-parameter consumer in full fine-tuning, which totals about 16–18 bytes per parameter.</dd>
+            <dt>Activations</dt><dd>Forward-pass intermediates kept for backprop; scale with batch × sequence length × model width and depth, plus a batch × sequence × vocabulary logits tensor.</dd>
+            <dt>Mixed precision (bf16)</dt><dd>Computing in 16-bit while keeping fp32 master weights for trained parameters; saves activation memory and time. Loading a frozen base in bf16 is what halves weight memory.</dd>
           </dl>
         </section>
 

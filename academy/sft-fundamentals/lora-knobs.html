@@ -303,19 +303,19 @@
         <p>The <strong>rank</strong> <code>r</code> is the inner dimension of LoRA's two small matrices — effectively how much "room" the adapter has to express a change. Small <code>r</code> (e.g. 8) is cheap and often plenty for a narrow task; larger <code>r</code> (16, 32, 64) adds capacity for harder or broader tasks at the cost of more adapter parameters and memory. More is not always better — too much rank on a small dataset just gives the model more room to overfit. A common starting point is <code>r = 16</code>.</p>
 
         <h2>Alpha: how strongly the adapter speaks</h2>
-        <p><strong>alpha</strong> scales the adapter's contribution before it's added to the frozen weights (the effective scale is roughly <code>alpha / r</code>). A frequent convention is to set <code>alpha = 2 × r</code> (e.g. r=16, alpha=32). If you change <code>r</code>, people often scale <code>alpha</code> with it to keep the effective strength similar. Treat the pair together rather than tuning each blindly.</p>
+        <p><strong>alpha</strong> scales the adapter's contribution before it's added to the frozen weights (in PEFT the multiplier is exactly <code>lora_alpha / r</code>, or <code>alpha / √r</code> with <code>use_rslora=True</code>). A frequent community convention is <code>alpha = 2 × r</code> (e.g. r=16, alpha=32) — a convention, not a rule: the QLoRA paper used r=64 with alpha=16. Because the multiplier is <code>alpha / r</code>, doubling <code>r</code> with <code>alpha</code> fixed halves the update's scale, which is why people often move <code>alpha</code> with <code>r</code>. Treat the pair together rather than tuning each blindly.</p>
 
         <h2>Target modules: where to put adapters</h2>
-        <p>You choose which weight matrices get an adapter — the <strong>target modules</strong>. The attention projections (the query/key/value/output matrices from Track 0) are the usual targets; adapting the feed-forward layers too increases capacity and cost. A minimal, common choice is the query and value projections; "all linear layers" is the more thorough, heavier option. Start minimal and expand only if quality demands it.</p>
+        <p>You choose which weight matrices get an adapter — the <strong>target modules</strong>. The candidates are the attention projections (the query/key/value/output matrices from Track 0) and the feed-forward (MLP) layers. The original 2021 LoRA paper adapted only the query and value projections, and that minimal choice is still common. Later work found it under-fits: the QLoRA paper (Dettmers et al. 2023) needed LoRA on <em>all linear layers</em> to match full fine-tuning, and "LoRA Without Regret" (Thinking Machines, 2025) found attention-only LoRA clearly behind MLP-only. Start from <code>target_modules="all-linear"</code>; treat q/v as the cheaper option when memory is tight on a large model. BrewSLM's default, <code>auto</code>, does exactly this: all linear layers for models up to 2B parameters, q/v above, because q/v alone under-fit SmolLM2-135M and Qwen2.5-1.5B in its own runs.</p>
 
         <h2>Dropout: light regularization</h2>
-        <p><strong>LoRA dropout</strong> randomly zeroes some of the adapter's activations during training, a mild regularizer that helps avoid overfitting on small datasets. A small value like <code>0.05</code> is typical; raise it slightly if you see overfitting, lower it toward 0 for larger datasets.</p>
+        <p><strong>LoRA dropout</strong> randomly zeroes some of the adapter's input during training (PEFT computes <code>lora_B(lora_A(dropout(x)))</code>), a mild regularizer that helps avoid overfitting on small datasets. A small value like <code>0.05</code> is typical; raise it slightly if you see overfitting, lower it toward 0 for larger datasets.</p>
 
         <h2>QLoRA: LoRA on a quantized base</h2>
-        <p><strong>QLoRA</strong> shrinks memory further by <strong>quantizing</strong> the frozen base model — storing its weights in 4 bits instead of 16 — while still training a normal LoRA adapter on top. Since the base is frozen anyway, quantizing it costs little quality but roughly quarters the memory the weights occupy, letting you fine-tune a model that wouldn't otherwise fit. The trade is slightly slower steps and a small quality risk. Reach for QLoRA when memory is the binding constraint.</p>
+        <p><strong>QLoRA</strong> shrinks memory further by <strong>quantizing</strong> the frozen base model — storing its weights in 4 bits instead of 16 — while still training a normal LoRA adapter on top. Since the base is frozen anyway, quantizing it costs little quality and cuts the quantized layers' memory to about a quarter, letting you fine-tune a model that wouldn't otherwise fit. Embeddings, the output head and norms usually stay in 16-bit, so small models save less (in SmolLM2-135M the tied embedding alone is about a fifth of the parameters). The trade is noticeably slower steps, since weights are dequantized on every matmul, and a small quality risk. Reach for QLoRA when memory is the binding constraint.</p>
         <div class="callout callout--key">
           <p class="callout__label">Sensible starting point</p>
-          <p><code>r = 16</code>, <code>alpha = 32</code>, dropout <code>0.05</code>, target the attention projections, full-precision base if it fits (QLoRA if not). Change one thing at a time and measure on the gold set.</p>
+          <p><code>r = 16</code>, <code>alpha = 32</code>, dropout <code>0.05</code>, target all linear layers (<code>"all-linear"</code>), a 16-bit base if it fits (QLoRA if not). Change one thing at a time and measure on the gold set.</p>
         </div>
         <p>These knobs spend memory. To set them — and the batch size — without crashing, you need to estimate the GPU memory a run will use, which is the next lesson.</p>
 
@@ -323,9 +323,9 @@
           <h2>Key terms</h2>
           <dl>
             <dt>LoRA rank (r)</dt><dd>The adapter's inner dimension / capacity; higher = more room (and more overfit risk). Common: 16.</dd>
-            <dt>LoRA alpha</dt><dd>Scales the adapter's contribution (~alpha/r); often set to 2×r.</dd>
-            <dt>Target modules</dt><dd>Which weight matrices get adapters (commonly the attention query/value projections).</dd>
-            <dt>LoRA dropout</dt><dd>Mild regularization zeroing some adapter activations during training (e.g. 0.05).</dd>
+            <dt>LoRA alpha</dt><dd>Scales the adapter's contribution by alpha/r (in PEFT); 2×r is a common convention.</dd>
+            <dt>Target modules</dt><dd>Which weight matrices get adapters. Start from all linear layers; q/v only is the original, cheaper choice.</dd>
+            <dt>LoRA dropout</dt><dd>Mild regularization applied to the adapter's input during training (e.g. 0.05).</dd>
             <dt>QLoRA</dt><dd>LoRA on a 4-bit quantized frozen base, to fit fine-tuning into far less memory.</dd>
             <dt>Quantization</dt><dd>Storing weights in fewer bits (e.g. 4) to save memory.</dd>
           </dl>
