@@ -67,6 +67,31 @@ class QuizChecks(unittest.TestCase):
         tracks = {rel.split("/")[1] for rel in mutated}
         self.assertEqual(len([e for e in errs if "is the longest" in e]), len(tracks), errs)
 
+    def test_correct_always_second_shortest_fails(self):
+        # The tell left after padding distractors: the answer is never the
+        # longest or shortest, but always the same middle rank.
+        def pad(q):
+            opts = [o + "." * (60 - len(o)) if i == q["answer"] else o for i, o in enumerate(q["options"])]
+            others = sorted(i for i in range(len(opts)) if i != q["answer"])
+            opts[others[0]] = opts[others[0]][:20] or "x"          # one shorter
+            for k in others[1:]:
+                opts[k] = opts[k] + " -" * 60 + str(k)               # the rest longer
+            return {**q, "options": opts}
+        mutated = {rel: [pad(q) for q in quiz] for rel, quiz in self.quizzes.items()}
+        for quiz in mutated.values():
+            for q in quiz:
+                self.assertEqual(S.length_rank(q), 1)
+        errs = S.quiz_balance_errors(mutated)
+        tracks = {rel.split("/")[1] for rel in mutated}
+        hits = [e for e in errs if "length rank 2" in e]
+        self.assertEqual(len(hits), len(tracks), errs)
+        self.assertEqual([e for e in errs if "is the longest" in e or "is the shortest" in e], [])
+
+    def test_length_rank_counts_strictly_shorter_options(self):
+        self.assertEqual(S.length_rank({"options": ["aa", "b", "ccc", "dd"], "answer": 0}), 1)
+        self.assertEqual(S.length_rank({"options": ["aa", "b", "ccc", "dd"], "answer": 2}), 3)
+        self.assertEqual(S.length_rank({"options": ["aa", "b", "ccc", "dd"], "answer": 1}), 0)
+
     def test_positional_option_fails(self):
         rel, quiz = next(iter(sorted(self.quizzes.items())))
         q = dict(quiz[0])
@@ -75,6 +100,14 @@ class QuizChecks(unittest.TestCase):
         self.assertTrue(any("by position" in e for e in S.quiz_shape_errors([q] + quiz[1:])))
         q2 = {**quiz[0], "explanation": "Option B is right because ..."}
         self.assertTrue(any("by position" in e for e in S.quiz_shape_errors([q2])))
+        for bad in ("All the above", "The first option", "Options 1 and 2", "The last one",
+                    "Neither of the options"):
+            q3 = {**quiz[0], "options": [bad if i != quiz[0]["answer"] else o
+                                         for i, o in enumerate(quiz[0]["options"])][:4]}
+            self.assertTrue(any("by position" in e for e in S.quiz_shape_errors([q3])), bad)
+        for fine in ("It is often not the last one you saved", "The judge scores each answer 1-5",
+                     "Retraining answers a different question"):
+            self.assertIsNone(S.POSITION_RE.search(fine), fine)
 
     def test_bad_answer_index_fails(self):
         q = {**next(iter(self.quizzes.values()))[0], "answer": 7}
@@ -124,6 +157,15 @@ class PageChecks(unittest.TestCase):
         self.assertIn(f"Answer: {S.LETTERS[wrong]}. ", rebuilt)
         self.assertEqual(rebuilt.count("<!-- site:quiz"), 1)
         self.assertEqual(S.build_quiz_static(rebuilt), rebuilt)
+
+    def test_second_quiz_on_a_page_fails(self):
+        text = self.pages[self.lesson]
+        m = S.QUIZ_JSON_RE.search(text)
+        section = text[m.start(1):text.index("</section>", m.end(4)) + len("</section>")]
+        doubled = text.replace(section, section + "\n" + section, 1)
+        errs = S.check_quizzes({self.lesson: S.Visible(self.lesson, doubled)})
+        self.assertTrue(any("2 quizzes on one page" in e for e in errs), errs)
+        self.assertFalse(any("quizzes on one page" in e for e in S.check_quizzes(self.vis(self.pages))))
 
     def test_certificate_manifest_must_list_every_lesson(self):
         rel = "academy/certificate.html"

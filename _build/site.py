@@ -773,6 +773,11 @@ QUIZ_REGION_RE = re.compile(r"[ \t]*<!--\s*site:quiz\b.*?<!--\s*/site:quiz\s*-->
 # shortest option, so the fix does not become the opposite tell.
 QUIZ_MAX_SLOT_SHARE = 0.40
 QUIZ_MAX_LONGEST_SHARE = 0.50
+# No length rank (shortest, 2nd-shortest, ..., longest) may hold more than this
+# share of a track's correct answers either: padding distractors until the
+# answer stops being the longest just moves the tell to the 2nd-longest slot.
+# A question's rank is the number of its options strictly shorter than the answer.
+QUIZ_MAX_LENGTH_RANK_SHARE = 0.40
 LETTERS = "ABCDEFGHIJ"
 
 
@@ -816,6 +821,23 @@ def build_quiz_static(text: str) -> str:
     return text[:end] + quiz_static(quiz, indent) + rest
 
 
+# Options are shuffled per visitor, so no text may point at an option by place.
+POSITION_RE = re.compile(
+    r"\b(?:all|none|both|either|neither) (?:of )?the (?:above|options)\b|"
+    r"\b(?:option|answer|choice)s? (?-i:[A-J])\b|\b(?-i:[A-J]) and (?-i:[A-J])\b|"
+    r"\b(?:options?|choices?) [1-9]\b|"
+    r"\bthe (?:first|second|third|fourth|last|final|previous|next) (?:option|answer|choice)\b|"
+    r"^\W*(?:the )?(?:first|last|previous|next) one\W*$", re.I)
+# "the last one" is common prose ("often not the last one"), so it counts only
+# as a whole option; "answer 1-5" is a score, so only "option(s)/choice(s) N" count.
+
+
+def length_rank(q: dict) -> int:
+    """0 if the correct option is the shortest, len-1 if it is the longest."""
+    n = len(q["options"][q["answer"]])
+    return sum(len(o) < n for o in q["options"])
+
+
 def quiz_shape_errors(quiz) -> list[str]:
     errs = []
     if not isinstance(quiz, list):
@@ -839,8 +861,7 @@ def quiz_shape_errors(quiz) -> list[str]:
             errs.append(f"Q{i} has no explanation")
         # Options are shuffled, so nothing may refer to a position.
         for s in opts + [q.get("explanation") or "", q.get("q") or ""]:
-            if re.search(r"\b(?:all|none|both|either|neither) of the (?:above|options)\b|"
-                         r"\b(?:option|answer|choice) [A-J]\b|\b[A-J] and [A-J]\b", s, re.I):
+            if POSITION_RE.search(s):
                 errs.append(f"Q{i} refers to an option by position: {s[:60]!r}")
                 break
     return errs
@@ -874,6 +895,15 @@ def quiz_balance_errors(quizzes: dict[str, list]) -> list[str]:
         if shortest / n > QUIZ_MAX_LONGEST_SHARE:   # the opposite tell, after over-correcting
             errs.append(f"quizzes in {track}: the correct option is the shortest in {shortest}/{n} questions "
                         f"(max {QUIZ_MAX_LONGEST_SHARE:.0%})")
+        ranks: dict[int, int] = {}
+        for q in qs:
+            ranks[length_rank(q)] = ranks.get(length_rank(q), 0) + 1
+        rhist = ", ".join(f"rank {k + 1}: {v}" for k, v in sorted(ranks.items()))
+        for k, v in sorted(ranks.items()):
+            if v / n > QUIZ_MAX_LENGTH_RANK_SHARE:
+                errs.append(f"quizzes in {track}: the correct option is length rank {k + 1} (1 = shortest) in "
+                            f"{v}/{n} questions (max {QUIZ_MAX_LENGTH_RANK_SHARE:.0%}; {rhist}); "
+                            f"lengthen or shorten options so the answer's length gives nothing away")
     return errs
 
 
@@ -1149,6 +1179,7 @@ class Visible(HTMLParser):
         self.crumbs: list[tuple[str, str | None]] = []
         self.level = self.time = self.published = None
         self.quiz_raw: str | None = None
+        self.quiz_count = 0   # the build reads only the first quiz; check fails on a second
         self.faq: list[tuple[str, str]] = []
         self.terms: list[tuple[str, str, str]] = []
         self.cards: list[tuple[str, str | None]] = []
@@ -1280,7 +1311,9 @@ class Visible(HTMLParser):
             elif m:
                 self.time = m.group(2)
         elif k == "quiz":
-            self.quiz_raw = raw
+            self.quiz_count += 1
+            if self.quiz_raw is None:
+                self.quiz_raw = raw
         elif k == "summary":
             self._summary = text
         elif k == "details":
@@ -1632,10 +1665,13 @@ def visible_quizzes(vis: dict) -> dict[str, list]:
 
 
 def check_quizzes(vis: dict) -> list[str]:
-    """Shape of every quiz, and the per-track answer-slot and longest-option gates."""
+    """Shape of every quiz, one quiz per page, and the per-track answer-slot,
+    longest-option and length-rank gates."""
     quizzes = visible_quizzes(vis)
     errs = [f"{rel}: quiz {e}" for rel, q in sorted(quizzes.items()) for e in quiz_shape_errors(q)]
     errs += [f"{rel}: quiz is empty" for rel, q in sorted(quizzes.items()) if not q]
+    errs += [f"{rel}: {v.quiz_count} quizzes on one page; the build and rebalance read only the first (want 1)"
+             for rel, v in sorted(vis.items()) if v.quiz_count > 1]
     return errs + quiz_balance_errors({r: q for r, q in quizzes.items() if r.startswith("academy/")})
 
 
