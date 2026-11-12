@@ -297,7 +297,7 @@
           </div>
         </header>
 
-        <p>Tool-use — also called function calling — is one of the SLM use cases where small fine-tuned models punch hardest. The task is narrow ("given a request and a tool catalogue, pick the right tool and fill in its arguments"), the output is structured JSON, and a fine-tuned 1B model often beats a much bigger general model. This lesson is how to train one.</p>
+        <p>Tool-use — also called function calling — is one of the SLM use cases where small fine-tuned models punch hardest. The task is narrow ("given a request and a tool catalogue, pick the right tool and fill in its arguments"), the output is structured JSON, and a fine-tuned small model can rival much bigger general models on a fixed catalogue — measure it on your own tools. This lesson is how to train one.</p>
 
         <h2>Why tool-use suits an SLM</h2>
         <p>Three properties of tool routing fit small models well:</p>
@@ -314,7 +314,8 @@
           <li><strong>User</strong>: the natural-language request.</li>
           <li><strong>Assistant</strong>: a JSON object — either a tool call (<code>{"tool": "...", "arguments": {...}}</code>) or the explicit no-tool path (<code>{"tool": "no_tool", "reason": "..."}</code>).</li>
         </ul>
-        <pre class="code-block"><code>{
+        <pre class="code-block"><code># a Python literal: the parenthesised strings join into one system message
+{
   "messages": [
     {
       "role": "system",
@@ -382,7 +383,7 @@ def parse_tool_call(text: str) -&gt; ToolCall | None:
         obj = cls(**data)
         _ARG_MODELS[tool](**obj.arguments)        # validate arguments shape
         return obj
-    except (json.JSONDecodeError, ValidationError, TypeError):
+    except (json.JSONDecodeError, ValidationError, TypeError, AttributeError):
         return None</code></pre>
 
         <h2>The no-tool path is training data, not an exception</h2>
@@ -412,19 +413,26 @@ def parse_tool_call(text: str) -&gt; ToolCall | None:
         <p>A useful ratio is roughly <strong>10–20% no-tool examples</strong> in the training set. Less and the bias toward "always call something" wins; more and the model starts hedging on real tool calls.</p>
 
         <h2>Train: same SFTTrainer pattern</h2>
-        <p>The training loop is Lesson 2.10 with this data shape. Greedy decoding at inference (Lesson 1.19) — variety isn't a virtue in a router.</p>
-        <pre class="code-block"><code>from datasets import Dataset
+        <p>The training loop is Lesson 2.10 with this data shape, with one change: the rows are split into a conversational <strong>prompt</strong> (system + user turns) and <strong>completion</strong> (the assistant's JSON). TRL's <code>completion_only_loss</code> works only on prompt-completion data; on a plain <code>messages</code> dataset it is silently ignored and the model trains on the whole tool catalogue and the user turn too. Print the scored tokens of one batch before training, as below. Greedy decoding at inference (Lesson 1.19) — variety isn't a virtue in a router.</p>
+        <pre class="code-block"><code>import torch
+from datasets import Dataset
 from trl import SFTConfig, SFTTrainer
 from peft import LoraConfig
 
-ds = Dataset.from_list(raw_routing_data)          # ~80% positives, ~20% no_tool
+def to_prompt_completion(row):
+    # conversational prompt-completion: the loss covers only the assistant turn
+    return {"prompt": row["messages"][:-1], "completion": row["messages"][-1:]}
+
+ds = Dataset.from_list(raw_routing_data).map(          # ~80% positives, ~20% no_tool
+    to_prompt_completion, remove_columns=["messages"])
 
 lora = LoraConfig(
     r=16, lora_alpha=32, lora_dropout=0.05,
-    target_modules=["q_proj", "v_proj"],
+    target_modules="all-linear",                      # every linear layer (QLoRA's finding)
     task_type="CAUSAL_LM",
 )
 
+use_bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
 trainer = SFTTrainer(
     model=model,
     args=SFTConfig(
@@ -434,59 +442,67 @@ trainer = SFTTrainer(
         learning_rate=2e-4,
         num_train_epochs=3,
         lr_scheduler_type="cosine",
-        warmup_ratio=0.03,
-        bf16=True,
+        warmup_steps=0.03,                            # a float below 1 = fraction of steps
+        bf16=use_bf16,
+        fp16=torch.cuda.is_available() and not use_bf16,
         logging_steps=5,
         save_strategy="epoch",
-        max_seq_length=1024,
-        completion_only_loss=True,
+        max_length=1024,
+        completion_only_loss=True,                    # the default for prompt-completion data
         report_to=[],
     ),
     train_dataset=ds,
     processing_class=tok,
     peft_config=lora,
 )
+
+# Check the mask before training: only the assistant's JSON should be scored.
+batch = next(iter(trainer.get_train_dataloader()))
+print(tok.decode(batch["input_ids"][0][batch["labels"][0] != -100]))
+
 trainer.train()
 trainer.save_model("tool-router/adapter")</code></pre>
 
         <h2>Evaluate: the two-number report (tool-flavoured)</h2>
-        <p>Same discipline as Lesson 2.13's structured-output eval, retargeted. The two numbers that matter:</p>
+        <p>Same discipline as Lesson 2.13's structured-output eval, retargeted. The two headline numbers:</p>
         <ol>
           <li><strong>Valid-tool-call rate</strong> — fraction of model outputs that parse as JSON, name a tool from the catalogue (including <code>no_tool</code>), and have arguments matching that tool's schema.</li>
-          <li><strong>Argument-match accuracy</strong> on valid calls — fraction of valid calls where the arguments match the gold for the same request.</li>
+          <li><strong>Argument-match accuracy</strong> — over valid calls that picked the correct real tool (not <code>no_tool</code>), the fraction whose arguments match the gold. Counting wrong-tool or no-tool outputs in the denominator would mix tool choice into argument quality. The code uses exact dict equality, which is stricter than "the call would work".</li>
         </ol>
         <pre class="code-block"><code>def eval_router(model, tok, gold: list[dict]) -&gt; dict:
     """gold rows: {"prompt": "...", "target": {"tool": "...", "arguments": {...}}}"""
-    valid_calls = 0
-    arg_matches = 0
-    tool_matches = 0
-    no_tool_calls_wrongly_made = 0       # false-positive routing
+    valid_calls = tool_matches = 0
+    arg_scored = arg_matches = 0          # valid calls that picked the right real tool
+    gold_no_tool = false_tool_calls = 0   # rows where the gold answer is no_tool
     for ex in gold:
-        text = predict(model, tok, ex["prompt"])
-        parsed = parse_tool_call(text)
+        target = ex["target"]
+        if target["tool"] == "no_tool":
+            gold_no_tool += 1
+        parsed = parse_tool_call(predict(model, tok, ex["prompt"]))
         if parsed is None:
             continue                      # invalid output
         valid_calls += 1
-        target = ex["target"]
         if parsed.tool == target["tool"]:
             tool_matches += 1
-            if parsed.tool != "no_tool" and parsed.arguments == target["arguments"]:
-                arg_matches += 1
+            if parsed.tool != "no_tool":
+                arg_scored += 1
+                # exact dict equality: stricter than "the call would work"
+                arg_matches += parsed.arguments == target["arguments"]
         elif target["tool"] == "no_tool":
-            no_tool_calls_wrongly_made += 1
+            false_tool_calls += 1         # called a real tool when none fits
 
     n = len(gold)
     return {
         "valid_tool_call_rate":     valid_calls / n,
         "tool_name_accuracy":       tool_matches / n,
-        "argument_match_accuracy":  arg_matches / max(1, valid_calls),
-        "false_tool_call_rate":     no_tool_calls_wrongly_made / n,
+        "argument_match_accuracy":  arg_matches / max(1, arg_scored),
+        "false_tool_call_rate":     false_tool_calls / max(1, gold_no_tool),
     }</code></pre>
-        <p>Report all four. The first two tell you whether the router routes; the third tells you whether the arguments are right; the fourth tells you whether the no-tool path is working.</p>
+        <p>Report the two headline numbers with two diagnostics beside them: tool-name accuracy (does it pick the right tool?) and the false-tool-call rate, measured over the rows whose gold answer is <code>no_tool</code> (does the no-tool path work?).</p>
 
         <div class="callout callout--warning">
           <p class="callout__label">Honest beat — the right kind of failure</p>
-          <p>A router that fails by emitting <strong>invalid JSON</strong> is a bug your client (the agent loop) can detect and retry. A router that fails by emitting <strong>valid JSON for the wrong tool with plausible arguments</strong> is a silent corruption that calls real systems with real consequences. <strong>Prefer parse failures to wrong calls.</strong> If you have to trade, train and decode toward the more conservative behaviour: tight temperature, low <code>repetition_penalty</code>, and explicit no_tool examples for ambiguous prompts.</p>
+          <p>A router that fails by emitting <strong>invalid JSON</strong> is a bug your client (the agent loop) can detect and retry. A router that fails by emitting <strong>valid JSON for the wrong tool with plausible arguments</strong> is a silent corruption that calls real systems with real consequences. <strong>Prefer parse failures to wrong calls.</strong> If you have to trade, train and decode toward the more conservative behaviour: greedy decoding, <code>repetition_penalty</code> left at 1.0 (a penalty above 1 pushes against the repeated quotes, braces and keys JSON needs, and a model's <code>generation_config.json</code> can set one silently), and explicit no_tool examples for ambiguous prompts.</p>
         </div>
 
         <h2>Inference — parse, validate, call</h2>
@@ -509,20 +525,20 @@ result = TOOLS[call.tool](**call.arguments)</code></pre>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>Tool-use fine-tuning is a structured-output SFT with three deliberate features: <strong>tool schemas in the system message</strong>, <strong>explicit <code>no_tool</code> negatives</strong> (10–20% of the training set), and a <strong>two-number eval</strong> (valid-tool-call rate + argument-match accuracy on the valid calls). A small router fine-tune beats a much bigger general model on latency and cost, every call, forever — provided you teach the no-tool path.</p>
+          <p>Tool-use fine-tuning is a structured-output SFT with three deliberate features: <strong>tool schemas in the system message</strong>, <strong>explicit <code>no_tool</code> negatives</strong> (10–20% of the training set), and a <strong>two-number eval</strong> (valid-tool-call rate + argument-match accuracy on valid calls with the correct tool), with tool-name accuracy and false-tool-call rate as diagnostics. A small router fine-tune wins on latency and cost, every call — provided you teach the no-tool path and measure its accuracy.</p>
         </div>
 
-        <p>That ends the v2 expansion of Track 4. You can now build a production-grade SLM workflow end-to-end: from picking a base, through SFT and the by-hand pipeline, through the platform, into distillation, preference tuning, quantization, multi-task, serving, observability with a feedback loop, and tool-use routing. Pick a project and ship it.</p>
+        <p>Next: structured pruning, for when quantization and distillation still leave the model too big or too slow.</p>
 
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
             <dt>Tool call</dt><dd>A structured JSON output naming a tool (function) from a fixed catalogue and supplying validated arguments for it.</dd>
-            <dt>Function calling</dt><dd>Synonym for tool-use; the term used by OpenAI and other vendors for their JSON-output mode.</dd>
+            <dt>Function calling</dt><dd>Synonym for tool-use; the term many model APIs use for their structured tool-call output.</dd>
             <dt>Tool schema</dt><dd>A description (name + argument schema) of a callable function the model can target; Pydantic models are a clean way to declare them.</dd>
             <dt>No-tool path</dt><dd>An explicit assistant output (<code>{"tool":"no_tool","reason":"..."}</code>) that says "no available tool fits"; trained on negative examples in the SFT data.</dd>
             <dt>Valid-tool-call rate</dt><dd>Fraction of outputs that parse as JSON, name a real tool, and have arguments matching that tool's schema.</dd>
-            <dt>Argument-match accuracy</dt><dd>On the parses that succeed, the fraction with arguments matching the gold; the second of the two-number report.</dd>
+            <dt>Argument-match accuracy</dt><dd>Over valid calls that picked the correct real tool, the fraction with arguments matching the gold; the second of the two-number report.</dd>
             <dt>False-tool-call rate</dt><dd>Fraction of inputs where the gold says no_tool but the model called a real tool; the most damaging routing failure mode.</dd>
           </dl>
         </section>
