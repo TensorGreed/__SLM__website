@@ -308,18 +308,22 @@
 
         <h2>DPO: optimize the preference directly</h2>
         <p>Classic RLHF trained a separate reward model and then optimized against it with reinforcement learning — powerful but fiddly (Track 1's objectives lesson). <strong>Direct Preference Optimization (DPO)</strong> skips the reward model: it derives a loss directly from the (chosen, rejected) pairs that <strong>increases the model's relative likelihood of the chosen response over the rejected one</strong>. It uses a frozen copy of the starting model — the <strong>reference model</strong> — as an anchor, so the policy improves preferences without drifting arbitrarily far from where it started.</p>
-        <pre class="code-block"><code>recipe:
-  method: dpo            # routes to the AlignmentHandler
-  beta: 0.1             # how hard to push toward chosen vs stay near the reference
-  data: preference       # rows of {prompt, chosen, rejected}</code></pre>
-        <p>The <code>beta</code> knob controls how aggressively DPO moves toward the preferred responses versus staying close to the reference model — too high and the model overfits the preferences and degrades; too low and it barely moves.</p>
+        <pre class="code-block"><code># BrewSLM recipe "DPO Fast Start" (recipe.alignment.dpo.fast), main keys
+training_mode: dpo
+alignment_beta: 0.1        # DPO's β: higher = held closer to the reference
+learning_rate: 1e-5
+use_lora: true
+num_epochs: 2
+# required row fields: prompt, chosen, rejected</code></pre>
+        <p><strong>β</strong> (<code>alignment_beta</code>) sets how strongly DPO is held to the reference model. It scales the implicit KL penalty: the DPO optimum is π* ∝ π_ref · exp(r/β) (Rafailov et al., 2023), and TRL's own docs say "higher β means less deviation from the reference model". So a <strong>higher β</strong> (e.g. 0.5) means smaller, safer moves; a <strong>lower β</strong> (e.g. 0.01–0.05) lets the policy move further from the reference, which shows an effect sooner but is easier to over-optimize. 0.1 is the common default.</p>
 
         <h2>ORPO: preference in a single stage</h2>
         <p>The usual pipeline is two stages: SFT first, then DPO. <strong>ORPO (Odds Ratio Preference Optimization)</strong> folds them into one — it adds a preference term to the SFT loss, so a single training run both teaches the task and aligns to preferences, <em>without a separate reference model or a separate SFT stage</em>. Simpler pipeline, one pass over the data.</p>
+        <p>BrewSLM's "ORPO Safe Start" recipe (<code>recipe.alignment.orpo.safe</code>) reuses the same <code>alignment_beta</code> key, but for ORPO it means something else: TRL reads it as ORPO's <strong>λ</strong>, the weight on the odds-ratio preference term relative to the SFT loss — not a pull toward a reference model, since ORPO has none.</p>
 
         <div class="callout callout--note">
           <p class="callout__label">On the platform</p>
-          <p>Both route through the <strong>AlignmentHandler</strong> (Track 3's dispatcher) and score with an alignment metric like preference margin. And preflight will block a DPO run if the preference-training dependency is missing — a typed blocker, not a mid-run crash.</p>
+          <p>Both are scored by the <strong>AlignmentHandler</strong> (Track 3's evaluation dispatcher). Its metric is a <strong>similarity proxy</strong>: the token-F1 of the model's output against <code>chosen</code> and against <code>rejected</code>. A row counts as preference-correct when the output is closer to <code>chosen</code>, and the mean gap is reported as the alignment margin. That is not DPO's reward margin (the β-scaled log-probability gap), which BrewSLM does not compute today, so treat the number as a rough signal. And preflight will block a DPO run if the preference-training dependency is missing — a typed blocker, not a mid-run crash.</p>
         </div>
 
         <h2>When to reach for preference tuning</h2>
@@ -331,7 +335,7 @@
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>Preference tuning optimizes <strong>chosen over rejected</strong>, not a single right answer. <strong>DPO</strong> does this directly (no reward model) against a frozen <strong>reference</strong>, with <code>beta</code> controlling how far it moves; <strong>ORPO</strong> folds preference into the SFT loss for a one-stage run. Reach for them when 'better' is a judgment, not a label.</p>
+          <p>Preference tuning optimizes <strong>chosen over rejected</strong>, not a single right answer. <strong>DPO</strong> does this directly (no reward model) against a frozen <strong>reference</strong>, with <code>beta</code> setting how tightly it is held there (higher β = smaller moves); <strong>ORPO</strong> folds preference into the SFT loss for a one-stage run. Reach for them when 'better' is a judgment, not a label.</p>
         </div>
 
         <section class="key-terms">
@@ -340,9 +344,9 @@
             <dt>preference data</dt><dd>(prompt, chosen, rejected) triples: two responses with one marked better.</dd>
             <dt>DPO</dt><dd>Direct Preference Optimization — derives a loss from preference pairs directly, no separate reward model.</dd>
             <dt>reference model</dt><dd>A frozen copy of the starting model DPO anchors to, so the policy doesn't drift arbitrarily.</dd>
-            <dt>beta</dt><dd>DPO's knob for how aggressively to move toward chosen responses vs stay near the reference.</dd>
+            <dt>beta</dt><dd>The strength of DPO's KL anchor to the reference model: higher β keeps the policy closer to the reference, lower β lets it move further. (In BrewSLM's ORPO recipe the same key is ORPO's λ.)</dd>
             <dt>ORPO</dt><dd>Odds Ratio Preference Optimization — adds a preference term to the SFT loss for single-stage alignment, no reference model.</dd>
-            <dt>AlignmentHandler</dt><dd>The BrewSLM task handler that runs preference objectives and scores alignment metrics.</dd>
+            <dt>AlignmentHandler</dt><dd>The BrewSLM evaluation handler for DPO/ORPO models; scores outputs by token-F1 similarity to chosen vs rejected (a proxy, not the DPO reward margin).</dd>
           </dl>
         </section>
 
