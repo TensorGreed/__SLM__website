@@ -18,7 +18,7 @@
     <meta property="og:image:alt" content="BrewSLM logo" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Production feedback loop — BrewSLM Academy" />
-    <meta name="twitter:description" content="Log → tag → augment → retrain, with runnable code and the privacy + cost honest beat." />
+    <meta name="twitter:description" content="Log → tag → augment → retrain, with runnable code and the privacy and cost trade-offs." />
     <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
     <meta name="twitter:image:alt" content="BrewSLM logo" />
     <script defer src="../../assets/analytics.js"></script>
@@ -86,13 +86,13 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "A regression alert tells you something got worse. The feedback loop adds…",
-          "text": "A regression alert tells you something got worse. The feedback loop adds…",
+          "name": "An input-drift signal tells you the traffic has moved. The feedback loop adds…",
+          "text": "An input-drift signal tells you the traffic has moved. The feedback loop adds…",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "A faster regression check"
+              "text": "A faster drift check"
             },
             {
               "@type": "Answer",
@@ -111,7 +111,7 @@
             "text": "Corrected rows to retrain on",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The alert is the alarm; logged, tagged and corrected production rows are what the next retrain learns from. Without them, retraining has nothing new to learn."
+              "text": "The signal is the alarm; logged, tagged and corrected production rows are what the next retrain learns from. Without them, retraining has nothing new to learn."
             }
           }
         },
@@ -152,8 +152,8 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Rows logged in the hours before a regression alert are tagged drift_window. How should you use them?",
-          "text": "Rows logged in the hours before a regression alert are tagged drift_window. How should you use them?",
+          "name": "Rows logged in the hours before an input-drift alert are tagged drift_window. How should you use them?",
+          "text": "Rows logged in the hours before an input-drift alert are tagged drift_window. How should you use them?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
@@ -185,8 +185,8 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "You have a regression but only 12 corrected rows. Best move?",
-          "text": "You have a regression but only 12 corrected rows. Best move?",
+          "name": "You have an input-drift signal but only 12 corrected rows. Best move?",
+          "text": "You have an input-drift signal but only 12 corrected rows. Best move?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
@@ -297,7 +297,7 @@
           </div>
         </header>
 
-        <p>Lesson 4.9 ended with a question: a regression alert or an input-drift signal tells you <em>that</em> something got worse — what do you do about it? You retrain. Retrain on what? That's the question this lesson answers. The "what" is production rows you collected, tagged, and curated. Without that data-collection loop, drift is a fire alarm with no water nearby.</p>
+        <p>Lesson 4.9 ended with a question: a regression alert or an input-drift signal tells you <em>that</em> something got worse — what do you do about it? If the cause is input drift, you retrain; a regression on the frozen answer key usually means a serving fix first. Retrain on what? That's the question this lesson answers. The "what" is production rows you collected, tagged, and curated. Without that data-collection loop, drift is a fire alarm with no water nearby.</p>
 
         <h2>Drift detects; the loop supplies</h2>
         <p>Lesson 4.9 separated two signals. BrewSLM's drift check re-runs your frozen gold set (the <strong>answer key</strong> under <strong>Data → Labels</strong>) against the deployed model, so it catches <em>deployment</em> regressions; it can't see new kinds of traffic, because those aren't in a set curated months ago. <strong>Input drift</strong> shows up only in what production actually receives — input monitoring and freshly labelled samples of recent traffic. Either way, the feedback loop's job is to make sure that, when you need to retrain, you have <em>recent real inputs the model got wrong</em>, with corrections, ready for the next training round.</p>
@@ -356,7 +356,7 @@ async def chat(req: Request):
         await asyncio.to_thread(write_log, entry)   # file write off the event loop
     return {"response": response, "request_id": entry.request_id}</code></pre>
 
-        <h2>Step 2: the privacy + cost honest beat</h2>
+        <h2>Step 2: privacy and cost</h2>
         <p>Two things make naive "log everything" wrong in production:</p>
         <ul>
           <li><strong>Privacy.</strong> Inputs and outputs contain user data. Log raw strings and you've created a privacy liability. <strong>Redact PII at log time</strong>: emails, phone numbers, addresses, government IDs. Redact the model's <em>response</em> too — outputs echo PII all the time. Replace user identifiers with a <em>keyed</em> hash (HMAC with a secret): a plain hash of a short id can be reversed by hashing guesses. A keyed hash is still personal data (pseudonymised, not anonymous), so set a retention period and tell users what you log.</li>
@@ -480,15 +480,15 @@ def logs_to_sft(log_path: str, tags: set[str], gold_corrections: dict[str, str])
           <script type="application/json">
             [
               {
-                "q": "A regression alert tells you something got worse. The feedback loop adds…",
+                "q": "An input-drift signal tells you the traffic has moved. The feedback loop adds…",
                 "options": [
-                  "A faster regression check",
+                  "A faster drift check",
                   "Corrected rows to retrain on",
                   "A larger hyperparameter sweep for the retrain",
                   "A second gold set to cross-check the first"
                 ],
                 "answer": 1,
-                "explanation": "The alert is the alarm; logged, tagged and corrected production rows are what the next retrain learns from. Without them, retraining has nothing new to learn."
+                "explanation": "The signal is the alarm; logged, tagged and corrected production rows are what the next retrain learns from. Without them, retraining has nothing new to learn."
               },
               {
                 "q": "Why redact PII at log time rather than later?",
@@ -502,7 +502,7 @@ def logs_to_sft(log_path: str, tags: set[str], gold_corrections: dict[str, str])
                 "explanation": "Once raw user data is written you hold a privacy liability. Redact before writing — both the prompt and the model's response, since outputs often echo PII. An unsalted hash of a user id is still personal data; use a keyed HMAC."
               },
               {
-                "q": "Rows logged in the hours before a regression alert are tagged drift_window. How should you use them?",
+                "q": "Rows logged in the hours before an input-drift alert are tagged drift_window. How should you use them?",
                 "options": [
                   "As a pool to sample for review",
                   "As confirmed failures to train on directly",
@@ -513,7 +513,7 @@ def logs_to_sft(log_path: str, tags: set[str], gold_corrections: dict[str, str])
                 "explanation": "Rows near an alert aren't known failures — most may be fine. Sample them for review alongside sharper signals (user negative feedback, low confidence, OOD score, judge flags) and label what you find."
               },
               {
-                "q": "You have a regression but only 12 corrected rows. Best move?",
+                "q": "You have an input-drift signal but only 12 corrected rows. Best move?",
                 "options": [
                   "Retrain immediately on the 12 rows alone",
                   "Collect more, then retrain with replay",
@@ -529,14 +529,14 @@ def logs_to_sft(log_path: str, tags: set[str], gold_corrections: dict[str, str])
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">A regression alert tells you something got worse. The feedback loop adds…</p>
+              <li><p class="quiz__q-text">An input-drift signal tells you the traffic has moved. The feedback loop adds…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A faster regression check</li>
+                  <li>A faster drift check</li>
                   <li>Corrected rows to retrain on</li>
                   <li>A larger hyperparameter sweep for the retrain</li>
                   <li>A second gold set to cross-check the first</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Corrected rows to retrain on</strong> The alert is the alarm; logged, tagged and corrected production rows are what the next retrain learns from. Without them, retraining has nothing new to learn.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Corrected rows to retrain on</strong> The signal is the alarm; logged, tagged and corrected production rows are what the next retrain learns from. Without them, retraining has nothing new to learn.</p></details></li>
               <li><p class="quiz__q-text">Why redact PII at log time rather than later?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Redacting later changes the training loss</li>
@@ -545,7 +545,7 @@ def logs_to_sft(log_path: str, tags: set[str], gold_corrections: dict[str, str])
                   <li>Raw PII on disk is already the liability</li>
                 </ol>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Raw PII on disk is already the liability</strong> Once raw user data is written you hold a privacy liability. Redact before writing — both the prompt and the model's response, since outputs often echo PII. An unsalted hash of a user id is still personal data; use a keyed HMAC.</p></details></li>
-              <li><p class="quiz__q-text">Rows logged in the hours before a regression alert are tagged drift_window. How should you use them?</p>
+              <li><p class="quiz__q-text">Rows logged in the hours before an input-drift alert are tagged drift_window. How should you use them?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>As a pool to sample for review</li>
                   <li>As confirmed failures to train on directly</li>
@@ -553,7 +553,7 @@ def logs_to_sft(log_path: str, tags: set[str], gold_corrections: dict[str, str])
                   <li>As rows to drop before the next retrain</li>
                 </ol>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. As a pool to sample for review</strong> Rows near an alert aren't known failures — most may be fine. Sample them for review alongside sharper signals (user negative feedback, low confidence, OOD score, judge flags) and label what you find.</p></details></li>
-              <li><p class="quiz__q-text">You have a regression but only 12 corrected rows. Best move?</p>
+              <li><p class="quiz__q-text">You have an input-drift signal but only 12 corrected rows. Best move?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Retrain immediately on the 12 rows alone</li>
                   <li>Collect more, then retrain with replay</li>

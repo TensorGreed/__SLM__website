@@ -308,8 +308,9 @@
         </div>
 
         <h2>Offline distillation: run the teacher once</h2>
-        <p>The teacher is big and slow. Running it on every training step (online distillation) is expensive. BrewSLM does <strong>offline</strong> distillation: run the teacher across your dataset <em>once</em>, save what it produced, then train the student against that saved file as many times as you like. The capture step is a background Job:</p>
-        <pre class="code-block"><code>POST /api/projects/&lt;id&gt;/distillation/capture     → starts a background Job
+        <p>The teacher is big and slow. Running it on every training step (online distillation) is expensive. BrewSLM does <strong>offline</strong> distillation: run the teacher across your dataset <em>once</em>, save what it produced, then train the student against that saved file as many times as you like. The capture step runs as an in-memory background task (not a row in the <code>jobs</code> table, so it doesn't show in the notification bell); you poll it for progress:</p>
+        <pre class="code-block"><code>POST /api/projects/&lt;id&gt;/distillation/capture     → starts the capture task (202)
+GET  /api/projects/&lt;id&gt;/distillation/tasks/&lt;task_id&gt;  → its progress + result
 # writes one row per example to:
 #   data/projects/&lt;id&gt;/distillation/teacher_capture.jsonl</code></pre>
         <h2>Capture top-k logprobs, not the whole vocabulary</h2>

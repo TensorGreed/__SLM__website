@@ -320,6 +320,7 @@
           <li><strong>Hessian-based / OBD / WoodFisher.</strong> Use second-order curvature information (Optimal Brain Damage / Optimal Brain Surgeon style, or the WoodFisher Fisher-matrix approximation). Most accurate signal per unit, considerably more expensive to compute, and finicky to implement correctly. Worth it when you're squeezing the last few percent of quality out of a heavily-pruned model.</li>
         </ul>
         <p>For most SLM pruning work, gradient × weight on a calibration set of 256–2,048 examples drawn from your real distribution is the right starting point. The calibration set matters more than the scoring formula — score on data that looks like deployment and you'll keep the units that matter for deployment.</p>
+        <p>Two well-known one-shot methods sit between these families: <strong>SparseGPT</strong> (Frantar &amp; Alistarh, 2023) prunes with an approximate second-order weight update, and <strong>Wanda</strong> (Sun et al., 2023) scores each weight by its magnitude times the norm of its input activation on the calibration set. Both prune without retraining, mostly in unstructured or 2:4 form, and hold up well around 50% sparsity; at higher sparsity they reduce, but don't remove, the need for a recovery pass.</p>
 
         <h2>The prune-to-target, then recover workflow</h2>
         <p>The workflow has four steps:</p>
@@ -354,13 +355,13 @@ trainer.train(); trainer.save_model("checkpoints/pruned-4_5B-recovered")</code><
         <h2>When it's worth it for SLMs</h2>
         <p>Rarely. The honest framing: SLMs are already small. The first compression knobs to turn are quantization (Lesson 4.6) and distillation into a smaller student (Lessons 4.2–4.4), both of which usually deliver larger wall-clock wins with smaller quality cost than pruning does. Pruning is the third lever, and it earns its place only when the first two have been pushed and the budget still isn't met.</p>
         <ul>
-          <li><strong>A 7B–15B model cut by roughly half</strong> with structured pruning + recovery is a believable target: Sheared-LLaMA (Xia et al., 2023) pruned LLaMA2-7B to 2.7B and 1.3B with continued pretraining, and Minitron (Muralidharan et al., 2024) pruned 15B to 8B and 4B, and Llama-3.1-8B to 4B, with distillation-based recovery. You'll lose a measurable amount of quality even with a careful recovery pass — usually a few points on aggregate benchmarks — but the speed and memory wins are real.</li>
+          <li><strong>A 7B–15B model cut by half or more</strong> with structured pruning + recovery is a believable target: Sheared-LLaMA (Xia et al., 2023) pruned LLaMA2-7B to 2.7B and 1.3B with continued pretraining, Minitron (Muralidharan et al., 2024) pruned a 15B model to 8B and 4B, and its follow-up (Sreenivas et al., 2024, arXiv 2408.11796) pruned Llama-3.1-8B to 4B, both with distillation-based recovery. You'll lose a measurable amount of quality even with a careful recovery pass — usually a few points on aggregate benchmarks — but the speed and memory wins are real.</li>
           <li><strong>Pruning a 135M model is almost never worth it.</strong> The remaining capacity is too small to absorb the damage; the recovery pass struggles; the wall-clock saving is a millisecond no one will notice. Quantize it to 4-bit and move on.</li>
           <li><strong>If 4-bit quantization already meets your latency budget, skip pruning entirely.</strong> The compounded engineering cost — score, prune, recover, re-evaluate, re-quantize — is rarely justified by the marginal gains over a clean quantized model.</li>
         </ul>
 
         <div class="callout callout--warning">
-          <p class="callout__label">Honest beat — pruning without recovery training tanks quality fast</p>
+          <p class="callout__label">The caveat — pruning without recovery training tanks quality fast</p>
           <p>Aggressive structured pruning — say, dropping 25–40% of heads, layers, or channels — can cost a large share of general-capability benchmark accuracy (MMLU, HellaSwag, the usual suspects) <em>before</em> the recovery pass — measure it on yours, since the size of the drop varies a lot by model and method. The recovery pass is what makes the technique competitive; it is also where most of the compute and data cost lives. If you cannot afford the recovery training — the GPU hours, the curated dataset, the eval loop to confirm the rebound — <strong>do not prune</strong>. Ship the quantized un-pruned model and revisit when you have the budget. A correctly quantized 7B will beat a badly recovered pruned 4.5B every time.</p>
         </div>
 

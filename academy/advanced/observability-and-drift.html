@@ -311,15 +311,17 @@
         </ul>
 
         <h2>BrewSLM's drift check: a deployment regression check</h2>
-        <p>BrewSLM's <strong>Ship → Deploy</strong> stage (Track 3) has a <strong>drift check</strong> on every served version. Despite the name, it is a <strong>deployment regression check</strong>: it exact-match-scores the same gold rows — the <strong>answer key</strong> under <strong>Data → Labels</strong>, up to 500 of them — against the deployed model and compares the pass rate with the baseline eval recorded at training time. You supply the live model's predictions — bring your own inference client and paste them into the check's form (the API and CLI can also call an endpoint URL themselves, as a proof of concept) — and run it on whatever cadence you choose; nothing schedules it for you.</p>
+        <p>BrewSLM's <strong>Ship → Deploy</strong> stage (Track 3) has a <strong>drift check</strong> on every served version. Despite the name, it is a <strong>deployment regression check</strong>: it exact-match-scores the same gold rows — the <strong>answer key</strong> under <strong>Data → Labels</strong>, the first 50 rows by default (up to 500 via the API) — against the deployed model and compares the pass rate with the baseline: the latest exact-match eval of the run behind the deployment. You supply the live model's predictions — bring your own inference client and paste them into the check's form (the API and CLI can also call an endpoint URL themselves, as a proof of concept) — and run it on whatever cadence you choose; nothing schedules it for you.</p>
         <p>It flags drift when <code>|current − baseline| &gt; tolerance</code>, with a default tolerance of <strong>0.05</strong> in absolute pass rate. That rule is <strong>two-sided</strong> (an improvement also fires) and is a fixed threshold, not a significance test. Because the rows are frozen, a change means the deployed model now answers them differently: a wrong artifact, a quantized build, a different chat template or decoding settings, a provider change. That is exactly what it is good at catching.</p>
         <pre class="code-block"><code># drift check — Ship → Deploy → a served version → "Run drift check"
 exact-match the answer key against the deployed model
-  baseline (training eval):  pass rate 0.93
+  baseline (latest run eval): pass rate 0.93
   deployed today:            pass rate 0.86   → |Δ| = 0.07 &gt; 0.05 → flagged
 # the result is stored with the check; deployment_smoke_failed and
-# deployment_promote_blocked are the promote-time signals</code></pre>
-        <p>Read a small Δ with care. On 100 rows, 0.93 → 0.86 can be noise. Because both runs score the same rows, compare them paired: count the rows that flipped each way and run McNemar's test on those two counts.</p>
+# deployment_promote_blocked are declared in reason_codes.py but nothing
+# emits them yet; promote / reject / rollback emit info-level
+# `deployment` RunEvents</code></pre>
+        <p>Read a small Δ with care. On the 50 rows the UI checks by default, 0.93 → 0.86 is a swing of three or four rows and can easily be noise. Because both runs score the same rows, compare them paired: count the rows that flipped each way and run McNemar's test on those two counts.</p>
         <div class="callout callout--note">
           <p class="callout__label">Your gold set keeps working</p>
           <p>The gold set you curated for evaluation (the answer key) doesn't retire at launch — it becomes the regression sensor that catches a broken deployment for as long as you keep running the check. For input drift, pair it with input monitoring and freshly labelled samples; a frozen set can't see new traffic.</p>
@@ -459,7 +461,7 @@ exact-match the answer key against the deployed model
 
         <nav class="lesson-nav" aria-label="Lesson navigation">
           <a href="serving-and-inference.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Serving and inference optimization</span></a>
-          <a href="capstone-graduating.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Capstone C: choosing the right technique, and graduating</span></a>
+          <a href="capstone-graduating.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">Capstone C: choosing the right technique</span></a>
         </nav>
       </article>
     </div>

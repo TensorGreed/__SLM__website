@@ -501,7 +501,7 @@ trainer.save_model("tool-router/adapter")</code></pre>
         <p>Report the two headline numbers with two diagnostics beside them: tool-name accuracy (does it pick the right tool?) and the false-tool-call rate, measured over the rows whose gold answer is <code>no_tool</code> (does the no-tool path work?).</p>
 
         <div class="callout callout--warning">
-          <p class="callout__label">Honest beat — the right kind of failure</p>
+          <p class="callout__label">The caveat — the right kind of failure</p>
           <p>A router that fails by emitting <strong>invalid JSON</strong> is a bug your client (the agent loop) can detect and retry. A router that fails by emitting <strong>valid JSON for the wrong tool with plausible arguments</strong> is a silent corruption that calls real systems with real consequences. <strong>Prefer parse failures to wrong calls.</strong> If you have to trade, train and decode toward the more conservative behaviour: greedy decoding, <code>repetition_penalty</code> left at 1.0 (a penalty above 1 pushes against the repeated quotes, braces and keys JSON needs, and a model's <code>generation_config.json</code> can set one silently), and explicit no_tool examples for ambiguous prompts.</p>
         </div>
 
@@ -537,7 +537,7 @@ result = TOOLS[call.tool](**call.arguments)</code></pre>
             <dt>Function calling</dt><dd>Synonym for tool-use; the term many model APIs use for their structured tool-call output.</dd>
             <dt>Tool schema</dt><dd>A description (name + argument schema) of a callable function the model can target; Pydantic models are a clean way to declare them.</dd>
             <dt>No-tool path</dt><dd>An explicit assistant output (<code>{"tool":"no_tool","reason":"..."}</code>) that says "no available tool fits"; trained on negative examples in the SFT data.</dd>
-            <dt>Valid-tool-call rate</dt><dd>Fraction of outputs that parse as JSON, name a real tool, and have arguments matching that tool's schema.</dd>
+            <dt>Valid-tool-call rate</dt><dd>Fraction of outputs that parse as JSON, name a tool from the catalogue (including <code>no_tool</code>), and have arguments matching that tool's schema.</dd>
             <dt>Argument-match accuracy</dt><dd>Over valid calls that picked the correct real tool, the fraction with arguments matching the gold; the second of the two-number report.</dd>
             <dt>False-tool-call rate</dt><dd>Fraction of inputs where the gold says no_tool but the model called a real tool; the most damaging routing failure mode.</dd>
           </dl>
