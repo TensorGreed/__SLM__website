@@ -104,7 +104,7 @@
       <section class="section">
         <div class="section-head reveal">
           <p class="eyebrow">Source connectors</p>
-          <h2>Four built-in, plus a plugin slot</h2>
+          <h2>Built-in connectors, plus a plugin slot</h2>
         </div>
         <div class="table-wrap reveal">
           <table class="compare-table" aria-label="Source connectors">
@@ -144,10 +144,34 @@
                 </td>
               </tr>
               <tr>
+                <td><code>file</code></td>
+                <td><code>file:/path/to/data.{csv,tsv,jsonl,json,xlsx,parquet}</code></td>
+                <td>
+                  Any row file; browser uploads land here. Handles encodings and delimiters.
+                  Documents (PDF, DOCX, HTML) go through Data → Upload documents instead.
+                </td>
+              </tr>
+              <tr>
+                <td><code>git</code></td>
+                <td><code>git:&lt;url&gt;[@ref]</code></td>
+                <td>
+                  Shallow clone; one row per source chunk (cut at declarations) and one per prose
+                  file. Records the repo licence and pinned commit.
+                </td>
+              </tr>
+              <tr>
+                <td><code>web</code></td>
+                <td><code>web:&lt;seed url&gt;</code></td>
+                <td>
+                  Polite crawl (robots.txt, prefix-limited, rate-limited, cached); one
+                  <code>{url, title, text}</code> row per page.
+                </td>
+              </tr>
+              <tr>
                 <td><em>your plugin</em></td>
                 <td><code>yourthing:&lt;ref&gt;</code></td>
                 <td>
-                  Register via <code>register_source(id, factory)</code> at module load. Same
+                  Call <code>register_source(id, factory)</code> when your module is imported. Same
                   contract as built-ins.
                 </td>
               </tr>
@@ -159,7 +183,7 @@
       <section class="section">
         <div class="section-head reveal">
           <p class="eyebrow">Target mappers</p>
-          <h2>Eight built-in, plus a plugin slot</h2>
+          <h2>Built-in mappers, plus a plugin slot</h2>
         </div>
         <div class="table-wrap reveal">
           <table class="compare-table" aria-label="Target mappers">
@@ -210,6 +234,21 @@
                 <td><code>kv_to_structured</code></td>
                 <td><code>structured_extraction</code> · field_match</td>
                 <td>flat key-value extractions (invoices, forms, receipts)</td>
+              </tr>
+              <tr>
+                <td><code>code_label_to_findings</code></td>
+                <td><code>structured_extraction</code> · findings</td>
+                <td>a piece of code + a label column naming what is wrong with it (or nothing)</td>
+              </tr>
+              <tr>
+                <td><code>contrast_functions</code></td>
+                <td><code>structured_extraction</code> · findings</td>
+                <td>source files whose functions are named as bad / good twins</td>
+              </tr>
+              <tr>
+                <td><code>fix_pair</code></td>
+                <td><code>structured_extraction</code> · findings (or patch / preference rows)</td>
+                <td><code>{before, after, label}</code>: a defect and its fix</td>
               </tr>
               <tr>
                 <td><em>your plugin</em></td>
@@ -333,11 +372,14 @@
           <article class="playbook-card reveal">
             <h3>Source plugins</h3>
             <p>
-              Register a new connector via <code>register_source(id, factory)</code>; addressed by
-              locator prefix.
+              Register a new connector with <code>register_source(id, factory)</code>; it is
+              addressed by locator prefix. There is no settings loader for sources yet, so the call
+              has to run at import time, for example from a module you already list under
+              <code>DATASET_MAPPER_PLUGIN_MODULES</code>.
             </p>
             <div class="terminal-block dense">
-              <p># DATA_ADAPTER_PLUGIN_MODULES, KIND_HAS_MODULE_LOADER=true</p>
+              <p>from app.services.dataset_import.registry import register_source</p>
+              <p>register_source("yourthing", YourThingSource)</p>
             </div>
           </article>
           <article class="playbook-card reveal">

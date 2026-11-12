@@ -52,7 +52,7 @@
           "name": "What do I install?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Python 3.12 + Node 18+ + Git, plus a single consumer GPU (8 GB VRAM is enough for the LoRA flow on the 1–3B models the autopilot recommends out of the box). Clone the repo, run pip install -r backend/requirements.txt, run npm install in the frontend, start the two dev servers. The README has the canonical command list."
+            "text": "Python 3.11+, Node 20.19+ or 22.12+ (the frontend uses Vite 7), Redis and Git, plus a GPU for real training. 8 GB of VRAM fits LoRA on models up to about 1.5B; a 3B model is about 6 GB of bf16 weights alone, so it needs gradient checkpointing and short sequences. Clone the repo, run pip install -r backend/requirements.txt, copy backend/.env.example to backend/.env, run npm install in the frontend, then start the backend, Redis, a Celery worker and the frontend. Training is queued to the worker, so without Redis and the worker the Train button never runs. AUTH_ENABLED defaults to true: log in as admin with the API_KEY from .env. The README and the quickstart have the command list."
           }
         },
         {
@@ -60,7 +60,7 @@
           "name": "Can I run BrewSLM without a GPU?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Ingest, eval, export, and the workspace work fine CPU-only. Training is the only stage that effectively needs CUDA. The autopilot will refuse to start a real training run on CPU; you can override with the simulation backend (TRAINING_BACKEND=simulate) to walk the pipeline end-to-end without a real model run."
+            "text": "Ingest, export, and the workspace work fine CPU-only, and eval runs on CPU, slowly. Training a generative model of 1B parameters or more on CPU is impractically slow; preflight's plan adapts to CPU (smaller batch, no bf16 or flash attention). Encoder token classifiers such as DeBERTa train on CPU in tens of minutes. To walk the pipeline end-to-end without a model, set TRAINING_BACKEND=simulate."
           }
         },
         {
@@ -68,7 +68,7 @@
           "name": "Do I need a teacher model?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Only for synthetic data generation and the optional LLM-assisted mapping mode. Both are opt-in. Point TEACHER_MODEL_API_URL at any OpenAI-compatible endpoint — local Ollama works, hosted gateways work, anything that speaks the chat-completions API."
+            "text": "Only for synthetic data generation and the optional LLM-assisted mapping mode. Both are opt-in. In the workspace, Data → Generate and the documents → Q&A flow pick a model in their Generation model field, local or cloud. The TEACHER_MODEL_API_URL setting is an optional default: point it at any OpenAI-compatible endpoint — local Ollama works, hosted gateways work, anything that speaks the chat-completions API."
           }
         },
         {
@@ -108,7 +108,7 @@
           "name": "Which base models does BrewSLM support?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Anything HuggingFace can load via transformers in the size range BrewSLM targets — Llama 3, Qwen 2 / 2.5, Mistral, Phi, Gemma, etc. The autopilot picks from a curated shortlist by task; you can pin a specific model in the Base model field on Train (Browse opens the base model registry)."
+            "text": "Any causal language model or encoder that transformers can load, in the size range BrewSLM targets: small language models, up to ~10B parameters (the Academy course uses 135M). For example the Qwen, Llama, Gemma, Phi, Mistral and SmolLM families, or DeBERTa for token classification. The autopilot picks from a curated shortlist by task; you can pin a specific model in the Base model field on Train (Browse opens the base model registry)."
           }
         },
         {
@@ -116,7 +116,7 @@
           "name": "Why are my NER F1 scores so low?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "You probably evaluated with the wrong metric shape. Check output_schema.scoring_mode on the prepared manifest — for NER / PII / span extraction, it should be \"span_set\", not the classification default. Span-set scoring requires exact (type, start, end) matches; off-by-one boundaries count as miss + hallucination. Most pre-BrewSLM eval libraries do not score this way."
+            "text": "You probably evaluated with the wrong metric shape. Check output_schema.scoring_mode on the prepared manifest — for NER / PII / span extraction, it should be \"span_set\", not the classification default. Span-set scoring requires exact (type, start, end) matches; off-by-one boundaries count as miss + hallucination. Generic string metrics don't score this way; NER-specific scorers (conlleval, seqeval) do, and BrewSLM's span_set follows the same strict rule on character offsets."
           }
         },
         {
@@ -124,7 +124,7 @@
           "name": "Can I set custom promotion gates?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Yes. In the UI they are the pass/fail rules on Results → Verdict; the rule set (the eval pack) carries the policy. Required rules block; optional rules allow degradation within tolerance. See app.services.evaluation_service for the gate evaluation and app.models.experiment for what's stored."
+            "text": "Yes. In the UI they are the pass/fail rules on Results → Verdict; the rule set (the eval pack) carries the policy. Required rules decide the pass/fail verdict; optional rules allow degradation within tolerance. They block an export only when the project's gate policy turns that on (off by default; some starter projects set it). See app.services.evaluation_service for the gate evaluation and app.models.experiment for what's stored."
           }
         },
         {
@@ -140,7 +140,7 @@
           "name": "How do I prove what happened in a training run?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "The run_events table is the audit spine. Every workflow stage emits an event with a stable reason code; the support bundle exports them as JSON. The training manifest captures every input that produced the run, so you can replay an experiment from a frozen artifact."
+            "text": "The run_events table is the audit spine. Imports, document uploads, training, eval, export and deployment actions emit events, and every error event carries a stable reason code; the support bundle exports them as JSON. The training manifest captures every input that produced the run, so you can replay an experiment from a frozen artifact."
           }
         },
         {
@@ -232,30 +232,38 @@
           <details class="faq-item reveal">
             <summary>What do I install?</summary>
             <p>
-              Python 3.12 + Node 18+ + Git, plus a single consumer GPU (8 GB VRAM is enough for
-              the LoRA flow on the 1–3B models the autopilot recommends out of the box). Clone
-              the repo, run <code>pip install -r backend/requirements.txt</code>, run
-              <code>npm install</code> in the frontend, start the two dev servers. The README
-              has the canonical command list.
+              Python 3.11+, Node 20.19+ or 22.12+ (the frontend uses Vite 7), Redis and Git, plus a
+              GPU for real training. 8 GB of VRAM fits LoRA on models up to about 1.5B; a 3B model
+              is about 6 GB of bf16 weights alone, so it needs gradient checkpointing and short
+              sequences. Clone the repo, run <code>pip install -r backend/requirements.txt</code>,
+              copy <code>backend/.env.example</code> to <code>backend/.env</code>, run
+              <code>npm install</code> in the frontend, then start the backend, Redis, a Celery
+              worker and the frontend. Training is queued to the worker, so without Redis and the
+              worker the Train button never runs. <code>AUTH_ENABLED</code> defaults to true: log
+              in as <code>admin</code> with the <code>API_KEY</code> from <code>.env</code>. The
+              README and the <a class="inline-link" href="./index.html#quickstart">quickstart</a>
+              have the command list.
             </p>
           </details>
           <details class="faq-item reveal">
             <summary>Can I run BrewSLM without a GPU?</summary>
             <p>
-              Ingest, eval, export, and the workspace work fine CPU-only. Training is the only
-              stage that effectively needs CUDA. The autopilot will refuse to start a real
-              training run on CPU; you can override with the simulation backend
-              (<code>TRAINING_BACKEND=simulate</code>) to walk the pipeline end-to-end without a
-              real model run.
+              Ingest, export, and the workspace work fine CPU-only, and eval runs on CPU, slowly.
+              Training a generative model of 1B parameters or more on CPU is impractically slow;
+              preflight's plan adapts to CPU (smaller batch, no bf16 or flash attention).
+              Encoder token classifiers such as DeBERTa train on CPU in tens of minutes. To walk the
+              pipeline end-to-end without a model, set <code>TRAINING_BACKEND=simulate</code>.
             </p>
           </details>
           <details class="faq-item reveal">
             <summary>Do I need a teacher model?</summary>
             <p>
               Only for synthetic data generation and the optional LLM-assisted mapping mode.
-              Both are opt-in. Point <code>TEACHER_MODEL_API_URL</code> at any OpenAI-compatible
-              endpoint — local Ollama works, hosted gateways work, anything that speaks the
-              chat-completions API.
+              Both are opt-in. In the workspace, Data → Generate and the documents → Q&amp;A flow
+              pick a model in their <em>Generation model</em> field, local or cloud. The
+              <code>TEACHER_MODEL_API_URL</code> setting is an optional default: point it at any
+              OpenAI-compatible endpoint — local Ollama works, hosted gateways work, anything that
+              speaks the chat-completions API.
             </p>
           </details>
         </div>
@@ -320,8 +328,10 @@
           <details class="faq-item reveal">
             <summary>Which base models does BrewSLM support?</summary>
             <p>
-              Anything HuggingFace can load via <code>transformers</code> in the size range
-              BrewSLM targets — Llama 3, Qwen 2 / 2.5, Mistral, Phi, Gemma, etc. The autopilot
+              Any causal language model or encoder that <code>transformers</code> can load, in the
+              size range BrewSLM targets: small language models, up to ~10B parameters (the Academy
+              course uses 135M). For example the Qwen, Llama, Gemma, Phi, Mistral and SmolLM
+              families, or DeBERTa for token classification. The autopilot
               picks from a curated shortlist by task; you can pin a specific model in the
               <strong>Base model</strong> field on <strong>Train</strong> (<em>Browse</em> opens the
               base model registry).
@@ -334,8 +344,9 @@
               <code>output_schema.scoring_mode</code> on the prepared manifest — for NER / PII /
               span extraction, it should be <code>"span_set"</code>, not the classification
               default. Span-set scoring requires exact <code>(type, start, end)</code> matches;
-              off-by-one boundaries count as miss + hallucination. Most pre-BrewSLM eval
-              libraries do not score this way.
+              off-by-one boundaries count as miss + hallucination. Generic string metrics don't
+              score this way; NER-specific scorers (conlleval, seqeval) do, and BrewSLM's
+              <code>span_set</code> follows the same strict rule on character offsets.
             </p>
           </details>
           <details class="faq-item reveal">
@@ -343,7 +354,9 @@
             <p>
               Yes. In the UI they are the <strong>pass/fail rules</strong> on <strong>Results →
               Verdict</strong>; the rule set (the eval pack) carries the policy. Required rules
-              block; optional rules allow degradation within tolerance. See
+              decide the pass/fail verdict; optional rules allow degradation within tolerance. They
+              block an export only when the project's gate policy turns that on (off by default;
+              some starter projects set it). See
               <code>app.services.evaluation_service</code> for the gate evaluation and
               <code>app.models.experiment</code> for what's stored.
             </p>
@@ -369,8 +382,9 @@
           <details class="faq-item reveal">
             <summary>How do I prove what happened in a training run?</summary>
             <p>
-              The <code>run_events</code> table is the audit spine. Every workflow stage emits
-              an event with a stable reason code; the support bundle exports them as JSON. The
+              The <code>run_events</code> table is the audit spine. Imports, document uploads,
+              training, eval, export and deployment actions emit events, and every error event
+              carries a stable reason code; the support bundle exports them as JSON. The
               training manifest captures every input that produced the run, so you can replay
               an experiment from a frozen artifact.
             </p>

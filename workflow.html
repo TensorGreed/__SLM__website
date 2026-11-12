@@ -99,8 +99,9 @@
           and deployment. In the app it is four places in a project's sidebar —
           <strong>Data</strong>, <strong>Train</strong>, <strong>Results</strong>,
           <strong>Ship</strong> — with an <strong>Overview</strong> that says where you are and
-          what the next step is. Every stage has explicit inputs, outputs, and an audit-log entry,
-          so ML engineers can see exactly what happened to their base model and their data.
+          what the next step is. Every stage has explicit inputs and outputs, and the stages that
+          write to the audit log say so below, so ML engineers can see exactly what happened to
+          their base model and their data.
         </p>
       </section>
 
@@ -133,18 +134,18 @@
           <article class="workflow-step reveal">
             <div class="step-head"><span>01</span><h3>Sources</h3></div>
             <p><strong>Where:</strong> <strong>Data → Sources</strong>. Upload files, <em>Import dataset (auto-mapping)</em>, or <em>No documents yet? Write sample documents</em>.</p>
-            <p><strong>Inputs:</strong> a browser upload, or a source locator (<code>jsonl:/path</code>, <code>hf:id:split</code>, <code>kaggle:competition:slug</code>, etc.).</p>
+            <p><strong>Inputs:</strong> a browser upload, or a source locator (<code>jsonl:/path</code>, <code>file:/path</code>, <code>hf:id:split</code>, <code>kaggle:competition:slug</code>, <code>git:&lt;url&gt;[@ref]</code>, <code>web:&lt;seed url&gt;</code>).</p>
             <p><strong>Outputs:</strong> rows on disk in the project's data dir.</p>
             <p><strong>Contract:</strong> source connectors implement <code>load()</code> + <code>describe()</code>. Unparseable rows surface as sentinel rows, not silent drops. A file that cannot be parsed is an error, never accepted text.</p>
-            <p><strong>RunEvent:</strong> none here directly — the introspector + run downstream emit one each.</p>
+            <p><strong>RunEvent:</strong> a document upload emits <code>ingestion</code> / info; a dataset import emits one when it runs (next stage).</p>
           </article>
           <article class="workflow-step reveal">
             <div class="step-head"><span>02</span><h3>Introspect &amp; map</h3></div>
             <p><strong>Where:</strong> the import wizard behind <em>Import dataset</em>: Source → Task type → Map → Preview &amp; Confirm.</p>
             <p><strong>Inputs:</strong> ~20 sample rows from the source; then locator + mapper + field map + optional drop reasons.</p>
-            <p><strong>Outputs:</strong> ranked <code>ShapeHypothesis</code> list + a top <code>ProposedMapping</code> with confidence + rationale; on confirm, rows appended to the project's synthetic JSONL.</p>
+            <p><strong>Outputs:</strong> ranked <code>ShapeHypothesis</code> list + a top <code>ProposedMapping</code> with confidence + rationale; on confirm, rows appended to the project's synthetic JSONL, written as accepted: imported rows skip the review queue and train directly, so the preview is the review.</p>
             <p><strong>Contract:</strong> never silently auto-picks — below 0.80 the UI asks you to confirm you reviewed the proposal (CLI: <code>--force</code>). Per-row accountability: every row is a <code>TransformedRow</code> or a <code>RejectedRow</code> with a stable reason code; rejected rows are grouped by reason and bulk-droppable, and the counts stay in the audit row.</p>
-            <p><strong>RunEvent:</strong> <code>ingestion</code> / <code>dataset_import_run</code> on success, <code>dataset_import_failed</code> on error. Payload: source, mapper, accepted/rejected counts, written_path, config_id.</p>
+            <p><strong>RunEvent:</strong> <code>ingestion</code> / <code>dataset_import_run</code> on success, <code>dataset_import_failed</code> on error, from the run only (introspect and preview write none). Payload: source, mapper, accepted/rejected counts, written_path, config_id.</p>
           </article>
           <article class="workflow-step reveal">
             <div class="step-head"><span>03</span><h3>Prepare</h3></div>
@@ -152,7 +153,7 @@
             <p><strong>Inputs:</strong> the project's RawDocuments.</p>
             <p><strong>Outputs:</strong> cleaned text + chunks JSONL + per-document metadata (PII findings, quality score, text hash). Row files are cleaned row by row; only documents are chunked, on sentence boundaries.</p>
             <p><strong>Contract:</strong> runs as a background task that the notification bell follows, so the HTTP request never blocks.</p>
-            <p><strong>RunEvent:</strong> <code>cleaning</code> / info on success; <code>cleaning_outlier_threshold_exceeded</code> / <code>cleaning_pii_block</code> on the named failure modes.</p>
+            <p><strong>RunEvent:</strong> none today. The taxonomy declares <code>cleaning</code> codes, but the clean step does not emit them yet; the notification bell reports the background task.</p>
           </article>
           <article class="workflow-step reveal">
             <div class="step-head"><span>04</span><h3>Labels</h3></div>
@@ -176,39 +177,39 @@
             <p><strong>Inputs:</strong> cleaned + accepted synthetic rows; the project's dataset-adapter preset.</p>
             <p><strong>Outputs:</strong> <code>prepared/manifest.json</code> + <code>train.jsonl</code> / <code>val.jsonl</code> / <code>test.jsonl</code>, plus a versioned snapshot of each split. Carries <code>task_profile</code> + <code>output_schema.scoring_mode</code>.</p>
             <p><strong>Contract:</strong> the manifest is the source of truth for everything downstream; nothing reads from disk paths directly. Keeping the test examples means a new run is scored on the same rows as the last one.</p>
-            <p><strong>RunEvent:</strong> dataset-prep summary.</p>
+            <p><strong>RunEvent:</strong> none; the manifest and the split snapshot are the record.</p>
           </article>
           <article class="workflow-step reveal">
             <div class="step-head"><span>07</span><h3>Train</h3></div>
             <p><strong>Where:</strong> <strong>Train</strong> — one form: base model (+ Browse), task, one run or three seeds, run name, a readiness line, and <strong>Train</strong>. Epochs, LoRA, checks, cloud burst, presets and the plan-vs-data gaps wait under <em>More options</em>. The runs list with each run's live dashboard sits below the form.</p>
             <p><strong>Inputs:</strong> prepared manifest + base model + the resolved config (shown in a confirm dialog with an estimate before Launch).</p>
             <p><strong>Outputs:</strong> checkpoints + per-step loss / eval traces + adapter weights (or a full model for encoders). Preflight runs first: dependency, memory-fit, capability and rule-policy checks; strict mode blocks, fail-open emits warnings.</p>
-            <p><strong>Contract:</strong> task-handler dispatcher routes to ClassificationHandler, QAHandler, StructuredExtractionHandler (span_set or field_match), RAGHandler, AlignmentHandler, Seq2SeqHandler, VisionLanguageHandler, AudioTranscriptHandler, or SafetyHandler. Cancel stops the process.</p>
-            <p><strong>RunEvent:</strong> <code>training</code> / info on completion (payload: experiment_id, backend, final_train_loss). <code>training_oom</code> / <code>training_runtime_error</code> / <code>training_timeout</code> / <code>training_cancelled</code> on failure.</p>
+            <p><strong>Contract:</strong> preflight → a training job queued to the Celery worker (Redis plus a worker are required with the default <code>TRAINING_BACKEND=external</code>) → checkpoints → when a real run completes, a <code>post_training_lift_eval</code> Job scores the base model and the run on the same test split. Tokenizing and loss masking happen in the trainer. Cancel stops the process.</p>
+            <p><strong>RunEvent:</strong> <code>training</code> / info when a run starts (and on completion for simulate runs; payload: experiment_id, backend). <code>training_dispatch_error</code> / <code>training_runtime_error</code> / <code>training_timeout</code> on failure, and a <code>training_time_limit_projected</code> warning when a run is on pace to hit its time limit.</p>
           </article>
           <article class="workflow-step reveal">
             <div class="step-head"><span>08</span><h3>Results</h3></div>
             <p><strong>Where:</strong> <strong>Results</strong> — <strong>Verdict</strong> (did it work? the lift against the base model, pass/fail rules, the scorecard), <strong>Failures</strong> (where it fails: clusters, eval gaps, built-in and custom checks, slices), <strong>Compare</strong> (other runs, external benchmarks, Auto-RAG) and <strong>Try it</strong> (chat with the run; a redaction box for span runs).</p>
             <p><strong>Inputs:</strong> trained model + the test examples (or the answer key) + the rule set.</p>
             <p><strong>Outputs:</strong> task-aware metrics (per-class P/R/F1, span-set, faithfulness, alignment margin, BLEU/ROUGE, WER, etc.), paired base-vs-fine-tuned evidence (better / worse / within noise), and the pass/fail verdict.</p>
-            <p><strong>Contract:</strong> the metric shape comes from the handler's <code>score()</code>; the pass/fail rules declared in the rule set decide promotability. The lift check runs by itself when a real run completes.</p>
-            <p><strong>RunEvent:</strong> <code>eval</code> / info, parented to <code>exp-&lt;id&gt;</code>. <code>eval_runtime_error</code> / <code>eval_judge_unavailable</code> / <code>eval_dataset_missing</code> on failure.</p>
+            <p><strong>Contract:</strong> the task-handler dispatcher picks the scorer from the task profile: ClassificationHandler, QAHandler, StructuredExtractionHandler (span_set or field_match), RAGHandler, AlignmentHandler, Seq2SeqHandler, VisionLanguageHandler, AudioTranscriptHandler, SafetyHandler or ToolCallHandler, with GenericHandler as the fallback. The metric shape comes from the handler's <code>score()</code>; the pass/fail rules in the rule set decide the verdict. They block an export only when the project's gate policy says so, which is off by default. The lift check runs by itself when a real run completes (not for simulate or weightless runs; turn it off with <code>auto_lift_eval=false</code>).</p>
+            <p><strong>RunEvent:</strong> <code>eval</code> / info when an eval completes, parented to <code>exp-&lt;id&gt;</code> (payload: eval_type, dataset_name, pass_rate). The taxonomy's <code>eval_*</code> failure codes are not emitted yet.</p>
           </article>
           <article class="workflow-step reveal">
             <div class="step-head"><span>09</span><h3>Package &amp; publish</h3></div>
             <p><strong>Where:</strong> <strong>Ship → Package</strong> (<em>New export</em>: run, format, quantization, deployment targets; the <strong>Releases</strong> table; Options: <em>Compress</em> and the manifest) and <strong>Ship → Publish</strong> (a completed Hugging Face export to the Hub).</p>
-            <p><strong>Inputs:</strong> trained model + target format (Hugging Face / GGUF / ONNX / Docker / vLLM-compat).</p>
+            <p><strong>Inputs:</strong> trained model + target format (Hugging Face / GGUF / ONNX / TensorRT / Docker). vLLM is a deployment target under Ship → Deploy, not an export format.</p>
             <p><strong>Outputs:</strong> artifact bundle with weights, tokenizer, manifest, smoke-check trace. A LoRA run is merged first.</p>
             <p><strong>Contract:</strong> quantization variants (Q4_K_M, AWQ, GPTQ) are tracked per run so a GGUF export packages only that run's compressed files — no raw-weights fallback under a compressed label.</p>
-            <p><strong>RunEvent:</strong> <code>export</code> / info on success (payload: format, output_path, file_size_bytes). <code>export_run_failed</code> / <code>export_artifact_missing</code> / <code>export_quantization_failed</code> on the named failures.</p>
+            <p><strong>RunEvent:</strong> <code>export</code> / info on success (payload: format, output_path, file_size_bytes); <code>export_run_failed</code> when an export fails. An export blocked by the gate policy is marked failed without an event.</p>
           </article>
           <article class="workflow-step reveal">
             <div class="step-head"><span>10</span><h3>Deploy &amp; monitor (optional)</h3></div>
             <p><strong>Where:</strong> <strong>Ship → Deploy</strong> (serve / deploy plans, served versions) and <strong>Ship → Monitor</strong> (run events, failure clusters, drift).</p>
             <p><strong>Inputs:</strong> an export + a target (vLLM endpoint / local runner / cloud burst).</p>
             <p><strong>Outputs:</strong> a versioned <code>DeploymentVersion</code> with promote / reject / rollback / drift-check actions.</p>
-            <p><strong>Contract:</strong> smoke check at promote time; the drift check re-runs the answer key against the live endpoint on a schedule.</p>
-            <p><strong>RunEvent:</strong> <code>deployment</code> / info per action; <code>deployment_smoke_failed</code> / <code>deployment_drift_detected</code> / <code>deployment_promote_blocked</code> on failure.</p>
+            <p><strong>Contract:</strong> smoke checks run at export time; promote marks a pending version live and supersedes the previous one. The drift check runs on demand: it scores the answer key by exact match, from predictions you post or from a live endpoint, and compares the pass rate with the training-time baseline.</p>
+            <p><strong>RunEvent:</strong> <code>deployment</code> / info per action (record, promote, reject, rollback).</p>
           </article>
         </div>
       </section>
@@ -237,7 +238,7 @@
         <article class="architecture-shell reveal" aria-label="RunEvent stream feeds">
           <div class="arch-lane">
             <span>Producers</span>
-            <p>Each stage above writes one or more <code>RunEvent</code> rows via <code>emit_event()</code>. Reason codes come from a lint-gated taxonomy; severity is one of info / warning / error / critical.</p>
+            <p>Imports, document uploads, training, eval, export and deployment write <code>RunEvent</code> rows via <code>emit_event()</code>; the stage cards above say which. Severity is one of info / warning / error / critical, and an error or critical row must carry a reason code from the taxonomy or it is rejected. The taxonomy declares more codes than the stages emit today.</p>
           </div>
           <div class="arch-lane">
             <span>Consumers</span>
@@ -299,7 +300,7 @@
           <p class="eyebrow">Try the path end-to-end</p>
           <h2>One command per stage. No glue scripts.</h2>
           <div class="terminal-block">
-            <p># ingest + map via the generic pipeline</p>
+            <p># ingest + map via the generic pipeline (imdb maps to classification)</p>
             <p>$ python -m app.cli.dataset_import run \</p>
             <p>&nbsp;&nbsp;&nbsp;&nbsp;--locator hf:imdb:train --project 1 --auto --limit 5000</p>
             <p>&nbsp;</p>
@@ -310,9 +311,10 @@
             <p>&nbsp;</p>
             <p># or, scripted:</p>
             <p>$ curl -X POST localhost:8000/api/projects/1/training/experiments \</p>
-            <p>&nbsp;&nbsp;&nbsp;&nbsp;-H 'Content-Type: application/json' \</p>
+            <p>&nbsp;&nbsp;&nbsp;&nbsp;-H 'X-API-Key: sk-mock-admin-key' -H 'Content-Type: application/json' \</p>
             <p>&nbsp;&nbsp;&nbsp;&nbsp;-d '{"name": "first-run", "config": {"base_model": "HuggingFaceTB/SmolLM2-135M-Instruct"}}'</p>
-            <p>$ curl -X POST localhost:8000/api/projects/1/training/experiments/&lt;id&gt;/start</p>
+            <p>$ curl -X POST -H 'X-API-Key: sk-mock-admin-key' \</p>
+            <p>&nbsp;&nbsp;&nbsp;&nbsp;localhost:8000/api/projects/1/training/experiments/&lt;id&gt;/start</p>
           </div>
         </div>
         <aside class="quickstart-notes">
