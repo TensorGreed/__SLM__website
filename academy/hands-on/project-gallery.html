@@ -293,7 +293,7 @@
           <div class="lesson-meta">
             <span><strong>Level:</strong> intermediate</span>
             <span><strong>Read time:</strong> ~10 min</span>
-            <span><strong>Prerequisites:</strong> the rest of Track 2</span>
+            <span><strong>Prerequisites:</strong> Lessons 2.1–2.14 (through <a class="inline-link" href="multi-turn-chat-sft.html">Multi-turn chat SFT</a>)</span>
           </div>
         </header>
 
@@ -318,7 +318,7 @@
             <ol>
               <li>Upsample the minority intents in training (or downsample the majority).</li>
               <li>Add specifically the <em>hard</em> rare cases (Lesson 1.7) — variations of the user phrasing for each minority intent.</li>
-              <li>Set a confidence threshold below which the router routes to "talk_to_human" — a refusal as a routing destination.</li>
+              <li>Set a confidence threshold below which the router routes to "talk_to_human" — a refusal as a routing destination. A generative classifier doesn't hand you a confidence, so pick a source: the probability of the first label token, or a length-normalised log-probability of each allowed intent, taking the highest.</li>
             </ol>
           </li>
         </ul>
@@ -332,22 +332,22 @@
           <li><strong>Twist — schema enforcement:</strong>
             <ol>
               <li>Pydantic schema (Lesson 2.13) — the validator <em>and</em> the documentation of what the model should emit.</li>
-              <li>Optional: constrained decoding (e.g. outlines, jsonformer) at inference, which forces valid JSON at the cost of some quality.</li>
+              <li>Optional: constrained (JSON-schema-guided) decoding at inference, which forces schema-valid output. It is built into common inference servers and available in libraries such as outlines. Whether it costs quality is contested; it depends partly on whether the field order and formatting it forces match what the model saw in training, so measure it on your gold set.</li>
             </ol>
           </li>
         </ul>
 
-        <h2>Project 4 — PII detector (span extraction)</h2>
-        <p>Find personal information in a string: names, emails, phone numbers, addresses. Differs from classification: there can be zero or many spans per input.</p>
+        <h2>Project 4 — Sensitive-span detector, e.g. PII (span extraction)</h2>
+        <p>Find spans of a given type in a string — here personal information: names, emails, phone numbers, addresses. Differs from classification: there can be zero or many spans per input.</p>
         <ul>
           <li><strong>Data shape:</strong> <code>{text, spans: [{start, end, label}, ...]}</code> (Lesson 1.20's extraction format).</li>
-          <li><strong>SFT loop:</strong> reframe as JSON extraction — the assistant's reply is the JSON array of spans. Same SFTTrainer pipeline.</li>
-          <li><strong>Eval:</strong> entity-level F1 with HF <code>evaluate</code>'s <code>seqeval</code>, plus per-type precision/recall (a model that gets phone numbers right and emails wrong is a different model from one that gets both at 80%).</li>
-          <li><strong>Twist — false negatives are the costly direction:</strong> for safety-sensitive PII work, <strong>recall is the metric to defend</strong>. Missing a phone number is far worse than over-flagging some innocent strings. Tune the threshold or the data accordingly (more hard negatives that aren't PII; more positives covering rare formats).</li>
+          <li><strong>SFT loop:</strong> reframe as JSON extraction — the assistant's reply is a JSON array of <code>{"text": …, "label": …}</code> objects. Have the model copy the span <em>text</em>, not character offsets: language models are poor at counting characters. Recover the offsets afterwards by searching for the text in the input. Same SFTTrainer pipeline.</li>
+          <li><strong>Eval:</strong> span-level precision, recall and F1 by exact match on (text, label), optionally with a partial-overlap variant, plus per-type precision/recall (a model that gets phone numbers right and emails wrong is a different model from one that gets both at 80%). <code>seqeval</code> works only if you first convert the spans to per-token BIO tags.</li>
+          <li><strong>Twist — false negatives are the costly direction:</strong> for safety-sensitive PII work, <strong>recall is the metric to defend</strong>. Missing a phone number is far worse than over-flagging some innocent strings. Move the balance with data (more positives covering rare formats; hard negatives that aren't PII). A generative JSON reply has no threshold to tune; if you want one, score with token log-probabilities, sample several times and vote, or train a token-classification head instead.</li>
         </ul>
 
         <h2>Project 5 — FAQ assistant (RAG + small fine-tune)</h2>
-        <p>"Given our docs, answer customer support questions." The first instinct is "fine-tune on the FAQ." Wrong — fine-tuning teaches <em>behaviour</em>, not <em>facts</em> (Foundations 0.7). A small fine-tune for tone + format, plus retrieval for the facts, is the right architecture.</p>
+        <p>"Given our docs, answer customer support questions." The first instinct is "fine-tune on the FAQ." Usually wrong — fine-tuning is reliable for <em>behaviour</em> and an inefficient, hallucination-prone way to add new <em>facts</em> (Foundations 0.7; Ovadia et al. 2023, arXiv:2312.05934; Gekhman et al. 2024, arXiv:2405.05904). A small fine-tune for tone + format, plus retrieval for the facts, is the right architecture.</p>
         <ul>
           <li><strong>Data shape:</strong> <code>{prompt: question + retrieved_passages, completion: grounded_answer}</code>. The completion only references the supplied passages.</li>
           <li><strong>SFT loop:</strong> Lesson 2.10. Multi-turn (Lesson 2.14) when the assistant should ask clarifying questions before answering.</li>
@@ -361,6 +361,7 @@
           <li><strong>Data shape:</strong> system message lists the available tools (with their schemas); user message is the request; assistant emits <code>{"tool": "name", "arguments": {...}}</code> or a refusal.</li>
           <li><strong>SFT loop:</strong> Lesson 2.10 + Lesson 2.14 (multi-turn, because tool calls often chain).</li>
           <li><strong>Eval:</strong> tool-call accuracy (right tool name) + argument-set match (the arguments match the gold) + valid-call rate (the JSON parses and is a real tool). Lesson 2.13's two-number report, tool-flavoured.</li>
+          <li><strong>Going further:</strong> <a class="inline-link" href="../advanced/tool-use-fine-tuning.html">Lesson 4.12, tool-use fine-tuning</a>, covers this project in depth.</li>
           <li><strong>Twist — calling no tool is also a valid output:</strong> include negative examples where the right thing is "no tool needed, answer directly" or "request needs clarification." A model that calls a tool every time is broken.</li>
         </ul>
 
@@ -370,7 +371,7 @@
           <li>Pick the <strong>task shape</strong> (Lesson 1.5): single-label classification, multi-label, span extraction, structured generation, grounded generation, tool-call.</li>
           <li>Pick the <strong>data format</strong> matching that shape (Lesson 1.20).</li>
           <li>Run the <strong>SFT loop</strong> (Lesson 2.10) on a small base (or QLoRA on a bigger one, Lesson 2.11).</li>
-          <li>Pick the <strong>eval</strong> matching the task: sklearn classification report for labels (Lesson 2.12), Pydantic + per-field for JSON (Lesson 2.13), <code>seqeval</code> for spans, faithfulness + refusal for grounded generation.</li>
+          <li>Pick the <strong>eval</strong> matching the task: sklearn classification report for labels (Lesson 2.12), Pydantic + per-field for JSON (Lesson 2.13), span-level precision / recall / F1 for spans, faithfulness + refusal for grounded generation.</li>
           <li>Iterate on <strong>data</strong> — hard negatives, ambiguous cases, refusals, OOD (Lesson 1.7's extended taxonomy).</li>
         </ol>
 
@@ -390,11 +391,11 @@
           <h2>Key terms</h2>
           <dl>
             <dt>Task shape</dt><dd>The structural form of a task — single-label, multi-label, span extraction, structured generation, grounded generation, tool-call — that determines data format and scoring.</dd>
-            <dt>Scoring mode</dt><dd>The kind of metric matching the task shape (classification → F1; extraction → seqeval; structured → valid-rate + per-field; grounded → faithfulness).</dd>
+            <dt>Scoring mode</dt><dd>The kind of metric matching the task shape (classification → F1; extraction → span-level P/R/F1; structured → valid-rate + per-field; grounded → faithfulness).</dd>
             <dt>Recipe</dt><dd>The minimum description of how to fine-tune for a task: data shape + LoRA knobs + scoring mode + the twist.</dd>
             <dt>Faithfulness</dt><dd>Whether a generated answer is grounded in the supplied context (the RAG passages) rather than hallucinated.</dd>
             <dt>Refusal accuracy</dt><dd>Whether the model correctly declines on out-of-scope / under-documented questions instead of fabricating an answer.</dd>
-            <dt>seqeval</dt><dd>The standard span-extraction metric library (HF <code>evaluate</code> exposes it); produces entity-level precision/recall/F1.</dd>
+            <dt>seqeval</dt><dd>A span-extraction metric library over per-token BIO tags (HF <code>evaluate</code> exposes it); produces entity-level precision/recall/F1. Convert span lists to BIO tags before using it.</dd>
           </dl>
         </section>
 

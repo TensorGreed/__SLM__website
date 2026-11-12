@@ -297,27 +297,35 @@
           </div>
         </header>
 
-        <p>Lesson 2.7 hand-rolled accuracy: count the rights, divide by the total, print one number. That was useful for teaching what an eval <em>is</em>, but in any real project you'll be asked harder questions — "is it confusing positives for neutrals?", "how well does it do on the minority class?", "what does your F1 actually measure?" Those need real metrics. We have two clean tools: <strong>sklearn</strong> for the standard classification metrics, and <strong>HF evaluate</strong> for the shared-standard interface used in papers and leaderboards.</p>
+        <p>Lesson 2.7 hand-rolled accuracy: count the rights, divide by the total, print one number. That was useful for teaching what an eval <em>is</em>, but in any real project you'll be asked harder questions — "is it confusing positives for neutrals?", "how well does it do on the minority class?", "what does your F1 actually measure?" Those need real metrics. We have two clean tools: <strong>sklearn</strong> for the standard classification metrics, and <strong>HF evaluate</strong>, a common interface that is most useful for text metrics such as ROUGE and BLEU.</p>
 
         <h2>Why accuracy alone misleads</h2>
         <p>Suppose your gold set is 90% positive, 10% negative — typical for a slightly skewed real-world dataset. A model that <strong>always</strong> predicts "positive" achieves 90% accuracy without learning anything. The hand-rolled metric from Lesson 2.7 would call that run a strong success. Per-class precision and recall would immediately show the negative class was never recovered. The first lesson of real evaluation is: <strong>report per-class</strong>.</p>
 
         <h2>sklearn's classification_report — the workhorse</h2>
-        <p>One call gives you per-class precision, recall, F1, support, plus macro and weighted averages. It's the right default for any classification eval.</p>
+        <p>One call gives you per-class precision, recall, F1, support, plus macro and weighted averages. It's the right default for any classification eval. The running task so far has been binary; the example below uses a 3-class version (positive / neutral / negative) so the per-class story has more to show.</p>
+        <p>First, turn raw model text into labels. A generative model can answer <code>"positive."</code> or <code>"Positive, clearly"</code>, and fed in raw, each variant becomes a phantom class of its own that drags every average down. Map each output to the first allowed label it starts with, call everything else <code>"invalid"</code>, and pass the label list explicitly so the report only averages over the real classes:</p>
         <pre class="code-block"><code>from sklearn.metrics import classification_report
 
-# From Lesson 2.7's predict()
-y_true = [g["label"]                       for g in gold]
-y_pred = [predict(tuned, g["prompt"])      for g in gold]
+LABELS = ["negative", "neutral", "positive"]
 
-print(classification_report(y_true, y_pred, digits=3))
+def normalise(text):
+    t = text.strip().lower()
+    return next((l for l in LABELS if t.startswith(l)), "invalid")
+
+# From Lesson 2.7's predict()
+y_true = [g["label"]                            for g in gold]
+y_pred = [normalise(predict(tuned, g["prompt"])) for g in gold]
+print("invalid rate:", y_pred.count("invalid") / len(y_pred))   # report it separately
+
+print(classification_report(y_true, y_pred, labels=LABELS, digits=3, zero_division=0))
 #               precision    recall  f1-score   support
 #     negative      0.857     0.857     0.857        14
 #      neutral      0.500     0.333     0.400         6
-#     positive      0.943     0.971     0.957        70
+#     positive      0.944     0.971     0.958        70
 #
 #     accuracy                          0.911        90
-#    macro avg      0.767     0.720     0.738        90
+#    macro avg      0.767     0.721     0.738        90
 # weighted avg      0.901     0.911     0.905        90</code></pre>
         <p>This single report contains the whole story. Accuracy 91% looks fine until you see the neutral class is at 40% F1 — that's where the model is weak, and that's where your next data round should focus.</p>
 
@@ -336,30 +344,31 @@ print(pd.DataFrame(cm, index=labels, columns=labels))
         <p>Read the row for <code>neutral</code>: of 6 true neutrals, 3 were predicted positive. That's a directional mistake — the model is collapsing the middle class toward positive. The fix isn't more epochs; it's harder neutral examples in the next training round (Lesson 1.7's hard-negative / ambiguous-case section, made specific).</p>
 
         <h2>Macro vs micro F1: pick the one that doesn't lie</h2>
-        <p>Two ways to average per-class F1 into one number, and the choice matters on imbalanced data:</p>
+        <p>Three common ways to average per-class F1 into one number, and the choice matters on imbalanced data:</p>
         <ul>
           <li><strong>Macro F1</strong> = mean of per-class F1s, classes weighted equally. Penalises poor performance on minority classes. <strong>This is the one to report on imbalanced data.</strong></li>
-          <li><strong>Weighted (or micro) F1</strong> = weighted by class support. Dominated by the majority class. Useful when class frequencies in your eval reflect production reality.</li>
+          <li><strong>Weighted F1</strong> = per-class F1s averaged, weighted by class support. Dominated by the majority class. Useful when class frequencies in your eval reflect production reality.</li>
+          <li><strong>Micro F1</strong> = computed once from the total true positives, false positives and false negatives across all classes. For single-label classification it equals accuracy, so it adds nothing to the accuracy line. It is a different number from weighted F1.</li>
         </ul>
-        <p>For the report above: macro-F1 = 0.738, weighted F1 = 0.905. The "model is great" story tells the weighted; the "neutral class needs work" story tells the macro. Both are true; pick the one that matches the decision you're making.</p>
+        <p>For the report above: macro-F1 = 0.738, weighted F1 = 0.905, micro F1 = 0.911 (the accuracy). The "model is great" story tells the weighted; the "neutral class needs work" story tells the macro. Both are true; pick the one that matches the decision you're making.</p>
 
         <h2>HF evaluate — shared standards across the ecosystem</h2>
-        <p>Hugging Face's <code>evaluate</code> library exposes the same metrics through one interface, with the canonical implementations used in papers and leaderboards. Worth using when you want your numbers to be directly comparable to published ones.</p>
+        <p>Hugging Face's <code>evaluate</code> library exposes the same metrics through one interface. For classification it adds little: its <code>f1</code> and <code>accuracy</code> wrap scikit-learn, and <code>evaluate.load</code> downloads each metric script, so it needs network access the first time. Its README now points LLM evaluation to the newer LightEval library. Here is the same report through it, for comparison:</p>
         <pre class="code-block"><code>import evaluate
 
-# label name → index so the model's text outputs match what evaluate expects
-labels = ["negative", "neutral", "positive"]
-to_idx = {l: i for i, l in enumerate(labels)}
+# label name → index; "invalid" gets its own id, left out of the averages
+to_idx = {l: i for i, l in enumerate(LABELS)}
+ids = list(range(len(LABELS)))
 y_true_idx = [to_idx[y] for y in y_true]
-y_pred_idx = [to_idx.get(y, -1) for y in y_pred]   # -1 for off-vocab outputs
+y_pred_idx = [to_idx.get(y, len(LABELS)) for y in y_pred]
 
 f1 = evaluate.load("f1")
-print("macro f1   :", f1.compute(predictions=y_pred_idx, references=y_true_idx, average="macro")["f1"])
-print("weighted f1:", f1.compute(predictions=y_pred_idx, references=y_true_idx, average="weighted")["f1"])
+print("macro f1   :", f1.compute(predictions=y_pred_idx, references=y_true_idx, average="macro", labels=ids)["f1"])
+print("weighted f1:", f1.compute(predictions=y_pred_idx, references=y_true_idx, average="weighted", labels=ids)["f1"])
 
 acc = evaluate.load("accuracy")
 print("accuracy   :", acc.compute(predictions=y_pred_idx, references=y_true_idx)["accuracy"])</code></pre>
-        <p><code>evaluate</code> shines for non-classification tasks too: <code>rouge</code>, <code>bleu</code>, <code>squad</code>, <code>wer</code>, <code>seqeval</code> (for span extraction) — same API, same install. For pure-classification work, sklearn is fine and arguably nicer to read.</p>
+        <p>Where <code>evaluate</code> earns its place is non-classification metrics: <code>rouge</code>, <code>bleu</code>, <code>squad</code>, <code>wer</code>, <code>seqeval</code> (for BIO-tagged span extraction) — same API. For classification, use sklearn.</p>
 
         <div class="callout callout--warning">
           <p class="callout__label">Honest beat — report the numbers that don't flatter you</p>
@@ -371,7 +380,7 @@ print("accuracy   :", acc.compute(predictions=y_pred_idx, references=y_true_idx)
         <ul>
           <li><strong>Low recall on a class</strong> → you're missing real instances. Add more examples of that class to training; in the confusion matrix, look at where they're being misclassified to.</li>
           <li><strong>Low precision on a class</strong> → you're false-positiving onto it. Add hard negatives (Lesson 1.7) that resemble it but aren't.</li>
-          <li><strong>One class with much lower support</strong> → consider class weighting in the loss, or upsampling that class in training.</li>
+          <li><strong>One class with much lower support</strong> → upsample that class in training. Class weighting in the loss is the textbook answer for a classifier head, but in generative SFT a class is a token sequence, so weighting it is fiddly; upsampling is the practical route.</li>
         </ul>
 
         <div class="callout callout--key">
@@ -387,8 +396,9 @@ print("accuracy   :", acc.compute(predictions=y_pred_idx, references=y_true_idx)
             <dt>classification_report</dt><dd>sklearn function returning per-class precision/recall/F1/support plus macro/weighted averages — the workhorse classification eval.</dd>
             <dt>Confusion matrix</dt><dd>True-vs-predicted matrix; off-diagonal cells show which classes are confused for which, directional.</dd>
             <dt>Macro F1</dt><dd>Mean of per-class F1s with equal weight; penalises minority-class failures. The honest default on imbalanced data.</dd>
-            <dt>Weighted / micro F1</dt><dd>F1 averaged by class support; dominated by the majority class. Useful when eval frequencies match production.</dd>
-            <dt>HF evaluate</dt><dd>Hugging Face library exposing standard metrics (F1, accuracy, ROUGE, BLEU, WER, SQuAD) through one interface; aligns with the shared standards used in papers.</dd>
+            <dt>Weighted F1</dt><dd>Per-class F1 averaged by class support; dominated by the majority class. Useful when eval frequencies match production.</dd>
+            <dt>Micro F1</dt><dd>F1 from the pooled true/false positives and false negatives across classes; equals accuracy for single-label classification. Not the same as weighted F1.</dd>
+            <dt>HF evaluate</dt><dd>Hugging Face library exposing standard metrics (F1, accuracy, ROUGE, BLEU, WER, SQuAD) through one interface; its classification metrics wrap scikit-learn, so it is most useful for text metrics.</dd>
             <dt>Support</dt><dd>The number of true examples of a given class in the eval set; small support → noisier per-class metrics.</dd>
           </dl>
         </section>
