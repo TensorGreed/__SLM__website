@@ -335,7 +335,7 @@
         <header class="lesson-header">
           <span class="lesson-header__badge">Tutorial 5 · End-to-end · Internal KB</span>
           <h1>Internal knowledge-base QA via the qa-sft recipe — the simpler path</h1>
-          <p class="lesson-header__outcome">By the end of this tutorial you'll have a small language model that answers questions from your internal knowledge base — "how do I get VPN access?", "what's the office WiFi password?" — directly from its weights, with no retrieval index alongside. Inference runs around 200ms on a small GPU. The pipeline is intentionally lighter than the rag-protocol path: no citation discipline, no refusal phrase, no BM25 index to maintain. When facts are stable and the corpus is small, this is the right tool. When they're not, this tutorial covers the honest signal that says "this wants retrieval" and the one-click reroute that clones a retrieval-first sibling for you to compare.</p>
+          <p class="lesson-header__outcome">By the end of this tutorial you'll have a small language model that answers questions from your internal knowledge base — "how do I get VPN access?", "what's the office WiFi password?" — directly from its weights, with no retrieval index alongside. Inference takes well under a second on a small GPU. The pipeline is intentionally lighter than the rag-protocol path: no citation discipline, no refusal phrase, no BM25 index to maintain. When facts are stable and the corpus is small, this is the right tool. When they're not, this tutorial covers the honest signal that says "this wants retrieval" and the one-click reroute that clones a retrieval-first sibling for you to compare.</p>
           <div class="lesson-meta">
             <span><strong>Level:</strong> intermediate</span>
             <span><strong>Time:</strong> ~1.5 hours total (less ceremony than the rag-protocol tutorial)</span>
@@ -345,14 +345,14 @@
 
         <div class="callout callout--note">
           <p class="callout__label">Before you start</p>
-          <p>This tutorial assumes BrewSLM is running locally at <code>http://localhost:5173</code> with an admin user signed in. If you haven't done that yet, complete <a class="inline-link" href="setup-brewslm.html"><strong>Tutorial 0 — Set up BrewSLM and your first project</strong></a> first. It takes ~15 minutes and is the prerequisite for every tutorial in this track. Training needs Redis and a running Celery worker; Tutorial 0 starts both.</p>
+          <p>This tutorial assumes BrewSLM is running locally at <code>http://localhost:5173</code> with an admin user signed in. If you haven't done that yet, complete <a class="inline-link" href="setup-brewslm.html"><strong>Tutorial 0 — Set up BrewSLM and your first project</strong></a> first. It takes ~20 minutes and is the prerequisite for every tutorial in this track. Training needs Redis and a running Celery worker; Tutorial 0 starts both.</p>
           <p>You'll also want, before you start: <strong>40-80 canonical Q&amp;A pairs</strong> from your internal knowledge base. Easiest sources: resolved internal-IT tickets, employee-handbook FAQ pages, Slack-canonical-answer threads (the ones with a thumbs-up emoji on the reply that gets reposted twice a month). If you don't have your own data yet, the public <a class="inline-link" href="https://huggingface.co/datasets/squad" target="_blank" rel="noopener noreferrer">SQuAD</a> dataset or <a class="inline-link" href="https://huggingface.co/datasets/natural_questions" target="_blank" rel="noopener noreferrer">Natural Questions</a> works for validating the workflow before you point at your own corpus.</p>
         </div>
 
         <details class="tutorial-glossary">
           <summary><strong>Terms you'll see in this tutorial</strong> (click to expand)</summary>
           <dl>
-            <dt>Recipe</dt><dd>The training-plan template you pick when creating a project. For this tutorial: <code>qa-sft</code>. Set under <strong>Train → Task → Change</strong>. Defines the base model + adapter + pass/fail rule defaults for direct-answer QA — no retrieval index, no citation marker, just (question, answer) supervised fine-tuning.</dd>
+            <dt>Recipe</dt><dd>The training-plan template. BrewSLM proposes one from your brief and your data. For this tutorial: <code>qa-sft</code>. Set under <strong>Train → Task → Change</strong>. Defines the base model + adapter + pass/fail rule defaults for direct-answer QA — no retrieval index, no citation marker, just (question, answer) supervised fine-tuning.</dd>
             <dt>Adapter</dt><dd>The mapping layer that converts your CSV/JSONL rows into training-ready fields. For qa-sft the adapter is <code>qa-pair</code> — for training it reads a <code>question</code> column and an <code>answer</code> column. Answer-key rows use <code>question</code> and <code>expected</code>, with an optional <code>rationale</code>.</dd>
             <dt>Task profile</dt><dd>The shape category the platform uses to pick eval handlers and synth playbooks. qa-sft's task profile is <code>instruction_sft</code> — same family as a generic SFT task, with QA-specific defaults layered on top.</dd>
             <dt>Scoring mode</dt><dd>How the eval handler compares prediction to gold. qa-sft uses <code>field_match</code> — the prediction is scored against the single <code>expected</code> field via exact_match + F1, with an LLM-judge gate on top to catch semantic equivalence the string metrics miss.</dd>
@@ -374,7 +374,7 @@
           <li><strong>"How do I file expenses?"</strong> → "Use the expense app. Photograph the receipt, tag the project code, and submit. Manager approval is automatic under $200."</li>
           <li><strong>"How do I get on the office WiFi?"</strong> → "The network is <code>brewslm-corp</code>, password is in the team password manager under <em>Office WiFi</em>. Mobile devices use the <code>brewslm-guest</code> network with a daily PSK posted in #office."</li>
         </ul>
-        <p>The model is a fine-tuned LoRA adapter on top of <code>SmolLM2-135M-Instruct</code>. Inference is ~200ms on a single GPU, 600-900ms on CPU (still fine for a Slack-bot). <strong>No citations in the output</strong> (the part rag-protocol does and qa-sft doesn't); when a fact changes, you update the gold set and retrain.</p>
+        <p>The model is a fine-tuned LoRA adapter on top of <code>SmolLM2-135M-Instruct</code>. Inference takes a fraction of a second on a single GPU and somewhat longer on CPU, still fine for a Slack-bot (a rough guide; measure on your hardware). <strong>No citations in the output</strong> (the part rag-protocol does and qa-sft doesn't); when a fact changes, you update the gold set and retrain.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
@@ -388,12 +388,12 @@
             <tr><th>Approach</th><th>Handles paraphrased questions?</th><th>Latency</th><th>Cost</th><th>Privacy / offline</th></tr>
           </thead>
           <tbody>
-            <tr><td>Regex / keyword Slack-bot</td><td>No — fails on "how do I VPN" vs "VPN access"</td><td>&lt;5ms</td><td>Free</td><td>Self-hosted</td></tr>
-            <tr><td>Frontier LLM via API</td><td>Yes</td><td>1.5-3s + queue</td><td>$0.003-0.02 per query; $300-$3000/month at internal-team volumes</td><td>Every employee question leaves your network</td></tr>
-            <tr><td><strong>Small qa-sft model (this tutorial)</strong></td><td>Yes (paraphrase playbook drills exactly this)</td><td>200-900ms</td><td>~$30/month on a small GPU, $0 on CPU</td><td>Self-hosted; runs offline</td></tr>
+            <tr><td>Regex / keyword Slack-bot</td><td>No — fails on "how do I VPN" vs "VPN access"</td><td>Milliseconds</td><td>Free</td><td>Self-hosted</td></tr>
+            <tr><td>Frontier LLM via API</td><td>Yes</td><td>Seconds, plus queueing</td><td>A fee on every query (an illustrative $0.003-0.02 each)</td><td>Every employee question leaves your network</td></tr>
+            <tr><td><strong>Small qa-sft model (this tutorial)</strong></td><td>Yes (paraphrase playbook drills exactly this)</td><td>A fraction of a second</td><td>No per-query fee; the running cost of your own GPU or CPU</td><td>Self-hosted; runs offline</td></tr>
           </tbody>
         </table>
-        <p>Regex dies the first time someone types "how the heck do I VPN" — the register your engineers actually use diverges hard from the canonical FAQ wording. Frontier-LLM works but you're paying per question and sending every employee's "what's our parental leave policy" out to a third-party API. The small fine-tuned model is the middle path: handles paraphrase, stays on your hardware, costs nothing per query at runtime.</p>
+        <p>The latency and cost entries are rough orders of magnitude, not measurements; yours will differ. Regex dies the first time someone types "how the heck do I VPN" — the register your engineers actually use diverges hard from the canonical FAQ wording. Frontier-LLM works but you're paying per question and sending every employee's "what's our parental leave policy" out to a third-party API. The small fine-tuned model is the middle path: handles paraphrase, stays on your hardware, costs nothing per query at runtime.</p>
 
         <p>The remaining decision is qa-sft vs rag-protocol — both are BrewSLM recipes for QA, and they look almost identical from the outside. The <a href="#pick-recipe">recipe-choice section</a> below is the real load-bearing piece of this tutorial: the answer changes based on properties of your corpus, not preferences. Read it carefully before you start building.</p>
 
@@ -451,7 +451,7 @@
           </thead>
           <tbody>
             <tr><td>How often do your facts change?</td><td>Rarely (less than once a month)</td><td>Frequently (weekly or more)</td></tr>
-            <tr><td>How big is your corpus?</td><td>Small — under ~100 facts</td><td>Large — over ~500 facts (model can't memorise all of them)</td></tr>
+            <tr><td>How big is your corpus?</td><td>Small — under ~100 facts (a rough guide)</td><td>Large — over ~500 facts (a rough guide; past some size the model can't memorise them all)</td></tr>
             <tr><td>Do you need a citation in the output?</td><td>No — direct answer is fine</td><td>Yes — auditability / source-of-truth requirements</td></tr>
             <tr><td>Do you need clean refusal when the answer isn't known?</td><td>No — best-effort is acceptable</td><td>Yes — guessing is unacceptable</td></tr>
             <tr><td>Will you run offline / air-gapped?</td><td>Yes — qa-sft works without a retrieval index loaded</td><td>If you can load the BM25 index alongside, fine</td></tr>
@@ -459,7 +459,7 @@
             <tr><td>How much pipeline complexity are you willing to maintain?</td><td>Less is better — fewer moving parts</td><td>OK with index maintenance + protocol-shaped gold</td></tr>
           </tbody>
         </table>
-        <p>The internal-IT helpdesk inside a 50-engineer company is the canonical qa-sft case. Facts are stable across quarters. The corpus is small — 40-80 canonical Q&amp;As cover 95% of helpdesk volume. Citations aren't required because the answer is itself the source-of-truth from the team that maintains the policy.</p>
+        <p>The internal-IT helpdesk inside a 50-engineer company is the canonical qa-sft case. Facts are stable across quarters. The corpus is small — a few dozen canonical Q&amp;As often cover most of the helpdesk volume (a rough guide; count your own tickets). Citations aren't required because the answer is itself the source-of-truth from the team that maintains the policy.</p>
 
         <p>An ecommerce FAQ that updates monthly, a legal QA system that touches new statutes, or a customer-support bot covering 600 product SKUs — those are rag-protocol territory. <a class="inline-link" href="support-faq-rag-protocol.html">Tutorial 1</a> walks through that path.</p>
 
@@ -541,9 +541,9 @@
           <dt>Batch size + gradient accumulation</dt>
           <dd>Batch 4, accumulation 4 configured, but with auto epochs the trainer shrinks accumulation first on small datasets, so a few hundred rows train at accumulation 1 (effective batch 4). Lower the batch on GPUs under 8 GB.</dd>
         </dl>
-        <p>Training runs on the Celery worker, so Redis and the worker from <a class="inline-link" href="setup-brewslm.html">Tutorial 0</a> must be up; without them the run sits in Queued. Expected runtime (a rough guide, not a measured benchmark): minutes on a single GPU, longer on CPU. The runs list below the form shows live loss; if loss isn't dropping after the first 50 steps, cancel the run and check your data — the dataset is probably misshapen.</p>
+        <p>Training runs on the Celery worker, so Redis and the worker from <a class="inline-link" href="setup-brewslm.html">Tutorial 0</a> must be up; without the worker the run sits in Queued, and without Redis it is marked Failed at hand-off. Expected runtime (a rough guide, not a measured benchmark): minutes on a single GPU, longer on CPU. The runs list below the form shows live loss; if loss isn't dropping after the first 50 steps, cancel the run and check your data — the dataset is probably misshapen.</p>
 
-        <p><strong>✓ Checkpoint:</strong> in the runs list under <strong>Train</strong>, your run's loss drops from ~2-3 in the first few steps down to ~0.3-0.6 by the end. The bell shows a "training" notification with a percentage. When complete, BrewSLM runs the lift check against the base model on its own; <strong>Results → Verdict</strong> shows the summary card (or an <strong>Evaluate this run</strong> button if the check didn't run).</p>
+        <p><strong>✓ Checkpoint:</strong> in the runs list under <strong>Train</strong>, your run's loss drops steeply over the first steps and then flattens (the exact values depend on your data and model). The bell shows a "training" notification with a percentage. When complete, BrewSLM runs the lift check against the base model on its own; <strong>Results → Verdict</strong> shows the summary card (or an <strong>Evaluate this run</strong> button if the check didn't run).</p>
 
         <h2 id="forecast">Read the trainability forecast</h2>
         <p>Before kicking off the training run, the platform pre-computes a <strong>trainability forecast</strong>: given your current data + answer key + base model, what's the predicted pass probability? It lives under <strong>Train → More options → Plan and gaps</strong>; the goal ledger (Data → Sources → Details → Readiness overview) shows the same number as the <code>predicted_pass</code> row.</p>
@@ -608,7 +608,7 @@
         <h2 id="ship">Ship the model</h2>
         <p>Once the rule set passes, ship in three steps:</p>
         <ol>
-          <li><strong>Export the model.</strong> Open <strong>Ship → Package</strong>. In the <strong>New export</strong> card pick the run under <em>Experiment</em> and a <em>Format</em>: <strong>HuggingFace</strong> (a LoRA run is merged into its base model) for vLLM, or <strong>GGUF (CPU)</strong> for Ollama. GGUF needs a compressed file first: open <strong>Options → Compress first</strong>, pick the training run, set <em>Output Format</em> to GGUF and click <strong>Quantize</strong> (the LoRA adapter is merged automatically). Then <strong>Run Export</strong>. The export lands under <code>data/exports/&lt;project&gt;/&lt;export&gt;/run-&lt;n&gt;/</code> and appears in the <strong>Exports</strong> table.</li>
+          <li><strong>Export the model.</strong> Open <strong>Ship → Package</strong>. In the <strong>New export</strong> card pick the run under <em>Experiment</em> and a <em>Format</em>: <strong>HuggingFace</strong> (a LoRA run is merged into its base model) for vLLM, or <strong>GGUF (CPU)</strong> for Ollama. GGUF needs a compressed file first: open <strong>Options → Compress first</strong>, pick the training run, set <em>Output Format</em> to GGUF and click <strong>Quantize</strong> (the LoRA adapter is merged automatically). Then <strong>Run Export</strong>. The export lands under <code>data/exports/&lt;project&gt;/&lt;export&gt;/run-&lt;UTC timestamp&gt;/</code> and appears in the <strong>Exports</strong> table.</li>
           <li><strong>Get the launch commands.</strong> Expand the export's row and click <strong>Serve Plan</strong>. The <strong>One-Click Serve Plan</strong> card shows the <em>Setup Commands</em> and the <em>Launch Command</em>. For a HuggingFace export the vLLM runner is
             <pre class="code-block"><code>python -m vllm.entrypoints.openai.api_server --model ./model</code></pre>
             which exposes an OpenAI-compatible <code>/v1/chat/completions</code> endpoint. For a GGUF export the setup writes a <code>Modelfile</code> (<code>FROM ./model/&lt;file&gt;.gguf</code>) and runs <code>ollama create</code>; the launch command is <code>ollama serve</code>. There are no deploy scripts in the bundle.
@@ -642,7 +642,7 @@
             <dt>field_match scoring</dt><dd>The eval-handler mode qa-sft uses. Compares prediction to a single <code>expected</code> field via exact_match + F1; the scaffolded rule set adds a required LLM-judge rule for semantic equivalence.</dd>
             <dt>LLM-judge pass rate</dt><dd>The gate that actually matters for natural-language QA — a judge model reads (gold, prediction) and scores whether they say the same thing. Catches paraphrase that exact_match misses; required at ≥ 0.75 in the qa-sft scaffolded rule set once you click Use scaffold (optional at ≥ 0.65 in the general default).</dd>
             <dt>Reroute-to-RAG</dt><dd>One-click platform flow that clones the qa-sft project as a RAG-first sibling. The clone has <code>runtime_config.rag_first=True</code> (base model plus retrieval, not the rag-protocol recipe), carries the gold set forward, and builds the BM25 index immediately. Only qa-sft projects can be cloned this way. The original qa-sft project stays put. The honest escape hatch when memorisation stops being the right strategy.</dd>
-            <dt>Memorisation pressure</dt><dd>The trade-off qa-sft makes. Every gold row is a fact the model commits to weights. Up to ~100 facts a small model handles cleanly; past ~200-500 the model starts dropping signal on earlier rows to make room for new ones. That ceiling is the natural reroute-to-RAG trigger.</dd>
+            <dt>Memorisation pressure</dt><dd>The trade-off qa-sft makes. Every gold row is a fact the model commits to weights. A small model handles a modest number of facts cleanly; as the count grows it starts dropping signal on earlier rows to make room for new ones (where that happens depends on the model and the facts; the ~100 / ~500 figures above are rough guides, not measured limits). That ceiling is the natural reroute-to-RAG trigger.</dd>
           </dl>
         </section>
 

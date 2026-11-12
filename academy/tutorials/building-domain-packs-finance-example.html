@@ -187,7 +187,7 @@
             "text": "Each uses 0.80 from its next split, train or promote; past results stay as they were",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Save Pack updates the pack in place, and a project's effective contract (profile plus pack overlay) is resolved fresh each time it splits, trains or promotes. So every assigned project sees the new floor from its next run; nothing is re-scored retroactively. The tempting idea that the overlay was copied in at assignment is wrong: assignment only stores the pack id. To change one project without moving the others, duplicate the pack under a new version id and reassign. Bumping the version is a discipline the platform does not enforce."
+              "text": "Save Pack updates the pack in place, and a project's effective contract (profile plus pack overlay) is resolved fresh each time it splits, trains or promotes. So every assigned project sees the new floor from its next run; nothing is re-scored retroactively. The tempting idea that the overlay was copied in at assignment is wrong: assignment only stores the pack id. To change one project without moving the others, duplicate the pack (the copy gets a new pack_id, such as finance-pack-v2) and reassign that project to it. Bumping the version is a discipline the platform does not enforce."
             }
           }
         },
@@ -220,7 +220,7 @@
             "text": "No platform code reads a refusal phrase from the pack, so the key does nothing",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The contract validator accepts extra keys, so the field saves fine, but nothing reads it: the refusals playbook's phrase and prompt are fixed in code, and a playbook run takes no prompt text. The phrase has to be taught through the rows themselves (answer-key examples, and synthetic rows edited before you accept them). Per-pack refusal phrases would be a natural future enhancement."
+              "text": "The contract validator accepts extra keys, so the field saves fine, but nothing reads it: the refusals playbook's phrase and prompt are fixed in code, and a playbook run takes no prompt text. The phrase has to be taught through the rows themselves (answer-key examples and hand-written training rows; reject off-wording synthetic rows and add corrected ones by hand). Per-pack refusal phrases would be a natural future enhancement."
             }
           }
         },
@@ -379,7 +379,7 @@
           <li><strong>Identity</strong> — pack_id, version, AP-eng owner, status active, schema_ref <code>slm.domain-pack/v1</code>, <code>generic-domain-v1</code> as the default profile.</li>
           <li><strong>Hooks</strong> — three references from the built-in catalog (<code>default-normalizer</code>, <code>default-validator</code>, <code>weighted-score-evaluator</code>), each with a config dict. The two default hooks are pass-throughs, so their finance knobs document intent until a custom plugin reads them (see <a class="inline-link" href="#cleaning-currency">below</a>).</li>
           <li><strong>Overlay — dataset_split</strong> — 80/10/10 with seed 42 for reproducible manifest hashes.</li>
-          <li><strong>Overlay — training_defaults</strong> — sft / llama3 / 3 epochs / batch 4 / lr 2e-4 / LoRA on. Same shape as platform default, pinned so future drift doesn't move your team's defaults.</li>
+          <li><strong>Overlay — training_defaults</strong> — sft / llama3 / 3 epochs / batch 4 / lr 2e-4 / LoRA on, copied from the seeded <code>general-pack-v1</code> overlay and pinned so future drift doesn't move your team's defaults. Caution: <code>chat_template: "llama3"</code> is that pack's value, not a platform-wide default, and it can override your base model's own template (SmolLM2-Instruct ships a ChatML one) — the "tight coupling" pitfall below. Check it before you pin it; a fuller treatment is planned.</li>
           <li><strong>Overlay — registry_gates</strong> — tighter than platform default. <code>to_staging</code>: F1 ≥ 0.72. <code>to_production</code>: F1 ≥ 0.78, max regression 0.02 on F1 and exact match. (No LLM-judge or safety gate: an extraction run doesn't report those metrics unless you run those evals, and a gate on a missing metric blocks promotion.)</li>
           <li><strong>Contract sections</strong> for cleaning recipes, the evaluator hook's <code>weights</code> config, glossary — JSON-only (no first-class form fields). Per-entity precision floors themselves live in the project's eval pack, not the domain pack.</li>
           <li><strong>Assigned to your Tutorial 3 invoice project</strong> with <code>adopt_pack_default_profile=true</code>.</li>
@@ -464,7 +464,7 @@
           <dt><code>overlay.dataset_split</code></dt>
           <dd>The ratios used at prepare-dataset time. Default <code>{ "train": 0.8, "val": 0.1, "test": 0.1, "seed": 42 }</code>. For AP, the default ratios are almost always right. The platform's prepare endpoint also accepts a <strong>Stratify By Field</strong> input (groups rows by a class label and preserves per-class proportions across train/val/test — useful for AP categories like "invoice", "credit_memo", "statement") and a <strong>Disjoint By Field</strong> input (assigns each group whole to one split — the right primitive for "same vendor / same template shouldn't leak between train and test"). Both surface on <strong>Data → Split</strong>; both get a per-group breakdown in the resulting split manifest. The two are mutually exclusive — stratify requires splitting groups, disjoint forbids it.</dd>
           <dt><code>overlay.training_defaults</code></dt>
-          <dd>Pinned training-hyperparameter defaults — sft / llama3 / 3 epochs / batch 4 / lr 2e-4 / LoRA on, matching the platform default. Pinning them in the pack future-proofs against platform-default drift.</dd>
+          <dd>Pinned training-hyperparameter defaults — sft / llama3 / 3 epochs / batch 4 / lr 2e-4 / LoRA on, matching the seeded <code>general-pack-v1</code> overlay (not a platform-wide default; see the <code>chat_template</code> caution above). Pinning them in the pack future-proofs against drift.</dd>
           <dt><code>overlay.registry_gates</code></dt>
           <dd>Promotion thresholds — <code>to_staging.min_metrics</code> and <code>to_production.min_metrics</code> set the floors; <code>to_production.max_regression_vs_prod</code> caps per-metric regression for re-promotion. Independent from eval-pack gates but stack with them.</dd>
           <dt>Other overlay sections (data_quality, normalization, tools, evaluation, audit, glossary)</dt>
@@ -689,7 +689,7 @@
 
         <p>Migration workflow for bumping to <code>finance-pack-v2</code>:</p>
         <ol>
-          <li>Duplicate <code>finance-pack-v1</code>. The manager opens the editor on a copy with a bumped pack_id (auto-suffixed <code>-v2</code>) — overwrite to <code>1.1.0</code> for an in-place bump, or to a new pack_id if the contract changes shape.</li>
+          <li>Duplicate <code>finance-pack-v1</code>. The manager creates the copy straight away under a new pack_id (auto-suffixed <code>-v2</code>, so <code>finance-pack-v2</code>) with the patch version bumped, and opens the editor on it. Set the <code>version</code> field (for example <code>1.1.0</code>) as you like; the pack_id itself can't be changed in the editor (a save whose pack_id differs is refused), so for a different name use <em>New Pack</em> and paste the contract.</li>
           <li>Edit the overlay or hook config to encode the change.</li>
           <li>Save.</li>
           <li>Re-assign the AP projects you want migrated. Each picks up the new overlay on its next prepare / train / promote.</li>
@@ -729,7 +729,7 @@
     // Standard split, pinned so a platform-default drift doesn't move the AP team's ratios.
     "dataset_split": { "train": 0.8, "val": 0.1, "test": 0.1, "seed": 42 },
 
-    // Pinned training defaults — same shape as the platform default, explicit in the pack.
+    // Pinned training defaults — copied from general-pack-v1; check chat_template against your base model.
     "training_defaults": {
       "training_mode": "sft", "chat_template": "llama3",
       "num_epochs": 3, "batch_size": 4, "learning_rate": 0.0002, "use_lora": true
@@ -859,7 +859,7 @@
           <dt>Apply it across the portfolio</dt>
           <dd>Open every AP project in your tenant. Assign the pack. Watch which ones now show "not promotable" against the tightened registry gates — those are the projects that were quietly under-performing. Use that signal to prioritise data and synth work.</dd>
           <dt>Monitor pack effectiveness over time</dt>
-          <dd>The pack is policy; the projects' eval rows are the evidence. Track per-quarter the share of AP-portfolio projects whose latest eval clears the pack's gates. Falling share means either the gates have outrun the data shape (sometimes legitimate — bump the version downward) or the data shape is decaying (more likely — investigate per project).</dd>
+          <dd>The pack is policy; the projects' eval rows are the evidence. Track per-quarter the share of AP-portfolio projects whose latest eval clears the pack's gates. Falling share means either the gates have outrun the data shape (sometimes legitimate — lower the gates in a new pack version) or the data shape is decaying (more likely — investigate per project).</dd>
           <dt>Contribute back to your internal pack library</dt>
           <dd>If your <code>finance-pack-v1</code> turns out to encode conventions other AP teams in your org would benefit from, export it as a zip (<em>Export this project as a pack</em>) or copy the JSON contract into your internal repo, label it with the version, and circulate. There's no marketplace; the zip or JSON file is the artefact. Other teams import the zip (<em>Import a domain pack</em>) or paste the JSON via <em>New Pack</em>, re-pick hooks in the Hook Picker if the IDs differ, and they have the same policy applied.</dd>
         </dl>
@@ -905,7 +905,7 @@
                   "They keep the 0.78 copied in at assignment; only newly assigned projects see 0.80"
                 ],
                 "answer": 2,
-                "explanation": "Save Pack updates the pack in place, and a project's effective contract (profile plus pack overlay) is resolved fresh each time it splits, trains or promotes. So every assigned project sees the new floor from its next run; nothing is re-scored retroactively. The tempting idea that the overlay was copied in at assignment is wrong: assignment only stores the pack id. To change one project without moving the others, duplicate the pack under a new version id and reassign. Bumping the version is a discipline the platform does not enforce."
+                "explanation": "Save Pack updates the pack in place, and a project's effective contract (profile plus pack overlay) is resolved fresh each time it splits, trains or promotes. So every assigned project sees the new floor from its next run; nothing is re-scored retroactively. The tempting idea that the overlay was copied in at assignment is wrong: assignment only stores the pack id. To change one project without moving the others, duplicate the pack (the copy gets a new pack_id, such as finance-pack-v2) and reassign that project to it. Bumping the version is a discipline the platform does not enforce."
               },
               {
                 "q": "Why doesn't this tutorial put the AP team's refusal phrase ('I can't extract that field; route to exceptions') directly into the pack contract?",
@@ -916,7 +916,7 @@
                   "The pack does swap the phrase, but only after a full retraining run"
                 ],
                 "answer": 0,
-                "explanation": "The contract validator accepts extra keys, so the field saves fine, but nothing reads it: the refusals playbook's phrase and prompt are fixed in code, and a playbook run takes no prompt text. The phrase has to be taught through the rows themselves (answer-key examples, and synthetic rows edited before you accept them). Per-pack refusal phrases would be a natural future enhancement."
+                "explanation": "The contract validator accepts extra keys, so the field saves fine, but nothing reads it: the refusals playbook's phrase and prompt are fixed in code, and a playbook run takes no prompt text. The phrase has to be taught through the rows themselves (answer-key examples and hand-written training rows; reject off-wording synthetic rows and add corrected ones by hand). Per-pack refusal phrases would be a natural future enhancement."
               },
               {
                 "q": "Which of these is NOT something the Domain Packs panel (Settings → Tools) exposes today?",
@@ -950,7 +950,7 @@
                   <li>Each uses 0.80 from its next split, train or promote; past results stay as they were</li>
                   <li>They keep the 0.78 copied in at assignment; only newly assigned projects see 0.80</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Each uses 0.80 from its next split, train or promote; past results stay as they were</strong> Save Pack updates the pack in place, and a project's effective contract (profile plus pack overlay) is resolved fresh each time it splits, trains or promotes. So every assigned project sees the new floor from its next run; nothing is re-scored retroactively. The tempting idea that the overlay was copied in at assignment is wrong: assignment only stores the pack id. To change one project without moving the others, duplicate the pack under a new version id and reassign. Bumping the version is a discipline the platform does not enforce.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Each uses 0.80 from its next split, train or promote; past results stay as they were</strong> Save Pack updates the pack in place, and a project's effective contract (profile plus pack overlay) is resolved fresh each time it splits, trains or promotes. So every assigned project sees the new floor from its next run; nothing is re-scored retroactively. The tempting idea that the overlay was copied in at assignment is wrong: assignment only stores the pack id. To change one project without moving the others, duplicate the pack (the copy gets a new pack_id, such as finance-pack-v2) and reassign that project to it. Bumping the version is a discipline the platform does not enforce.</p></details></li>
               <li><p class="quiz__q-text">Why doesn't this tutorial put the AP team's refusal phrase ('I can't extract that field; route to exceptions') directly into the pack contract?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>No platform code reads a refusal phrase from the pack, so the key does nothing</li>
@@ -958,7 +958,7 @@
                   <li>Refusal phrases are fixed by the recipe and override any pack setting</li>
                   <li>The pack does swap the phrase, but only after a full retraining run</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. No platform code reads a refusal phrase from the pack, so the key does nothing</strong> The contract validator accepts extra keys, so the field saves fine, but nothing reads it: the refusals playbook's phrase and prompt are fixed in code, and a playbook run takes no prompt text. The phrase has to be taught through the rows themselves (answer-key examples, and synthetic rows edited before you accept them). Per-pack refusal phrases would be a natural future enhancement.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. No platform code reads a refusal phrase from the pack, so the key does nothing</strong> The contract validator accepts extra keys, so the field saves fine, but nothing reads it: the refusals playbook's phrase and prompt are fixed in code, and a playbook run takes no prompt text. The phrase has to be taught through the rows themselves (answer-key examples and hand-written training rows; reject off-wording synthetic rows and add corrected ones by hand). Per-pack refusal phrases would be a natural future enhancement.</p></details></li>
               <li><p class="quiz__q-text">Which of these is NOT something the Domain Packs panel (Settings → Tools) exposes today?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>A dropdown of every installed pack</li>

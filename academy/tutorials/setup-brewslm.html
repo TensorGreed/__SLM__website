@@ -237,10 +237,10 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 2,
-            "text": "Redis and a running Celery worker",
+            "text": "A running Celery worker to pick the run up",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The shipped .env sets TRAINING_BACKEND=\"external\", which hands training to a Celery worker through Redis, and preflight does not check that a worker is up. Without one the run stays queued forever. Start Redis and the worker alongside the backend and frontend. CPU-only machines still train, just slower; synth and eval Jobs run in-process and don't need the worker."
+              "text": "The shipped .env sets TRAINING_BACKEND=\"external\", which hands training to a Celery worker through Redis, and preflight does not check that a worker is up. With Redis up but no worker, the run stays queued forever. (With Redis down the hand-off itself fails and the run is marked Failed instead.) Start Redis and the worker alongside the backend and frontend. CPU-only machines still train, just slower; synth and eval Jobs run in-process and don't need the worker."
             }
           }
         }
@@ -354,7 +354,7 @@ git --version        # any modern version
         <p>If <code>python3</code> reports 3.10 or earlier: install Python 3.11 from <a class="inline-link" href="https://www.python.org/downloads/" target="_blank" rel="noopener noreferrer">python.org</a> or via your package manager (<code>brew install python@3.12</code> on macOS, <code>apt install python3.12</code> on Debian/Ubuntu). If Node is too old: <a class="inline-link" href="https://nodejs.org/" target="_blank" rel="noopener noreferrer">nodejs.org</a> or <code>nvm install 22</code> (Vite 7 needs Node 20.19+ or 22.12+). If Redis is missing: <code>brew install redis</code> on macOS, <code>apt install redis-server</code> on Debian/Ubuntu, or run it in Docker (Step 3).</p>
         <p>Required for training:</p>
         <ul>
-          <li><strong>Redis.</strong> The shipped <code>.env</code> sets <code>TRAINING_BACKEND="external"</code>, which hands every training run to a Celery worker through Redis. Without Redis and a running worker, a run you start stays <em>queued</em> forever, and the training checks don't warn you. Step 3 starts both.</li>
+          <li><strong>Redis.</strong> The shipped <code>.env</code> sets <code>TRAINING_BACKEND="external"</code>, which hands every training run to a Celery worker through Redis. Without Redis, a run you start fails at once (the hand-off to the worker raises, and the run is marked <em>Failed</em>). With Redis up but no worker, the run stays <em>queued</em> forever, and the training checks don't warn you. Step 3 starts both.</li>
         </ul>
         <p>Optional:</p>
         <ul>
@@ -384,7 +384,7 @@ pip install -r requirements.txt
 cp .env.example .env
 uvicorn app.main:app --reload --port 8000</code></pre>
         <p>When the backend starts you'll see log lines ending with:</p>
-        <pre class="code-block"><code>INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+        <pre class="code-block"><code>INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 INFO:     Started reloader process [12345]
 INFO:     Started server process [12346]
 INFO:     Application startup complete.</code></pre>
@@ -398,7 +398,7 @@ INFO:     Application startup complete.</code></pre>
         </div>
 
         <h2 id="worker">Step 3 — Start Redis and the Celery worker</h2>
-        <p>Training runs don't execute inside the backend. The backend hands each run to a Celery worker through Redis, and the worker launches the training script. Skip this step and every <strong>Train</strong> click in the later tutorials stays <em>queued</em> forever. Synthetic generation and evaluation Jobs run inside the backend and don't need the worker, so the rest of the UI works either way, which makes the missing worker easy to miss.</p>
+        <p>Training runs don't execute inside the backend. The backend hands each run to a Celery worker through Redis, and the worker launches the training script. Skip this step and every <strong>Train</strong> click in the later tutorials goes nowhere: with no Redis the run is marked <em>Failed</em> straight away; with Redis but no worker it stays <em>queued</em> forever. Synthetic generation and evaluation Jobs run inside the backend and don't need the worker, so the rest of the UI works either way, which makes the missing worker easy to miss.</p>
         <p>First start Redis on its default port 6379 (the <code>.env</code> points <code>REDIS_URL</code> and <code>CELERY_BROKER_URL</code> at <code>redis://localhost:6379/0</code>). Pick one:</p>
         <pre class="code-block"><code>redis-server                                  # in its own terminal
 # or: brew services start redis               (macOS)
@@ -470,7 +470,7 @@ npm run dev</code></pre>
           <dt>Train (<code>/project/&lt;id&gt;/train</code>)</dt>
           <dd>One form: <strong>Base model</strong> (+ Browse), <strong>Task</strong> (read-only + Change), <strong>Seeds</strong> (One run / Three seeds), <strong>Run name</strong>, a readiness line, and the <strong>Train</strong> button — which opens a confirm dialog with the resolved config and an estimate before <strong>Launch</strong>. Everything else waits under <strong>More options</strong>: Model and hyperparameters, LoRA and advanced training, Seeds, Checks (preflight), Cloud burst, Training presets, Plan and gaps (config gaps + trainability forecast), Base model registry, Task type, Pipeline presets, Adapter Studio, Tokenization. The runs list with each run's live dashboard sits below the form.</dd>
           <dt>Results (<code>/project/&lt;id&gt;/results?tab=…</code>)</dt>
-          <dd>Four tabs. <strong>Verdict</strong> ("Did it work?") — the summary card (better than the base model / within noise…), run picker, the pass/fail rules, the scorecard. <strong>Failures</strong> ("Where does it fail?") — failure clusters, eval gaps, built-in checks, custom checks, the rule-set editor, the reroute recommendation, the answer-key review. <strong>Compare</strong> — other runs and models, external benchmarks, the Auto-RAG comparison. <strong>Try it</strong> — the chat playground: pick a training run, set temperature and max tokens, chat. The most reliable smoke test for "did the model actually learn what I trained it on?"</dd>
+          <dd>Four tabs. <strong>Verdict</strong> ("Did it work?") — the summary card (better than the base model / within noise…), run picker, the pass/fail result (PASS/FAIL and any failed required rules), the scorecard. <strong>Failures</strong> ("Where does it fail?") — failure clusters, eval gaps, built-in checks, custom checks, the <em>Pass/fail rules</em> card (rule set picker and each rule's result) with the rule-set editor, the reroute recommendation, the answer-key review. <strong>Compare</strong> — other runs and models, external benchmarks, the Auto-RAG comparison. <strong>Try it</strong> — the chat playground: pick a training run, set temperature and max tokens, chat. The most reliable smoke test for "did the model actually learn what I trained it on?"</dd>
           <dt>Ship (<code>/project/&lt;id&gt;/ship?stage=…</code>)</dt>
           <dd>Four stages: <strong>Package</strong> (the <em>New export</em> form — run, format, quantization, deployment targets — and the <strong>Releases</strong> table), <strong>Publish</strong> (a completed Hugging Face export to the Hub), <strong>Deploy</strong> (serve / deploy plans, served versions), <strong>Monitor</strong> (run events, failure clusters, drift).</dd>
           <dt>Settings (<code>/project/&lt;id&gt;/settings</code>)</dt>
@@ -493,7 +493,7 @@ npm run dev</code></pre>
           <dt>Login succeeds but the project list is empty</dt>
           <dd>You logged in with a non-admin username. New usernames are created as ENGINEER users: they can create their own projects but don't see projects owned by <code>admin</code>, including the starter demos. Sign out (top-right user menu) and sign back in with <code>admin</code> as the username — that user has full bootstrap access.</dd>
           <dt>A training run stays "queued" and never starts</dt>
-          <dd>No Celery worker is picking it up: Redis or the worker isn't running (Step 3). Start both; a run that is still queued is picked up once the worker connects. Compression and remote imports go through the same worker. A synthetic-generation or evaluation Job stuck in "queued" is a different problem: those run inside the backend, so it usually means the backend restarted mid-run. Start the action again.</dd>
+          <dd>No Celery worker is picking it up: the worker isn't running (Step 3). Start it; a run that is still queued is picked up once the worker connects. (If Redis itself is down, the run doesn't queue at all: it is marked <em>Failed</em> with a dispatch error. Start Redis and click <strong>Train</strong> again.) Compression and remote imports go through the same worker. A synthetic-generation or evaluation Job stuck in "queued" is a different problem: those run inside the backend, so it usually means the backend restarted mid-run. Start the action again.</dd>
           <dt>The frontend can't talk to the backend (network errors in the browser console)</dt>
           <dd>Confirm both processes are running. Open <code>http://localhost:8000/docs</code> directly to verify the backend; open <code>http://localhost:5173</code> to verify the frontend. If both load but the frontend's <code>/api/...</code> calls fail, the dev proxy isn't reaching the backend: if the backend isn't on port 8000, restart Vite with <code>VITE_API_PROXY_TARGET</code> set to its URL.</dd>
         </dl>
@@ -523,7 +523,7 @@ npm run dev</code></pre>
             <dt>Celery worker</dt><dd>The process that picks training runs (and compression, quantization and remote imports) up from Redis and runs them. Required for training with the default <code>TRAINING_BACKEND="external"</code>.</dd>
             <dt>Frontend</dt><dd>The Vite/React UI at <code>http://localhost:5173</code>. The thing you click. Talks to the backend over HTTP.</dd>
             <dt>Project</dt><dd>One BrewSLM training effort. Has one task shape, one answer key, one dataset family, one trained model (or many runs comparing variants). Multiple projects per BrewSLM install are normal.</dd>
-            <dt>Recipe</dt><dd>The training plan template — base model + adapter + pass/fail rule set. BrewSLM picks one from your brief and your data; change it under <strong>Train → Task → Change</strong>. There are eleven; the main ones (rag-protocol, classification, qa-sft, span-extraction, summarization, code-review, generic-sft) are covered across the other tutorials, and json-extraction, code-findings, code-remediation and structured-plan round out the list.</dd>
+            <dt>Recipe</dt><dd>The training plan template — base model + adapter, plus a suggested pass/fail rule set that applies only after you click <strong>Use scaffold</strong> or pick a rule set in the <em>Project rule set</em> picker (<strong>Results → Failures</strong>). BrewSLM picks one from your brief and your data; change it under <strong>Train → Task → Change</strong>. There are eleven; the main ones (rag-protocol, classification, qa-sft, span-extraction, summarization, code-review, generic-sft) are covered across the other tutorials, and json-extraction, code-findings, code-remediation and structured-plan round out the list.</dd>
             <dt>Data</dt><dd>The destination for getting data into shape, in five steps: Sources, Prepare, Labels (the answer key), Generate (synthetic data), Split. Where you spend most of your time before training.</dd>
             <dt>Answer key</dt><dd>BrewSLM's name for the gold set — the trusted rows every run is scored against. Lives under <strong>Data → Labels</strong>.</dd>
             <dt>Notification bell</dt><dd>Top-right icon. Tracks every background job. Tells you when a 30-second synth generation is done or a 30-minute training run is converging.</dd>
@@ -574,11 +574,11 @@ npm run dev</code></pre>
                 "options": [
                   "A GPU — training waits in the queue until CUDA is detected",
                   "Admin rights — runs from ENGINEER users wait for approval",
-                  "Redis and a running Celery worker",
+                  "A running Celery worker to pick the run up",
                   "A Hugging Face token to download the base model weights"
                 ],
                 "answer": 2,
-                "explanation": "The shipped .env sets TRAINING_BACKEND=\"external\", which hands training to a Celery worker through Redis, and preflight does not check that a worker is up. Without one the run stays queued forever. Start Redis and the worker alongside the backend and frontend. CPU-only machines still train, just slower; synth and eval Jobs run in-process and don't need the worker."
+                "explanation": "The shipped .env sets TRAINING_BACKEND=\"external\", which hands training to a Celery worker through Redis, and preflight does not check that a worker is up. With Redis up but no worker, the run stays queued forever. (With Redis down the hand-off itself fails and the run is marked Failed instead.) Start Redis and the worker alongside the backend and frontend. CPU-only machines still train, just slower; synth and eval Jobs run in-process and don't need the worker."
               }
             ]
           </script>
@@ -614,10 +614,10 @@ npm run dev</code></pre>
                 <ol class="quiz__static-options" type="A">
                   <li>A GPU — training waits in the queue until CUDA is detected</li>
                   <li>Admin rights — runs from ENGINEER users wait for approval</li>
-                  <li>Redis and a running Celery worker</li>
+                  <li>A running Celery worker to pick the run up</li>
                   <li>A Hugging Face token to download the base model weights</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Redis and a running Celery worker</strong> The shipped .env sets TRAINING_BACKEND="external", which hands training to a Celery worker through Redis, and preflight does not check that a worker is up. Without one the run stays queued forever. Start Redis and the worker alongside the backend and frontend. CPU-only machines still train, just slower; synth and eval Jobs run in-process and don't need the worker.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. A running Celery worker to pick the run up</strong> The shipped .env sets TRAINING_BACKEND="external", which hands training to a Celery worker through Redis, and preflight does not check that a worker is up. With Redis up but no worker, the run stays queued forever. (With Redis down the hand-off itself fails and the run is marked Failed instead.) Start Redis and the worker alongside the backend and frontend. CPU-only machines still train, just slower; synth and eval Jobs run in-process and don't need the worker.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

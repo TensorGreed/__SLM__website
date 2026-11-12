@@ -214,7 +214,7 @@
             "text": "Low blast radius: a human decides before any comment can block the merge",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The point is containment: a wrong comment costs the reviewer a few seconds and never holds up the merge, so you can measure the bot's hit rate before giving it more power. The tempting idea that GitHub keeps suggested changes invisible to the author is false: suggestions live on review comments the author can see and apply. A real reviewer-only stage posts somewhere the author doesn't see, such as a private channel or a check-run summary for reviewers."
+              "text": "The point is containment: a wrong comment costs the reviewer a few seconds and never holds up the merge, so you can measure the bot's hit rate before giving it more power. The tempting idea that GitHub keeps suggested changes invisible to the author is false: suggestions live on review comments the author can see and apply. A real reviewer-only stage posts somewhere the author doesn't see, such as a private channel."
             }
           }
         },
@@ -233,7 +233,7 @@
             {
               "@type": "Answer",
               "position": 2,
-              "text": "A diff in a programming language the base model never saw in pretraining"
+              "text": "An LGTM on a diff with a real bug, or a nit-only review that misses it"
             },
             {
               "@type": "Answer",
@@ -244,10 +244,10 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "An LGTM on a diff with a real bug, or a nit-only review that misses it",
+            "text": "Clean-looking code with a subtle bug, paired with a review that names it",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "For code review, hard negatives are the outputs you want the model never to emit: empty praise on a diff that needed feedback, and style nits that miss the actual bug. The code_review_hard_negatives playbook generates both. A reworded correct review is a paraphrase positive, not a negative. For SQL-injection classification, hard negatives are benign inputs that look injection-shaped — what counts as 'hard negative' depends on the task."
+              "text": "The code_review_hard_negatives playbook writes code that looks clean but hides a subtle bug (an off-by-one, a wrong default, a missed error case), paired with a review that names that bug, so the model learns to look past surface polish. An LGTM on buggy code or a nit-only review is the failure you want to avoid; training on such rows would teach it. A reworded correct review is what the paraphrase playbook drills. For SQL-injection classification, hard negatives are benign inputs that look injection-shaped — what counts as 'hard negative' depends on the task."
             }
           }
         }
@@ -346,7 +346,7 @@
 
         <div class="callout callout--note">
           <p class="callout__label">Before you start</p>
-          <p>This tutorial assumes BrewSLM is running locally at <code>http://localhost:5173</code> with an admin user signed in. If you haven't done that yet, complete <a class="inline-link" href="setup-brewslm.html"><strong>Tutorial 0 — Set up BrewSLM and your first project</strong></a> first. It takes ~15 minutes and is the prerequisite for every tutorial in this track.</p>
+          <p>This tutorial assumes BrewSLM is running locally at <code>http://localhost:5173</code> with an admin user signed in. If you haven't done that yet, complete <a class="inline-link" href="setup-brewslm.html"><strong>Tutorial 0 — Set up BrewSLM and your first project</strong></a> first. It takes ~20 minutes and is the prerequisite for every tutorial in this track.</p>
           <p>You'll also want, before you start: <strong>~200 (diff, review) pairs</strong> mined from your team's GitHub PR archive — the merged PRs from the last six months are the highest-signal source you have. Public datasets work as warmup but your own archive is what teaches the model your voice.</p>
         </div>
 
@@ -356,7 +356,7 @@
             <dt>Recipe</dt><dd>The training-plan template behind a project. For this tutorial: <code>code-review</code> (shown in the app as the task type <em>Code Review Nitpicker</em>). Defines the base model + adapter + pass/fail-rule defaults for diff-to-review-comment generation.</dd>
             <dt>Adapter</dt><dd>The mapping layer that converts your CSV/JSONL rows into training-ready fields. For code-review, the adapter is <code>qa-pair</code> — it reads (diff, review) pairs treating the diff as the input and the review comment as the output.</dd>
             <dt>Gold set / answer key</dt><dd>Your trusted reference rows — the "exemplary" reviews from your senior engineers. In BrewSLM this is the <strong>answer key</strong>, under <strong>Data → Labels</strong> (the <em>Answer key</em> card). Aim for 100+ rows; the recipe's <code>min_rows_recommended</code> is 100 but more is better when the target is voice.</dd>
-            <dt>Synth playbook</dt><dd>A platform-provided generator that expands your gold set with controlled variations. Code-review ships three: paraphrase (voice drill), hard negatives (anti-patterns), and cluster-targeted (failure-mode patching).</dd>
+            <dt>Synth playbook</dt><dd>A platform-provided generator that expands your gold set with controlled variations. Code-review ships three: paraphrase (new code with the same issue), hard negatives (clean-looking code with a subtle bug), and cluster-targeted (failure-mode patching).</dd>
             <dt>LLM judge</dt><dd>A second model that reads the diff, the reference review and the candidate review, and scores the candidate 1–5 on a generic rubric (5 = fully correct and complete … 1 = incorrect). A row passes at 4 or above. It is the code-review scaffold's headline rule because exact-match doesn't apply when two valid reviews of the same diff use different words. It does not score theme, actionability or voice separately.</dd>
             <dt>Field-match scoring</dt><dd>The scoring mode the code-review recipe runs in. Compares the candidate output to the reference with token-level metrics (F1, exact match); the LLM judge pass rate comes from a separate <em>LLM Judge</em> eval you run yourself.</dd>
             <dt>Critique theme</dt><dd>What the review is fundamentally <em>about</em> — "missing null check", "wrong logger level", "test coverage gap", "off-spec naming convention". A useful way to read failures by hand; the app's judge does not score it.</dd>
@@ -386,7 +386,7 @@
         <pre class="code-block"><code>1. Use `is None` instead of `== None` for the null check — `==` calls __eq__ which can be overridden and is slower.
 2. Log line leaks user email into INFO-level logs. Either drop the email or move to DEBUG to stay GDPR-compliant.
 3. Consider whether a 400 is the right code here — empty payload may indicate a client retry; 422 reads better.</code></pre>
-        <p>The model is a fine-tuned LoRA adapter on top of <code>Qwen/Qwen2.5-Coder-1.5B-Instruct</code> (the recipe's suggested base). Latency: 1-3 seconds per diff on a single GPU; the bigger <code>Qwen2.5-Coder-3B-Instruct</code> alternative reads more context and writes more nuanced reviews at 3-6 seconds. Deployable as a GitHub Action that runs on PR open / PR update.</p>
+        <p>The model is a fine-tuned LoRA adapter on top of <code>Qwen/Qwen2.5-Coder-1.5B-Instruct</code> (the recipe's suggested base). Latency: a few seconds per diff on a single GPU (a rough guide; yours will differ with hardware and diff size); the bigger <code>Qwen2.5-Coder-3B-Instruct</code> alternative reads more context and writes more nuanced reviews, and is slower. Deployable as a GitHub Action that runs on PR open / PR update.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
@@ -445,8 +445,8 @@
         <h2 id="cleanup">Cleanup</h2>
         <p>Open <strong>Data → Prepare</strong> and its Details → <strong>Quality and safety</strong> section. For code-review data, the cleanup pass is mostly about <em>noise removal</em>:</p>
         <ul>
-          <li><strong>Strip auto-generated comments.</strong> Your archive will include CI-bot comments ("✅ Build passed", "Codecov: -0.2%"), Dependabot dependency-bump notices, Snyk security-scan summaries, copilot suggestions accepted-as-comments. None of these are reviews; all of them are noise. Filter by author handle (drop rows where commenter ends in <code>[bot]</code>) and by content heuristics (drop rows starting with markdown badge images).</li>
-          <li><strong>Drop LGTM-only rows.</strong> "LGTM", "ship it", "👍", "approve" — these are signal-zero for training a model to write reviews. They're useful as <em>hard negatives</em> (see the synth section below) but should not be in your positive gold set.</li>
+          <li><strong>Strip auto-generated comments.</strong> Your archive will include CI-bot comments ("✅ Build passed", "Codecov: -0.2%"), Dependabot dependency-bump notices, Snyk security-scan summaries, AI-assistant suggestions accepted as comments. None of these are reviews; all of them are noise. Filter by author handle (drop rows where commenter ends in <code>[bot]</code>) and by content heuristics (drop rows starting with markdown badge images).</li>
+          <li><strong>Drop LGTM-only rows.</strong> "LGTM", "ship it", "👍", "approve" — these are signal-zero for training a model to write reviews. Leave them out of the gold set. No playbook turns them into useful rows: the hard-negatives playbook (see the synth section below) writes buggy code with a review that names the bug, not LGTM rows.</li>
           <li><strong>Normalise diff whitespace.</strong> Mixed line endings (CRLF vs LF), trailing whitespace on diff lines, smart-quotes in review text. The near-duplicate signal in <em>Data health and leakage</em> (<strong>Data → Split</strong> → Details) will catch many of these, and Prepare's one-click autofixes apply the fix — review one cluster at a time.</li>
           <li><strong>Deduplicate near-identical reviews.</strong> The same engineer often writes the same review on similar diffs ("add a docstring", "extract this magic number"). Keep one canonical instance per pattern — train/test leakage on duplicate reviews inflates F1 scores artificially.</li>
           <li><strong>PII in commit history.</strong> Reviews sometimes quote internal Slack messages, customer names, or production credentials accidentally pasted in. Walk the <em>Quality and safety</em> section's PII flags and decide per-row (Prepare's <em>Redact PII &amp; Secrets</em> checkbox redacts per field on <em>Clean All Documents</em>).</li>
@@ -468,7 +468,7 @@
             <tr><td>Just want a yes/no "is this code risky"?</td><td>✗ (overkill)</td><td>✗</td><td>✓ (binary classifier)</td></tr>
           </tbody>
         </table>
-        <p>For the canonical "comment on diffs in your team's voice" use case: <strong>code-review wins</strong> because (a) the LLM-judge eval handles the "many valid reviews" problem that breaks F1-led recipes, (b) the scaffold expects a <code>diff</code> input + <code>review</code> output without forcing you to invent mapping, and (c) the three code-review playbooks target voice, anti-patterns, and failure clusters specifically. Sticking with code-review for the rest of this tutorial.</p>
+        <p>For the canonical "comment on diffs in your team's voice" use case: <strong>code-review wins</strong> because (a) the LLM-judge eval handles the "many valid reviews" problem that breaks F1-led recipes, (b) the scaffold expects a <code>diff</code> input + <code>review</code> output without forcing you to invent mapping, and (c) the three code-review playbooks target recurring issues, subtle bugs, and failure clusters specifically. Sticking with code-review for the rest of this tutorial.</p>
 
         <h2 id="domain-packs">Domain packs (the language-specific gap)</h2>
         <p>BrewSLM doesn't ship a code-review domain pack. It ships one generic domain pack (<code>general-pack-v1</code>, under <strong>Settings → Tools → Domain Packs</strong>); the domain <em>presets</em> in the create dialog (Legal, Customer Support, Healthcare, Finance) and the matching domain eval packs are content domains, not engineering domains. For code-review you're operating on the recipe defaults, which is fine for v1.</p>
@@ -497,7 +497,7 @@
       "rationale": "style-nit" }
   ]
 }</code></pre>
-          <p>Then log in and post the file (<code>gold_dev</code> is the <em>Practice answer key</em>, <code>gold_test</code> the <em>Final answer key</em>; the password is the <code>API_KEY</code> from <code>backend/.env</code>):</p>
+          <p>Then log in and post the file (<code>gold_dev</code> is the <em>Practice answer key</em>, <code>gold_test</code> the <em>Final answer key</em>; the password is the <code>API_KEY</code> from <code>backend/.env</code>; replace <code>sk-mock-admin-key</code> below with your <code>API_KEY</code> if you changed it):</p>
           <pre class="code-block"><code>TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/local/login \
   -H 'Content-Type: application/json' \
   -d '{"username": "admin", "password": "sk-mock-admin-key"}' | jq -r .token)
@@ -515,7 +515,7 @@ curl -s -X POST http://localhost:8000/api/projects/&lt;project id&gt;/gold/impor
           <li>Write a short script that sends each (diff, review) pair to a teacher model (a local model, or a cloud one behind an API). Prompt the teacher to score the pair on three axes of your own (concrete suggestion present, voice matches team norm, comment is actionable) and return a 0-3 score per axis. Aggregate the scores per row.</li>
           <li>Sort by aggregate score and spot-check the top 20% <em>before</em> importing it: rows imported through <strong>Data → Sources → Import dataset</strong> are accepted straight into training and never reach the Review queue. Put the best of them in the answer key with the API call above.</li>
         </ol>
-        <p>This compresses 8 hours of manual gold-curation into ~90 minutes of scripting + review. The trade-off: the teacher's score is a proxy, not a verdict. Spot-check 30 of the promoted rows manually before training; if more than 20% of those feel off-voice, tighten the teacher prompt and re-rank.</p>
+        <p>This turns most of a day of manual gold-curation into a much shorter session of scripting + review (a rough guide; yours will differ). The trade-off: the teacher's score is a proxy, not a verdict. Spot-check 30 of the promoted rows manually before training; if more than 20% of those feel off-voice, tighten the teacher prompt and re-rank.</p>
 
         <p><strong>✓ Checkpoint:</strong> the <em>Readiness overview</em> ledger (<strong>Data → Sources</strong> → Details) should show its <code>gold_set</code> row green at ≥ 100 answer-key rows. Any count below 100 shows "N answer-key rows · 100 recommended" and adds a blocker. If the row is grey, nothing landed — open <strong>Data → Labels</strong> and check the Answer key card's entry count.</p>
 
@@ -543,9 +543,9 @@ curl -s -X POST http://localhost:8000/api/projects/&lt;project id&gt;/gold/impor
         <p>The code-review recipe ships three synthetic playbooks. Each drills a different aspect of review-quality:</p>
         <dl>
           <dt>Paraphrase positives — voice drill</dt>
-          <dd>Vary the wording of a review while keeping the underlying critique intact. "Use <code>is None</code> not <code>== None</code>" becomes "Prefer <code>is None</code> here — the loose-equality form coerces and is slower." Same critique theme, different phrasing. Goal: the model learns that the same diff can elicit many valid review wordings, all of which should hit the same theme. Generate ~80 rows from your gold set.</dd>
-          <dt>Hard negatives — what NOT to emit</dt>
-          <dd>Two flavours for code-review specifically: (a) "LGTM" reviews paired with diffs that have real issues — the model needs to learn that empty-praise reviews are wrong; (b) reviews that MISS the actual bug while commenting on irrelevant style nits. Both train the model on the failure modes you want to avoid: silence when speaking up matters, and pedantry that misses the real concern. Generate ~50 rows.</dd>
+          <dd>Writes new code snippets that have the same issue a gold review flags (renamed variables, different surrounding code, equivalent formulations), with the review reworded to fit the new code. A gold row whose review says "Use <code>is None</code> not <code>== None</code>" yields a different function with the same <code>== None</code> check and a review such as "Prefer <code>is None</code> here — <code>==</code> calls <code>__eq__</code>, which can be overridden." Same critique, new code, new phrasing. Goal: the model learns the critique, not one snippet or one wording. Generate ~80 rows from your gold set.</dd>
+          <dt>Hard negatives — clean-looking code with a subtle bug</dt>
+          <dd>Code that looks clean at first glance (good names, sensible structure, no obvious smells) but hides a subtle bug — an off-by-one, a wrong default, a race, a missed error case — paired with a review that names that bug. Trains the model to look past surface polish instead of waving the diff through. The playbook does not write "appropriate silence" rows (a diff that needs no comment, paired with an approval); add those to the gold set by hand. Generate ~50 rows.</dd>
           <dt>Target a failure cluster — failure-mode patching</dt>
           <dd>After a first training run + eval, the failure clusters on <strong>Results → Failures</strong> group failed rows by a root-cause code (<code>hallucination</code>, <code>coverage_gap</code>, <code>formatting_mismatch</code>, <code>safety_failure</code>) and a fingerprint of the output (length, how it starts). This playbook seeds new training rows from one cluster — you point it at a cluster, it generates diffs that exercise the same pattern, and a teacher writes reviews. Skip on the first pass; run after the first eval to close the gap.</dd>
         </dl>
@@ -609,7 +609,7 @@ curl -s -X POST http://localhost:8000/api/projects/&lt;project id&gt;/gold/impor
         </div>
 
         <h2 id="evaluate">Evaluation: LLM-judge as the primary gate</h2>
-        <p>After training, the automatic lift check scores the run and <strong>Results → Verdict</strong> shows the <em>Pass/fail rules</em> card (rule set, PASS/FAIL, the required rules that failed) above the judged summary. Two extra steps are needed before that card means anything for code review:</p>
+        <p>After training, the automatic lift check scores the run and <strong>Results → Verdict</strong> shows the <em>Pass/fail rules</em> card (rule set, PASS/FAIL, the required rules that failed) below the judged summary. Two extra steps are needed before that card means anything for code review:</p>
         <ol>
           <li><strong>Use scaffold.</strong> Open <strong>Results → Failures</strong> with the run selected. In the <em>Pass/fail rules</em> card, while <em>Project rule set</em> is <em>Auto (domain profile fallback)</em>, the <em>Scaffolded pass/fail rule set</em> panel appears with the code-review rules below. Click <strong>Use scaffold</strong>. Without it the run is scored against the general default (exact match ≥ 0.4 and F1 ≥ 0.5 required), which a paraphrasing reviewer will fail.</li>
           <li><strong>Run an LLM Judge eval.</strong> The automatic lift check scores exact match, so <code>llm_judge_pass_rate</code> stays empty until you run one yourself: <strong>Results → Verdict</strong> → <strong>+ Evaluate on test examples</strong> → Metric <em>LLM Judge</em>. The judge is the endpoint in <code>JUDGE_MODEL_API_URL</code> (<code>backend/.env</code>; any OpenAI-compatible URL, local or cloud) or the project's judge-model secret. With no judge configured the eval falls back to a token-overlap heuristic, so set one first.</li>
@@ -629,7 +629,7 @@ curl -s -X POST http://localhost:8000/api/projects/&lt;project id&gt;/gold/impor
           <li><strong>Missed the bug</strong> — model commented on style while the diff had a real issue. The hard-negatives playbook targets exactly this.</li>
           <li><strong>Off-voice</strong> — model wrote a syntactically-fine review that doesn't sound like your team. Add more gold from your senior engineers' archive.</li>
           <li><strong>Too verbose</strong> — model wrote a 6-sentence essay when 2 sentences would do (often a long-output cluster). Tighten gold to shorter exemplars; run paraphrase to compress.</li>
-          <li><strong>Invented issue</strong> — model flagged a concern that isn't in the diff. The most worrying pattern — train on hard-negatives that include diffs with no real issues paired with appropriate-silence reviews.</li>
+          <li><strong>Invented issue</strong> — model flagged a concern that isn't in the diff. The most worrying pattern — add gold rows by hand that pair diffs with no real issue with an appropriate-silence review (no playbook writes these).</li>
         </ul>
 
         <h2 id="fix">When the eval fails</h2>
@@ -639,7 +639,7 @@ curl -s -X POST http://localhost:8000/api/projects/&lt;project id&gt;/gold/impor
             <tr><th>Symptom</th><th>Root cause</th><th>Fix</th></tr>
           </thead>
           <tbody>
-            <tr><td>LLM-judge pass &lt; 0.50, model always says "LGTM"</td><td>Hard-negatives playbook didn't run — model learned that approving is the safe default</td><td>Run <em>Hard negatives</em> for 50+ rows targeting LGTM-when-bug-exists. Retrain.</td></tr>
+            <tr><td>LLM-judge pass &lt; 0.50, model always says "LGTM"</td><td>Hard-negatives playbook didn't run — model learned that approving is the safe default</td><td>Run <em>Hard negatives</em> for 50+ rows (clean-looking code with a subtle bug, and a review that names it). Retrain.</td></tr>
             <tr><td>LLM-judge pass 0.60-0.65, and the rows you read in the biggest failure cluster are mostly invented issues</td><td>Model is hallucinating bugs that aren't there</td><td>Add gold rows that are diffs the team explicitly did NOT comment on — silence-is-correct exemplars. Reduce paraphrase rows that may have drifted toward invented issues.</td></tr>
             <tr><td>LLM-judge pass &gt; 0.70 but production reviews "don't sound like us"</td><td>Voice drift in synth rows you accepted</td><td>Audit the last paraphrase round — the synth queue keeps soft-rejected rows on disk. Look for voice drift in the rows you accepted next to the ones you rejected. Re-curate gold.</td></tr>
             <tr><td>F1 unusually high (&gt; 0.75) but LLM-judge plateaus at 0.55</td><td>Model memorised gold's wording without learning to generalise — over-fit on small set</td><td>Turn auto epochs off and set fewer epochs than the confirm dialog showed. Add more diversity to gold — every gold row should be from a distinct PR.</td></tr>
@@ -697,7 +697,7 @@ curl -s -X POST http://localhost:8000/api/projects/&lt;project id&gt;/gold/impor
             <dt>LLM judge</dt><dd>A second model that scores each candidate review 1–5 against the reference on a generic correct-and-complete rubric; a row passes at 4 or above. The code-review scaffold's primary gate because exact-match doesn't apply when many wordings are valid. You run it as an <em>LLM Judge</em> eval; the automatic lift check doesn't.</dd>
             <dt>Critique theme</dt><dd>What the review is fundamentally about — "missing null check", "wrong logger level", "off-spec naming convention". A lens for reading failures by hand; the app's judge doesn't score it.</dd>
             <dt>Split by repo / author / time</dt><dd>Grouped splitting strategies that prevent reviewer-voice leakage between train and test. A random split inflates eval scores by letting the model recognise reviewers rather than generalise critique reasoning.</dd>
-            <dt>Hard negatives (code-review flavour)</dt><dd>LGTM reviews on diffs that have real issues, plus reviews that flag style nits while missing the actual bug. Trains the model on the failure modes (silence when speaking up matters, pedantry that misses the point) you want to avoid.</dd>
+            <dt>Hard negatives (code-review flavour)</dt><dd>Code that looks clean but hides a subtle bug, paired with a review that names the bug. Trains the model to look past surface polish rather than approve or nitpick. "Appropriate silence" rows (no issue, no comment) are not generated; you add them by hand.</dd>
             <dt>Reviewer-only mode</dt><dd>The recommended starting deployment pattern: the model's comments go somewhere only reviewers see, and a human decides what reaches the PR. Low blast radius, because a bad comment never blocks the merge. (GitHub's <code>```suggestion</code> blocks are a different thing: visible on the PR and applicable by the author.)</dd>
             <dt>Target a failure cluster</dt><dd>Synthetic playbook that generates training rows targeting the weakest cluster on Results → Failures after a baseline eval (<em>Generate N rows from this cluster</em>). Iteration-2 tool, not iteration-1.</dd>
           </dl>
@@ -739,18 +739,18 @@ curl -s -X POST http://localhost:8000/api/projects/&lt;project id&gt;/gold/impor
                   "Comments in that stage don't count as reviews, so the bot runs faster"
                 ],
                 "answer": 2,
-                "explanation": "The point is containment: a wrong comment costs the reviewer a few seconds and never holds up the merge, so you can measure the bot's hit rate before giving it more power. The tempting idea that GitHub keeps suggested changes invisible to the author is false: suggestions live on review comments the author can see and apply. A real reviewer-only stage posts somewhere the author doesn't see, such as a private channel or a check-run summary for reviewers."
+                "explanation": "The point is containment: a wrong comment costs the reviewer a few seconds and never holds up the merge, so you can measure the bot's hit rate before giving it more power. The tempting idea that GitHub keeps suggested changes invisible to the author is false: suggestions live on review comments the author can see and apply. A real reviewer-only stage posts somewhere the author doesn't see, such as a private channel."
               },
               {
                 "q": "What does a 'hard negative' look like for code review (compared to a hard negative for SQL-injection classification)?",
                 "options": [
                   "A diff with no changed lines, paired with an empty review",
+                  "Clean-looking code with a subtle bug, paired with a review that names it",
                   "An LGTM on a diff with a real bug, or a nit-only review that misses it",
-                  "A diff in a programming language the base model never saw in pretraining",
                   "A correct review reworded so it shares few words with the reference"
                 ],
                 "answer": 1,
-                "explanation": "For code review, hard negatives are the outputs you want the model never to emit: empty praise on a diff that needed feedback, and style nits that miss the actual bug. The code_review_hard_negatives playbook generates both. A reworded correct review is a paraphrase positive, not a negative. For SQL-injection classification, hard negatives are benign inputs that look injection-shaped — what counts as 'hard negative' depends on the task."
+                "explanation": "The code_review_hard_negatives playbook writes code that looks clean but hides a subtle bug (an off-by-one, a wrong default, a missed error case), paired with a review that names that bug, so the model learns to look past surface polish. An LGTM on buggy code or a nit-only review is the failure you want to avoid; training on such rows would teach it. A reworded correct review is what the paraphrase playbook drills. For SQL-injection classification, hard negatives are benign inputs that look injection-shaped — what counts as 'hard negative' depends on the task."
               }
             ]
           </script>
@@ -781,15 +781,15 @@ curl -s -X POST http://localhost:8000/api/projects/&lt;project id&gt;/gold/impor
                   <li>Low blast radius: a human decides before any comment can block the merge</li>
                   <li>Comments in that stage don't count as reviews, so the bot runs faster</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Low blast radius: a human decides before any comment can block the merge</strong> The point is containment: a wrong comment costs the reviewer a few seconds and never holds up the merge, so you can measure the bot's hit rate before giving it more power. The tempting idea that GitHub keeps suggested changes invisible to the author is false: suggestions live on review comments the author can see and apply. A real reviewer-only stage posts somewhere the author doesn't see, such as a private channel or a check-run summary for reviewers.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Low blast radius: a human decides before any comment can block the merge</strong> The point is containment: a wrong comment costs the reviewer a few seconds and never holds up the merge, so you can measure the bot's hit rate before giving it more power. The tempting idea that GitHub keeps suggested changes invisible to the author is false: suggestions live on review comments the author can see and apply. A real reviewer-only stage posts somewhere the author doesn't see, such as a private channel.</p></details></li>
               <li><p class="quiz__q-text">What does a 'hard negative' look like for code review (compared to a hard negative for SQL-injection classification)?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>A diff with no changed lines, paired with an empty review</li>
+                  <li>Clean-looking code with a subtle bug, paired with a review that names it</li>
                   <li>An LGTM on a diff with a real bug, or a nit-only review that misses it</li>
-                  <li>A diff in a programming language the base model never saw in pretraining</li>
                   <li>A correct review reworded so it shares few words with the reference</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. An LGTM on a diff with a real bug, or a nit-only review that misses it</strong> For code review, hard negatives are the outputs you want the model never to emit: empty praise on a diff that needed feedback, and style nits that miss the actual bug. The code_review_hard_negatives playbook generates both. A reworded correct review is a paraphrase positive, not a negative. For SQL-injection classification, hard negatives are benign inputs that look injection-shaped — what counts as 'hard negative' depends on the task.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Clean-looking code with a subtle bug, paired with a review that names it</strong> The code_review_hard_negatives playbook writes code that looks clean but hides a subtle bug (an off-by-one, a wrong default, a missed error case), paired with a review that names that bug, so the model learns to look past surface polish. An LGTM on buggy code or a nit-only review is the failure you want to avoid; training on such rows would teach it. A reworded correct review is what the paraphrase playbook drills. For SQL-injection classification, hard negatives are benign inputs that look injection-shaped — what counts as 'hard negative' depends on the task.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->
