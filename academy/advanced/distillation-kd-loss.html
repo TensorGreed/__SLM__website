@@ -297,16 +297,17 @@
           </div>
         </header>
 
-        <p>You have the teacher's soft targets saved. The student learns from them through a loss with two parts: the ordinary supervised loss against the gold label, and a divergence from the teacher's distribution. BrewSLM's loss is exactly:</p>
-        <pre class="code-block"><code>loss = alpha * CE(student, gold_label)  +  (1 - alpha) * T^2 * KL(student_T || teacher_T)</code></pre>
+        <p>You have the teacher's soft targets saved. The student learns from them through a loss with two parts: the ordinary supervised loss against the gold label, and a divergence from the teacher's distribution. BrewSLM's offline KD loss is:</p>
+        <pre class="code-block"><code>loss = alpha * CE(student, gold_label)  +  (1 - alpha) * T^2 * KL(teacher_T || student_T)</code></pre>
         <h2>Term one: cross-entropy on the hard label</h2>
         <p>This is the SFT loss you already know (Track 1's cross-entropy lesson): the student is penalized for not putting probability on the correct gold token. It keeps the student anchored to the truth, even if the teacher is occasionally wrong.</p>
 
         <h2>Term two: KL divergence to the teacher</h2>
         <p><strong>KL divergence</strong> measures how far the student's distribution is from the teacher's. Minimizing it pulls the student's whole output distribution toward the teacher's — transferring the dark knowledge. We compute it on <strong>temperature-softened</strong> distributions.</p>
+        <p>The direction matters, because KL is not symmetric. <code>KL(teacher ‖ student)</code> is the <strong>forward</strong> KL of Hinton et al. (2015): it averages over the teacher's distribution, so the student is penalized for missing any token the teacher gives weight to (mode-covering). The <strong>reverse</strong> KL, <code>KL(student ‖ teacher)</code>, is mode-seeking — the student may concentrate on the teacher's main mode — and is the choice some newer methods for generative students make (MiniLLM, Gu et al., 2024).</p>
 
         <h2>Temperature: softening the distribution</h2>
-        <p>Dividing logits by a <strong>temperature</strong> T before softmax flattens the distribution. At T=1 you get the normal probabilities; at T=2–4 the differences shrink, so small probabilities on the runner-up tokens become visible — and those secondary probabilities are precisely the relational signal you want to transfer. A peaky 99/1 distribution teaches almost nothing about the runner-up; softened to 80/20 it does.</p>
+        <p>Dividing logits by a <strong>temperature</strong> T before softmax flattens the distribution. At T=1 you get the normal probabilities; at T=2–4 the differences shrink, so small probabilities on the runner-up tokens become visible — and those secondary probabilities are precisely the relational signal you want to transfer. A peaky 99/1 distribution teaches almost nothing about the runner-up; at T=2 it becomes about 91/9, and at T≈3.3 about 80/20.</p>
 
         <div class="callout callout--note">
           <p class="callout__label">Why the T² factor?</p>
@@ -314,35 +315,44 @@
         </div>
 
         <h2>Alpha: how much teacher vs how much truth</h2>
-        <p><code>alpha</code> in [0,1] balances the two terms. <strong>alpha → 1</strong> leans on the gold labels (closer to plain SFT); <strong>alpha → 0</strong> leans on the teacher's soft targets. A middle value (e.g. 0.5) is a common start: learn from the teacher's nuance while staying pinned to the ground truth.</p>
+        <p><code>alpha</code> in [0,1] balances the two terms. <strong>alpha → 1</strong> leans on the gold labels (closer to plain SFT); <strong>alpha → 0</strong> leans on the teacher's soft targets. A middle value is a common start: learn from the teacher's nuance while staying pinned to the ground truth. BrewSLM's offline KD recipes (<code>recipe.kd.*</code>) default to <code>alpha=0.5</code>, <code>T=2.0</code>. Tune the two together on a dev split, not on the gold set you report.</p>
+        <p>That balance only holds if both terms are measured per scored token. Mask the prompt and padding out of <em>both</em> terms; if the KL term sums over every position while the CE term averages over answer tokens, the KL term is many times larger and <code>alpha=0.5</code> no longer means half and half.</p>
 
         <h2>In code</h2>
         <pre class="code-block"><code>import torch.nn.functional as F
 
 def kd_loss(student_logits, teacher_logits, labels, alpha=0.5, T=2.0):
-    # term 1: hard-label cross-entropy (the SFT loss, prompt masked with -100)
-    ce = F.cross_entropy(
-        student_logits.view(-1, student_logits.size(-1)),
-        labels.view(-1), ignore_index=-100)
+    # causal LM: the logits at position t predict token t+1, so shift by one
+    s = student_logits[:, :-1, :].reshape(-1, student_logits.size(-1))
+    t = teacher_logits[:, :-1, :].reshape(-1, teacher_logits.size(-1))
+    y = labels[:, 1:].reshape(-1)
 
-    # term 2: KL to the temperature-softened teacher distribution
-    s_log = F.log_softmax(student_logits / T, dim=-1)
-    t_prob = F.softmax(teacher_logits / T, dim=-1)
+    # keep only scored positions (prompt and padding are -100) for BOTH terms
+    keep = y != -100
+    s, t, y = s[keep], t[keep], y[keep]
+
+    # term 1: hard-label cross-entropy (the SFT loss), mean per token
+    ce = F.cross_entropy(s, y)
+
+    # term 2: KL(teacher_T || student_T). kl_div takes the student's log-probs
+    # first and the teacher's probs second; "batchmean" over [N, V] rows = per token
+    s_log = F.log_softmax(s / T, dim=-1)
+    t_prob = F.softmax(t / T, dim=-1)
     kl = F.kl_div(s_log, t_prob, reduction="batchmean") * (T * T)
 
     return alpha * ce + (1.0 - alpha) * kl</code></pre>
-        <p>In BrewSLM this lives in a pure <code>kd_loss</code> function used by the offline <code>kd_trainer</code>, selected by setting <code>training_mode="distillation"</code> and a <code>recipe.kd.*</code> recipe. The trainer reads <code>teacher_capture.jsonl</code> (the top-k logprobs from lesson 4.2) as the teacher term. Otherwise it's the same training loop you already know — only the loss changed. The last distillation lesson asks the real question: how much of the teacher's quality did the student actually keep?</p>
+        <p>This mirrors BrewSLM's loss: a pure <code>kd_loss</code> function over the flattened, masked positions, used by the offline <code>kd_trainer</code>, selected by setting <code>training_mode="distillation"</code> and a <code>recipe.kd.*</code> recipe. The trainer reads <code>teacher_capture.jsonl</code> (the top-k logprobs from Lesson 4.2) and fills the tokens outside the top-k with a large negative logit to build the teacher term. Otherwise it's the same training loop you already know — only the loss changed. The last distillation lesson asks the real question: how much of the teacher's quality did the student actually keep?</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>The KD loss is <strong>alpha·CE + (1−alpha)·T²·KL</strong>: cross-entropy anchors the student to the gold label; temperature-softened KL transfers the teacher's distribution; <strong>T²</strong> keeps the soft term's magnitude stable; <strong>alpha</strong> dials teacher-vs-truth. Same loop, richer loss.</p>
+          <p>The KD loss is <strong>alpha·CE + (1−alpha)·T²·KL(teacher ‖ student)</strong>, both terms over the same scored tokens: cross-entropy anchors the student to the gold label; temperature-softened KL transfers the teacher's distribution; <strong>T²</strong> keeps the soft term's magnitude stable; <strong>alpha</strong> dials teacher-vs-truth. Same loop, richer loss.</p>
         </div>
 
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
             <dt>KD loss</dt><dd>alpha·CE + (1−alpha)·T²·KL — the blend of hard-label cross-entropy and teacher KL.</dd>
-            <dt>KL divergence</dt><dd>A measure of how far the student's distribution is from the teacher's; minimized to transfer knowledge.</dd>
+            <dt>KL divergence</dt><dd>A measure of how far the student's distribution is from the teacher's; minimized to transfer knowledge. KD classically uses the forward direction, KL(teacher ‖ student).</dd>
             <dt>temperature (T)</dt><dd>A divisor on logits before softmax; higher T softens the distribution to expose secondary probabilities.</dd>
             <dt>T² factor</dt><dd>Rescales the KL term to offset the 1/T² gradient shrink from softening, keeping the term balanced.</dd>
             <dt>alpha</dt><dd>The [0,1] weight trading the gold-label CE term against the teacher KL term.</dd>
