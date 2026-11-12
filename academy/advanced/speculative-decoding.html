@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What does speculative decoding actually do that beats one-token-at-a-time?",
-          "text": "What does speculative decoding actually do that beats one-token-at-a-time?",
+          "name": "What does speculative decoding do that beats one-token-at-a-time decoding?",
+          "text": "What does speculative decoding do that beats one-token-at-a-time decoding?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "It runs the target model in parallel across future positions"
+              "position": 1,
+              "text": "Runs the target in parallel on later positions"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It skips low-probability tokens during decoding"
+              "text": "Skips low-probability tokens while decoding"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It caches the target's KV state across requests"
+              "text": "Shares the target's KV cache across requests"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "A small draft proposes K tokens, the target verifies them in a single forward pass, and accepted tokens commit",
+            "position": 0,
+            "text": "Target verifies K draft tokens in one pass",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Speculative decoding wins when the average number of accepted tokens per round exceeds 1, paying one target forward plus K cheap draft forwards per round."
+              "text": "A small draft proposes K tokens; the target scores them in a single forward pass and keeps the accepted prefix plus one token of its own. Each round always yields at least one token, so it wins when tokens per round outweigh the draft's added cost."
             }
           }
         },
@@ -124,27 +124,60 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Only the target model's size"
+              "position": 1,
+              "text": "Only the target model's parameter count"
             },
+            {
+              "@type": "Answer",
+              "position": 2,
+              "text": "The number of GPUs the target spans"
+            },
+            {
+              "@type": "Answer",
+              "position": 3,
+              "text": "Vocabulary size"
+            }
+          ],
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "position": 0,
+            "text": "α, K, and the cost ratio c",
+            "answerExplanation": {
+              "@type": "Comment",
+              "text": "speedup ≈ (1 − α^(K+1)) / ((1 − α)(1 + c·K)): acceptance rate α, draft length K, and draft-to-target cost ratio c. With c = 0.1, K = 4: α = 0.7 gives ≈1.98×, α = 0.9 ≈2.93×."
+            }
+          }
+        },
+        {
+          "@type": "Question",
+          "eduQuestionType": "Multiple choice",
+          "learningResourceType": "Practice problem",
+          "name": "Draft and target use different tokenizers. What are your options?",
+          "text": "Draft and target use different tokenizers. What are your options?",
+          "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 1,
-              "text": "The number of GPUs"
+              "text": "None — verification is undefined across tokenizers"
+            },
+            {
+              "@type": "Answer",
+              "position": 2,
+              "text": "Only after retraining the draft on the target's vocabulary"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The tokenizer vocabulary size"
+              "text": "Any pair works at no cost; tokenizers don't matter"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "Acceptance rate α, draft length K, and the draft-to-target cost ratio c — higher α and lower c give more speed-up",
+            "position": 0,
+            "text": "Cross-tokenizer drafting, or a draft-free method",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The formula speedup ≈ (1 − α^(K+1)) / ((1 − α) · (1 + c·K)) shows α, K, and c are the three knobs that matter."
+              "text": "A shared tokenizer is the simple, efficient case, not a hard requirement. Universal Assisted Generation (pass tokenizer= and assistant_tokenizer=) re-tokenizes between models, and prompt-lookup (n-gram) decoding needs no draft at all — useful when outputs copy the input."
             }
           }
         },
@@ -152,65 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why is the same-tokenizer constraint a hard requirement?",
-          "text": "Why is the same-tokenizer constraint a hard requirement?",
+          "name": "Why is speculative decoding usually less of a win for small targets?",
+          "text": "Why is speculative decoding usually less of a win for small targets?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "It is a licensing requirement"
+              "position": 1,
+              "text": "Small models can't run alongside a draft"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It improves quantization quality"
+              "text": "The acceptance rate α is always near zero"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It is required by EAGLE specifically"
+              "text": "Speculative decoding changes the outputs"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Draft and target must produce comparable token streams so verification at the same positions is meaningful — different tokenizers leave no shared positions to compare",
+            "position": 0,
+            "text": "Fixed overheads make the effective c large",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Verification compares draft tokens to target logits at the same positions; mismatched tokenizers make those positions undefined."
-            }
-          }
-        },
-        {
-          "@type": "Question",
-          "eduQuestionType": "Multiple choice",
-          "learningResourceType": "Practice problem",
-          "name": "Why is speculative decoding less of a win for SLM targets than for large models?",
-          "text": "Why is speculative decoding less of a win for SLM targets than for large models?",
-          "suggestedAnswer": [
-            {
-              "@type": "Answer",
-              "position": 0,
-              "text": "SLMs cannot use a draft model"
-            },
-            {
-              "@type": "Answer",
-              "position": 2,
-              "text": "SLMs do not support causal attention"
-            },
-            {
-              "@type": "Answer",
-              "position": 3,
-              "text": "Tokenizers are different in SLMs"
-            }
-          ],
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "position": 1,
-            "text": "The speed-up scales with target cost; for a 135M–1.7B target the per-token forward is already cheap and the draft cannot be meaningfully smaller — KV-cache, batching, and quantization usually move latency more",
-            "answerExplanation": {
-              "@type": "Comment",
-              "text": "Wall-clock gains are proportional to how expensive the target is. SLM targets leave little headroom for a cheaper draft, and overheads can swamp the benefit."
+              "text": "For a 135M–1.7B target, fixed per-step costs (kernel launches, Python, scheduling) dominate, so even a tiny draft is not cheap relative to the target; at serving batch sizes verification also stops being free. Speculative decoding with standard rejection sampling is exact, so outputs are not the issue."
             }
           }
         }
@@ -400,61 +400,89 @@ print(tok.decode(out[0], skip_special_tokens=True))</code></pre>
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "What does speculative decoding actually do that beats one-token-at-a-time?",
-   "options": ["It runs the target model in parallel across future positions", "A small draft proposes K tokens, the target verifies them in a single forward pass, and accepted tokens commit", "It skips low-probability tokens during decoding", "It caches the target's KV state across requests"],
-   "answer": 1,
-   "explanation": "Speculative decoding wins when the average number of accepted tokens per round exceeds 1, paying one target forward plus K cheap draft forwards per round."},
-  {"q": "What determines the expected speed-up from speculative decoding?",
-   "options": ["Only the target model's size", "The number of GPUs", "Acceptance rate α, draft length K, and the draft-to-target cost ratio c — higher α and lower c give more speed-up", "The tokenizer vocabulary size"],
-   "answer": 2,
-   "explanation": "The formula speedup ≈ (1 − α^(K+1)) / ((1 − α) · (1 + c·K)) shows α, K, and c are the three knobs that matter."},
-  {"q": "Why is the same-tokenizer constraint a hard requirement?",
-   "options": ["It is a licensing requirement", "Draft and target must produce comparable token streams so verification at the same positions is meaningful — different tokenizers leave no shared positions to compare", "It improves quantization quality", "It is required by EAGLE specifically"],
-   "answer": 1,
-   "explanation": "Verification compares draft tokens to target logits at the same positions; mismatched tokenizers make those positions undefined."},
-  {"q": "Why is speculative decoding less of a win for SLM targets than for large models?",
-   "options": ["SLMs cannot use a draft model", "The speed-up scales with target cost; for a 135M–1.7B target the per-token forward is already cheap and the draft cannot be meaningfully smaller — KV-cache, batching, and quantization usually move latency more", "SLMs do not support causal attention", "Tokenizers are different in SLMs"],
-   "answer": 1,
-   "explanation": "Wall-clock gains are proportional to how expensive the target is. SLM targets leave little headroom for a cheaper draft, and overheads can swamp the benefit."}
-]
+            [
+              {
+                "q": "What does speculative decoding do that beats one-token-at-a-time decoding?",
+                "options": [
+                  "Target verifies K draft tokens in one pass",
+                  "Runs the target in parallel on later positions",
+                  "Skips low-probability tokens while decoding",
+                  "Shares the target's KV cache across requests"
+                ],
+                "answer": 0,
+                "explanation": "A small draft proposes K tokens; the target scores them in a single forward pass and keeps the accepted prefix plus one token of its own. Each round always yields at least one token, so it wins when tokens per round outweigh the draft's added cost."
+              },
+              {
+                "q": "What determines the expected speed-up from speculative decoding?",
+                "options": [
+                  "α, K, and the cost ratio c",
+                  "Only the target model's parameter count",
+                  "The number of GPUs the target spans",
+                  "Vocabulary size"
+                ],
+                "answer": 0,
+                "explanation": "speedup ≈ (1 − α^(K+1)) / ((1 − α)(1 + c·K)): acceptance rate α, draft length K, and draft-to-target cost ratio c. With c = 0.1, K = 4: α = 0.7 gives ≈1.98×, α = 0.9 ≈2.93×."
+              },
+              {
+                "q": "Draft and target use different tokenizers. What are your options?",
+                "options": [
+                  "Cross-tokenizer drafting, or a draft-free method",
+                  "None — verification is undefined across tokenizers",
+                  "Only after retraining the draft on the target's vocabulary",
+                  "Any pair works at no cost; tokenizers don't matter"
+                ],
+                "answer": 0,
+                "explanation": "A shared tokenizer is the simple, efficient case, not a hard requirement. Universal Assisted Generation (pass tokenizer= and assistant_tokenizer=) re-tokenizes between models, and prompt-lookup (n-gram) decoding needs no draft at all — useful when outputs copy the input."
+              },
+              {
+                "q": "Why is speculative decoding usually less of a win for small targets?",
+                "options": [
+                  "Fixed overheads make the effective c large",
+                  "Small models can't run alongside a draft",
+                  "The acceptance rate α is always near zero",
+                  "Speculative decoding changes the outputs"
+                ],
+                "answer": 0,
+                "explanation": "For a 135M–1.7B target, fixed per-step costs (kernel launches, Python, scheduling) dominate, so even a tiny draft is not cheap relative to the target; at serving batch sizes verification also stops being free. Speculative decoding with standard rejection sampling is exact, so outputs are not the issue."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">What does speculative decoding actually do that beats one-token-at-a-time?</p>
+              <li><p class="quiz__q-text">What does speculative decoding do that beats one-token-at-a-time decoding?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It runs the target model in parallel across future positions</li>
-                  <li>A small draft proposes K tokens, the target verifies them in a single forward pass, and accepted tokens commit</li>
-                  <li>It skips low-probability tokens during decoding</li>
-                  <li>It caches the target's KV state across requests</li>
+                  <li>Target verifies K draft tokens in one pass</li>
+                  <li>Runs the target in parallel on later positions</li>
+                  <li>Skips low-probability tokens while decoding</li>
+                  <li>Shares the target's KV cache across requests</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A small draft proposes K tokens, the target verifies them in a single forward pass, and accepted tokens commit</strong> Speculative decoding wins when the average number of accepted tokens per round exceeds 1, paying one target forward plus K cheap draft forwards per round.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Target verifies K draft tokens in one pass</strong> A small draft proposes K tokens; the target scores them in a single forward pass and keeps the accepted prefix plus one token of its own. Each round always yields at least one token, so it wins when tokens per round outweigh the draft's added cost.</p></details></li>
               <li><p class="quiz__q-text">What determines the expected speed-up from speculative decoding?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Only the target model's size</li>
-                  <li>The number of GPUs</li>
-                  <li>Acceptance rate α, draft length K, and the draft-to-target cost ratio c — higher α and lower c give more speed-up</li>
-                  <li>The tokenizer vocabulary size</li>
+                  <li>α, K, and the cost ratio c</li>
+                  <li>Only the target model's parameter count</li>
+                  <li>The number of GPUs the target spans</li>
+                  <li>Vocabulary size</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Acceptance rate α, draft length K, and the draft-to-target cost ratio c — higher α and lower c give more speed-up</strong> The formula speedup ≈ (1 − α^(K+1)) / ((1 − α) · (1 + c·K)) shows α, K, and c are the three knobs that matter.</p></details></li>
-              <li><p class="quiz__q-text">Why is the same-tokenizer constraint a hard requirement?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. α, K, and the cost ratio c</strong> speedup ≈ (1 − α^(K+1)) / ((1 − α)(1 + c·K)): acceptance rate α, draft length K, and draft-to-target cost ratio c. With c = 0.1, K = 4: α = 0.7 gives ≈1.98×, α = 0.9 ≈2.93×.</p></details></li>
+              <li><p class="quiz__q-text">Draft and target use different tokenizers. What are your options?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It is a licensing requirement</li>
-                  <li>Draft and target must produce comparable token streams so verification at the same positions is meaningful — different tokenizers leave no shared positions to compare</li>
-                  <li>It improves quantization quality</li>
-                  <li>It is required by EAGLE specifically</li>
+                  <li>Cross-tokenizer drafting, or a draft-free method</li>
+                  <li>None — verification is undefined across tokenizers</li>
+                  <li>Only after retraining the draft on the target's vocabulary</li>
+                  <li>Any pair works at no cost; tokenizers don't matter</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Draft and target must produce comparable token streams so verification at the same positions is meaningful — different tokenizers leave no shared positions to compare</strong> Verification compares draft tokens to target logits at the same positions; mismatched tokenizers make those positions undefined.</p></details></li>
-              <li><p class="quiz__q-text">Why is speculative decoding less of a win for SLM targets than for large models?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Cross-tokenizer drafting, or a draft-free method</strong> A shared tokenizer is the simple, efficient case, not a hard requirement. Universal Assisted Generation (pass tokenizer= and assistant_tokenizer=) re-tokenizes between models, and prompt-lookup (n-gram) decoding needs no draft at all — useful when outputs copy the input.</p></details></li>
+              <li><p class="quiz__q-text">Why is speculative decoding usually less of a win for small targets?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>SLMs cannot use a draft model</li>
-                  <li>The speed-up scales with target cost; for a 135M–1.7B target the per-token forward is already cheap and the draft cannot be meaningfully smaller — KV-cache, batching, and quantization usually move latency more</li>
-                  <li>SLMs do not support causal attention</li>
-                  <li>Tokenizers are different in SLMs</li>
+                  <li>Fixed overheads make the effective c large</li>
+                  <li>Small models can't run alongside a draft</li>
+                  <li>The acceptance rate α is always near zero</li>
+                  <li>Speculative decoding changes the outputs</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The speed-up scales with target cost; for a 135M–1.7B target the per-token forward is already cheap and the draft cannot be meaningfully smaller — KV-cache, batching, and quantization usually move latency more</strong> Wall-clock gains are proportional to how expensive the target is. SLM targets leave little headroom for a cheaper draft, and overheads can swamp the benefit.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Fixed overheads make the effective c large</strong> For a 135M–1.7B target, fixed per-step costs (kernel launches, Python, scheduling) dominate, so even a tiny draft is not cheap relative to the target; at serving batch sizes verification also stops being free. Speculative decoding with standard rejection sampling is exact, so outputs are not the issue.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

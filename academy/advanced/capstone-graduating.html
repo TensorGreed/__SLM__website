@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "The goal is tone/helpfulness, not a single correct answer. Reach for…",
-          "text": "The goal is tone/helpfulness, not a single correct answer. Reach for…",
+          "name": "The goal is tone and helpfulness, not a single correct answer. Reach for…",
+          "text": "The goal is tone and helpfulness, not a single correct answer. Reach for…",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Quantization"
+              "position": 1,
+              "text": "Quantization to a 4-bit GGUF"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Multi-task"
+              "text": "Multi-task training with balancing"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Serving"
+              "text": "More SFT on single reference answers"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "DPO / ORPO",
+            "position": 0,
+            "text": "Preference tuning (DPO / ORPO)",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Preference tuning aligns to 'better', which isn't one label."
+              "text": "Preference tuning aligns to 'better', which isn't one label. SFT on single reference answers teaches one target per prompt."
             }
           }
         },
@@ -125,26 +125,26 @@
             {
               "@type": "Answer",
               "position": 1,
-              "text": "Quantization alone"
+              "text": "Quantization of the big model alone"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "RAG"
+              "text": "Retrieval (RAG)"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Curriculum"
+              "text": "Curriculum ordering of the SFT rows"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 0,
-            "text": "Distillation",
+            "text": "Distillation into a small student",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Distillation transfers a teacher's quality into a small student."
+              "text": "Distillation transfers a teacher's behaviour into a smaller student. Quantizing the big model shrinks its file but leaves its architecture and per-token compute in place."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "No"
+              "position": 1,
+              "text": "No — each technique needs its own base model"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Only two at once"
+              "text": "Only two at once, or the gains cancel out"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Only with RAG"
+              "text": "Only when the model also uses retrieval"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Yes — e.g. distill, then preference-tune, then quantize, then serve",
+            "position": 0,
+            "text": "Yes — e.g. distill, preference-tune, quantize, serve",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Real production SLMs stack several techniques to meet a hard goal."
+              "text": "Real production SLMs stack several techniques to meet a hard goal; quantize last and re-evaluate after each stage."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Using the biggest model"
+              "position": 1,
+              "text": "Starting from the biggest base model available"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Always quantizing"
+              "text": "Quantizing every model before evaluating it"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Avoiding RAG"
+              "text": "Tuning each change until the gold set passes"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Measuring against a baseline on a held-out gold set and keeping only what clears the gate",
+            "position": 0,
+            "text": "Baseline comparison on a frozen held-out set",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Gold-set-driven, baseline-relative evaluation is the through-line."
+              "text": "Compare against a baseline on a frozen held-out test split you don't tune against; make choices on a dev split. Tuning repeatedly until the same gold set passes overfits to it."
             }
           }
         }
@@ -352,89 +352,89 @@ Don't know if a tweak helps                    A/B on a gold set (everywhere)</c
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "The goal is tone/helpfulness, not a single correct answer. Reach for\u2026",
-    "options": [
-      "Quantization",
-      "DPO / ORPO",
-      "Multi-task",
-      "Serving"
-    ],
-    "answer": 1,
-    "explanation": "Preference tuning aligns to 'better', which isn't one label."
-  },
-  {
-    "q": "The goal is matching a big model's quality in a much smaller model. Reach for\u2026",
-    "options": [
-      "Distillation",
-      "Quantization alone",
-      "RAG",
-      "Curriculum"
-    ],
-    "answer": 0,
-    "explanation": "Distillation transfers a teacher's quality into a small student."
-  },
-  {
-    "q": "Can advanced techniques be combined?",
-    "options": [
-      "No",
-      "Yes \u2014 e.g. distill, then preference-tune, then quantize, then serve",
-      "Only two at once",
-      "Only with RAG"
-    ],
-    "answer": 1,
-    "explanation": "Real production SLMs stack several techniques to meet a hard goal."
-  },
-  {
-    "q": "What single discipline underlies every technique in the Academy?",
-    "options": [
-      "Using the biggest model",
-      "Measuring against a baseline on a held-out gold set and keeping only what clears the gate",
-      "Always quantizing",
-      "Avoiding RAG"
-    ],
-    "answer": 1,
-    "explanation": "Gold-set-driven, baseline-relative evaluation is the through-line."
-  }
-]
+            [
+              {
+                "q": "The goal is tone and helpfulness, not a single correct answer. Reach for…",
+                "options": [
+                  "Preference tuning (DPO / ORPO)",
+                  "Quantization to a 4-bit GGUF",
+                  "Multi-task training with balancing",
+                  "More SFT on single reference answers"
+                ],
+                "answer": 0,
+                "explanation": "Preference tuning aligns to 'better', which isn't one label. SFT on single reference answers teaches one target per prompt."
+              },
+              {
+                "q": "The goal is matching a big model's quality in a much smaller model. Reach for…",
+                "options": [
+                  "Distillation into a small student",
+                  "Quantization of the big model alone",
+                  "Retrieval (RAG)",
+                  "Curriculum ordering of the SFT rows"
+                ],
+                "answer": 0,
+                "explanation": "Distillation transfers a teacher's behaviour into a smaller student. Quantizing the big model shrinks its file but leaves its architecture and per-token compute in place."
+              },
+              {
+                "q": "Can advanced techniques be combined?",
+                "options": [
+                  "Yes — e.g. distill, preference-tune, quantize, serve",
+                  "No — each technique needs its own base model",
+                  "Only two at once, or the gains cancel out",
+                  "Only when the model also uses retrieval"
+                ],
+                "answer": 0,
+                "explanation": "Real production SLMs stack several techniques to meet a hard goal; quantize last and re-evaluate after each stage."
+              },
+              {
+                "q": "What single discipline underlies every technique in the Academy?",
+                "options": [
+                  "Baseline comparison on a frozen held-out set",
+                  "Starting from the biggest base model available",
+                  "Quantizing every model before evaluating it",
+                  "Tuning each change until the gold set passes"
+                ],
+                "answer": 0,
+                "explanation": "Compare against a baseline on a frozen held-out test split you don't tune against; make choices on a dev split. Tuning repeatedly until the same gold set passes overfits to it."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">The goal is tone/helpfulness, not a single correct answer. Reach for…</p>
+              <li><p class="quiz__q-text">The goal is tone and helpfulness, not a single correct answer. Reach for…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Quantization</li>
-                  <li>DPO / ORPO</li>
-                  <li>Multi-task</li>
-                  <li>Serving</li>
+                  <li>Preference tuning (DPO / ORPO)</li>
+                  <li>Quantization to a 4-bit GGUF</li>
+                  <li>Multi-task training with balancing</li>
+                  <li>More SFT on single reference answers</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. DPO / ORPO</strong> Preference tuning aligns to 'better', which isn't one label.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Preference tuning (DPO / ORPO)</strong> Preference tuning aligns to 'better', which isn't one label. SFT on single reference answers teaches one target per prompt.</p></details></li>
               <li><p class="quiz__q-text">The goal is matching a big model's quality in a much smaller model. Reach for…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Distillation</li>
-                  <li>Quantization alone</li>
-                  <li>RAG</li>
-                  <li>Curriculum</li>
+                  <li>Distillation into a small student</li>
+                  <li>Quantization of the big model alone</li>
+                  <li>Retrieval (RAG)</li>
+                  <li>Curriculum ordering of the SFT rows</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Distillation</strong> Distillation transfers a teacher's quality into a small student.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Distillation into a small student</strong> Distillation transfers a teacher's behaviour into a smaller student. Quantizing the big model shrinks its file but leaves its architecture and per-token compute in place.</p></details></li>
               <li><p class="quiz__q-text">Can advanced techniques be combined?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>No</li>
-                  <li>Yes — e.g. distill, then preference-tune, then quantize, then serve</li>
-                  <li>Only two at once</li>
-                  <li>Only with RAG</li>
+                  <li>Yes — e.g. distill, preference-tune, quantize, serve</li>
+                  <li>No — each technique needs its own base model</li>
+                  <li>Only two at once, or the gains cancel out</li>
+                  <li>Only when the model also uses retrieval</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Yes — e.g. distill, then preference-tune, then quantize, then serve</strong> Real production SLMs stack several techniques to meet a hard goal.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Yes — e.g. distill, preference-tune, quantize, serve</strong> Real production SLMs stack several techniques to meet a hard goal; quantize last and re-evaluate after each stage.</p></details></li>
               <li><p class="quiz__q-text">What single discipline underlies every technique in the Academy?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Using the biggest model</li>
-                  <li>Measuring against a baseline on a held-out gold set and keeping only what clears the gate</li>
-                  <li>Always quantizing</li>
-                  <li>Avoiding RAG</li>
+                  <li>Baseline comparison on a frozen held-out set</li>
+                  <li>Starting from the biggest base model available</li>
+                  <li>Quantizing every model before evaluating it</li>
+                  <li>Tuning each change until the gold set passes</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Measuring against a baseline on a held-out gold set and keeping only what clears the gate</strong> Gold-set-driven, baseline-relative evaluation is the through-line.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Baseline comparison on a frozen held-out set</strong> Compare against a baseline on a frozen held-out test split you don't tune against; make choices on a dev split. Tuning repeatedly until the same gold set passes overfits to it.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

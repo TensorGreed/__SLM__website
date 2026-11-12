@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Faster training"
+              "position": 1,
+              "text": "One task's rows leaking into another's test split"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "A quantization error"
+              "text": "A tokenizer splitting two tasks' labels the same way"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "A tokenizer mismatch"
+              "text": "Tasks needing different learning rates"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Negative transfer — tasks degrading each other when jointly trained",
+            "position": 0,
+            "text": "Tasks degrading each other in joint training",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Unrelated/imbalanced tasks fight for capacity and all get worse."
+              "text": "Negative transfer: unrelated or imbalanced tasks compete for capacity and both get worse. Split leakage is a different problem."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Task A has 50k rows, task B has 500. Naive mixing causes…",
-          "text": "Task A has 50k rows, task B has 500. Naive mixing causes…",
+          "name": "Task A has 50k rows, task B has 500. Naive proportional mixing causes…",
+          "text": "Task A has 50k rows, task B has 500. Naive proportional mixing causes…",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Perfect balance"
+              "position": 1,
+              "text": "Task B to dominate because its rows are rarer"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Faster convergence"
+              "text": "Both tasks to converge at the same rate"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "An OOM"
+              "text": "An out-of-memory error from the larger task"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The model to barely learn task B — fix with balancing",
+            "position": 0,
+            "text": "The model to barely learn task B",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Imbalance starves the small task; up-weight or up-sample it."
+              "text": "Imbalance starves the small task. Up-sample or up-weight it; temperature sampling p_i ∝ n_i^(1/τ) is the standard knob between proportional and uniform mixing."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Hard to easy"
+              "position": 1,
+              "text": "Hard to easy, so hard cases get more epochs"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Randomly always"
+              "text": "Shortest to longest, regardless of difficulty"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "By length only"
+              "text": "By label"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "Easy to hard",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Easy→hard establishes general features before refining on hard cases."
+              "text": "The classic curriculum goes easy→hard. Random order is often just as good for LLM SFT, which is why the next question matters."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Assume it always helps"
+              "position": 1,
+              "text": "Check whether training loss fell faster"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Check the file size"
+              "text": "Check that the run finished in fewer steps"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Read the loss once"
+              "text": "Compare final loss against the previous run once"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "A/B it: train with vs without, compare on a fixed gold set",
+            "position": 0,
+            "text": "A/B it on a fixed gold set, several seeds",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Curriculum effects vary by dataset; test against the alternative."
+              "text": "Train with and without the curriculum on the same data and compare on a fixed gold set, across several seeds. A faster-falling training loss doesn't show better held-out quality."
             }
           }
         }
@@ -351,52 +351,52 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "What is task interference?",
-    "options": [
-      "Faster training",
-      "Negative transfer \u2014 tasks degrading each other when jointly trained",
-      "A quantization error",
-      "A tokenizer mismatch"
-    ],
-    "answer": 1,
-    "explanation": "Unrelated/imbalanced tasks fight for capacity and all get worse."
-  },
-  {
-    "q": "Task A has 50k rows, task B has 500. Naive mixing causes\u2026",
-    "options": [
-      "Perfect balance",
-      "The model to barely learn task B \u2014 fix with balancing",
-      "Faster convergence",
-      "An OOM"
-    ],
-    "answer": 1,
-    "explanation": "Imbalance starves the small task; up-weight or up-sample it."
-  },
-  {
-    "q": "Curriculum learning typically orders examples\u2026",
-    "options": [
-      "Hard to easy",
-      "Easy to hard",
-      "Randomly always",
-      "By length only"
-    ],
-    "answer": 1,
-    "explanation": "Easy\u2192hard establishes general features before refining on hard cases."
-  },
-  {
-    "q": "How should you decide whether a curriculum helped?",
-    "options": [
-      "Assume it always helps",
-      "A/B it: train with vs without, compare on a fixed gold set",
-      "Check the file size",
-      "Read the loss once"
-    ],
-    "answer": 1,
-    "explanation": "Curriculum effects vary by dataset; test against the alternative."
-  }
-]
+            [
+              {
+                "q": "What is task interference?",
+                "options": [
+                  "Tasks degrading each other in joint training",
+                  "One task's rows leaking into another's test split",
+                  "A tokenizer splitting two tasks' labels the same way",
+                  "Tasks needing different learning rates"
+                ],
+                "answer": 0,
+                "explanation": "Negative transfer: unrelated or imbalanced tasks compete for capacity and both get worse. Split leakage is a different problem."
+              },
+              {
+                "q": "Task A has 50k rows, task B has 500. Naive proportional mixing causes…",
+                "options": [
+                  "The model to barely learn task B",
+                  "Task B to dominate because its rows are rarer",
+                  "Both tasks to converge at the same rate",
+                  "An out-of-memory error from the larger task"
+                ],
+                "answer": 0,
+                "explanation": "Imbalance starves the small task. Up-sample or up-weight it; temperature sampling p_i ∝ n_i^(1/τ) is the standard knob between proportional and uniform mixing."
+              },
+              {
+                "q": "Curriculum learning typically orders examples…",
+                "options": [
+                  "Easy to hard",
+                  "Hard to easy, so hard cases get more epochs",
+                  "Shortest to longest, regardless of difficulty",
+                  "By label"
+                ],
+                "answer": 0,
+                "explanation": "The classic curriculum goes easy→hard. Random order is often just as good for LLM SFT, which is why the next question matters."
+              },
+              {
+                "q": "How should you decide whether a curriculum helped?",
+                "options": [
+                  "A/B it on a fixed gold set, several seeds",
+                  "Check whether training loss fell faster",
+                  "Check that the run finished in fewer steps",
+                  "Compare final loss against the previous run once"
+                ],
+                "answer": 0,
+                "explanation": "Train with and without the curriculum on the same data and compare on a fixed gold set, across several seeds. A faster-falling training loss doesn't show better held-out quality."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -404,36 +404,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What is task interference?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Faster training</li>
-                  <li>Negative transfer — tasks degrading each other when jointly trained</li>
-                  <li>A quantization error</li>
-                  <li>A tokenizer mismatch</li>
+                  <li>Tasks degrading each other in joint training</li>
+                  <li>One task's rows leaking into another's test split</li>
+                  <li>A tokenizer splitting two tasks' labels the same way</li>
+                  <li>Tasks needing different learning rates</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Negative transfer — tasks degrading each other when jointly trained</strong> Unrelated/imbalanced tasks fight for capacity and all get worse.</p></details></li>
-              <li><p class="quiz__q-text">Task A has 50k rows, task B has 500. Naive mixing causes…</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Tasks degrading each other in joint training</strong> Negative transfer: unrelated or imbalanced tasks compete for capacity and both get worse. Split leakage is a different problem.</p></details></li>
+              <li><p class="quiz__q-text">Task A has 50k rows, task B has 500. Naive proportional mixing causes…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Perfect balance</li>
-                  <li>The model to barely learn task B — fix with balancing</li>
-                  <li>Faster convergence</li>
-                  <li>An OOM</li>
+                  <li>The model to barely learn task B</li>
+                  <li>Task B to dominate because its rows are rarer</li>
+                  <li>Both tasks to converge at the same rate</li>
+                  <li>An out-of-memory error from the larger task</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The model to barely learn task B — fix with balancing</strong> Imbalance starves the small task; up-weight or up-sample it.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The model to barely learn task B</strong> Imbalance starves the small task. Up-sample or up-weight it; temperature sampling p_i ∝ n_i^(1/τ) is the standard knob between proportional and uniform mixing.</p></details></li>
               <li><p class="quiz__q-text">Curriculum learning typically orders examples…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Hard to easy</li>
                   <li>Easy to hard</li>
-                  <li>Randomly always</li>
-                  <li>By length only</li>
+                  <li>Hard to easy, so hard cases get more epochs</li>
+                  <li>Shortest to longest, regardless of difficulty</li>
+                  <li>By label</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Easy to hard</strong> Easy→hard establishes general features before refining on hard cases.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Easy to hard</strong> The classic curriculum goes easy→hard. Random order is often just as good for LLM SFT, which is why the next question matters.</p></details></li>
               <li><p class="quiz__q-text">How should you decide whether a curriculum helped?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Assume it always helps</li>
-                  <li>A/B it: train with vs without, compare on a fixed gold set</li>
-                  <li>Check the file size</li>
-                  <li>Read the loss once</li>
+                  <li>A/B it on a fixed gold set, several seeds</li>
+                  <li>Check whether training loss fell faster</li>
+                  <li>Check that the run finished in fewer steps</li>
+                  <li>Compare final loss against the previous run once</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A/B it: train with vs without, compare on a fixed gold set</strong> Curriculum effects vary by dataset; test against the alternative.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A/B it on a fixed gold set, several seeds</strong> Train with and without the curriculum on the same data and compare on a fixed gold set, across several seeds. A faster-falling training loss doesn't show better held-out quality.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

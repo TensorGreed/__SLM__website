@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "To save tokens"
+              "position": 1,
+              "text": "Events are optional, so failures are expected"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "To speed up training"
+              "text": "Retrying failed events would slow training down"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "To skip evaluation"
+              "text": "Lost events are rebuilt later from the logs"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "So a bug in observability can never break the data or training path",
+            "position": 0,
+            "text": "A logging bug must never break the work",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Observability must never compromise the actual work it observes."
+              "text": "Observability must never compromise the data or training path it observes, so an emission failure is swallowed rather than raised."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What is drift?",
-          "text": "What is drift?",
+          "name": "Production inputs have shifted since launch. Why won't re-scoring the same frozen gold set on the same deployed model reveal it?",
+          "text": "Production inputs have shifted since launch. Why won't re-scoring the same frozen gold set on the same deployed model reveal it?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "A training bug"
+              "position": 1,
+              "text": "The gold set is re-sampled from traffic, which hides the shift"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "A quantization format"
+              "text": "The pass rate moves, but only below the 0.05 tolerance"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "A tokenizer error"
+              "text": "Drift needs a retrain to show"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Production quality decay as input distributions change over time",
+            "position": 0,
+            "text": "Same model, same rows — same score",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The world moves; inputs change; a static model silently gets worse."
+              "text": "A frozen model scored on frozen rows gives the same result whatever production inputs do. Detecting input drift needs monitoring of the live input distribution (embedding or OOD shift, label mix) plus freshly labelled samples of recent traffic."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "How does BrewSLM detect drift?",
-          "text": "How does BrewSLM detect drift?",
+          "name": "What does BrewSLM's drift check (Ship → Deploy → Run drift check) actually catch?",
+          "text": "What does BrewSLM's drift check (Ship → Deploy → Run drift check) actually catch?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "By watching GPU temperature"
+              "position": 1,
+              "text": "Shifts in the distribution of production inputs"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "By counting tokens"
+              "text": "Only drops large enough to pass a significance test"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "By re-exporting"
+              "text": "Stale gold rows"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "By re-running the answer key (the gold set) against the deployed model and comparing with the training baseline",
+            "position": 0,
+            "text": "Deployment and serving regressions",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The gold set becomes a production regression sensor you re-run on your own cadence (Ship → Deploy → Run drift check)."
+              "text": "It exact-match-scores the same gold rows against the deployed model and compares with the training baseline, firing when |Δ| > the tolerance (default 0.05, both directions, no significance test). That catches a wrong artifact, quantization, chat template, decoding settings or a provider change — not input drift."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Drift is detected. The right response is usually…",
-          "text": "Drift is detected. The right response is usually…",
+          "name": "The drift check fires. What should you check first?",
+          "text": "The drift check fires. What should you check first?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Ignore it"
+              "position": 1,
+              "text": "Retrain at once on recent inputs"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Delete the deployment"
+              "text": "Raise the tolerance"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Increase the temperature"
+              "text": "Re-label the gold set against the new model's outputs"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Gather recent inputs, re-prepare, retrain, and re-evaluate against the same pass/fail rules",
+            "position": 0,
+            "text": "The serving setup: artifact, template, decoding",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "A drift signal triggers the Track 3 data-and-retrain loop."
+              "text": "With a frozen gold set the alert means the deployed model now answers those rows differently, so the cause is usually serving-side. Retraining on recent inputs answers a different question (input drift) and needs labelled recent data."
             }
           }
         }
@@ -346,52 +346,52 @@ re-run the answer key vs the deployed model
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "Why is RunEvent emission best-effort (wrapped in try/except)?",
-    "options": [
-      "To save tokens",
-      "So a bug in observability can never break the data or training path",
-      "To speed up training",
-      "To skip evaluation"
-    ],
-    "answer": 1,
-    "explanation": "Observability must never compromise the actual work it observes."
-  },
-  {
-    "q": "What is drift?",
-    "options": [
-      "A training bug",
-      "Production quality decay as input distributions change over time",
-      "A quantization format",
-      "A tokenizer error"
-    ],
-    "answer": 1,
-    "explanation": "The world moves; inputs change; a static model silently gets worse."
-  },
-  {
-    "q": "How does BrewSLM detect drift?",
-    "options": [
-      "By watching GPU temperature",
-      "By re-running the answer key (the gold set) against the deployed model and comparing with the training baseline",
-      "By counting tokens",
-      "By re-exporting"
-    ],
-    "answer": 1,
-    "explanation": "The gold set becomes a production regression sensor you re-run on your own cadence (Ship → Deploy → Run drift check)."
-  },
-  {
-    "q": "Drift is detected. The right response is usually\u2026",
-    "options": [
-      "Ignore it",
-      "Gather recent inputs, re-prepare, retrain, and re-evaluate against the same pass/fail rules",
-      "Delete the deployment",
-      "Increase the temperature"
-    ],
-    "answer": 1,
-    "explanation": "A drift signal triggers the Track 3 data-and-retrain loop."
-  }
-]
+            [
+              {
+                "q": "Why is RunEvent emission best-effort (wrapped in try/except)?",
+                "options": [
+                  "A logging bug must never break the work",
+                  "Events are optional, so failures are expected",
+                  "Retrying failed events would slow training down",
+                  "Lost events are rebuilt later from the logs"
+                ],
+                "answer": 0,
+                "explanation": "Observability must never compromise the data or training path it observes, so an emission failure is swallowed rather than raised."
+              },
+              {
+                "q": "Production inputs have shifted since launch. Why won't re-scoring the same frozen gold set on the same deployed model reveal it?",
+                "options": [
+                  "Same model, same rows — same score",
+                  "The gold set is re-sampled from traffic, which hides the shift",
+                  "The pass rate moves, but only below the 0.05 tolerance",
+                  "Drift needs a retrain to show"
+                ],
+                "answer": 0,
+                "explanation": "A frozen model scored on frozen rows gives the same result whatever production inputs do. Detecting input drift needs monitoring of the live input distribution (embedding or OOD shift, label mix) plus freshly labelled samples of recent traffic."
+              },
+              {
+                "q": "What does BrewSLM's drift check (Ship → Deploy → Run drift check) actually catch?",
+                "options": [
+                  "Deployment and serving regressions",
+                  "Shifts in the distribution of production inputs",
+                  "Only drops large enough to pass a significance test",
+                  "Stale gold rows"
+                ],
+                "answer": 0,
+                "explanation": "It exact-match-scores the same gold rows against the deployed model and compares with the training baseline, firing when |Δ| > the tolerance (default 0.05, both directions, no significance test). That catches a wrong artifact, quantization, chat template, decoding settings or a provider change — not input drift."
+              },
+              {
+                "q": "The drift check fires. What should you check first?",
+                "options": [
+                  "The serving setup: artifact, template, decoding",
+                  "Retrain at once on recent inputs",
+                  "Raise the tolerance",
+                  "Re-label the gold set against the new model's outputs"
+                ],
+                "answer": 0,
+                "explanation": "With a frozen gold set the alert means the deployed model now answers those rows differently, so the cause is usually serving-side. Retraining on recent inputs answers a different question (input drift) and needs labelled recent data."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -399,36 +399,36 @@ re-run the answer key vs the deployed model
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Why is RunEvent emission best-effort (wrapped in try/except)?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>To save tokens</li>
-                  <li>So a bug in observability can never break the data or training path</li>
-                  <li>To speed up training</li>
-                  <li>To skip evaluation</li>
+                  <li>A logging bug must never break the work</li>
+                  <li>Events are optional, so failures are expected</li>
+                  <li>Retrying failed events would slow training down</li>
+                  <li>Lost events are rebuilt later from the logs</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. So a bug in observability can never break the data or training path</strong> Observability must never compromise the actual work it observes.</p></details></li>
-              <li><p class="quiz__q-text">What is drift?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A logging bug must never break the work</strong> Observability must never compromise the data or training path it observes, so an emission failure is swallowed rather than raised.</p></details></li>
+              <li><p class="quiz__q-text">Production inputs have shifted since launch. Why won't re-scoring the same frozen gold set on the same deployed model reveal it?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A training bug</li>
-                  <li>Production quality decay as input distributions change over time</li>
-                  <li>A quantization format</li>
-                  <li>A tokenizer error</li>
+                  <li>Same model, same rows — same score</li>
+                  <li>The gold set is re-sampled from traffic, which hides the shift</li>
+                  <li>The pass rate moves, but only below the 0.05 tolerance</li>
+                  <li>Drift needs a retrain to show</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Production quality decay as input distributions change over time</strong> The world moves; inputs change; a static model silently gets worse.</p></details></li>
-              <li><p class="quiz__q-text">How does BrewSLM detect drift?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Same model, same rows — same score</strong> A frozen model scored on frozen rows gives the same result whatever production inputs do. Detecting input drift needs monitoring of the live input distribution (embedding or OOD shift, label mix) plus freshly labelled samples of recent traffic.</p></details></li>
+              <li><p class="quiz__q-text">What does BrewSLM's drift check (Ship → Deploy → Run drift check) actually catch?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>By watching GPU temperature</li>
-                  <li>By re-running the answer key (the gold set) against the deployed model and comparing with the training baseline</li>
-                  <li>By counting tokens</li>
-                  <li>By re-exporting</li>
+                  <li>Deployment and serving regressions</li>
+                  <li>Shifts in the distribution of production inputs</li>
+                  <li>Only drops large enough to pass a significance test</li>
+                  <li>Stale gold rows</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. By re-running the answer key (the gold set) against the deployed model and comparing with the training baseline</strong> The gold set becomes a production regression sensor you re-run on your own cadence (Ship → Deploy → Run drift check).</p></details></li>
-              <li><p class="quiz__q-text">Drift is detected. The right response is usually…</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Deployment and serving regressions</strong> It exact-match-scores the same gold rows against the deployed model and compares with the training baseline, firing when |Δ| &gt; the tolerance (default 0.05, both directions, no significance test). That catches a wrong artifact, quantization, chat template, decoding settings or a provider change — not input drift.</p></details></li>
+              <li><p class="quiz__q-text">The drift check fires. What should you check first?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Ignore it</li>
-                  <li>Gather recent inputs, re-prepare, retrain, and re-evaluate against the same pass/fail rules</li>
-                  <li>Delete the deployment</li>
-                  <li>Increase the temperature</li>
+                  <li>The serving setup: artifact, template, decoding</li>
+                  <li>Retrain at once on recent inputs</li>
+                  <li>Raise the tolerance</li>
+                  <li>Re-label the gold set against the new model's outputs</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Gather recent inputs, re-prepare, retrain, and re-evaluate against the same pass/fail rules</strong> A drift signal triggers the Track 3 data-and-retrain loop.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The serving setup: artifact, template, decoding</strong> With a frozen gold set the alert means the deployed model now answers those rows differently, so the cause is usually serving-side. Retraining on recent inputs answers a different question (input drift) and needs labelled recent data.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

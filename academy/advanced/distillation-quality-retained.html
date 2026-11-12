@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "teacher / student"
+              "position": 1,
+              "text": "teacher_score / student_score"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "student accuracy alone"
+              "text": "student_score minus the base model's score"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "1 minus the loss"
+              "text": "1 − (student eval loss / teacher eval loss)"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "student_score / teacher_score on the same eval",
+            "position": 0,
+            "text": "student_score / teacher_score, same eval",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "It's the ratio of student to teacher score on the same evaluation."
+              "text": "It's the ratio of student to teacher score on the same evaluation. The inverted ratio would be above 1 for a weaker student. For lower-is-better metrics the ratio flips, so check the metric's direction."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "quality_retained = 0.97 at 2% of the size means…",
-          "text": "quality_retained = 0.97 at 2% of the size means…",
+          "name": "quality_retained = 0.97 at 2% of the teacher's size means…",
+          "text": "quality_retained = 0.97 at 2% of the teacher's size means…",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The student failed"
+              "position": 1,
+              "text": "The student is 97% likely to beat the teacher"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The teacher is bad"
+              "text": "The student matches the teacher on 97% of rows"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Distillation didn't run"
+              "text": "The student is 3% faster than the teacher"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The student kept ~97% of the teacher's quality while being far smaller",
+            "position": 0,
+            "text": "The student kept ~97% of the teacher's score",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Near-1.0 retention at a fraction of the size is the goal of distillation."
+              "text": "It's a ratio of aggregate scores, not per-row agreement or a probability. Also check the chance floor and the uncertainty: on 100 items a 0.91 vs 0.94 difference is not distinguishable."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Always"
+              "position": 1,
+              "text": "Whenever quality_retained is above 0.90"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "When the teacher is small"
+              "text": "Whenever the teacher is at least 10× larger"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "When alpha is 1"
+              "text": "Whenever the KD loss falls below the SFT loss"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Only when the distilled student beats a plain-SFT student of the same size",
+            "position": 0,
+            "text": "When it beats a same-size plain-SFT student",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "If SFT alone matches it, you don't need the teacher."
+              "text": "The teacher adds cost; it pays off only if the KD student beats a plain-SFT student of the same size on the same data and compute, ideally over several seeds with a paired test. A high ratio alone doesn't show the teacher helped."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "Always 0.99"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Exactly 0.90"
+              "text": "0.90, the standard distillation cut-off"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "There is no way to tell"
+              "text": "Whatever the teacher scored on the dev split"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "It depends on the constraint that drove you to distill (latency, cost, quality-criticality)",
+            "position": 0,
+            "text": "It depends on why you distilled",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The acceptable ratio depends on why you distilled in the first place."
+              "text": "The acceptable ratio depends on the constraint that drove you to distill — latency, cost, or how quality-critical the task is. There is no universal cut-off."
             }
           }
         }
@@ -351,52 +351,52 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "How is quality_retained computed?",
-    "options": [
-      "teacher / student",
-      "student_score / teacher_score on the same eval",
-      "student accuracy alone",
-      "1 minus the loss"
-    ],
-    "answer": 1,
-    "explanation": "It's the ratio of student to teacher score on the same evaluation."
-  },
-  {
-    "q": "quality_retained = 0.97 at 2% of the size means\u2026",
-    "options": [
-      "The student failed",
-      "The student kept ~97% of the teacher's quality while being far smaller",
-      "The teacher is bad",
-      "Distillation didn't run"
-    ],
-    "answer": 1,
-    "explanation": "Near-1.0 retention at a fraction of the size is the goal of distillation."
-  },
-  {
-    "q": "When does distillation earn its extra complexity?",
-    "options": [
-      "Always",
-      "Only when the distilled student beats a plain-SFT student of the same size",
-      "When the teacher is small",
-      "When alpha is 1"
-    ],
-    "answer": 1,
-    "explanation": "If SFT alone matches it, you don't need the teacher."
-  },
-  {
-    "q": "What threshold of quality_retained is 'enough'?",
-    "options": [
-      "Always 0.99",
-      "It depends on the constraint that drove you to distill (latency, cost, quality-criticality)",
-      "Exactly 0.90",
-      "There is no way to tell"
-    ],
-    "answer": 1,
-    "explanation": "The acceptable ratio depends on why you distilled in the first place."
-  }
-]
+            [
+              {
+                "q": "How is quality_retained computed?",
+                "options": [
+                  "student_score / teacher_score, same eval",
+                  "teacher_score / student_score",
+                  "student_score minus the base model's score",
+                  "1 − (student eval loss / teacher eval loss)"
+                ],
+                "answer": 0,
+                "explanation": "It's the ratio of student to teacher score on the same evaluation. The inverted ratio would be above 1 for a weaker student. For lower-is-better metrics the ratio flips, so check the metric's direction."
+              },
+              {
+                "q": "quality_retained = 0.97 at 2% of the teacher's size means…",
+                "options": [
+                  "The student kept ~97% of the teacher's score",
+                  "The student is 97% likely to beat the teacher",
+                  "The student matches the teacher on 97% of rows",
+                  "The student is 3% faster than the teacher"
+                ],
+                "answer": 0,
+                "explanation": "It's a ratio of aggregate scores, not per-row agreement or a probability. Also check the chance floor and the uncertainty: on 100 items a 0.91 vs 0.94 difference is not distinguishable."
+              },
+              {
+                "q": "When does distillation earn its extra complexity?",
+                "options": [
+                  "When it beats a same-size plain-SFT student",
+                  "Whenever quality_retained is above 0.90",
+                  "Whenever the teacher is at least 10× larger",
+                  "Whenever the KD loss falls below the SFT loss"
+                ],
+                "answer": 0,
+                "explanation": "The teacher adds cost; it pays off only if the KD student beats a plain-SFT student of the same size on the same data and compute, ideally over several seeds with a paired test. A high ratio alone doesn't show the teacher helped."
+              },
+              {
+                "q": "What threshold of quality_retained is 'enough'?",
+                "options": [
+                  "It depends on why you distilled",
+                  "Always 0.99",
+                  "0.90, the standard distillation cut-off",
+                  "Whatever the teacher scored on the dev split"
+                ],
+                "answer": 0,
+                "explanation": "The acceptable ratio depends on the constraint that drove you to distill — latency, cost, or how quality-critical the task is. There is no universal cut-off."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -404,36 +404,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">How is quality_retained computed?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>teacher / student</li>
-                  <li>student_score / teacher_score on the same eval</li>
-                  <li>student accuracy alone</li>
-                  <li>1 minus the loss</li>
+                  <li>student_score / teacher_score, same eval</li>
+                  <li>teacher_score / student_score</li>
+                  <li>student_score minus the base model's score</li>
+                  <li>1 − (student eval loss / teacher eval loss)</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. student_score / teacher_score on the same eval</strong> It's the ratio of student to teacher score on the same evaluation.</p></details></li>
-              <li><p class="quiz__q-text">quality_retained = 0.97 at 2% of the size means…</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. student_score / teacher_score, same eval</strong> It's the ratio of student to teacher score on the same evaluation. The inverted ratio would be above 1 for a weaker student. For lower-is-better metrics the ratio flips, so check the metric's direction.</p></details></li>
+              <li><p class="quiz__q-text">quality_retained = 0.97 at 2% of the teacher's size means…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The student failed</li>
-                  <li>The student kept ~97% of the teacher's quality while being far smaller</li>
-                  <li>The teacher is bad</li>
-                  <li>Distillation didn't run</li>
+                  <li>The student kept ~97% of the teacher's score</li>
+                  <li>The student is 97% likely to beat the teacher</li>
+                  <li>The student matches the teacher on 97% of rows</li>
+                  <li>The student is 3% faster than the teacher</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The student kept ~97% of the teacher's quality while being far smaller</strong> Near-1.0 retention at a fraction of the size is the goal of distillation.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The student kept ~97% of the teacher's score</strong> It's a ratio of aggregate scores, not per-row agreement or a probability. Also check the chance floor and the uncertainty: on 100 items a 0.91 vs 0.94 difference is not distinguishable.</p></details></li>
               <li><p class="quiz__q-text">When does distillation earn its extra complexity?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Always</li>
-                  <li>Only when the distilled student beats a plain-SFT student of the same size</li>
-                  <li>When the teacher is small</li>
-                  <li>When alpha is 1</li>
+                  <li>When it beats a same-size plain-SFT student</li>
+                  <li>Whenever quality_retained is above 0.90</li>
+                  <li>Whenever the teacher is at least 10× larger</li>
+                  <li>Whenever the KD loss falls below the SFT loss</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Only when the distilled student beats a plain-SFT student of the same size</strong> If SFT alone matches it, you don't need the teacher.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. When it beats a same-size plain-SFT student</strong> The teacher adds cost; it pays off only if the KD student beats a plain-SFT student of the same size on the same data and compute, ideally over several seeds with a paired test. A high ratio alone doesn't show the teacher helped.</p></details></li>
               <li><p class="quiz__q-text">What threshold of quality_retained is 'enough'?</p>
                 <ol class="quiz__static-options" type="A">
+                  <li>It depends on why you distilled</li>
                   <li>Always 0.99</li>
-                  <li>It depends on the constraint that drove you to distill (latency, cost, quality-criticality)</li>
-                  <li>Exactly 0.90</li>
-                  <li>There is no way to tell</li>
+                  <li>0.90, the standard distillation cut-off</li>
+                  <li>Whatever the teacher scored on the dev split</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. It depends on the constraint that drove you to distill (latency, cost, quality-criticality)</strong> The acceptable ratio depends on why you distilled in the first place.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. It depends on why you distilled</strong> The acceptable ratio depends on the constraint that drove you to distill — latency, cost, or how quality-critical the task is. There is no universal cut-off.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

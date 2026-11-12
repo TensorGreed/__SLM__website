@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Drift detection tells you the model has gotten worse. The feedback loop adds…",
-          "text": "Drift detection tells you the model has gotten worse. The feedback loop adds…",
+          "name": "A regression alert tells you something got worse. The feedback loop adds…",
+          "text": "A regression alert tells you something got worse. The feedback loop adds…",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "A faster drift check"
+              "position": 1,
+              "text": "A faster regression check"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "More hyperparameters"
+              "text": "A larger hyperparameter sweep for the retrain"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "A different eval pack"
+              "text": "A second gold set to cross-check the first"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The data that fixes it — logged, tagged, corrected rows ready for the next retrain",
+            "position": 0,
+            "text": "Corrected rows to retrain on",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Drift = alarm. Feedback loop = water. Without recent tagged corrections, retraining has nothing new to learn from."
+              "text": "The alert is the alarm; logged, tagged and corrected production rows are what the next retrain learns from. Without them, retraining has nothing new to learn."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why redact PII at log time, not later?",
-          "text": "Why redact PII at log time, not later?",
+          "name": "Why redact PII at log time rather than later?",
+          "text": "Why redact PII at log time rather than later?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Speed"
+              "position": 1,
+              "text": "Redacting later changes the training loss"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It changes the loss"
+              "text": "Logs are only readable at write time"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It's required by Pydantic"
+              "text": "Redaction is too slow to run in a batch"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Once raw user data hits disk, you've created a privacy liability. Redact before it's written.",
+            "position": 0,
+            "text": "Raw PII on disk is already the liability",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Logging raw PII is the liability. Redact in-flight so the disk never sees the raw values."
+              "text": "Once raw user data is written you hold a privacy liability. Redact before writing — both the prompt and the model's response, since outputs often echo PII. An unsalted hash of a user id is still personal data; use a keyed HMAC."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Which tag would auto-fire on rows from the period preceding a drift event?",
-          "text": "Which tag would auto-fire on rows from the period preceding a drift event?",
+          "name": "Rows logged in the hours before a regression alert are tagged drift_window. How should you use them?",
+          "text": "Rows logged in the hours before a regression alert are tagged drift_window. How should you use them?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "user_negative"
+              "position": 1,
+              "text": "As confirmed failures to train on directly"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "operator_review"
+              "text": "As the new gold set for the next drift check"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "low_confidence"
+              "text": "As rows to drop before the next retrain"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "drift_window — the production inputs the model started failing on",
+            "position": 0,
+            "text": "As a pool to sample for review",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "drift_window is the auto-tag attached to logs in the period before deployment_drift_detected fires — those are the inputs that revealed the drop."
+              "text": "Rows near an alert aren't known failures — most may be fine. Sample them for review alongside sharper signals (user negative feedback, low confidence, OOD score, judge flags) and label what you find."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "You see drift but only 12 tagged-and-corrected rows. Best move?",
-          "text": "You see drift but only 12 tagged-and-corrected rows. Best move?",
+          "name": "You have a regression but only 12 corrected rows. Best move?",
+          "text": "You have a regression but only 12 corrected rows. Best move?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Retrain immediately on the 12"
+              "position": 1,
+              "text": "Retrain immediately on the 12 rows alone"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Disable drift detection"
+              "text": "Fine-tune on the 12 rows for more epochs"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Roll back to last version forever"
+              "text": "Roll back for good"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Collect more first; retraining on too little new data trades one set of regressions for another",
+            "position": 0,
+            "text": "Collect more, then retrain with replay",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Small new data + retrain = catastrophic forgetting (Lesson 1.21) on the old behaviours. Collect to a sensible floor first."
+              "text": "Forgetting comes from training on the new data alone, not from its size: mix the corrections with replay of the original training set (Lesson 1.22, catastrophic forgetting), collect to a sensible floor, and re-run all prior gates."
             }
           }
         }
@@ -472,61 +472,89 @@ def logs_to_sft(log_path: str, tags: set[str], gold_corrections: dict[str, str])
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "Drift detection tells you the model has gotten worse. The feedback loop adds…",
-   "options": ["A faster drift check", "The data that fixes it — logged, tagged, corrected rows ready for the next retrain", "More hyperparameters", "A different eval pack"],
-   "answer": 1,
-   "explanation": "Drift = alarm. Feedback loop = water. Without recent tagged corrections, retraining has nothing new to learn from."},
-  {"q": "Why redact PII at log time, not later?",
-   "options": ["Speed", "Once raw user data hits disk, you've created a privacy liability. Redact before it's written.", "It changes the loss", "It's required by Pydantic"],
-   "answer": 1,
-   "explanation": "Logging raw PII is the liability. Redact in-flight so the disk never sees the raw values."},
-  {"q": "Which tag would auto-fire on rows from the period preceding a drift event?",
-   "options": ["user_negative", "drift_window — the production inputs the model started failing on", "operator_review", "low_confidence"],
-   "answer": 1,
-   "explanation": "drift_window is the auto-tag attached to logs in the period before deployment_drift_detected fires — those are the inputs that revealed the drop."},
-  {"q": "You see drift but only 12 tagged-and-corrected rows. Best move?",
-   "options": ["Retrain immediately on the 12", "Collect more first; retraining on too little new data trades one set of regressions for another", "Disable drift detection", "Roll back to last version forever"],
-   "answer": 1,
-   "explanation": "Small new data + retrain = catastrophic forgetting (Lesson 1.21) on the old behaviours. Collect to a sensible floor first."}
-]
+            [
+              {
+                "q": "A regression alert tells you something got worse. The feedback loop adds…",
+                "options": [
+                  "Corrected rows to retrain on",
+                  "A faster regression check",
+                  "A larger hyperparameter sweep for the retrain",
+                  "A second gold set to cross-check the first"
+                ],
+                "answer": 0,
+                "explanation": "The alert is the alarm; logged, tagged and corrected production rows are what the next retrain learns from. Without them, retraining has nothing new to learn."
+              },
+              {
+                "q": "Why redact PII at log time rather than later?",
+                "options": [
+                  "Raw PII on disk is already the liability",
+                  "Redacting later changes the training loss",
+                  "Logs are only readable at write time",
+                  "Redaction is too slow to run in a batch"
+                ],
+                "answer": 0,
+                "explanation": "Once raw user data is written you hold a privacy liability. Redact before writing — both the prompt and the model's response, since outputs often echo PII. An unsalted hash of a user id is still personal data; use a keyed HMAC."
+              },
+              {
+                "q": "Rows logged in the hours before a regression alert are tagged drift_window. How should you use them?",
+                "options": [
+                  "As a pool to sample for review",
+                  "As confirmed failures to train on directly",
+                  "As the new gold set for the next drift check",
+                  "As rows to drop before the next retrain"
+                ],
+                "answer": 0,
+                "explanation": "Rows near an alert aren't known failures — most may be fine. Sample them for review alongside sharper signals (user negative feedback, low confidence, OOD score, judge flags) and label what you find."
+              },
+              {
+                "q": "You have a regression but only 12 corrected rows. Best move?",
+                "options": [
+                  "Collect more, then retrain with replay",
+                  "Retrain immediately on the 12 rows alone",
+                  "Fine-tune on the 12 rows for more epochs",
+                  "Roll back for good"
+                ],
+                "answer": 0,
+                "explanation": "Forgetting comes from training on the new data alone, not from its size: mix the corrections with replay of the original training set (Lesson 1.22, catastrophic forgetting), collect to a sensible floor, and re-run all prior gates."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">Drift detection tells you the model has gotten worse. The feedback loop adds…</p>
+              <li><p class="quiz__q-text">A regression alert tells you something got worse. The feedback loop adds…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A faster drift check</li>
-                  <li>The data that fixes it — logged, tagged, corrected rows ready for the next retrain</li>
-                  <li>More hyperparameters</li>
-                  <li>A different eval pack</li>
+                  <li>Corrected rows to retrain on</li>
+                  <li>A faster regression check</li>
+                  <li>A larger hyperparameter sweep for the retrain</li>
+                  <li>A second gold set to cross-check the first</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The data that fixes it — logged, tagged, corrected rows ready for the next retrain</strong> Drift = alarm. Feedback loop = water. Without recent tagged corrections, retraining has nothing new to learn from.</p></details></li>
-              <li><p class="quiz__q-text">Why redact PII at log time, not later?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Corrected rows to retrain on</strong> The alert is the alarm; logged, tagged and corrected production rows are what the next retrain learns from. Without them, retraining has nothing new to learn.</p></details></li>
+              <li><p class="quiz__q-text">Why redact PII at log time rather than later?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Speed</li>
-                  <li>Once raw user data hits disk, you've created a privacy liability. Redact before it's written.</li>
-                  <li>It changes the loss</li>
-                  <li>It's required by Pydantic</li>
+                  <li>Raw PII on disk is already the liability</li>
+                  <li>Redacting later changes the training loss</li>
+                  <li>Logs are only readable at write time</li>
+                  <li>Redaction is too slow to run in a batch</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Once raw user data hits disk, you've created a privacy liability. Redact before it's written.</strong> Logging raw PII is the liability. Redact in-flight so the disk never sees the raw values.</p></details></li>
-              <li><p class="quiz__q-text">Which tag would auto-fire on rows from the period preceding a drift event?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Raw PII on disk is already the liability</strong> Once raw user data is written you hold a privacy liability. Redact before writing — both the prompt and the model's response, since outputs often echo PII. An unsalted hash of a user id is still personal data; use a keyed HMAC.</p></details></li>
+              <li><p class="quiz__q-text">Rows logged in the hours before a regression alert are tagged drift_window. How should you use them?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>user_negative</li>
-                  <li>drift_window — the production inputs the model started failing on</li>
-                  <li>operator_review</li>
-                  <li>low_confidence</li>
+                  <li>As a pool to sample for review</li>
+                  <li>As confirmed failures to train on directly</li>
+                  <li>As the new gold set for the next drift check</li>
+                  <li>As rows to drop before the next retrain</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. drift_window — the production inputs the model started failing on</strong> drift_window is the auto-tag attached to logs in the period before deployment_drift_detected fires — those are the inputs that revealed the drop.</p></details></li>
-              <li><p class="quiz__q-text">You see drift but only 12 tagged-and-corrected rows. Best move?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. As a pool to sample for review</strong> Rows near an alert aren't known failures — most may be fine. Sample them for review alongside sharper signals (user negative feedback, low confidence, OOD score, judge flags) and label what you find.</p></details></li>
+              <li><p class="quiz__q-text">You have a regression but only 12 corrected rows. Best move?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Retrain immediately on the 12</li>
-                  <li>Collect more first; retraining on too little new data trades one set of regressions for another</li>
-                  <li>Disable drift detection</li>
-                  <li>Roll back to last version forever</li>
+                  <li>Collect more, then retrain with replay</li>
+                  <li>Retrain immediately on the 12 rows alone</li>
+                  <li>Fine-tune on the 12 rows for more epochs</li>
+                  <li>Roll back for good</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Collect more first; retraining on too little new data trades one set of regressions for another</strong> Small new data + retrain = catastrophic forgetting (Lesson 1.21) on the old behaviours. Collect to a sensible floor first.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Collect more, then retrain with replay</strong> Forgetting comes from training on the new data alone, not from its size: mix the corrections with replay of the original training set (Lesson 1.22, catastrophic forgetting), collect to a sensible floor, and re-run all prior gates.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

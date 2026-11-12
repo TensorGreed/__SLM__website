@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What's the correct loss-masking setup for a chain-of-thought SFT example with prompt → trace → answer?",
-          "text": "What's the correct loss-masking setup for a chain-of-thought SFT example with prompt → trace → answer?",
+          "name": "For chain-of-thought SFT with prompt → trace → answer, which tokens should the loss be computed on?",
+          "text": "For chain-of-thought SFT with prompt → trace → answer, which tokens should the loss be computed on?",
           "suggestedAnswer": [
-            {
-              "@type": "Answer",
-              "position": 0,
-              "text": "Mask everything except the final answer"
-            },
             {
               "@type": "Answer",
               "position": 1,
-              "text": "Mask everything except the trace"
+              "text": "Only the answer"
+            },
+            {
+              "@type": "Answer",
+              "position": 2,
+              "text": "Only the reasoning trace tokens"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Mask nothing — train on the whole sequence including the prompt"
+              "text": "The prompt, the trace and the answer"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "Mask the prompt; train on both the trace AND the answer",
+            "position": 0,
+            "text": "The trace and the answer",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Mask the prompt (otherwise you train on user-voice text — Lesson 1.3). Train on both trace and answer; masking only the answer teaches the model to skip the trace, masking only the trace teaches it to hallucinate answers that don't follow."
+              "text": "Exclude the prompt (training on it teaches user-voice text, Lesson 1.3) and compute loss on both trace and answer. Loss on the answer alone teaches the model to skip the trace; loss on the trace alone lets it emit answers that don't follow."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "How does GRPO differ from PPO, and why does it matter at SLM scale?",
-          "text": "How does GRPO differ from PPO, and why does it matter at SLM scale?",
+          "name": "How does GRPO differ from PPO?",
+          "text": "How does GRPO differ from PPO?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "GRPO uses a larger value network"
+              "position": 1,
+              "text": "It adds a larger value network for stability"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "GRPO requires more reward-model labels"
+              "text": "It needs per-step labels from a reward model"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "GRPO is just PPO with a different optimiser"
+              "text": "It's PPO with the optimiser swapped for SGD"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "GRPO drops the value (critic) network and computes advantage group-relative across G samples per prompt — roughly half the memory and no critic to keep stable",
+            "position": 0,
+            "text": "No critic; group-relative advantages",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "GRPO's no-critic, group-relative advantage is what makes RL fine-tuning practical at SLM scale; the tradeoff is G× the rollouts per step (vLLM-style serving recommended)."
+              "text": "GRPO (from DeepSeekMath) drops the value network and scores each sample against the other G samples for the same prompt. That saves one model's weights, gradients and optimizer state — not half the memory — at the price of G rollouts per prompt."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "When is outcome supervision (ORM) the right tool, and when is process supervision (PRM)?",
-          "text": "When is outcome supervision (ORM) the right tool, and when is process supervision (PRM)?",
+          "name": "When is outcome-level reward the right tool, and when is a process reward model (PRM)?",
+          "text": "When is outcome-level reward the right tool, and when is a process reward model (PRM)?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Always use PRM; ORM is for legacy systems"
+              "position": 1,
+              "text": "Always a PRM; outcome rewards are a legacy method"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "ORM is for code, PRM is for math — never mix"
+              "text": "Outcome rewards for code, PRM for math, never mixed"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "They're interchangeable"
+              "text": "They give the same signal, so either one works"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Use ORM when you have a cheap verifier (math executor, code runner) and lots of (prompt, gold-answer) pairs but no step labels; use PRM when you need higher local signal and can afford step-level human labels",
+            "position": 0,
+            "text": "Outcome with a cheap verifier; PRM for step signal",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "ORM scales because the data is just (prompt, gold answer). PRM gives better local signal — rewards correctness of reasoning, not just answer — but step-level labels are expensive."
+              "text": "With a verifier (math checker, code runner) and (prompt, answer) pairs, outcome rewards scale cheaply. A PRM rewards correct intermediate steps; its step labels can come from humans (PRM800K) or Monte Carlo rollouts (Math-Shepherd), and PRMs are also used for best-of-N reranking."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Quoting the public benchmark number without standard error"
+              "position": 1,
+              "text": "Omitting the standard error"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Using GRPO instead of PPO"
+              "text": "Choosing GRPO over PPO"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Running too few epochs of CoT SFT"
+              "text": "Running too few epochs of CoT SFT first"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Reporting trace-format rate as if it were a reasoning metric — the model learned the \u003cthink>-tag format without the underlying reasoning being correct",
+            "position": 0,
+            "text": "Treating trace-format rate as reasoning",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Format-following is the most common small-model trap. Verifier-grounded eval (math executor, code runner, step checker) is the only way to distinguish a model that emits reasoning-shaped output from one whose reasoning is actually correct."
+              "text": "A small model can learn the \u003cthink>-tag format without reasoning correctly. Only a verifier-grounded eval (math checker, code runner, step checker) separates reasoning-shaped output from correct reasoning. A missing standard error is a weakness, but not the trap specific to reasoning claims."
             }
           }
         }
@@ -407,61 +407,89 @@ for prompt, gold in batch:
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "What's the correct loss-masking setup for a chain-of-thought SFT example with prompt → trace → answer?",
-   "options": ["Mask everything except the final answer", "Mask everything except the trace", "Mask the prompt; train on both the trace AND the answer", "Mask nothing — train on the whole sequence including the prompt"],
-   "answer": 2,
-   "explanation": "Mask the prompt (otherwise you train on user-voice text — Lesson 1.3). Train on both trace and answer; masking only the answer teaches the model to skip the trace, masking only the trace teaches it to hallucinate answers that don't follow."},
-  {"q": "How does GRPO differ from PPO, and why does it matter at SLM scale?",
-   "options": ["GRPO uses a larger value network", "GRPO drops the value (critic) network and computes advantage group-relative across G samples per prompt — roughly half the memory and no critic to keep stable", "GRPO requires more reward-model labels", "GRPO is just PPO with a different optimiser"],
-   "answer": 1,
-   "explanation": "GRPO's no-critic, group-relative advantage is what makes RL fine-tuning practical at SLM scale; the tradeoff is G× the rollouts per step (vLLM-style serving recommended)."},
-  {"q": "When is outcome supervision (ORM) the right tool, and when is process supervision (PRM)?",
-   "options": ["Always use PRM; ORM is for legacy systems", "Use ORM when you have a cheap verifier (math executor, code runner) and lots of (prompt, gold-answer) pairs but no step labels; use PRM when you need higher local signal and can afford step-level human labels", "ORM is for code, PRM is for math — never mix", "They're interchangeable"],
-   "answer": 1,
-   "explanation": "ORM scales because the data is just (prompt, gold answer). PRM gives better local signal — rewards correctness of reasoning, not just answer — but step-level labels are expensive."},
-  {"q": "What's the honest-metrics failure when reporting 'reasoning' gains on a small model?",
-   "options": ["Quoting the public benchmark number without standard error", "Reporting trace-format rate as if it were a reasoning metric — the model learned the <think>-tag format without the underlying reasoning being correct", "Using GRPO instead of PPO", "Running too few epochs of CoT SFT"],
-   "answer": 1,
-   "explanation": "Format-following is the most common small-model trap. Verifier-grounded eval (math executor, code runner, step checker) is the only way to distinguish a model that emits reasoning-shaped output from one whose reasoning is actually correct."}
-]
+            [
+              {
+                "q": "For chain-of-thought SFT with prompt → trace → answer, which tokens should the loss be computed on?",
+                "options": [
+                  "The trace and the answer",
+                  "Only the answer",
+                  "Only the reasoning trace tokens",
+                  "The prompt, the trace and the answer"
+                ],
+                "answer": 0,
+                "explanation": "Exclude the prompt (training on it teaches user-voice text, Lesson 1.3) and compute loss on both trace and answer. Loss on the answer alone teaches the model to skip the trace; loss on the trace alone lets it emit answers that don't follow."
+              },
+              {
+                "q": "How does GRPO differ from PPO?",
+                "options": [
+                  "No critic; group-relative advantages",
+                  "It adds a larger value network for stability",
+                  "It needs per-step labels from a reward model",
+                  "It's PPO with the optimiser swapped for SGD"
+                ],
+                "answer": 0,
+                "explanation": "GRPO (from DeepSeekMath) drops the value network and scores each sample against the other G samples for the same prompt. That saves one model's weights, gradients and optimizer state — not half the memory — at the price of G rollouts per prompt."
+              },
+              {
+                "q": "When is outcome-level reward the right tool, and when is a process reward model (PRM)?",
+                "options": [
+                  "Outcome with a cheap verifier; PRM for step signal",
+                  "Always a PRM; outcome rewards are a legacy method",
+                  "Outcome rewards for code, PRM for math, never mixed",
+                  "They give the same signal, so either one works"
+                ],
+                "answer": 0,
+                "explanation": "With a verifier (math checker, code runner) and (prompt, answer) pairs, outcome rewards scale cheaply. A PRM rewards correct intermediate steps; its step labels can come from humans (PRM800K) or Monte Carlo rollouts (Math-Shepherd), and PRMs are also used for best-of-N reranking."
+              },
+              {
+                "q": "What's the honest-metrics failure when reporting 'reasoning' gains on a small model?",
+                "options": [
+                  "Treating trace-format rate as reasoning",
+                  "Omitting the standard error",
+                  "Choosing GRPO over PPO",
+                  "Running too few epochs of CoT SFT first"
+                ],
+                "answer": 0,
+                "explanation": "A small model can learn the <think>-tag format without reasoning correctly. Only a verifier-grounded eval (math checker, code runner, step checker) separates reasoning-shaped output from correct reasoning. A missing standard error is a weakness, but not the trap specific to reasoning claims."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">What's the correct loss-masking setup for a chain-of-thought SFT example with prompt → trace → answer?</p>
+              <li><p class="quiz__q-text">For chain-of-thought SFT with prompt → trace → answer, which tokens should the loss be computed on?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Mask everything except the final answer</li>
-                  <li>Mask everything except the trace</li>
-                  <li>Mask the prompt; train on both the trace AND the answer</li>
-                  <li>Mask nothing — train on the whole sequence including the prompt</li>
+                  <li>The trace and the answer</li>
+                  <li>Only the answer</li>
+                  <li>Only the reasoning trace tokens</li>
+                  <li>The prompt, the trace and the answer</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Mask the prompt; train on both the trace AND the answer</strong> Mask the prompt (otherwise you train on user-voice text — Lesson 1.3). Train on both trace and answer; masking only the answer teaches the model to skip the trace, masking only the trace teaches it to hallucinate answers that don't follow.</p></details></li>
-              <li><p class="quiz__q-text">How does GRPO differ from PPO, and why does it matter at SLM scale?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The trace and the answer</strong> Exclude the prompt (training on it teaches user-voice text, Lesson 1.3) and compute loss on both trace and answer. Loss on the answer alone teaches the model to skip the trace; loss on the trace alone lets it emit answers that don't follow.</p></details></li>
+              <li><p class="quiz__q-text">How does GRPO differ from PPO?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>GRPO uses a larger value network</li>
-                  <li>GRPO drops the value (critic) network and computes advantage group-relative across G samples per prompt — roughly half the memory and no critic to keep stable</li>
-                  <li>GRPO requires more reward-model labels</li>
-                  <li>GRPO is just PPO with a different optimiser</li>
+                  <li>No critic; group-relative advantages</li>
+                  <li>It adds a larger value network for stability</li>
+                  <li>It needs per-step labels from a reward model</li>
+                  <li>It's PPO with the optimiser swapped for SGD</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. GRPO drops the value (critic) network and computes advantage group-relative across G samples per prompt — roughly half the memory and no critic to keep stable</strong> GRPO's no-critic, group-relative advantage is what makes RL fine-tuning practical at SLM scale; the tradeoff is G× the rollouts per step (vLLM-style serving recommended).</p></details></li>
-              <li><p class="quiz__q-text">When is outcome supervision (ORM) the right tool, and when is process supervision (PRM)?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. No critic; group-relative advantages</strong> GRPO (from DeepSeekMath) drops the value network and scores each sample against the other G samples for the same prompt. That saves one model's weights, gradients and optimizer state — not half the memory — at the price of G rollouts per prompt.</p></details></li>
+              <li><p class="quiz__q-text">When is outcome-level reward the right tool, and when is a process reward model (PRM)?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Always use PRM; ORM is for legacy systems</li>
-                  <li>Use ORM when you have a cheap verifier (math executor, code runner) and lots of (prompt, gold-answer) pairs but no step labels; use PRM when you need higher local signal and can afford step-level human labels</li>
-                  <li>ORM is for code, PRM is for math — never mix</li>
-                  <li>They're interchangeable</li>
+                  <li>Outcome with a cheap verifier; PRM for step signal</li>
+                  <li>Always a PRM; outcome rewards are a legacy method</li>
+                  <li>Outcome rewards for code, PRM for math, never mixed</li>
+                  <li>They give the same signal, so either one works</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Use ORM when you have a cheap verifier (math executor, code runner) and lots of (prompt, gold-answer) pairs but no step labels; use PRM when you need higher local signal and can afford step-level human labels</strong> ORM scales because the data is just (prompt, gold answer). PRM gives better local signal — rewards correctness of reasoning, not just answer — but step-level labels are expensive.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Outcome with a cheap verifier; PRM for step signal</strong> With a verifier (math checker, code runner) and (prompt, answer) pairs, outcome rewards scale cheaply. A PRM rewards correct intermediate steps; its step labels can come from humans (PRM800K) or Monte Carlo rollouts (Math-Shepherd), and PRMs are also used for best-of-N reranking.</p></details></li>
               <li><p class="quiz__q-text">What's the honest-metrics failure when reporting 'reasoning' gains on a small model?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Quoting the public benchmark number without standard error</li>
-                  <li>Reporting trace-format rate as if it were a reasoning metric — the model learned the &lt;think&gt;-tag format without the underlying reasoning being correct</li>
-                  <li>Using GRPO instead of PPO</li>
-                  <li>Running too few epochs of CoT SFT</li>
+                  <li>Treating trace-format rate as reasoning</li>
+                  <li>Omitting the standard error</li>
+                  <li>Choosing GRPO over PPO</li>
+                  <li>Running too few epochs of CoT SFT first</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Reporting trace-format rate as if it were a reasoning metric — the model learned the &lt;think&gt;-tag format without the underlying reasoning being correct</strong> Format-following is the most common small-model trap. Verifier-grounded eval (math executor, code runner, step checker) is the only way to distinguish a model that emits reasoning-shaped output from one whose reasoning is actually correct.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Treating trace-format rate as reasoning</strong> A small model can learn the &lt;think&gt;-tag format without reasoning correctly. Only a verifier-grounded eval (math checker, code runner, step checker) separates reasoning-shaped output from correct reasoning. A missing standard error is a weakness, but not the trap specific to reasoning claims.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

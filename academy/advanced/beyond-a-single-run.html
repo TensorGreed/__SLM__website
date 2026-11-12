@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Preference tuning"
+              "position": 1,
+              "text": "Preference tuning on chosen-over-rejected pairs"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Multi-task training"
+              "text": "Multi-task training on several tasks at once"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Curriculum"
+              "text": "Curriculum ordering"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Distillation",
+            "position": 0,
+            "text": "Distillation into a small student",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Distillation trains a small student to mimic a large teacher."
+              "text": "Distillation trains a small student to imitate a larger teacher, so you keep most of the quality at a fraction of the size. Quantization also shrinks a model, but it compresses the same model rather than transferring quality into a smaller one."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "You need the model to prefer a tone/style, not just be correct. Which technique?",
-          "text": "You need the model to prefer a tone/style, not just be correct. Which technique?",
+          "name": "You need the model to prefer a tone or style, not just be correct. Which technique?",
+          "text": "You need the model to prefer a tone or style, not just be correct. Which technique?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Quantization"
+              "position": 1,
+              "text": "Distillation from a larger teacher model"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Distillation"
+              "text": "Quantization to a smaller weight format"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Serving"
+              "text": "More SFT epochs on the existing rows"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "Preference tuning (DPO/ORPO)",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Preference tuning aligns to chosen-over-rejected outputs."
+              "text": "Preference tuning learns from chosen-over-rejected pairs, which encode 'better' when there is no single right answer. More SFT epochs only fit the existing targets harder."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Are these advanced techniques mutually exclusive?",
-          "text": "Are these advanced techniques mutually exclusive?",
+          "name": "Are the advanced techniques in this track mutually exclusive?",
+          "text": "Are the advanced techniques in this track mutually exclusive?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Yes, pick one"
+              "position": 1,
+              "text": "Yes — each one undoes the gains of the others"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Only on GPUs"
+              "text": "Only distillation and quantization can be combined"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Only with RAG"
+              "text": "Yes — pick one per model"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "No — production SLMs often compose several",
+            "position": 0,
+            "text": "No — production SLMs often stack several",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "They compose; e.g. distill, then preference-tune, then quantize."
+              "text": "They compose, e.g. distill, then preference-tune, then quantize — with a re-evaluation after each stage, because a later step can undo an earlier gain."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What's the right starting point for choosing a technique?",
-          "text": "What's the right starting point for choosing a technique?",
+          "name": "What's the right starting point for choosing an advanced technique?",
+          "text": "What's the right starting point for choosing an advanced technique?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The biggest model"
+              "position": 1,
+              "text": "The largest base model your GPU can still load"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The newest paper"
+              "text": "The most recent technique with published results"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The export format"
+              "text": "The export format your serving stack prefers"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The constraint you're solving for (size, alignment, cost, breadth, reliability)",
+            "position": 0,
+            "text": "The constraint you're solving for",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Start from the constraint, then pick the matching technique."
+              "text": "Start from the constraint (size, alignment, cost, breadth, latency, reliability), then pick the technique that addresses it. A recent paper or a bigger model doesn't tell you what your problem is."
             }
           }
         }
@@ -344,52 +344,52 @@ fast &amp; reliable in production       serving + observability    4.8-4.9</code
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "Which technique targets 'smaller and cheaper at near-equal quality'?",
-    "options": [
-      "Preference tuning",
-      "Distillation",
-      "Multi-task training",
-      "Curriculum"
-    ],
-    "answer": 1,
-    "explanation": "Distillation trains a small student to mimic a large teacher."
-  },
-  {
-    "q": "You need the model to prefer a tone/style, not just be correct. Which technique?",
-    "options": [
-      "Quantization",
-      "Preference tuning (DPO/ORPO)",
-      "Distillation",
-      "Serving"
-    ],
-    "answer": 1,
-    "explanation": "Preference tuning aligns to chosen-over-rejected outputs."
-  },
-  {
-    "q": "Are these advanced techniques mutually exclusive?",
-    "options": [
-      "Yes, pick one",
-      "No \u2014 production SLMs often compose several",
-      "Only on GPUs",
-      "Only with RAG"
-    ],
-    "answer": 1,
-    "explanation": "They compose; e.g. distill, then preference-tune, then quantize."
-  },
-  {
-    "q": "What's the right starting point for choosing a technique?",
-    "options": [
-      "The biggest model",
-      "The constraint you're solving for (size, alignment, cost, breadth, reliability)",
-      "The newest paper",
-      "The export format"
-    ],
-    "answer": 1,
-    "explanation": "Start from the constraint, then pick the matching technique."
-  }
-]
+            [
+              {
+                "q": "Which technique targets 'smaller and cheaper at near-equal quality'?",
+                "options": [
+                  "Distillation into a small student",
+                  "Preference tuning on chosen-over-rejected pairs",
+                  "Multi-task training on several tasks at once",
+                  "Curriculum ordering"
+                ],
+                "answer": 0,
+                "explanation": "Distillation trains a small student to imitate a larger teacher, so you keep most of the quality at a fraction of the size. Quantization also shrinks a model, but it compresses the same model rather than transferring quality into a smaller one."
+              },
+              {
+                "q": "You need the model to prefer a tone or style, not just be correct. Which technique?",
+                "options": [
+                  "Preference tuning (DPO/ORPO)",
+                  "Distillation from a larger teacher model",
+                  "Quantization to a smaller weight format",
+                  "More SFT epochs on the existing rows"
+                ],
+                "answer": 0,
+                "explanation": "Preference tuning learns from chosen-over-rejected pairs, which encode 'better' when there is no single right answer. More SFT epochs only fit the existing targets harder."
+              },
+              {
+                "q": "Are the advanced techniques in this track mutually exclusive?",
+                "options": [
+                  "No — production SLMs often stack several",
+                  "Yes — each one undoes the gains of the others",
+                  "Only distillation and quantization can be combined",
+                  "Yes — pick one per model"
+                ],
+                "answer": 0,
+                "explanation": "They compose, e.g. distill, then preference-tune, then quantize — with a re-evaluation after each stage, because a later step can undo an earlier gain."
+              },
+              {
+                "q": "What's the right starting point for choosing an advanced technique?",
+                "options": [
+                  "The constraint you're solving for",
+                  "The largest base model your GPU can still load",
+                  "The most recent technique with published results",
+                  "The export format your serving stack prefers"
+                ],
+                "answer": 0,
+                "explanation": "Start from the constraint (size, alignment, cost, breadth, latency, reliability), then pick the technique that addresses it. A recent paper or a bigger model doesn't tell you what your problem is."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -397,36 +397,36 @@ fast &amp; reliable in production       serving + observability    4.8-4.9</code
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Which technique targets 'smaller and cheaper at near-equal quality'?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Preference tuning</li>
-                  <li>Distillation</li>
-                  <li>Multi-task training</li>
-                  <li>Curriculum</li>
+                  <li>Distillation into a small student</li>
+                  <li>Preference tuning on chosen-over-rejected pairs</li>
+                  <li>Multi-task training on several tasks at once</li>
+                  <li>Curriculum ordering</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Distillation</strong> Distillation trains a small student to mimic a large teacher.</p></details></li>
-              <li><p class="quiz__q-text">You need the model to prefer a tone/style, not just be correct. Which technique?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Distillation into a small student</strong> Distillation trains a small student to imitate a larger teacher, so you keep most of the quality at a fraction of the size. Quantization also shrinks a model, but it compresses the same model rather than transferring quality into a smaller one.</p></details></li>
+              <li><p class="quiz__q-text">You need the model to prefer a tone or style, not just be correct. Which technique?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Quantization</li>
                   <li>Preference tuning (DPO/ORPO)</li>
-                  <li>Distillation</li>
-                  <li>Serving</li>
+                  <li>Distillation from a larger teacher model</li>
+                  <li>Quantization to a smaller weight format</li>
+                  <li>More SFT epochs on the existing rows</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Preference tuning (DPO/ORPO)</strong> Preference tuning aligns to chosen-over-rejected outputs.</p></details></li>
-              <li><p class="quiz__q-text">Are these advanced techniques mutually exclusive?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Preference tuning (DPO/ORPO)</strong> Preference tuning learns from chosen-over-rejected pairs, which encode 'better' when there is no single right answer. More SFT epochs only fit the existing targets harder.</p></details></li>
+              <li><p class="quiz__q-text">Are the advanced techniques in this track mutually exclusive?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Yes, pick one</li>
-                  <li>No — production SLMs often compose several</li>
-                  <li>Only on GPUs</li>
-                  <li>Only with RAG</li>
+                  <li>No — production SLMs often stack several</li>
+                  <li>Yes — each one undoes the gains of the others</li>
+                  <li>Only distillation and quantization can be combined</li>
+                  <li>Yes — pick one per model</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. No — production SLMs often compose several</strong> They compose; e.g. distill, then preference-tune, then quantize.</p></details></li>
-              <li><p class="quiz__q-text">What's the right starting point for choosing a technique?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. No — production SLMs often stack several</strong> They compose, e.g. distill, then preference-tune, then quantize — with a re-evaluation after each stage, because a later step can undo an earlier gain.</p></details></li>
+              <li><p class="quiz__q-text">What's the right starting point for choosing an advanced technique?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The biggest model</li>
-                  <li>The constraint you're solving for (size, alignment, cost, breadth, reliability)</li>
-                  <li>The newest paper</li>
-                  <li>The export format</li>
+                  <li>The constraint you're solving for</li>
+                  <li>The largest base model your GPU can still load</li>
+                  <li>The most recent technique with published results</li>
+                  <li>The export format your serving stack prefers</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The constraint you're solving for (size, alignment, cost, breadth, reliability)</strong> Start from the constraint, then pick the matching technique.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The constraint you're solving for</strong> Start from the constraint (size, alignment, cost, breadth, latency, reliability), then pick the technique that addresses it. A recent paper or a bigger model doesn't tell you what your problem is.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

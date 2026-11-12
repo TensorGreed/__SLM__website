@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What are the two terms of the KD loss?",
-          "text": "What are the two terms of the KD loss?",
+          "name": "What are the two terms of the Hinton-style KD loss BrewSLM uses?",
+          "text": "What are the two terms of the Hinton-style KD loss BrewSLM uses?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Two cross-entropies"
+              "position": 1,
+              "text": "CE on gold + KL(student ‖ teacher)"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "KL and BLEU"
+              "text": "Two cross-entropies on gold labels"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Accuracy and F1"
+              "text": "CE on argmax tokens + L2 on hidden states"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Hard-label cross-entropy and a KL divergence to the teacher",
+            "position": 0,
+            "text": "CE on gold labels + KL(teacher ‖ student)",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "alpha·CE (gold label) + (1−alpha)·T²·KL (teacher distribution)."
+              "text": "loss = α·CE(gold) + (1−α)·T²·KL(teacher_T ‖ student_T). PyTorch's kl_div(student_log_probs, teacher_probs) computes the forward KL, teacher ‖ student — the mode-covering direction from Hinton et al. Reverse KL (student ‖ teacher) is the mode-seeking choice used by on-policy methods such as MiniLLM."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What does raising the temperature T do?",
-          "text": "What does raising the temperature T do?",
+          "name": "What does raising the temperature T do to the teacher's distribution?",
+          "text": "What does raising the temperature T do to the teacher's distribution?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Sharpens the distribution"
+              "position": 1,
+              "text": "Sharpens it so the top token dominates more"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Removes the CE term"
+              "text": "Leaves it unchanged; T only rescales the loss"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Changes the tokenizer"
+              "text": "Removes the gold-label cross-entropy term"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Softens it so secondary token probabilities become visible",
+            "position": 0,
+            "text": "Softens it, exposing secondary tokens",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Dividing logits by T flattens the distribution, exposing relational signal."
+              "text": "Dividing logits by T > 1 flattens the softmax, so the relative probabilities of the non-top tokens (the 'dark knowledge') carry more signal."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "To make it bigger arbitrarily"
+              "position": 1,
+              "text": "To make the KL term dominate the CE term"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "To convert to probabilities"
+              "text": "To turn logits into probabilities"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "To mask the prompt"
+              "text": "To undo the temperature at inference time"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "To offset the ~1/T² gradient shrink from softening, keeping the term's magnitude stable",
+            "position": 0,
+            "text": "To offset the ~1/T² gradient shrink",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "T² rescales the softened gradients back to a consistent scale."
+              "text": "Softening by T scales the KL gradients by roughly 1/T²; multiplying by T² keeps the soft term's magnitude comparable across temperatures, so α still means what you think."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The teacher's soft targets"
+              "position": 1,
+              "text": "The teacher's softened distributions"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The temperature"
+              "text": "The teacher's top-1 tokens only"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The tokenizer"
+              "text": "An even mix of gold and teacher"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The gold labels (closer to plain SFT)",
+            "position": 0,
+            "text": "The gold labels (close to plain SFT)",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "alpha→1 weights the CE/gold-label term; alpha→0 weights the teacher."
+              "text": "α weights the CE/gold-label term; α→1 is nearly plain SFT and α→0 is nearly pure distillation. BrewSLM's offline KD recipes default to α = 0.5, T = 2.0."
             }
           }
         }
@@ -354,89 +354,89 @@ def kd_loss(student_logits, teacher_logits, labels, alpha=0.5, T=2.0):
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "What are the two terms of the KD loss?",
-    "options": [
-      "Two cross-entropies",
-      "Hard-label cross-entropy and a KL divergence to the teacher",
-      "KL and BLEU",
-      "Accuracy and F1"
-    ],
-    "answer": 1,
-    "explanation": "alpha\u00b7CE (gold label) + (1\u2212alpha)\u00b7T\u00b2\u00b7KL (teacher distribution)."
-  },
-  {
-    "q": "What does raising the temperature T do?",
-    "options": [
-      "Sharpens the distribution",
-      "Softens it so secondary token probabilities become visible",
-      "Removes the CE term",
-      "Changes the tokenizer"
-    ],
-    "answer": 1,
-    "explanation": "Dividing logits by T flattens the distribution, exposing relational signal."
-  },
-  {
-    "q": "Why multiply the KL term by T\u00b2?",
-    "options": [
-      "To make it bigger arbitrarily",
-      "To offset the ~1/T\u00b2 gradient shrink from softening, keeping the term's magnitude stable",
-      "To convert to probabilities",
-      "To mask the prompt"
-    ],
-    "answer": 1,
-    "explanation": "T\u00b2 rescales the softened gradients back to a consistent scale."
-  },
-  {
-    "q": "alpha is set near 1.0. The student mostly learns from\u2026",
-    "options": [
-      "The teacher's soft targets",
-      "The gold labels (closer to plain SFT)",
-      "The temperature",
-      "The tokenizer"
-    ],
-    "answer": 1,
-    "explanation": "alpha\u21921 weights the CE/gold-label term; alpha\u21920 weights the teacher."
-  }
-]
+            [
+              {
+                "q": "What are the two terms of the Hinton-style KD loss BrewSLM uses?",
+                "options": [
+                  "CE on gold labels + KL(teacher ‖ student)",
+                  "CE on gold + KL(student ‖ teacher)",
+                  "Two cross-entropies on gold labels",
+                  "CE on argmax tokens + L2 on hidden states"
+                ],
+                "answer": 0,
+                "explanation": "loss = α·CE(gold) + (1−α)·T²·KL(teacher_T ‖ student_T). PyTorch's kl_div(student_log_probs, teacher_probs) computes the forward KL, teacher ‖ student — the mode-covering direction from Hinton et al. Reverse KL (student ‖ teacher) is the mode-seeking choice used by on-policy methods such as MiniLLM."
+              },
+              {
+                "q": "What does raising the temperature T do to the teacher's distribution?",
+                "options": [
+                  "Softens it, exposing secondary tokens",
+                  "Sharpens it so the top token dominates more",
+                  "Leaves it unchanged; T only rescales the loss",
+                  "Removes the gold-label cross-entropy term"
+                ],
+                "answer": 0,
+                "explanation": "Dividing logits by T > 1 flattens the softmax, so the relative probabilities of the non-top tokens (the 'dark knowledge') carry more signal."
+              },
+              {
+                "q": "Why multiply the KL term by T²?",
+                "options": [
+                  "To offset the ~1/T² gradient shrink",
+                  "To make the KL term dominate the CE term",
+                  "To turn logits into probabilities",
+                  "To undo the temperature at inference time"
+                ],
+                "answer": 0,
+                "explanation": "Softening by T scales the KL gradients by roughly 1/T²; multiplying by T² keeps the soft term's magnitude comparable across temperatures, so α still means what you think."
+              },
+              {
+                "q": "alpha is set near 1.0. The student mostly learns from…",
+                "options": [
+                  "The gold labels (close to plain SFT)",
+                  "The teacher's softened distributions",
+                  "The teacher's top-1 tokens only",
+                  "An even mix of gold and teacher"
+                ],
+                "answer": 0,
+                "explanation": "α weights the CE/gold-label term; α→1 is nearly plain SFT and α→0 is nearly pure distillation. BrewSLM's offline KD recipes default to α = 0.5, T = 2.0."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">What are the two terms of the KD loss?</p>
+              <li><p class="quiz__q-text">What are the two terms of the Hinton-style KD loss BrewSLM uses?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Two cross-entropies</li>
-                  <li>Hard-label cross-entropy and a KL divergence to the teacher</li>
-                  <li>KL and BLEU</li>
-                  <li>Accuracy and F1</li>
+                  <li>CE on gold labels + KL(teacher ‖ student)</li>
+                  <li>CE on gold + KL(student ‖ teacher)</li>
+                  <li>Two cross-entropies on gold labels</li>
+                  <li>CE on argmax tokens + L2 on hidden states</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Hard-label cross-entropy and a KL divergence to the teacher</strong> alpha·CE (gold label) + (1−alpha)·T²·KL (teacher distribution).</p></details></li>
-              <li><p class="quiz__q-text">What does raising the temperature T do?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. CE on gold labels + KL(teacher ‖ student)</strong> loss = α·CE(gold) + (1−α)·T²·KL(teacher_T ‖ student_T). PyTorch's kl_div(student_log_probs, teacher_probs) computes the forward KL, teacher ‖ student — the mode-covering direction from Hinton et al. Reverse KL (student ‖ teacher) is the mode-seeking choice used by on-policy methods such as MiniLLM.</p></details></li>
+              <li><p class="quiz__q-text">What does raising the temperature T do to the teacher's distribution?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Sharpens the distribution</li>
-                  <li>Softens it so secondary token probabilities become visible</li>
-                  <li>Removes the CE term</li>
-                  <li>Changes the tokenizer</li>
+                  <li>Softens it, exposing secondary tokens</li>
+                  <li>Sharpens it so the top token dominates more</li>
+                  <li>Leaves it unchanged; T only rescales the loss</li>
+                  <li>Removes the gold-label cross-entropy term</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Softens it so secondary token probabilities become visible</strong> Dividing logits by T flattens the distribution, exposing relational signal.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Softens it, exposing secondary tokens</strong> Dividing logits by T &gt; 1 flattens the softmax, so the relative probabilities of the non-top tokens (the 'dark knowledge') carry more signal.</p></details></li>
               <li><p class="quiz__q-text">Why multiply the KL term by T²?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>To make it bigger arbitrarily</li>
-                  <li>To offset the ~1/T² gradient shrink from softening, keeping the term's magnitude stable</li>
-                  <li>To convert to probabilities</li>
-                  <li>To mask the prompt</li>
+                  <li>To offset the ~1/T² gradient shrink</li>
+                  <li>To make the KL term dominate the CE term</li>
+                  <li>To turn logits into probabilities</li>
+                  <li>To undo the temperature at inference time</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. To offset the ~1/T² gradient shrink from softening, keeping the term's magnitude stable</strong> T² rescales the softened gradients back to a consistent scale.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. To offset the ~1/T² gradient shrink</strong> Softening by T scales the KL gradients by roughly 1/T²; multiplying by T² keeps the soft term's magnitude comparable across temperatures, so α still means what you think.</p></details></li>
               <li><p class="quiz__q-text">alpha is set near 1.0. The student mostly learns from…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The teacher's soft targets</li>
-                  <li>The gold labels (closer to plain SFT)</li>
-                  <li>The temperature</li>
-                  <li>The tokenizer</li>
+                  <li>The gold labels (close to plain SFT)</li>
+                  <li>The teacher's softened distributions</li>
+                  <li>The teacher's top-1 tokens only</li>
+                  <li>An even mix of gold and teacher</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The gold labels (closer to plain SFT)</strong> alpha→1 weights the CE/gold-label term; alpha→0 weights the teacher.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The gold labels (close to plain SFT)</strong> α weights the CE/gold-label term; α→1 is nearly plain SFT and α→0 is nearly pure distillation. BrewSLM's offline KD recipes default to α = 0.5, T = 2.0.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

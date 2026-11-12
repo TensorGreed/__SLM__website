@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "They make the dataset larger"
+              "position": 1,
+              "text": "They balance the classes for the JSON parser"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It's required by Pydantic"
+              "text": "They make the tool catalogue fit in context"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It enables QLoRA"
+              "text": "They let the model invent new tools safely"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "A model trained only on positives learns to call a tool every time; negatives teach the no-tool path",
+            "position": 0,
+            "text": "Without them it learns to always call a tool",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "A router with no negative examples becomes a router that routes everything. 10–20% no-tool examples teach the explicit 'no tool fits' answer."
+              "text": "A router trained only on positives routes everything. Around 10–20% no_tool rows teach the explicit 'no tool fits' answer."
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "High temperature for creativity"
+              "position": 1,
+              "text": "Temperature 0.7 to cover more tools"
             },
             {
               "@type": "Answer",
               "position": 2,
+              "text": "Greedy with repetition_penalty 1.3"
+            },
+            {
+              "@type": "Answer",
+              "position": 3,
               "text": "Top-p 0.95"
-            },
-            {
-              "@type": "Answer",
-              "position": 3,
-              "text": "Random sampling"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Greedy / temperature ~0 — deterministic; variety isn't a virtue here",
+            "position": 0,
+            "text": "Greedy (temperature 0)",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "A router that varies its output across runs on the same input is broken. Greedy decoding is the default for structured output."
+              "text": "A router that answers differently on the same input is broken, so decode greedily. Leave repetition_penalty at 1.0: a penalty above 1 punishes the repeated quotes, braces and keys that JSON needs."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Which failure mode is the most dangerous for tool-use in production?",
-          "text": "Which failure mode is the most dangerous for tool-use in production?",
+          "name": "Which failure mode is the most dangerous for tool use in production?",
+          "text": "Which failure mode is the most dangerous for tool use in production?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Invalid JSON — the client retries"
+              "position": 1,
+              "text": "Invalid JSON that the client must retry"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Output too short"
+              "text": "An answer that is cut off by max tokens"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Output too long"
+              "text": "A no_tool reply when a tool would help"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Valid JSON for the wrong tool with plausible arguments — silently calls real systems with wrong inputs",
+            "position": 0,
+            "text": "Valid JSON, wrong tool",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Parse failures are visible bugs. Plausible-but-wrong tool calls run real code with wrong inputs and may corrupt state."
+              "text": "Parse failures and truncation are visible and retryable. A valid, plausible call to the wrong tool silently runs real code with wrong inputs and may corrupt state."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Which two numbers report a tool-call model honestly?",
-          "text": "Which two numbers report a tool-call model honestly?",
+          "name": "Argument-match accuracy should be computed over which rows?",
+          "text": "Argument-match accuracy should be computed over which rows?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Accuracy + perplexity"
+              "position": 1,
+              "text": "Every row in the gold set, including no_tool"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Loss + epoch"
+              "text": "All valid calls, including no_tool outputs"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "BLEU + ROUGE"
+              "text": "Gold no_tool rows only"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Valid-tool-call rate + argument-match accuracy on valid calls",
+            "position": 0,
+            "text": "Valid calls whose tool matches gold",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Same shape as Lesson 2.13's structured-output report: did the output parse and validate, and were the arguments right?"
+              "text": "Argument quality only makes sense where the model picked the right real tool; counting no_tool or wrong-tool outputs in the denominator biases the metric down and mixes tool choice with argument quality. Report tool choice and the no-tool path (false-tool-call rate over gold no_tool rows) as separate metrics."
             }
           }
         }
@@ -531,24 +531,52 @@ result = TOOLS[call.tool](**call.arguments)</code></pre>
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "Why include no-tool negatives in the training data?",
-   "options": ["They make the dataset larger", "A model trained only on positives learns to call a tool every time; negatives teach the no-tool path", "It's required by Pydantic", "It enables QLoRA"],
-   "answer": 1,
-   "explanation": "A router with no negative examples becomes a router that routes everything. 10–20% no-tool examples teach the explicit 'no tool fits' answer."},
-  {"q": "Which decoding setting is right for a tool router at inference?",
-   "options": ["High temperature for creativity", "Greedy / temperature ~0 — deterministic; variety isn't a virtue here", "Top-p 0.95", "Random sampling"],
-   "answer": 1,
-   "explanation": "A router that varies its output across runs on the same input is broken. Greedy decoding is the default for structured output."},
-  {"q": "Which failure mode is the most dangerous for tool-use in production?",
-   "options": ["Invalid JSON — the client retries", "Valid JSON for the wrong tool with plausible arguments — silently calls real systems with wrong inputs", "Output too short", "Output too long"],
-   "answer": 1,
-   "explanation": "Parse failures are visible bugs. Plausible-but-wrong tool calls run real code with wrong inputs and may corrupt state."},
-  {"q": "Which two numbers report a tool-call model honestly?",
-   "options": ["Accuracy + perplexity", "Valid-tool-call rate + argument-match accuracy on valid calls", "Loss + epoch", "BLEU + ROUGE"],
-   "answer": 1,
-   "explanation": "Same shape as Lesson 2.13's structured-output report: did the output parse and validate, and were the arguments right?"}
-]
+            [
+              {
+                "q": "Why include no-tool negatives in the training data?",
+                "options": [
+                  "Without them it learns to always call a tool",
+                  "They balance the classes for the JSON parser",
+                  "They make the tool catalogue fit in context",
+                  "They let the model invent new tools safely"
+                ],
+                "answer": 0,
+                "explanation": "A router trained only on positives routes everything. Around 10–20% no_tool rows teach the explicit 'no tool fits' answer."
+              },
+              {
+                "q": "Which decoding setting is right for a tool router at inference?",
+                "options": [
+                  "Greedy (temperature 0)",
+                  "Temperature 0.7 to cover more tools",
+                  "Greedy with repetition_penalty 1.3",
+                  "Top-p 0.95"
+                ],
+                "answer": 0,
+                "explanation": "A router that answers differently on the same input is broken, so decode greedily. Leave repetition_penalty at 1.0: a penalty above 1 punishes the repeated quotes, braces and keys that JSON needs."
+              },
+              {
+                "q": "Which failure mode is the most dangerous for tool use in production?",
+                "options": [
+                  "Valid JSON, wrong tool",
+                  "Invalid JSON that the client must retry",
+                  "An answer that is cut off by max tokens",
+                  "A no_tool reply when a tool would help"
+                ],
+                "answer": 0,
+                "explanation": "Parse failures and truncation are visible and retryable. A valid, plausible call to the wrong tool silently runs real code with wrong inputs and may corrupt state."
+              },
+              {
+                "q": "Argument-match accuracy should be computed over which rows?",
+                "options": [
+                  "Valid calls whose tool matches gold",
+                  "Every row in the gold set, including no_tool",
+                  "All valid calls, including no_tool outputs",
+                  "Gold no_tool rows only"
+                ],
+                "answer": 0,
+                "explanation": "Argument quality only makes sense where the model picked the right real tool; counting no_tool or wrong-tool outputs in the denominator biases the metric down and mixes tool choice with argument quality. Report tool choice and the no-tool path (false-tool-call rate over gold no_tool rows) as separate metrics."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -556,36 +584,36 @@ result = TOOLS[call.tool](**call.arguments)</code></pre>
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Why include no-tool negatives in the training data?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>They make the dataset larger</li>
-                  <li>A model trained only on positives learns to call a tool every time; negatives teach the no-tool path</li>
-                  <li>It's required by Pydantic</li>
-                  <li>It enables QLoRA</li>
+                  <li>Without them it learns to always call a tool</li>
+                  <li>They balance the classes for the JSON parser</li>
+                  <li>They make the tool catalogue fit in context</li>
+                  <li>They let the model invent new tools safely</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A model trained only on positives learns to call a tool every time; negatives teach the no-tool path</strong> A router with no negative examples becomes a router that routes everything. 10–20% no-tool examples teach the explicit 'no tool fits' answer.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Without them it learns to always call a tool</strong> A router trained only on positives routes everything. Around 10–20% no_tool rows teach the explicit 'no tool fits' answer.</p></details></li>
               <li><p class="quiz__q-text">Which decoding setting is right for a tool router at inference?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>High temperature for creativity</li>
-                  <li>Greedy / temperature ~0 — deterministic; variety isn't a virtue here</li>
+                  <li>Greedy (temperature 0)</li>
+                  <li>Temperature 0.7 to cover more tools</li>
+                  <li>Greedy with repetition_penalty 1.3</li>
                   <li>Top-p 0.95</li>
-                  <li>Random sampling</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Greedy / temperature ~0 — deterministic; variety isn't a virtue here</strong> A router that varies its output across runs on the same input is broken. Greedy decoding is the default for structured output.</p></details></li>
-              <li><p class="quiz__q-text">Which failure mode is the most dangerous for tool-use in production?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Greedy (temperature 0)</strong> A router that answers differently on the same input is broken, so decode greedily. Leave repetition_penalty at 1.0: a penalty above 1 punishes the repeated quotes, braces and keys that JSON needs.</p></details></li>
+              <li><p class="quiz__q-text">Which failure mode is the most dangerous for tool use in production?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Invalid JSON — the client retries</li>
-                  <li>Valid JSON for the wrong tool with plausible arguments — silently calls real systems with wrong inputs</li>
-                  <li>Output too short</li>
-                  <li>Output too long</li>
+                  <li>Valid JSON, wrong tool</li>
+                  <li>Invalid JSON that the client must retry</li>
+                  <li>An answer that is cut off by max tokens</li>
+                  <li>A no_tool reply when a tool would help</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Valid JSON for the wrong tool with plausible arguments — silently calls real systems with wrong inputs</strong> Parse failures are visible bugs. Plausible-but-wrong tool calls run real code with wrong inputs and may corrupt state.</p></details></li>
-              <li><p class="quiz__q-text">Which two numbers report a tool-call model honestly?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Valid JSON, wrong tool</strong> Parse failures and truncation are visible and retryable. A valid, plausible call to the wrong tool silently runs real code with wrong inputs and may corrupt state.</p></details></li>
+              <li><p class="quiz__q-text">Argument-match accuracy should be computed over which rows?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Accuracy + perplexity</li>
-                  <li>Valid-tool-call rate + argument-match accuracy on valid calls</li>
-                  <li>Loss + epoch</li>
-                  <li>BLEU + ROUGE</li>
+                  <li>Valid calls whose tool matches gold</li>
+                  <li>Every row in the gold set, including no_tool</li>
+                  <li>All valid calls, including no_tool outputs</li>
+                  <li>Gold no_tool rows only</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Valid-tool-call rate + argument-match accuracy on valid calls</strong> Same shape as Lesson 2.13's structured-output report: did the output parse and validate, and were the arguments right?</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Valid calls whose tool matches gold</strong> Argument quality only makes sense where the model picked the right real tool; counting no_tool or wrong-tool outputs in the denominator biases the metric down and mixes tool choice with argument quality. Report tool choice and the no-tool path (false-tool-call rate over gold no_tool rows) as separate metrics.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

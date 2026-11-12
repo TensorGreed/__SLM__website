@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Structured is faster to compute; unstructured is more accurate"
+              "position": 1,
+              "text": "Unstructured shrinks matrices; structured only masks"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Structured uses LoRA; unstructured uses QLoRA"
+              "text": "One uses LoRA, the other QLoRA"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "There's no real difference at inference time"
+              "text": "Structured needs sparse kernels to give any speed-up"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Structured removes whole heads/layers/channels so matrix shapes shrink and wall-clock wins are real; unstructured zeros individual weights and only helps if you have sparse-aware kernels — on commodity GPUs almost no one does",
+            "position": 0,
+            "text": "Structured shrinks the weight matrices",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Structured pruning shrinks the actual matrices, so dense matmul kernels run faster. Unstructured pruning leaves the matrix shape unchanged; without a sparse kernel a 70%-sparse model still runs at dense speed."
+              "text": "Structured pruning removes whole heads, channels or layers, so dense kernels run on smaller matrices. Unstructured pruning zeros individual weights at the same shape; it only speeds up with sparse kernels — 2:4 semi-structured sparsity is the case with real GPU support."
             }
           }
         },
@@ -119,65 +119,65 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why is recovery training not optional?",
-          "text": "Why is recovery training not optional?",
+          "name": "Why is recovery training needed after aggressive pruning?",
+          "text": "Why is recovery training needed after aggressive pruning?",
           "suggestedAnswer": [
-            {
-              "@type": "Answer",
-              "position": 0,
-              "text": "It's required by the licence"
-            },
-            {
-              "@type": "Answer",
-              "position": 2,
-              "text": "It saves disk space"
-            },
-            {
-              "@type": "Answer",
-              "position": 3,
-              "text": "It only matters for unstructured pruning"
-            }
-          ],
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "position": 1,
-            "text": "Aggressive pruning typically costs 10–30 points on substrate benchmarks; the short SFT / distillation pass after pruning is what makes the technique competitive",
-            "answerExplanation": {
-              "@type": "Comment",
-              "text": "A pruned-but-not-recovered model is usually dramatically worse than the un-pruned original. Recovery training is where most of the lost quality comes back."
-            }
-          }
-        },
-        {
-          "@type": "Question",
-          "eduQuestionType": "Multiple choice",
-          "learningResourceType": "Practice problem",
-          "name": "Which importance-scoring family is the cheapest but most misleading?",
-          "text": "Which importance-scoring family is the cheapest but most misleading?",
-          "suggestedAnswer": [
-            {
-              "@type": "Answer",
-              "position": 0,
-              "text": "Hessian-based / WoodFisher"
-            },
             {
               "@type": "Answer",
               "position": 1,
-              "text": "Gradient × weight (SNIP-style)"
+              "text": "It is what physically removes the pruned weights"
+            },
+            {
+              "@type": "Answer",
+              "position": 2,
+              "text": "It is only needed after unstructured pruning"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Random scoring"
+              "text": "It converts the masks into smaller matrices"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "Magnitude — large-magnitude weights can still be unused, and small ones can be load-bearing; gradient × weight is the practical sweet spot",
+            "position": 0,
+            "text": "It restores much of the lost quality",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Magnitude needs no data and no gradients, but it correlates only loosely with importance. Gradient × weight on a calibration set is the usual production choice."
+              "text": "A pruned-but-unrecovered model is usually much worse than the original; a short SFT or distillation pass brings most of the quality back. One-shot methods like SparseGPT and Wanda reduce, but don't remove, the need for it at high sparsity."
+            }
+          }
+        },
+        {
+          "@type": "Question",
+          "eduQuestionType": "Multiple choice",
+          "learningResourceType": "Practice problem",
+          "name": "Which importance-scoring family is the cheapest but least reliable?",
+          "text": "Which importance-scoring family is the cheapest but least reliable?",
+          "suggestedAnswer": [
+            {
+              "@type": "Answer",
+              "position": 1,
+              "text": "Hessian-based"
+            },
+            {
+              "@type": "Answer",
+              "position": 2,
+              "text": "Gradient × weight on calibration data"
+            },
+            {
+              "@type": "Answer",
+              "position": 3,
+              "text": "Weight × activation norm (Wanda)"
+            }
+          ],
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "position": 0,
+            "text": "Weight magnitude",
+            "answerExplanation": {
+              "@type": "Comment",
+              "text": "Magnitude needs no data and no gradients, but it correlates only loosely with importance: large weights can be unused and small ones load-bearing. Data-aware scores (gradient × weight, Wanda's weight × activation, Hessian-based) cost more but rank better."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Always — it's the first compression knob to turn"
+              "position": 1,
+              "text": "As the first compression step, before quantizing"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "Only on models above 70B parameters"
+              "position": 2,
+              "text": "Only for models above 70B parameters"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Whenever you have a free GPU"
+              "text": "Whenever a 4-bit build already meets latency"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "Rarely — usually only after quantization and LoRA distillation have been pushed; if 4-bit quantization already meets the latency budget, skip pruning",
+            "position": 0,
+            "text": "Rarely — after quantization and distillation",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Pruning is the third lever, after quantization and distillation. The recovery-training cost and quality risk only justify themselves when the cheaper levers have been exhausted."
+              "text": "Pruning is the third lever, after quantization and distillation (Lessons 4.2–4.4). Its recovery cost and quality risk pay off only when the cheaper levers are exhausted; if a 4-bit build already meets the latency budget, skip pruning."
             }
           }
         }
@@ -394,24 +394,52 @@ trainer.train(); trainer.save_model("checkpoints/pruned-4_5B-recovered")</code><
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "What's the practical difference between structured and unstructured pruning?",
-   "options": ["Structured is faster to compute; unstructured is more accurate", "Structured removes whole heads/layers/channels so matrix shapes shrink and wall-clock wins are real; unstructured zeros individual weights and only helps if you have sparse-aware kernels — on commodity GPUs almost no one does", "Structured uses LoRA; unstructured uses QLoRA", "There's no real difference at inference time"],
-   "answer": 1,
-   "explanation": "Structured pruning shrinks the actual matrices, so dense matmul kernels run faster. Unstructured pruning leaves the matrix shape unchanged; without a sparse kernel a 70%-sparse model still runs at dense speed."},
-  {"q": "Why is recovery training not optional?",
-   "options": ["It's required by the licence", "Aggressive pruning typically costs 10–30 points on substrate benchmarks; the short SFT / distillation pass after pruning is what makes the technique competitive", "It saves disk space", "It only matters for unstructured pruning"],
-   "answer": 1,
-   "explanation": "A pruned-but-not-recovered model is usually dramatically worse than the un-pruned original. Recovery training is where most of the lost quality comes back."},
-  {"q": "Which importance-scoring family is the cheapest but most misleading?",
-   "options": ["Hessian-based / WoodFisher", "Gradient × weight (SNIP-style)", "Magnitude — large-magnitude weights can still be unused, and small ones can be load-bearing; gradient × weight is the practical sweet spot", "Random scoring"],
-   "answer": 2,
-   "explanation": "Magnitude needs no data and no gradients, but it correlates only loosely with importance. Gradient × weight on a calibration set is the usual production choice."},
-  {"q": "When is structured pruning likely to be worth it for an SLM?",
-   "options": ["Always — it's the first compression knob to turn", "Only on models above 70B parameters", "Rarely — usually only after quantization and LoRA distillation have been pushed; if 4-bit quantization already meets the latency budget, skip pruning", "Whenever you have a free GPU"],
-   "answer": 2,
-   "explanation": "Pruning is the third lever, after quantization and distillation. The recovery-training cost and quality risk only justify themselves when the cheaper levers have been exhausted."}
-]
+            [
+              {
+                "q": "What's the practical difference between structured and unstructured pruning?",
+                "options": [
+                  "Structured shrinks the weight matrices",
+                  "Unstructured shrinks matrices; structured only masks",
+                  "One uses LoRA, the other QLoRA",
+                  "Structured needs sparse kernels to give any speed-up"
+                ],
+                "answer": 0,
+                "explanation": "Structured pruning removes whole heads, channels or layers, so dense kernels run on smaller matrices. Unstructured pruning zeros individual weights at the same shape; it only speeds up with sparse kernels — 2:4 semi-structured sparsity is the case with real GPU support."
+              },
+              {
+                "q": "Why is recovery training needed after aggressive pruning?",
+                "options": [
+                  "It restores much of the lost quality",
+                  "It is what physically removes the pruned weights",
+                  "It is only needed after unstructured pruning",
+                  "It converts the masks into smaller matrices"
+                ],
+                "answer": 0,
+                "explanation": "A pruned-but-unrecovered model is usually much worse than the original; a short SFT or distillation pass brings most of the quality back. One-shot methods like SparseGPT and Wanda reduce, but don't remove, the need for it at high sparsity."
+              },
+              {
+                "q": "Which importance-scoring family is the cheapest but least reliable?",
+                "options": [
+                  "Weight magnitude",
+                  "Hessian-based",
+                  "Gradient × weight on calibration data",
+                  "Weight × activation norm (Wanda)"
+                ],
+                "answer": 0,
+                "explanation": "Magnitude needs no data and no gradients, but it correlates only loosely with importance: large weights can be unused and small ones load-bearing. Data-aware scores (gradient × weight, Wanda's weight × activation, Hessian-based) cost more but rank better."
+              },
+              {
+                "q": "When is structured pruning likely to be worth it for an SLM?",
+                "options": [
+                  "Rarely — after quantization and distillation",
+                  "As the first compression step, before quantizing",
+                  "Only for models above 70B parameters",
+                  "Whenever a 4-bit build already meets latency"
+                ],
+                "answer": 0,
+                "explanation": "Pruning is the third lever, after quantization and distillation (Lessons 4.2–4.4). Its recovery cost and quality risk pay off only when the cheaper levers are exhausted; if a 4-bit build already meets the latency budget, skip pruning."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -419,36 +447,36 @@ trainer.train(); trainer.save_model("checkpoints/pruned-4_5B-recovered")</code><
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What's the practical difference between structured and unstructured pruning?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Structured is faster to compute; unstructured is more accurate</li>
-                  <li>Structured removes whole heads/layers/channels so matrix shapes shrink and wall-clock wins are real; unstructured zeros individual weights and only helps if you have sparse-aware kernels — on commodity GPUs almost no one does</li>
-                  <li>Structured uses LoRA; unstructured uses QLoRA</li>
-                  <li>There's no real difference at inference time</li>
+                  <li>Structured shrinks the weight matrices</li>
+                  <li>Unstructured shrinks matrices; structured only masks</li>
+                  <li>One uses LoRA, the other QLoRA</li>
+                  <li>Structured needs sparse kernels to give any speed-up</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Structured removes whole heads/layers/channels so matrix shapes shrink and wall-clock wins are real; unstructured zeros individual weights and only helps if you have sparse-aware kernels — on commodity GPUs almost no one does</strong> Structured pruning shrinks the actual matrices, so dense matmul kernels run faster. Unstructured pruning leaves the matrix shape unchanged; without a sparse kernel a 70%-sparse model still runs at dense speed.</p></details></li>
-              <li><p class="quiz__q-text">Why is recovery training not optional?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Structured shrinks the weight matrices</strong> Structured pruning removes whole heads, channels or layers, so dense kernels run on smaller matrices. Unstructured pruning zeros individual weights at the same shape; it only speeds up with sparse kernels — 2:4 semi-structured sparsity is the case with real GPU support.</p></details></li>
+              <li><p class="quiz__q-text">Why is recovery training needed after aggressive pruning?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It's required by the licence</li>
-                  <li>Aggressive pruning typically costs 10–30 points on substrate benchmarks; the short SFT / distillation pass after pruning is what makes the technique competitive</li>
-                  <li>It saves disk space</li>
-                  <li>It only matters for unstructured pruning</li>
+                  <li>It restores much of the lost quality</li>
+                  <li>It is what physically removes the pruned weights</li>
+                  <li>It is only needed after unstructured pruning</li>
+                  <li>It converts the masks into smaller matrices</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Aggressive pruning typically costs 10–30 points on substrate benchmarks; the short SFT / distillation pass after pruning is what makes the technique competitive</strong> A pruned-but-not-recovered model is usually dramatically worse than the un-pruned original. Recovery training is where most of the lost quality comes back.</p></details></li>
-              <li><p class="quiz__q-text">Which importance-scoring family is the cheapest but most misleading?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. It restores much of the lost quality</strong> A pruned-but-unrecovered model is usually much worse than the original; a short SFT or distillation pass brings most of the quality back. One-shot methods like SparseGPT and Wanda reduce, but don't remove, the need for it at high sparsity.</p></details></li>
+              <li><p class="quiz__q-text">Which importance-scoring family is the cheapest but least reliable?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Hessian-based / WoodFisher</li>
-                  <li>Gradient × weight (SNIP-style)</li>
-                  <li>Magnitude — large-magnitude weights can still be unused, and small ones can be load-bearing; gradient × weight is the practical sweet spot</li>
-                  <li>Random scoring</li>
+                  <li>Weight magnitude</li>
+                  <li>Hessian-based</li>
+                  <li>Gradient × weight on calibration data</li>
+                  <li>Weight × activation norm (Wanda)</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Magnitude — large-magnitude weights can still be unused, and small ones can be load-bearing; gradient × weight is the practical sweet spot</strong> Magnitude needs no data and no gradients, but it correlates only loosely with importance. Gradient × weight on a calibration set is the usual production choice.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Weight magnitude</strong> Magnitude needs no data and no gradients, but it correlates only loosely with importance: large weights can be unused and small ones load-bearing. Data-aware scores (gradient × weight, Wanda's weight × activation, Hessian-based) cost more but rank better.</p></details></li>
               <li><p class="quiz__q-text">When is structured pruning likely to be worth it for an SLM?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Always — it's the first compression knob to turn</li>
-                  <li>Only on models above 70B parameters</li>
-                  <li>Rarely — usually only after quantization and LoRA distillation have been pushed; if 4-bit quantization already meets the latency budget, skip pruning</li>
-                  <li>Whenever you have a free GPU</li>
+                  <li>Rarely — after quantization and distillation</li>
+                  <li>As the first compression step, before quantizing</li>
+                  <li>Only for models above 70B parameters</li>
+                  <li>Whenever a 4-bit build already meets latency</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Rarely — usually only after quantization and LoRA distillation have been pushed; if 4-bit quantization already meets the latency budget, skip pruning</strong> Pruning is the third lever, after quantization and distillation. The recovery-training cost and quality risk only justify themselves when the cheaper levers have been exhausted.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Rarely — after quantization and distillation</strong> Pruning is the third lever, after quantization and distillation (Lessons 4.2–4.4). Its recovery cost and quality risk pay off only when the cheaper levers are exhausted; if a 4-bit build already meets the latency budget, skip pruning.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->
