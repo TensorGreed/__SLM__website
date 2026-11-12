@@ -77,9 +77,9 @@
         "description": "Open-source small language model fine-tuning platform for ML engineers: ingest custom datasets, map them to the right task shape, train from a base model, evaluate honestly, and export locally.",
         "featureList": [
           "Generic dataset-import pipeline with schema introspection and auto-mapping",
-          "Built-in source connectors for JSONL, CSV, HuggingFace, and Kaggle",
-          "Eight target mappers covering classification, QA, chat SFT, DPO, RAG, NER, structured extraction",
-          "Task-aware evaluation handlers (span_set scoring for NER/PII, RAG faithfulness, DPO preference accuracy)",
+          "Built-in source connectors for JSONL, CSV and other row files, HuggingFace, Kaggle, git repositories and websites",
+          "Target mappers covering classification, QA, chat SFT, DPO, RAG, NER, structured extraction and code findings",
+          "Task-aware evaluation handlers (span_set scoring for NER/PII, RAG faithfulness, DPO preference accuracy, tool calling, safety)",
           "Workspace UI with six places per project (Overview, Data, Train, Results, Ship, Settings), a confidence-gated import wizard and bulk-drop for rejected rows",
           "Persistent mapping configs with audit log entries on every import",
           "Plugin mappers and optional LLM-assisted mapping suggestion"
@@ -120,18 +120,18 @@
           <h1>Fine-tune small language models from a base model on your own data.</h1>
           <p class="hero-sub">
             BrewSLM helps machine learning and LLM engineers turn custom datasets into
-            domain-specific small language models. Ingest JSONL, CSV, HuggingFace, or Kaggle
-            data, map it to the right task shape, run local training, evaluate honestly, and
-            export an artifact you can actually inspect.
+            domain-specific small language models. Import rows from files, HuggingFace, Kaggle,
+            a git repository or a website, map them to the right task shape, run local training,
+            evaluate honestly, and export an artifact you can actually inspect.
           </p>
           <div class="metric-row">
             <article class="metric-chip">
-              <strong>4 data sources</strong>
-              <span>JSONL, CSV, HuggingFace, Kaggle</span>
+              <strong>built-in sources</strong>
+              <span>files, HuggingFace, Kaggle, git, web</span>
             </article>
             <article class="metric-chip">
-              <strong>8 task mappers</strong>
-              <span>classification, QA, chat, DPO, RAG, NER, k-v, LM</span>
+              <strong>built-in task mappers</strong>
+              <span>classification, QA, chat, DPO, RAG, NER, k-v, LM, code findings</span>
             </article>
             <article class="metric-chip">
               <strong>local + auditable</strong>
@@ -229,7 +229,7 @@
             <p>
               Same 41 held-out questions, same judge: the base model scored 0.17, the base model
               with retrieved passages 0.73, and a fine-tune on 405 generated pairs 0.02. BrewSLM's
-              pre-training check said not to fine-tune before a GPU-hour was spent.
+              pre-training check said not to fine-tune before any training ran.
             </p>
             <ul class="capability-list">
               <li><a class="inline-link" href="./blog-irs-pub17-fine-tune-lost-retrieval-won.html">Read the run, failure included</a></li>
@@ -315,13 +315,14 @@
             <p class="card-note"><strong>You control:</strong> the threshold, the override, the field map.</p>
           </article>
           <article class="pipeline-card reveal">
-            <p class="stage">02 Eight target mappers</p>
+            <p class="stage">02 Target mappers</p>
             <h3>Domain-agnostic, registry-driven</h3>
             <p>
-              <code>bio_to_spans</code>, <code>label_to_classification</code>, <code>qa_pair_passthrough</code>,
-              <code>chat_messages_passthrough</code>, <code>preference_pair</code>,
-              <code>rag_passthrough</code>, <code>kv_to_structured</code>, <code>text_only</code>.
-              Each declares the task profile it feeds.
+              Built-ins include <code>bio_to_spans</code>, <code>label_to_classification</code>,
+              <code>qa_pair_passthrough</code>, <code>chat_messages_passthrough</code>,
+              <code>preference_pair</code>, <code>rag_passthrough</code>, <code>kv_to_structured</code>,
+              <code>text_only</code>, and three code-findings mappers (<code>code_label_to_findings</code>,
+              <code>contrast_functions</code>, <code>fix_pair</code>). Each declares the task profile it feeds.
             </p>
             <p class="card-note"><strong>You control:</strong> custom mappers via plugin modules.</p>
           </article>
@@ -378,16 +379,16 @@
           <article class="pane reveal">
             <p class="pane-title">Import run audit (excerpt)</p>
             <div class="terminal-block dense">
-              <p>POST /api/projects/1/dataset-import/introspect</p>
+              <p>POST /api/dataset-import/introspect</p>
               <p>→ proposal: bio_to_spans  conf=0.95  needs_force=false</p>
               <p>POST /api/projects/1/dataset-import/preview</p>
               <p>→ accepted=4982  rejected=18 (length_mismatch=18)</p>
               <p>POST /api/projects/1/dataset-import/run</p>
               <p>→ written_path=…/projects/1/synthetic/synthetic.jsonl</p>
               <p>RunEvent  stage=ingestion  reason=dataset_import_run</p>
-              <p>RunEvent  stage=training   summary="Training completed: exp-7"</p>
+              <p>RunEvent  stage=training   summary="Training started: exp-7"</p>
               <p>RunEvent  stage=eval       payload.pass_rate=0.92</p>
-              <p>RunEvent  stage=export     payload.format=gguf-q4_k_m</p>
+              <p>RunEvent  stage=export     payload.format=gguf</p>
             </div>
           </article>
           <article class="pane reveal">
@@ -424,6 +425,21 @@
                   <td>Kaggle</td>
                   <td><code>kaggle:competition:slug</code></td>
                   <td><code>~/.cache/brewslm/kaggle</code></td>
+                </tr>
+                <tr>
+                  <td>Any row file</td>
+                  <td><code>file:/path</code></td>
+                  <td>local fs (csv, tsv, jsonl, json, xlsx, parquet)</td>
+                </tr>
+                <tr>
+                  <td>Git repository</td>
+                  <td><code>git:&lt;url&gt;[@ref]</code></td>
+                  <td>shallow clone in a temp dir</td>
+                </tr>
+                <tr>
+                  <td>Website</td>
+                  <td><code>web:&lt;seed url&gt;</code></td>
+                  <td><code>DATA_DIR/web_cache</code></td>
                 </tr>
               </tbody>
             </table>
@@ -479,29 +495,34 @@
           <div class="arch-lane">
             <span>Data plane</span>
             <p>
-              Sources (jsonl / csv / hf / kaggle / plugin) → Introspector → Target mapper →
-              Project's synthetic dataset (JSONL on disk).
+              Sources (jsonl / csv / file / hf / kaggle / git / web / plugin) → Introspector →
+              Target mapper → Project's synthetic dataset (JSONL on disk). Imported rows are
+              written as accepted: they skip the review queue and train directly.
             </p>
           </div>
           <div class="arch-lane">
             <span>Training plane</span>
             <p>
-              Prepared manifest → Task-handler dispatcher (classification / qa / span_set / rag /
-              dpo / chat_sft / language_modeling / structured_extraction) → Local trainer or
-              optional cloud-burst backend.
+              Prepared manifest → preflight → training job on the Celery worker (LoRA, full,
+              continued pretraining, distillation, token classification) → checkpoints and
+              weights, on the local trainer or an optional cloud-burst backend.
             </p>
           </div>
           <div class="arch-lane">
-            <span>Delivery plane</span>
+            <span>Eval + delivery plane</span>
             <p>
-              Export targets (GGUF / safetensors / HF-compatible / vLLM) → Deployment versions
-              with promote / rollback / drift checks.
+              Task-handler dispatcher (classification / qa / structured extraction / rag /
+              alignment / seq2seq / vision-language / audio / safety / tool calling, with a
+              generic fallback) → verdict against the base model → export formats (GGUF / ONNX /
+              TensorRT / Hugging Face / Docker) → deployment versions with promote / rollback and
+              an on-demand drift check. vLLM is a deployment runner, not an export format.
             </p>
           </div>
           <div class="arch-note">
             <p>
-              <strong>Audit spine:</strong> every action above emits a RunEvent with stage,
-              reason code, and structured payload. Same stream feeds the run timeline and failure clusters on
+              <strong>Audit spine:</strong> imports, document uploads, training starts and
+              failures, eval runs, exports and deployment actions emit a RunEvent with stage,
+              structured payload, and (on errors) a reason code from a fixed taxonomy. Same stream feeds the run timeline and failure clusters on
               Ship → Monitor, and the support bundle.
             </p>
           </div>
@@ -526,17 +547,22 @@
           <details class="faq-item reveal">
             <summary>Do I need a GPU?</summary>
             <p>
-              For training, yes — a single consumer GPU is plenty for the SLM size range BrewSLM
-              targets (1B–10B parameters with LoRA). For ingest / eval / export, no.
+              For training generative models, in practice yes. BrewSLM targets small language
+              models: up to ~10B parameters; the Academy course uses 135M. A 24 GB consumer GPU
+              handles LoRA up to about 7B with gradient checkpointing and short sequences; a 10B
+              model is about 20 GB of bf16 weights alone, so it needs a larger card. Encoder
+              taggers (DeBERTa) train on CPU. Ingest and export need no GPU; eval runs on CPU,
+              slowly.
             </p>
           </details>
           <details class="faq-item reveal">
             <summary>Where does my data go?</summary>
             <p>
               Into the project's local directory on your machine. SQLite metadata, JSONL row
-              storage, file artifacts. The optional teacher model (for synthetic generation) is
-              the only external call, and you point it at whatever endpoint you want — local
-              Ollama works fine.
+              storage, file artifacts. The only call that sends your data out is the optional
+              teacher model (for synthetic generation), if you point it at a hosted endpoint —
+              local Ollama works fine. Downloads from Hugging Face, Kaggle, git or web sources and
+              a Hub publish also use the network.
             </p>
           </details>
           <details class="faq-item reveal">
@@ -558,24 +584,31 @@
           <p class="eyebrow">Quickstart</p>
           <h2>Clone, install, import, train</h2>
           <p>
-            Five blocks. The first three boot the platform; the last two are the demo run-through.
+            Six blocks. The first four boot the platform; the last two are the demo run-through.
             Match this against the README for the canonical version.
           </p>
           <div class="terminal-block">
             <p># 1. Clone</p>
             <p>$ git clone https://github.com/TensorGreed/__SLM__ brewslm &amp;&amp; cd brewslm</p>
             <p>&nbsp;</p>
-            <p># 2. Backend</p>
+            <p># 2. Backend (Python 3.11+)</p>
             <p>$ cd backend &amp;&amp; python -m venv .venv &amp;&amp; source .venv/bin/activate</p>
-            <p>$ pip install -r requirements.txt</p>
+            <p>$ pip install -r requirements.txt &amp;&amp; cp .env.example .env</p>
             <p>$ uvicorn app.main:app --reload --port 8000</p>
+            <p># once, after this first boot creates the tables: alembic stamp head</p>
             <p>&nbsp;</p>
-            <p># 3. Frontend (new shell)</p>
+            <p># 3. Redis + the training worker (new shell). Without them Train never runs.</p>
+            <p>$ redis-server &amp;   # or any Redis on localhost:6379</p>
+            <p>$ cd backend &amp;&amp; source .venv/bin/activate</p>
+            <p>$ celery -A app.worker.celery_app worker --pool=threads --concurrency=2</p>
+            <p>&nbsp;</p>
+            <p># 4. Frontend (new shell; Node 20.19+ or 22.12+)</p>
             <p>$ cd frontend &amp;&amp; npm install &amp;&amp; npm run dev</p>
             <p>&nbsp;</p>
-            <p># 4. Open http://localhost:5173 → "+ New Project" (or open a starter project)</p>
+            <p># 5. Open http://localhost:5173, log in as admin with the API_KEY from</p>
+            <p>#    backend/.env (sk-mock-admin-key), then "+ New Project" or a starter project</p>
             <p>&nbsp;</p>
-            <p># 5. Import from Data → Sources → "Import dataset (auto-mapping)", or from the CLI:</p>
+            <p># 6. Import from Data → Sources → "Import dataset (auto-mapping)", or from the CLI:</p>
             <p>$ cd backend &amp;&amp; python -m app.cli.dataset_import run \</p>
             <p>&nbsp;&nbsp;&nbsp;&nbsp;--locator hf:imdb:train --project 1 --auto --limit 5000</p>
           </div>
