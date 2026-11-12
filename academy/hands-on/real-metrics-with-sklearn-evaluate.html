@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
+              "text": "50% — chance on two classes"
+            },
+            {
+              "@type": "Answer",
+              "position": 2,
               "text": "10%"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "50%"
-            },
-            {
-              "@type": "Answer",
               "position": 3,
-              "text": "0%"
+              "text": "0% — it learned nothing"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
+            "position": 0,
             "text": "90%",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "A trivial majority-class predictor hits the majority's share — 90% — without learning. Per-class precision/recall would expose it instantly."
+              "text": "A majority-class predictor hits the majority's share, 90%, without learning anything. Per-class precision and recall (negative recall = 0) would expose it instantly."
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "Accuracy"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Weighted F1 — favours the majority class"
+              "text": "Weighted F1"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Recall only"
+              "text": "Micro F1"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Macro F1 — equal weight per class, penalises minority-class failure",
+            "position": 0,
+            "text": "Macro-averaged F1",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Macro F1 treats classes equally; on imbalanced data it tells you whether the minority class is being served."
+              "text": "Macro F1 averages per-class F1 equally, so minority-class failure shows. Weighted F1 weights by support, so the majority dominates; micro F1 equals accuracy for single-label multiclass. They are three different averages."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Total accuracy"
+              "position": 1,
+              "text": "Overall accuracy"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The learning rate"
+              "text": "How many examples of each class are in gold"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The class balance"
+              "text": "Rows the model got right but with low confidence"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Which class was mistaken for which — directional",
+            "position": 0,
+            "text": "Which class was mistaken for which",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Rows are true labels, columns are predictions; off-diagonal cells show the systematic confusions you can act on."
+              "text": "Rows are true labels and columns are predictions, so an off-diagonal cell counts one specific confusion, in one direction. Those are the systematic errors you can act on."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Always"
+              "position": 1,
+              "text": "For accuracy and F1"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "Never — sklearn is enough"
+              "position": 2,
+              "text": "For leaderboard-style LLM evals, the use it is built for"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Only on GPUs"
+              "text": "Whenever you need GPU-accelerated metric computation"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "When you want shared standards used in papers / leaderboards, or when you need non-classification metrics (BLEU, ROUGE, WER, seqeval)",
+            "position": 0,
+            "text": "For metrics like ROUGE, BLEU, WER or seqeval",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "For pure classification sklearn is great; HF evaluate's value is canonical implementations and the wider metric set (text generation, span extraction, ASR, etc.)."
+              "text": "evaluate's accuracy and F1 wrap scikit-learn, so for classification use sklearn directly. evaluate earns its place for generation, ASR and span metrics; for LLM evaluation its README now points to LightEval. evaluate.load downloads a metric script, so it needs network."
             }
           }
         }
@@ -397,24 +397,52 @@ print("accuracy   :", acc.compute(predictions=y_pred_idx, references=y_true_idx)
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "Your gold set is 90% positive, 10% negative. A model always predicts positive. Accuracy?",
-   "options": ["10%", "50%", "90%", "0%"],
-   "answer": 2,
-   "explanation": "A trivial majority-class predictor hits the majority's share — 90% — without learning. Per-class precision/recall would expose it instantly."},
-  {"q": "Which average should you lead with on imbalanced data?",
-   "options": ["Accuracy", "Macro F1 — equal weight per class, penalises minority-class failure", "Weighted F1 — favours the majority class", "Recall only"],
-   "answer": 1,
-   "explanation": "Macro F1 treats classes equally; on imbalanced data it tells you whether the minority class is being served."},
-  {"q": "What does an off-diagonal cell in a confusion matrix tell you?",
-   "options": ["Total accuracy", "Which class was mistaken for which — directional", "The learning rate", "The class balance"],
-   "answer": 1,
-   "explanation": "Rows are true labels, columns are predictions; off-diagonal cells show the systematic confusions you can act on."},
-  {"q": "When is HF evaluate especially useful over hand-rolling with sklearn?",
-   "options": ["Always", "Never — sklearn is enough", "When you want shared standards used in papers / leaderboards, or when you need non-classification metrics (BLEU, ROUGE, WER, seqeval)", "Only on GPUs"],
-   "answer": 2,
-   "explanation": "For pure classification sklearn is great; HF evaluate's value is canonical implementations and the wider metric set (text generation, span extraction, ASR, etc.)."}
-]
+            [
+              {
+                "q": "Your gold set is 90% positive, 10% negative. A model always predicts positive. Accuracy?",
+                "options": [
+                  "90%",
+                  "50% — chance on two classes",
+                  "10%",
+                  "0% — it learned nothing"
+                ],
+                "answer": 0,
+                "explanation": "A majority-class predictor hits the majority's share, 90%, without learning anything. Per-class precision and recall (negative recall = 0) would expose it instantly."
+              },
+              {
+                "q": "Which average should you lead with on imbalanced data?",
+                "options": [
+                  "Macro-averaged F1",
+                  "Accuracy",
+                  "Weighted F1",
+                  "Micro F1"
+                ],
+                "answer": 0,
+                "explanation": "Macro F1 averages per-class F1 equally, so minority-class failure shows. Weighted F1 weights by support, so the majority dominates; micro F1 equals accuracy for single-label multiclass. They are three different averages."
+              },
+              {
+                "q": "What does an off-diagonal cell in a confusion matrix tell you?",
+                "options": [
+                  "Which class was mistaken for which",
+                  "Overall accuracy",
+                  "How many examples of each class are in gold",
+                  "Rows the model got right but with low confidence"
+                ],
+                "answer": 0,
+                "explanation": "Rows are true labels and columns are predictions, so an off-diagonal cell counts one specific confusion, in one direction. Those are the systematic errors you can act on."
+              },
+              {
+                "q": "When is HF evaluate especially useful over hand-rolling with sklearn?",
+                "options": [
+                  "For metrics like ROUGE, BLEU, WER or seqeval",
+                  "For accuracy and F1",
+                  "For leaderboard-style LLM evals, the use it is built for",
+                  "Whenever you need GPU-accelerated metric computation"
+                ],
+                "answer": 0,
+                "explanation": "evaluate's accuracy and F1 wrap scikit-learn, so for classification use sklearn directly. evaluate earns its place for generation, ASR and span metrics; for LLM evaluation its README now points to LightEval. evaluate.load downloads a metric script, so it needs network."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -422,36 +450,36 @@ print("accuracy   :", acc.compute(predictions=y_pred_idx, references=y_true_idx)
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Your gold set is 90% positive, 10% negative. A model always predicts positive. Accuracy?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>10%</li>
-                  <li>50%</li>
                   <li>90%</li>
-                  <li>0%</li>
+                  <li>50% — chance on two classes</li>
+                  <li>10%</li>
+                  <li>0% — it learned nothing</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. 90%</strong> A trivial majority-class predictor hits the majority's share — 90% — without learning. Per-class precision/recall would expose it instantly.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. 90%</strong> A majority-class predictor hits the majority's share, 90%, without learning anything. Per-class precision and recall (negative recall = 0) would expose it instantly.</p></details></li>
               <li><p class="quiz__q-text">Which average should you lead with on imbalanced data?</p>
                 <ol class="quiz__static-options" type="A">
+                  <li>Macro-averaged F1</li>
                   <li>Accuracy</li>
-                  <li>Macro F1 — equal weight per class, penalises minority-class failure</li>
-                  <li>Weighted F1 — favours the majority class</li>
-                  <li>Recall only</li>
+                  <li>Weighted F1</li>
+                  <li>Micro F1</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Macro F1 — equal weight per class, penalises minority-class failure</strong> Macro F1 treats classes equally; on imbalanced data it tells you whether the minority class is being served.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Macro-averaged F1</strong> Macro F1 averages per-class F1 equally, so minority-class failure shows. Weighted F1 weights by support, so the majority dominates; micro F1 equals accuracy for single-label multiclass. They are three different averages.</p></details></li>
               <li><p class="quiz__q-text">What does an off-diagonal cell in a confusion matrix tell you?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Total accuracy</li>
-                  <li>Which class was mistaken for which — directional</li>
-                  <li>The learning rate</li>
-                  <li>The class balance</li>
+                  <li>Which class was mistaken for which</li>
+                  <li>Overall accuracy</li>
+                  <li>How many examples of each class are in gold</li>
+                  <li>Rows the model got right but with low confidence</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Which class was mistaken for which — directional</strong> Rows are true labels, columns are predictions; off-diagonal cells show the systematic confusions you can act on.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Which class was mistaken for which</strong> Rows are true labels and columns are predictions, so an off-diagonal cell counts one specific confusion, in one direction. Those are the systematic errors you can act on.</p></details></li>
               <li><p class="quiz__q-text">When is HF evaluate especially useful over hand-rolling with sklearn?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Always</li>
-                  <li>Never — sklearn is enough</li>
-                  <li>When you want shared standards used in papers / leaderboards, or when you need non-classification metrics (BLEU, ROUGE, WER, seqeval)</li>
-                  <li>Only on GPUs</li>
+                  <li>For metrics like ROUGE, BLEU, WER or seqeval</li>
+                  <li>For accuracy and F1</li>
+                  <li>For leaderboard-style LLM evals, the use it is built for</li>
+                  <li>Whenever you need GPU-accelerated metric computation</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. When you want shared standards used in papers / leaderboards, or when you need non-classification metrics (BLEU, ROUGE, WER, seqeval)</strong> For pure classification sklearn is great; HF evaluate's value is canonical implementations and the wider metric set (text generation, span extraction, ASR, etc.).</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. For metrics like ROUGE, BLEU, WER or seqeval</strong> evaluate's accuracy and F1 wrap scikit-learn, so for classification use sklearn directly. evaluate earns its place for generation, ASR and span metrics; for LLM evaluation its README now points to LightEval. evaluate.load downloads a metric script, so it needs network.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

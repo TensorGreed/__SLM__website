@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "It makes training faster"
+              "position": 1,
+              "text": "To give PyTorch direct access to the CUDA driver"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It is required by CUDA"
+              "text": "To cache downloaded model weights inside the project"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It reduces model size"
+              "text": "So pip resolves torch and transformers versions faster"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "To isolate this project's packages from the rest of the system",
+            "position": 0,
+            "text": "To isolate this project's packages from the system",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "A venv keeps project dependencies isolated and reproducible."
+              "text": "A venv keeps the project's package versions isolated and reproducible. It has nothing to do with CUDA access, and model weights live in the Hugging Face cache (HF_HOME), not in the venv."
             }
           }
         },
@@ -124,8 +124,8 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "datasets"
+              "position": 1,
+              "text": "trl"
             },
             {
               "@type": "Answer",
@@ -135,16 +135,16 @@
             {
               "@type": "Answer",
               "position": 3,
-              "text": "torch"
+              "text": "transformers"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "peft",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "PEFT (Parameter-Efficient Fine-Tuning) provides LoRA and related adapters."
+              "text": "PEFT (Parameter-Efficient Fine-Tuning) implements LoRA and related adapters. transformers can load adapters, but only through peft; accelerate handles device placement and distributed launch."
             }
           }
         },
@@ -157,8 +157,8 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "transformers is too new"
+              "position": 1,
+              "text": "transformers is newer than the installed CUDA toolkit"
             },
             {
               "@type": "Answer",
@@ -168,16 +168,16 @@
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The venv is corrupt"
+              "text": "The venv was created without access to system drivers"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "You installed a CPU-only torch build",
+            "position": 0,
+            "text": "A CPU-only torch wheel is installed",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "A CPU-only torch wheel won't see the GPU; install the CUDA build from pytorch.org."
+              "text": "A CPU-only torch build can't see the GPU; install the CUDA build from pytorch.org. A venv doesn't hide drivers, and transformers and peft don't affect torch's device detection."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Only the tokenizer"
+              "position": 1,
+              "text": "Only tokenizers; the models come from torch.hub"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The GPU driver"
+              "text": "The LoRA adapters and the 4-bit quantization"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The dataset"
+              "text": "Dataset loading and train/test splitting"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Models, tokenizers, and the Trainer",
+            "position": 0,
+            "text": "Model classes, tokenizers and the Trainer",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "transformers provides model classes, tokenizers, and the Trainer used to fine-tune."
+              "text": "transformers provides model classes, tokenizers, and the Trainer used to fine-tune. LoRA comes from peft, 4-bit quantization from bitsandbytes, and dataset loading from datasets."
             }
           }
         }
@@ -356,52 +356,52 @@ if torch.cuda.is_available():
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "Why work inside a virtual environment (venv)?",
-    "options": [
-      "It makes training faster",
-      "To isolate this project's packages from the rest of the system",
-      "It is required by CUDA",
-      "It reduces model size"
-    ],
-    "answer": 1,
-    "explanation": "A venv keeps project dependencies isolated and reproducible."
-  },
-  {
-    "q": "Which library provides LoRA?",
-    "options": [
-      "datasets",
-      "peft",
-      "accelerate",
-      "torch"
-    ],
-    "answer": 1,
-    "explanation": "PEFT (Parameter-Efficient Fine-Tuning) provides LoRA and related adapters."
-  },
-  {
-    "q": "torch.cuda.is_available() returns False but you have a GPU. Likely cause?",
-    "options": [
-      "transformers is too new",
-      "You installed a CPU-only torch build",
-      "peft is missing",
-      "The venv is corrupt"
-    ],
-    "answer": 1,
-    "explanation": "A CPU-only torch wheel won't see the GPU; install the CUDA build from pytorch.org."
-  },
-  {
-    "q": "What does the transformers library give you here?",
-    "options": [
-      "Only the tokenizer",
-      "Models, tokenizers, and the Trainer",
-      "The GPU driver",
-      "The dataset"
-    ],
-    "answer": 1,
-    "explanation": "transformers provides model classes, tokenizers, and the Trainer used to fine-tune."
-  }
-]
+            [
+              {
+                "q": "Why work inside a virtual environment (venv)?",
+                "options": [
+                  "To isolate this project's packages from the system",
+                  "To give PyTorch direct access to the CUDA driver",
+                  "To cache downloaded model weights inside the project",
+                  "So pip resolves torch and transformers versions faster"
+                ],
+                "answer": 0,
+                "explanation": "A venv keeps the project's package versions isolated and reproducible. It has nothing to do with CUDA access, and model weights live in the Hugging Face cache (HF_HOME), not in the venv."
+              },
+              {
+                "q": "Which library provides LoRA?",
+                "options": [
+                  "peft",
+                  "trl",
+                  "accelerate",
+                  "transformers"
+                ],
+                "answer": 0,
+                "explanation": "PEFT (Parameter-Efficient Fine-Tuning) implements LoRA and related adapters. transformers can load adapters, but only through peft; accelerate handles device placement and distributed launch."
+              },
+              {
+                "q": "torch.cuda.is_available() returns False but you have a GPU. Likely cause?",
+                "options": [
+                  "A CPU-only torch wheel is installed",
+                  "transformers is newer than the installed CUDA toolkit",
+                  "peft is missing",
+                  "The venv was created without access to system drivers"
+                ],
+                "answer": 0,
+                "explanation": "A CPU-only torch build can't see the GPU; install the CUDA build from pytorch.org. A venv doesn't hide drivers, and transformers and peft don't affect torch's device detection."
+              },
+              {
+                "q": "What does the transformers library give you here?",
+                "options": [
+                  "Model classes, tokenizers and the Trainer",
+                  "Only tokenizers; the models come from torch.hub",
+                  "The LoRA adapters and the 4-bit quantization",
+                  "Dataset loading and train/test splitting"
+                ],
+                "answer": 0,
+                "explanation": "transformers provides model classes, tokenizers, and the Trainer used to fine-tune. LoRA comes from peft, 4-bit quantization from bitsandbytes, and dataset loading from datasets."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -409,36 +409,36 @@ if torch.cuda.is_available():
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Why work inside a virtual environment (venv)?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It makes training faster</li>
-                  <li>To isolate this project's packages from the rest of the system</li>
-                  <li>It is required by CUDA</li>
-                  <li>It reduces model size</li>
+                  <li>To isolate this project's packages from the system</li>
+                  <li>To give PyTorch direct access to the CUDA driver</li>
+                  <li>To cache downloaded model weights inside the project</li>
+                  <li>So pip resolves torch and transformers versions faster</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. To isolate this project's packages from the rest of the system</strong> A venv keeps project dependencies isolated and reproducible.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. To isolate this project's packages from the system</strong> A venv keeps the project's package versions isolated and reproducible. It has nothing to do with CUDA access, and model weights live in the Hugging Face cache (HF_HOME), not in the venv.</p></details></li>
               <li><p class="quiz__q-text">Which library provides LoRA?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>datasets</li>
                   <li>peft</li>
+                  <li>trl</li>
                   <li>accelerate</li>
-                  <li>torch</li>
+                  <li>transformers</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. peft</strong> PEFT (Parameter-Efficient Fine-Tuning) provides LoRA and related adapters.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. peft</strong> PEFT (Parameter-Efficient Fine-Tuning) implements LoRA and related adapters. transformers can load adapters, but only through peft; accelerate handles device placement and distributed launch.</p></details></li>
               <li><p class="quiz__q-text">torch.cuda.is_available() returns False but you have a GPU. Likely cause?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>transformers is too new</li>
-                  <li>You installed a CPU-only torch build</li>
+                  <li>A CPU-only torch wheel is installed</li>
+                  <li>transformers is newer than the installed CUDA toolkit</li>
                   <li>peft is missing</li>
-                  <li>The venv is corrupt</li>
+                  <li>The venv was created without access to system drivers</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. You installed a CPU-only torch build</strong> A CPU-only torch wheel won't see the GPU; install the CUDA build from pytorch.org.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A CPU-only torch wheel is installed</strong> A CPU-only torch build can't see the GPU; install the CUDA build from pytorch.org. A venv doesn't hide drivers, and transformers and peft don't affect torch's device detection.</p></details></li>
               <li><p class="quiz__q-text">What does the transformers library give you here?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Only the tokenizer</li>
-                  <li>Models, tokenizers, and the Trainer</li>
-                  <li>The GPU driver</li>
-                  <li>The dataset</li>
+                  <li>Model classes, tokenizers and the Trainer</li>
+                  <li>Only tokenizers; the models come from torch.hub</li>
+                  <li>The LoRA adapters and the 4-bit quantization</li>
+                  <li>Dataset loading and train/test splitting</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Models, tokenizers, and the Trainer</strong> transformers provides model classes, tokenizers, and the Trainer used to fine-tune.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Model classes, tokenizers and the Trainer</strong> transformers provides model classes, tokenizers, and the Trainer used to fine-tune. LoRA comes from peft, 4-bit quantization from bitsandbytes, and dataset loading from datasets.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

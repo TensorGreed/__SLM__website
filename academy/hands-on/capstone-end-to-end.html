@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Lowest possible training loss"
+              "position": 1,
+              "text": "Training loss below a target value by the final epoch"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The most epochs"
+              "text": "Accuracy on the training rows close to 100%"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The largest adapter"
+              "text": "Eval loss lower than the base model's on the validation split"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The tuned model clearly beats the base on the held-out gold set, in the right format",
+            "position": 0,
+            "text": "Beats the base on held-out gold, in the right format",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Success = a real lift over baseline on the gold set, with correct formatting."
+              "text": "Success is a real lift over the base on the held-out gold set, with output in the expected format. Loss values are proxies. A gate also needs enough gold rows to mean something: at n=100 and 90% accuracy the 95% interval is roughly ±6 points."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "The tuned model shows no lift over the base. Where do you look first?",
-          "text": "The tuned model shows no lift over the base. Where do you look first?",
+          "name": "The tuned model shows no lift over the base, and you've confirmed the eval code is correct. Where do you look first?",
+          "text": "The tuned model shows no lift over the base, and you've confirmed the eval code is correct. Where do you look first?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The GPU driver"
+              "position": 1,
+              "text": "The merge step, since unmerged adapters are ignored at eval"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The merge step"
+              "text": "The LoRA rank (raise r)"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The safetensors format"
+              "text": "The epoch count: train until the training loss reaches zero"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The data — too few/ wrong-label/ unrepresentative examples",
+            "position": 0,
+            "text": "The training data: size, labels, coverage",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "No lift is almost always a data problem (Tracks 1.7–1.8)."
+              "text": "With the eval verified, no lift almost always traces to data: too few rows, wrong labels, or examples unlike the gold set (Tracks 1.7–1.8). Rank is second-order, and driving training loss to zero just memorises."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "The model rambles instead of emitting just the label. Likely cause?",
-          "text": "The model rambles instead of emitting just the label. Likely cause?",
+          "name": "The model rambles on instead of emitting just the label. Likely cause?",
+          "text": "The model rambles on instead of emitting just the label. Likely cause?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Learning rate too low"
+              "position": 1,
+              "text": "Greedy decoding"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Too much gold data"
+              "text": "The adapter was saved as safetensors instead of .bin"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Wrong export format"
+              "text": "max_new_tokens set too high, so the model keeps writing"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Chat template / loss-mask issue",
+            "position": 0,
+            "text": "A chat-template or loss-mask problem",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Formatting/masking problems (Tracks 1.3–1.4, 2.4) cause off-format, runaway output."
+              "text": "A model that never learned to emit the end-of-turn token after the label keeps going. Check the template and that the supervised span includes the end-of-turn token (Tracks 1.3–1.4, 2.4). Lowering max_new_tokens only hides the symptom."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "By-hand training doesn't work"
+              "position": 1,
+              "text": "Platforms train more accurate models than hand-written code"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Platforms train better models inherently"
+              "text": "Hand-written Trainer loops stop working past a few hundred rows"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "To avoid learning the internals"
+              "text": "To skip learning the internals"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Doing the loop many times — with imports, gates, eval, deployment — is toil worth automating",
+            "position": 0,
+            "text": "Repeating the loop by hand is toil worth automating",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "You automate the repetitive operational toil; the core training is what you just did by hand."
+              "text": "The core training is what you just did by hand. A platform automates the repeated work around it: imports, gates, eval, deployment. It doesn't train inherently better models, and the internals still matter when something breaks."
             }
           }
         }
@@ -392,52 +392,52 @@ tuned.merge_and_unload().save_pretrained("sft-out/merged"); tok.save_pretrained(
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "What is the success criterion for this capstone?",
-    "options": [
-      "Lowest possible training loss",
-      "The tuned model clearly beats the base on the held-out gold set, in the right format",
-      "The most epochs",
-      "The largest adapter"
-    ],
-    "answer": 1,
-    "explanation": "Success = a real lift over baseline on the gold set, with correct formatting."
-  },
-  {
-    "q": "The tuned model shows no lift over the base. Where do you look first?",
-    "options": [
-      "The GPU driver",
-      "The data \u2014 too few/ wrong-label/ unrepresentative examples",
-      "The merge step",
-      "The safetensors format"
-    ],
-    "answer": 1,
-    "explanation": "No lift is almost always a data problem (Tracks 1.7\u20131.8)."
-  },
-  {
-    "q": "The model rambles instead of emitting just the label. Likely cause?",
-    "options": [
-      "Learning rate too low",
-      "Chat template / loss-mask issue",
-      "Too much gold data",
-      "Wrong export format"
-    ],
-    "answer": 1,
-    "explanation": "Formatting/masking problems (Tracks 1.3\u20131.4, 2.4) cause off-format, runaway output."
-  },
-  {
-    "q": "Why move on to a platform (Track 3) after doing this by hand?",
-    "options": [
-      "By-hand training doesn't work",
-      "Doing the loop many times \u2014 with imports, gates, eval, deployment \u2014 is toil worth automating",
-      "Platforms train better models inherently",
-      "To avoid learning the internals"
-    ],
-    "answer": 1,
-    "explanation": "You automate the repetitive operational toil; the core training is what you just did by hand."
-  }
-]
+            [
+              {
+                "q": "What is the success criterion for this capstone?",
+                "options": [
+                  "Beats the base on held-out gold, in the right format",
+                  "Training loss below a target value by the final epoch",
+                  "Accuracy on the training rows close to 100%",
+                  "Eval loss lower than the base model's on the validation split"
+                ],
+                "answer": 0,
+                "explanation": "Success is a real lift over the base on the held-out gold set, with output in the expected format. Loss values are proxies. A gate also needs enough gold rows to mean something: at n=100 and 90% accuracy the 95% interval is roughly ±6 points."
+              },
+              {
+                "q": "The tuned model shows no lift over the base, and you've confirmed the eval code is correct. Where do you look first?",
+                "options": [
+                  "The training data: size, labels, coverage",
+                  "The merge step, since unmerged adapters are ignored at eval",
+                  "The LoRA rank (raise r)",
+                  "The epoch count: train until the training loss reaches zero"
+                ],
+                "answer": 0,
+                "explanation": "With the eval verified, no lift almost always traces to data: too few rows, wrong labels, or examples unlike the gold set (Tracks 1.7–1.8). Rank is second-order, and driving training loss to zero just memorises."
+              },
+              {
+                "q": "The model rambles on instead of emitting just the label. Likely cause?",
+                "options": [
+                  "A chat-template or loss-mask problem",
+                  "Greedy decoding",
+                  "The adapter was saved as safetensors instead of .bin",
+                  "max_new_tokens set too high, so the model keeps writing"
+                ],
+                "answer": 0,
+                "explanation": "A model that never learned to emit the end-of-turn token after the label keeps going. Check the template and that the supervised span includes the end-of-turn token (Tracks 1.3–1.4, 2.4). Lowering max_new_tokens only hides the symptom."
+              },
+              {
+                "q": "Why move on to a platform (Track 3) after doing this by hand?",
+                "options": [
+                  "Repeating the loop by hand is toil worth automating",
+                  "Platforms train more accurate models than hand-written code",
+                  "Hand-written Trainer loops stop working past a few hundred rows",
+                  "To skip learning the internals"
+                ],
+                "answer": 0,
+                "explanation": "The core training is what you just did by hand. A platform automates the repeated work around it: imports, gates, eval, deployment. It doesn't train inherently better models, and the internals still matter when something breaks."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -445,36 +445,36 @@ tuned.merge_and_unload().save_pretrained("sft-out/merged"); tok.save_pretrained(
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What is the success criterion for this capstone?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Lowest possible training loss</li>
-                  <li>The tuned model clearly beats the base on the held-out gold set, in the right format</li>
-                  <li>The most epochs</li>
-                  <li>The largest adapter</li>
+                  <li>Beats the base on held-out gold, in the right format</li>
+                  <li>Training loss below a target value by the final epoch</li>
+                  <li>Accuracy on the training rows close to 100%</li>
+                  <li>Eval loss lower than the base model's on the validation split</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The tuned model clearly beats the base on the held-out gold set, in the right format</strong> Success = a real lift over baseline on the gold set, with correct formatting.</p></details></li>
-              <li><p class="quiz__q-text">The tuned model shows no lift over the base. Where do you look first?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Beats the base on held-out gold, in the right format</strong> Success is a real lift over the base on the held-out gold set, with output in the expected format. Loss values are proxies. A gate also needs enough gold rows to mean something: at n=100 and 90% accuracy the 95% interval is roughly ±6 points.</p></details></li>
+              <li><p class="quiz__q-text">The tuned model shows no lift over the base, and you've confirmed the eval code is correct. Where do you look first?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The GPU driver</li>
-                  <li>The data — too few/ wrong-label/ unrepresentative examples</li>
-                  <li>The merge step</li>
-                  <li>The safetensors format</li>
+                  <li>The training data: size, labels, coverage</li>
+                  <li>The merge step, since unmerged adapters are ignored at eval</li>
+                  <li>The LoRA rank (raise r)</li>
+                  <li>The epoch count: train until the training loss reaches zero</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The data — too few/ wrong-label/ unrepresentative examples</strong> No lift is almost always a data problem (Tracks 1.7–1.8).</p></details></li>
-              <li><p class="quiz__q-text">The model rambles instead of emitting just the label. Likely cause?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The training data: size, labels, coverage</strong> With the eval verified, no lift almost always traces to data: too few rows, wrong labels, or examples unlike the gold set (Tracks 1.7–1.8). Rank is second-order, and driving training loss to zero just memorises.</p></details></li>
+              <li><p class="quiz__q-text">The model rambles on instead of emitting just the label. Likely cause?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Learning rate too low</li>
-                  <li>Chat template / loss-mask issue</li>
-                  <li>Too much gold data</li>
-                  <li>Wrong export format</li>
+                  <li>A chat-template or loss-mask problem</li>
+                  <li>Greedy decoding</li>
+                  <li>The adapter was saved as safetensors instead of .bin</li>
+                  <li>max_new_tokens set too high, so the model keeps writing</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Chat template / loss-mask issue</strong> Formatting/masking problems (Tracks 1.3–1.4, 2.4) cause off-format, runaway output.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A chat-template or loss-mask problem</strong> A model that never learned to emit the end-of-turn token after the label keeps going. Check the template and that the supervised span includes the end-of-turn token (Tracks 1.3–1.4, 2.4). Lowering max_new_tokens only hides the symptom.</p></details></li>
               <li><p class="quiz__q-text">Why move on to a platform (Track 3) after doing this by hand?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>By-hand training doesn't work</li>
-                  <li>Doing the loop many times — with imports, gates, eval, deployment — is toil worth automating</li>
-                  <li>Platforms train better models inherently</li>
-                  <li>To avoid learning the internals</li>
+                  <li>Repeating the loop by hand is toil worth automating</li>
+                  <li>Platforms train more accurate models than hand-written code</li>
+                  <li>Hand-written Trainer loops stop working past a few hundred rows</li>
+                  <li>To skip learning the internals</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Doing the loop many times — with imports, gates, eval, deployment — is toil worth automating</strong> You automate the repetitive operational toil; the core training is what you just did by hand.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Repeating the loop by hand is toil worth automating</strong> The core training is what you just did by hand. A platform automates the repeated work around it: imports, gates, eval, deployment. It doesn't train inherently better models, and the internals still matter when something breaks.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

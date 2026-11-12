@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "In multi-turn SFT with completion_only_loss=True, which positions get loss?",
-          "text": "In multi-turn SFT with completion_only_loss=True, which positions get loss?",
+          "name": "On a messages (conversational) dataset in current TRL, which setting supervises only the assistant turns?",
+          "text": "On a messages (conversational) dataset in current TRL, which setting supervises only the assistant turns?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Only the last assistant turn"
+              "position": 1,
+              "text": "completion_only_loss=True, which masks the user and system turns"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "User turns"
+              "text": "The default; SFTTrainer always masks non-assistant tokens"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "All tokens equally"
+              "text": "Packing"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Every assistant turn — earlier and later",
+            "position": 0,
+            "text": "assistant_only_loss with generation markers",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Every assistant turn's tokens are supervised; everything else (system, user, special tokens, pad) is masked to -100."
+              "text": "completion_only_loss applies only to prompt-completion datasets; on messages data every token gets loss, with no warning. For conversations use assistant_only_loss=True, which needs a chat template with {% generation %} markers (SmolLM2's has none), or build the per-turn mask by hand as in Lesson 2.4. Dump one batch's labels to confirm."
             }
           }
         },
@@ -124,13 +124,13 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Learning rate too low"
+              "position": 1,
+              "text": "The learning rate is too low to shift the base's voice"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Wrong tokenizer"
+              "text": "The tokenizer is missing the user-role special tokens"
             },
             {
               "@type": "Answer",
@@ -140,11 +140,11 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Role bleed — the mask is leaking into user turns; verify with the dump-the-labels check",
+            "position": 0,
+            "text": "The loss mask leaks into the user turns",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Role bleed shows up exactly that way. Decode the unmasked positions of one batch; if you see user-voice text, that's the bug."
+              "text": "That is role bleed: the model was trained to produce user text. Decode the unmasked label positions of one batch; if you see user-voice text, the mask is wrong (completion_only_loss on messages data does exactly this)."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Yes, automatically"
+              "position": 1,
+              "text": "Yes, multi-turn SFT extends the model's usable context window"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Only with a larger learning rate"
+              "text": "Only if every conversation is packed to max_length"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Only with full fine-tuning"
+              "text": "Only with full fine-tuning; LoRA can't learn long context"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Not directly — it makes the model better at your turn structure on conversations like yours; long-range coherence is mostly a base-model property",
+            "position": 0,
+            "text": "Not directly; it mainly teaches your turn structure",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Don't oversell multi-turn training. Long-conversation coherence comes from the base; SFT teaches the shape of your turns."
+              "text": "Don't oversell multi-turn training. It makes the model better at your turn structure on conversations like yours; long-range coherence and context length are mostly base-model properties."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why does multi-turn SFT usually need a larger max_seq_length than single-turn?",
-          "text": "Why does multi-turn SFT usually need a larger max_seq_length than single-turn?",
+          "name": "Why does multi-turn SFT usually need a larger max_length than single-turn?",
+          "text": "Why does multi-turn SFT usually need a larger max_length than single-turn?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The model has more parameters"
+              "position": 1,
+              "text": "Multi-turn templates repeat the system prompt before every turn"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Tokenizers change"
+              "text": "Larger max_length makes training faster on long conversations"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It saves memory"
+              "text": "Role tokens take many sub-tokens"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Conversations are longer; if max_seq_length truncates, the FINAL assistant turn (the resolution) is often what gets cut",
+            "position": 0,
+            "text": "Long chats get cut at the end, losing the final turn",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Set max_seq_length from the actual length distribution; truncating the resolution turn is a silent way to break a multi-turn fine-tune."
+              "text": "Conversations are longer, and SFTConfig's max_length (formerly max_seq_length) truncates keep-start, so the end goes first, often the final assistant turn with the resolution. Set it from the length distribution, and drop or split overlong conversations."
             }
           }
         }
@@ -394,61 +394,89 @@ print(tok.decode(unmasked))
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "In multi-turn SFT with completion_only_loss=True, which positions get loss?",
-   "options": ["Only the last assistant turn", "Every assistant turn — earlier and later", "User turns", "All tokens equally"],
-   "answer": 1,
-   "explanation": "Every assistant turn's tokens are supervised; everything else (system, user, special tokens, pad) is masked to -100."},
-  {"q": "Your multi-turn fine-tune produces replies that sound like the user, not the assistant. Likely cause?",
-   "options": ["Learning rate too low", "Role bleed — the mask is leaking into user turns; verify with the dump-the-labels check", "Wrong tokenizer", "Too many epochs"],
-   "answer": 1,
-   "explanation": "Role bleed shows up exactly that way. Decode the unmasked positions of one batch; if you see user-voice text, that's the bug."},
-  {"q": "Does training on multi-turn data make the model 'better at long conversations'?",
-   "options": ["Yes, automatically", "Not directly — it makes the model better at your turn structure on conversations like yours; long-range coherence is mostly a base-model property", "Only with a larger learning rate", "Only with full fine-tuning"],
-   "answer": 1,
-   "explanation": "Don't oversell multi-turn training. Long-conversation coherence comes from the base; SFT teaches the shape of your turns."},
-  {"q": "Why does multi-turn SFT usually need a larger max_seq_length than single-turn?",
-   "options": ["The model has more parameters", "Conversations are longer; if max_seq_length truncates, the FINAL assistant turn (the resolution) is often what gets cut", "Tokenizers change", "It saves memory"],
-   "answer": 1,
-   "explanation": "Set max_seq_length from the actual length distribution; truncating the resolution turn is a silent way to break a multi-turn fine-tune."}
-]
+            [
+              {
+                "q": "On a messages (conversational) dataset in current TRL, which setting supervises only the assistant turns?",
+                "options": [
+                  "assistant_only_loss with generation markers",
+                  "completion_only_loss=True, which masks the user and system turns",
+                  "The default; SFTTrainer always masks non-assistant tokens",
+                  "Packing"
+                ],
+                "answer": 0,
+                "explanation": "completion_only_loss applies only to prompt-completion datasets; on messages data every token gets loss, with no warning. For conversations use assistant_only_loss=True, which needs a chat template with {% generation %} markers (SmolLM2's has none), or build the per-turn mask by hand as in Lesson 2.4. Dump one batch's labels to confirm."
+              },
+              {
+                "q": "Your multi-turn fine-tune produces replies that sound like the user, not the assistant. Likely cause?",
+                "options": [
+                  "The loss mask leaks into the user turns",
+                  "The learning rate is too low to shift the base's voice",
+                  "The tokenizer is missing the user-role special tokens",
+                  "Too many epochs"
+                ],
+                "answer": 0,
+                "explanation": "That is role bleed: the model was trained to produce user text. Decode the unmasked label positions of one batch; if you see user-voice text, the mask is wrong (completion_only_loss on messages data does exactly this)."
+              },
+              {
+                "q": "Does training on multi-turn data make the model 'better at long conversations'?",
+                "options": [
+                  "Not directly; it mainly teaches your turn structure",
+                  "Yes, multi-turn SFT extends the model's usable context window",
+                  "Only if every conversation is packed to max_length",
+                  "Only with full fine-tuning; LoRA can't learn long context"
+                ],
+                "answer": 0,
+                "explanation": "Don't oversell multi-turn training. It makes the model better at your turn structure on conversations like yours; long-range coherence and context length are mostly base-model properties."
+              },
+              {
+                "q": "Why does multi-turn SFT usually need a larger max_length than single-turn?",
+                "options": [
+                  "Long chats get cut at the end, losing the final turn",
+                  "Multi-turn templates repeat the system prompt before every turn",
+                  "Larger max_length makes training faster on long conversations",
+                  "Role tokens take many sub-tokens"
+                ],
+                "answer": 0,
+                "explanation": "Conversations are longer, and SFTConfig's max_length (formerly max_seq_length) truncates keep-start, so the end goes first, often the final assistant turn with the resolution. Set it from the length distribution, and drop or split overlong conversations."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">In multi-turn SFT with completion_only_loss=True, which positions get loss?</p>
+              <li><p class="quiz__q-text">On a messages (conversational) dataset in current TRL, which setting supervises only the assistant turns?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Only the last assistant turn</li>
-                  <li>Every assistant turn — earlier and later</li>
-                  <li>User turns</li>
-                  <li>All tokens equally</li>
+                  <li>assistant_only_loss with generation markers</li>
+                  <li>completion_only_loss=True, which masks the user and system turns</li>
+                  <li>The default; SFTTrainer always masks non-assistant tokens</li>
+                  <li>Packing</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Every assistant turn — earlier and later</strong> Every assistant turn's tokens are supervised; everything else (system, user, special tokens, pad) is masked to -100.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. assistant_only_loss with generation markers</strong> completion_only_loss applies only to prompt-completion datasets; on messages data every token gets loss, with no warning. For conversations use assistant_only_loss=True, which needs a chat template with {% generation %} markers (SmolLM2's has none), or build the per-turn mask by hand as in Lesson 2.4. Dump one batch's labels to confirm.</p></details></li>
               <li><p class="quiz__q-text">Your multi-turn fine-tune produces replies that sound like the user, not the assistant. Likely cause?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Learning rate too low</li>
-                  <li>Role bleed — the mask is leaking into user turns; verify with the dump-the-labels check</li>
-                  <li>Wrong tokenizer</li>
+                  <li>The loss mask leaks into the user turns</li>
+                  <li>The learning rate is too low to shift the base's voice</li>
+                  <li>The tokenizer is missing the user-role special tokens</li>
                   <li>Too many epochs</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Role bleed — the mask is leaking into user turns; verify with the dump-the-labels check</strong> Role bleed shows up exactly that way. Decode the unmasked positions of one batch; if you see user-voice text, that's the bug.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The loss mask leaks into the user turns</strong> That is role bleed: the model was trained to produce user text. Decode the unmasked label positions of one batch; if you see user-voice text, the mask is wrong (completion_only_loss on messages data does exactly this).</p></details></li>
               <li><p class="quiz__q-text">Does training on multi-turn data make the model 'better at long conversations'?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Yes, automatically</li>
-                  <li>Not directly — it makes the model better at your turn structure on conversations like yours; long-range coherence is mostly a base-model property</li>
-                  <li>Only with a larger learning rate</li>
-                  <li>Only with full fine-tuning</li>
+                  <li>Not directly; it mainly teaches your turn structure</li>
+                  <li>Yes, multi-turn SFT extends the model's usable context window</li>
+                  <li>Only if every conversation is packed to max_length</li>
+                  <li>Only with full fine-tuning; LoRA can't learn long context</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Not directly — it makes the model better at your turn structure on conversations like yours; long-range coherence is mostly a base-model property</strong> Don't oversell multi-turn training. Long-conversation coherence comes from the base; SFT teaches the shape of your turns.</p></details></li>
-              <li><p class="quiz__q-text">Why does multi-turn SFT usually need a larger max_seq_length than single-turn?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Not directly; it mainly teaches your turn structure</strong> Don't oversell multi-turn training. It makes the model better at your turn structure on conversations like yours; long-range coherence and context length are mostly base-model properties.</p></details></li>
+              <li><p class="quiz__q-text">Why does multi-turn SFT usually need a larger max_length than single-turn?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The model has more parameters</li>
-                  <li>Conversations are longer; if max_seq_length truncates, the FINAL assistant turn (the resolution) is often what gets cut</li>
-                  <li>Tokenizers change</li>
-                  <li>It saves memory</li>
+                  <li>Long chats get cut at the end, losing the final turn</li>
+                  <li>Multi-turn templates repeat the system prompt before every turn</li>
+                  <li>Larger max_length makes training faster on long conversations</li>
+                  <li>Role tokens take many sub-tokens</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Conversations are longer; if max_seq_length truncates, the FINAL assistant turn (the resolution) is often what gets cut</strong> Set max_seq_length from the actual length distribution; truncating the resolution turn is a silent way to break a multi-turn fine-tune.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Long chats get cut at the end, losing the final turn</strong> Conversations are longer, and SFTConfig's max_length (formerly max_seq_length) truncates keep-start, so the end goes first, often the final assistant turn with the resolution. Set it from the length distribution, and drop or split overlong conversations.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

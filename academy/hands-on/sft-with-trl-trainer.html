@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Which steps from Lesson 2.5 does SFTTrainer absorb?",
-          "text": "Which steps from Lesson 2.5 does SFTTrainer absorb?",
+          "name": "Which by-hand steps from Lessons 2.4–2.5 can SFTTrainer absorb?",
+          "text": "Which by-hand steps from Lessons 2.4–2.5 can SFTTrainer absorb?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Loading the model"
+              "position": 1,
+              "text": "Choosing the learning rate and LoRA rank for your data"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Choosing the learning rate"
+              "text": "Building the gold set and scoring the base model"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Saving the adapter"
+              "text": "Evaluating on gold and saving the merged model"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Applying the chat template, building the loss mask, and attaching LoRA",
+            "position": 0,
+            "text": "Chat templating, the loss mask and LoRA attachment",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The wrapper handles chat-template application, loss-mask construction (via completion_only_loss), padding/collation, and PEFT integration. You still pick the hyperparameters and call save_model."
+              "text": "With a prompt-completion dataset it applies the chat template, masks the prompt (completion_only_loss), collates, and attaches LoRA from a peft_config. You still pick hyperparameters, build the gold set, and evaluate."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What does completion_only_loss=True do?",
-          "text": "What does completion_only_loss=True do?",
+          "name": "On which dataset format does completion_only_loss mask the prompt?",
+          "text": "On which dataset format does completion_only_loss mask the prompt?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Halves the training time"
+              "position": 1,
+              "text": "Any messages dataset, masking the non-assistant turns"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Disables LoRA"
+              "text": "Plain text rows, using the first line as the prompt"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Turns the model into a classifier"
+              "text": "Any format, as long as packing is turned off"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Builds the loss mask so non-assistant tokens are set to -100 and ignored by cross-entropy",
+            "position": 0,
+            "text": "Prompt-completion rows",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "It's the manual masking from Lesson 2.4, done by the trainer. Train assistant tokens; ignore the rest."
+              "text": "TRL documents completion_only_loss as supported only for prompt-completion datasets (the default None resolves to True there). On a messages dataset it silently trains on every token. Use a conversational prompt-completion format, or assistant_only_loss with a template that has generation markers."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "When is raw Trainer the right tool over SFTTrainer?",
-          "text": "When is raw Trainer the right tool over SFTTrainer?",
+          "name": "When is raw Trainer a reasonable choice over SFTTrainer?",
+          "text": "When is raw Trainer a reasonable choice over SFTTrainer?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Always"
+              "position": 1,
+              "text": "Whenever the dataset has fewer than 1,000 rows"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "When the dataset is small"
+              "text": "Whenever you train LoRA rather than the full model"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Only with full fine-tuning"
+              "text": "Never"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "When you need a loss SFTTrainer doesn't support — e.g., the KD loss (α·CE + (1−α)·T²·KL) in Track 4",
+            "position": 0,
+            "text": "When you write a custom loss by hand",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Distillation, custom masking, or non-chat shapes are the canonical reasons. For ordinary chat-SFT, SFTTrainer is the right default."
+              "text": "Custom losses, custom masking, or non-chat shapes are the usual reasons. Track 4 builds the KD loss (α·CE + (1−α)·T²·KL) on raw Trainer to teach it, though TRL also ships distillation trainers. For ordinary SFT, with or without LoRA, SFTTrainer is the default."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What's the cheap check that completion_only_loss masked things correctly?",
-          "text": "What's the cheap check that completion_only_loss masked things correctly?",
+          "name": "What's the cheap check that the loss mask is right?",
+          "text": "What's the cheap check that the loss mask is right?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Train for 10 epochs and see if loss falls"
+              "position": 1,
+              "text": "Train a few epochs and confirm the loss falls"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Compare two random seeds"
+              "text": "Check trainable%"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Check the file size"
+              "text": "Confirm SFTTrainer logged no masking warnings"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Dump one batch's labels and confirm only assistant tokens are non-(-100)",
+            "position": 0,
+            "text": "Decode one batch's non-(-100) labels",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Same as Lesson 2.4: look at one batch's labels. If the mask is wrong, the model is training on the wrong tokens and you'll waste a run."
+              "text": "Same as Lesson 2.4: decode the supervised positions of one batch and confirm they are only the assistant answer. A wrong mask raises no warning (completion_only_loss on messages data fails silently), and loss still falls."
             }
           }
         }
@@ -411,61 +411,89 @@ trainer.save_model("sft-out/adapter")</code></pre>
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "Which steps from Lesson 2.5 does SFTTrainer absorb?",
-   "options": ["Loading the model", "Applying the chat template, building the loss mask, and attaching LoRA", "Choosing the learning rate", "Saving the adapter"],
-   "answer": 1,
-   "explanation": "The wrapper handles chat-template application, loss-mask construction (via completion_only_loss), padding/collation, and PEFT integration. You still pick the hyperparameters and call save_model."},
-  {"q": "What does completion_only_loss=True do?",
-   "options": ["Halves the training time", "Builds the loss mask so non-assistant tokens are set to -100 and ignored by cross-entropy", "Disables LoRA", "Turns the model into a classifier"],
-   "answer": 1,
-   "explanation": "It's the manual masking from Lesson 2.4, done by the trainer. Train assistant tokens; ignore the rest."},
-  {"q": "When is raw Trainer the right tool over SFTTrainer?",
-   "options": ["Always", "When you need a loss SFTTrainer doesn't support — e.g., the KD loss (α·CE + (1−α)·T²·KL) in Track 4", "When the dataset is small", "Only with full fine-tuning"],
-   "answer": 1,
-   "explanation": "Distillation, custom masking, or non-chat shapes are the canonical reasons. For ordinary chat-SFT, SFTTrainer is the right default."},
-  {"q": "What's the cheap check that completion_only_loss masked things correctly?",
-   "options": ["Train for 10 epochs and see if loss falls", "Dump one batch's labels and confirm only assistant tokens are non-(-100)", "Compare two random seeds", "Check the file size"],
-   "answer": 1,
-   "explanation": "Same as Lesson 2.4: look at one batch's labels. If the mask is wrong, the model is training on the wrong tokens and you'll waste a run."}
-]
+            [
+              {
+                "q": "Which by-hand steps from Lessons 2.4–2.5 can SFTTrainer absorb?",
+                "options": [
+                  "Chat templating, the loss mask and LoRA attachment",
+                  "Choosing the learning rate and LoRA rank for your data",
+                  "Building the gold set and scoring the base model",
+                  "Evaluating on gold and saving the merged model"
+                ],
+                "answer": 0,
+                "explanation": "With a prompt-completion dataset it applies the chat template, masks the prompt (completion_only_loss), collates, and attaches LoRA from a peft_config. You still pick hyperparameters, build the gold set, and evaluate."
+              },
+              {
+                "q": "On which dataset format does completion_only_loss mask the prompt?",
+                "options": [
+                  "Prompt-completion rows",
+                  "Any messages dataset, masking the non-assistant turns",
+                  "Plain text rows, using the first line as the prompt",
+                  "Any format, as long as packing is turned off"
+                ],
+                "answer": 0,
+                "explanation": "TRL documents completion_only_loss as supported only for prompt-completion datasets (the default None resolves to True there). On a messages dataset it silently trains on every token. Use a conversational prompt-completion format, or assistant_only_loss with a template that has generation markers."
+              },
+              {
+                "q": "When is raw Trainer a reasonable choice over SFTTrainer?",
+                "options": [
+                  "When you write a custom loss by hand",
+                  "Whenever the dataset has fewer than 1,000 rows",
+                  "Whenever you train LoRA rather than the full model",
+                  "Never"
+                ],
+                "answer": 0,
+                "explanation": "Custom losses, custom masking, or non-chat shapes are the usual reasons. Track 4 builds the KD loss (α·CE + (1−α)·T²·KL) on raw Trainer to teach it, though TRL also ships distillation trainers. For ordinary SFT, with or without LoRA, SFTTrainer is the default."
+              },
+              {
+                "q": "What's the cheap check that the loss mask is right?",
+                "options": [
+                  "Decode one batch's non-(-100) labels",
+                  "Train a few epochs and confirm the loss falls",
+                  "Check trainable%",
+                  "Confirm SFTTrainer logged no masking warnings"
+                ],
+                "answer": 0,
+                "explanation": "Same as Lesson 2.4: decode the supervised positions of one batch and confirm they are only the assistant answer. A wrong mask raises no warning (completion_only_loss on messages data fails silently), and loss still falls."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">Which steps from Lesson 2.5 does SFTTrainer absorb?</p>
+              <li><p class="quiz__q-text">Which by-hand steps from Lessons 2.4–2.5 can SFTTrainer absorb?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Loading the model</li>
-                  <li>Applying the chat template, building the loss mask, and attaching LoRA</li>
-                  <li>Choosing the learning rate</li>
-                  <li>Saving the adapter</li>
+                  <li>Chat templating, the loss mask and LoRA attachment</li>
+                  <li>Choosing the learning rate and LoRA rank for your data</li>
+                  <li>Building the gold set and scoring the base model</li>
+                  <li>Evaluating on gold and saving the merged model</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Applying the chat template, building the loss mask, and attaching LoRA</strong> The wrapper handles chat-template application, loss-mask construction (via completion_only_loss), padding/collation, and PEFT integration. You still pick the hyperparameters and call save_model.</p></details></li>
-              <li><p class="quiz__q-text">What does completion_only_loss=True do?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Chat templating, the loss mask and LoRA attachment</strong> With a prompt-completion dataset it applies the chat template, masks the prompt (completion_only_loss), collates, and attaches LoRA from a peft_config. You still pick hyperparameters, build the gold set, and evaluate.</p></details></li>
+              <li><p class="quiz__q-text">On which dataset format does completion_only_loss mask the prompt?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Halves the training time</li>
-                  <li>Builds the loss mask so non-assistant tokens are set to -100 and ignored by cross-entropy</li>
-                  <li>Disables LoRA</li>
-                  <li>Turns the model into a classifier</li>
+                  <li>Prompt-completion rows</li>
+                  <li>Any messages dataset, masking the non-assistant turns</li>
+                  <li>Plain text rows, using the first line as the prompt</li>
+                  <li>Any format, as long as packing is turned off</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Builds the loss mask so non-assistant tokens are set to -100 and ignored by cross-entropy</strong> It's the manual masking from Lesson 2.4, done by the trainer. Train assistant tokens; ignore the rest.</p></details></li>
-              <li><p class="quiz__q-text">When is raw Trainer the right tool over SFTTrainer?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Prompt-completion rows</strong> TRL documents completion_only_loss as supported only for prompt-completion datasets (the default None resolves to True there). On a messages dataset it silently trains on every token. Use a conversational prompt-completion format, or assistant_only_loss with a template that has generation markers.</p></details></li>
+              <li><p class="quiz__q-text">When is raw Trainer a reasonable choice over SFTTrainer?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Always</li>
-                  <li>When you need a loss SFTTrainer doesn't support — e.g., the KD loss (α·CE + (1−α)·T²·KL) in Track 4</li>
-                  <li>When the dataset is small</li>
-                  <li>Only with full fine-tuning</li>
+                  <li>When you write a custom loss by hand</li>
+                  <li>Whenever the dataset has fewer than 1,000 rows</li>
+                  <li>Whenever you train LoRA rather than the full model</li>
+                  <li>Never</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. When you need a loss SFTTrainer doesn't support — e.g., the KD loss (α·CE + (1−α)·T²·KL) in Track 4</strong> Distillation, custom masking, or non-chat shapes are the canonical reasons. For ordinary chat-SFT, SFTTrainer is the right default.</p></details></li>
-              <li><p class="quiz__q-text">What's the cheap check that completion_only_loss masked things correctly?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. When you write a custom loss by hand</strong> Custom losses, custom masking, or non-chat shapes are the usual reasons. Track 4 builds the KD loss (α·CE + (1−α)·T²·KL) on raw Trainer to teach it, though TRL also ships distillation trainers. For ordinary SFT, with or without LoRA, SFTTrainer is the default.</p></details></li>
+              <li><p class="quiz__q-text">What's the cheap check that the loss mask is right?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Train for 10 epochs and see if loss falls</li>
-                  <li>Dump one batch's labels and confirm only assistant tokens are non-(-100)</li>
-                  <li>Compare two random seeds</li>
-                  <li>Check the file size</li>
+                  <li>Decode one batch's non-(-100) labels</li>
+                  <li>Train a few epochs and confirm the loss falls</li>
+                  <li>Check trainable%</li>
+                  <li>Confirm SFTTrainer logged no masking warnings</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Dump one batch's labels and confirm only assistant tokens are non-(-100)</strong> Same as Lesson 2.4: look at one batch's labels. If the mask is wrong, the model is training on the wrong tokens and you'll waste a run.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Decode one batch's non-(-100) labels</strong> Same as Lesson 2.4: decode the supervised positions of one batch and confirm they are only the assistant answer. A wrong mask raises no warning (completion_only_loss on messages data fails silently), and loss still falls.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

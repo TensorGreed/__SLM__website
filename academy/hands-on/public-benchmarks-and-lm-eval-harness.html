@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What are MMLU / HellaSwag / ARC / GSM8K best used for in an SLM project?",
-          "text": "What are MMLU / HellaSwag / ARC / GSM8K best used for in an SLM project?",
+          "name": "What are MMLU / HellaSwag / ARC-style benchmarks best used for in an SLM project?",
+          "text": "What are MMLU / HellaSwag / ARC-style benchmarks best used for in an SLM project?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "As the project's headline KPI — what you ship the model against"
+              "position": 1,
+              "text": "The headline KPI you ship the model against, with gold as backup"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "As a substitute for a task-specific gold set"
+              "text": "A stand-in for a task gold set when labels are scarce"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "As a label source for SFT training"
+              "text": "A source of labelled rows to mix into SFT training"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "As smoke checks against substrate knowledge and as a way to detect catastrophic forgetting during fine-tuning",
+            "position": 0,
+            "text": "Smoke checks for forgetting, not the project goal",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "They measure general substrate, not your task. Useful as smoke checks; not useful as the goal. Your task-specific gold set is the metric that actually pays the bills."
+              "text": "They measure general substrate, not your task: useful for spotting catastrophic forgetting, not as the goal. Pick ones the model's size can move (for a 135M model, GSM8K sits at the floor). Your task gold set is the metric that pays the bills."
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Zero-shot uses fewer tokens; few-shot uses more — they're the same task"
+              "position": 1,
+              "text": "Zero-shot is for instruct models, few-shot for base models"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Zero-shot is for instruct models; few-shot is for base models"
+              "text": "Few-shot always uses chain-of-thought; zero-shot never does"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Few-shot uses CoT; zero-shot does not"
+              "text": "Same prompt; few-shot just averages N sampled runs"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Zero-shot prepends no in-context examples; few-shot prepends N. Few-shot scores are usually higher and measure in-context learning, not raw knowledge",
+            "position": 0,
+            "text": "Few-shot prepends N solved examples; zero-shot none",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The shot count is the number of labelled examples prepended to the prompt. The same model can score 20+ points higher in 5-shot than in zero-shot; the shot count must be reported with the score."
+              "text": "The shot count is the number of solved examples prepended to the prompt. Its effect varies by task, from large to almost none (Brown et al. 2020 report HellaSwag at 78.9 zero-shot vs 79.3 few-shot), so always report the shot count with the score."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The benchmark file got corrupted on disk"
+              "position": 1,
+              "text": "A judge model saw the gold answers while grading"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "A judge model leaked the gold answers"
+              "text": "Benchmark files corrupted on disk"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Decoding noise inflates the score"
+              "text": "Sampling noise inflating the score above the true value"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The benchmark's questions/answers appeared in the model's pretraining data; the tell is a large gap between canonical questions and paraphrased versions of the same questions",
+            "position": 0,
+            "text": "Test items seen in pretraining; paraphrases score lower",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Public benchmarks are widely scraped; the canonical-vs-paraphrased gap is the standard contamination signature. Re-rendered variants (GSM-Symbolic, etc.) exist for exactly this check."
+              "text": "Public benchmarks are widely scraped. The tell is a gap between canonical items and fresh or re-rendered versions of them; GSM-Symbolic (Mirzadeh et al. 2024) and GSM1k (Zhang et al. 2024) were built for exactly this check."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why is your private task gold set still more important than the public benchmark numbers?",
-          "text": "Why is your private task gold set still more important than the public benchmark numbers?",
+          "name": "Why is your private task gold set still more important than public benchmark numbers?",
+          "text": "Why is your private task gold set still more important than public benchmark numbers?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "It's cheaper to run"
+              "position": 1,
+              "text": "It can't be contaminated"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Public benchmarks are illegal to use commercially"
+              "text": "Public benchmark licences forbid reporting fine-tuned scores"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Public benchmarks don't support batching"
+              "text": "Public benchmarks can't run on models under 1B parameters"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "It measures what the user actually pays for — your task — and it can't be contaminated because it isn't public",
+            "position": 0,
+            "text": "It measures your task, not general knowledge",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Public benchmarks measure substrate; your gold set measures the task. A 5-point MMLU bump tells you nothing about whether your JSON extractor parses more reliably."
+              "text": "Public benchmarks measure substrate; your gold set measures the task. A private set is less exposed to pretraining contamination but can still leak, through train↔gold overlap, near-duplicates, or a data-generating model copying examples into training rows, so check for leakage."
             }
           }
         }
@@ -406,61 +406,89 @@ lm_eval \
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "What are MMLU / HellaSwag / ARC / GSM8K best used for in an SLM project?",
-   "options": ["As the project's headline KPI — what you ship the model against", "As smoke checks against substrate knowledge and as a way to detect catastrophic forgetting during fine-tuning", "As a substitute for a task-specific gold set", "As a label source for SFT training"],
-   "answer": 1,
-   "explanation": "They measure general substrate, not your task. Useful as smoke checks; not useful as the goal. Your task-specific gold set is the metric that actually pays the bills."},
-  {"q": "What's the difference between zero-shot and few-shot benchmark scoring?",
-   "options": ["Zero-shot uses fewer tokens; few-shot uses more — they're the same task", "Zero-shot prepends no in-context examples; few-shot prepends N. Few-shot scores are usually higher and measure in-context learning, not raw knowledge", "Zero-shot is for instruct models; few-shot is for base models", "Few-shot uses CoT; zero-shot does not"],
-   "answer": 1,
-   "explanation": "The shot count is the number of labelled examples prepended to the prompt. The same model can score 20+ points higher in 5-shot than in zero-shot; the shot count must be reported with the score."},
-  {"q": "What is benchmark contamination, and what does it look like?",
-   "options": ["The benchmark file got corrupted on disk", "The benchmark's questions/answers appeared in the model's pretraining data; the tell is a large gap between canonical questions and paraphrased versions of the same questions", "A judge model leaked the gold answers", "Decoding noise inflates the score"],
-   "answer": 1,
-   "explanation": "Public benchmarks are widely scraped; the canonical-vs-paraphrased gap is the standard contamination signature. Re-rendered variants (GSM-Symbolic, etc.) exist for exactly this check."},
-  {"q": "Why is your private task gold set still more important than the public benchmark numbers?",
-   "options": ["It's cheaper to run", "It measures what the user actually pays for — your task — and it can't be contaminated because it isn't public", "Public benchmarks are illegal to use commercially", "Public benchmarks don't support batching"],
-   "answer": 1,
-   "explanation": "Public benchmarks measure substrate; your gold set measures the task. A 5-point MMLU bump tells you nothing about whether your JSON extractor parses more reliably."}
-]
+            [
+              {
+                "q": "What are MMLU / HellaSwag / ARC-style benchmarks best used for in an SLM project?",
+                "options": [
+                  "Smoke checks for forgetting, not the project goal",
+                  "The headline KPI you ship the model against, with gold as backup",
+                  "A stand-in for a task gold set when labels are scarce",
+                  "A source of labelled rows to mix into SFT training"
+                ],
+                "answer": 0,
+                "explanation": "They measure general substrate, not your task: useful for spotting catastrophic forgetting, not as the goal. Pick ones the model's size can move (for a 135M model, GSM8K sits at the floor). Your task gold set is the metric that pays the bills."
+              },
+              {
+                "q": "What's the difference between zero-shot and few-shot benchmark scoring?",
+                "options": [
+                  "Few-shot prepends N solved examples; zero-shot none",
+                  "Zero-shot is for instruct models, few-shot for base models",
+                  "Few-shot always uses chain-of-thought; zero-shot never does",
+                  "Same prompt; few-shot just averages N sampled runs"
+                ],
+                "answer": 0,
+                "explanation": "The shot count is the number of solved examples prepended to the prompt. Its effect varies by task, from large to almost none (Brown et al. 2020 report HellaSwag at 78.9 zero-shot vs 79.3 few-shot), so always report the shot count with the score."
+              },
+              {
+                "q": "What is benchmark contamination, and what does it look like?",
+                "options": [
+                  "Test items seen in pretraining; paraphrases score lower",
+                  "A judge model saw the gold answers while grading",
+                  "Benchmark files corrupted on disk",
+                  "Sampling noise inflating the score above the true value"
+                ],
+                "answer": 0,
+                "explanation": "Public benchmarks are widely scraped. The tell is a gap between canonical items and fresh or re-rendered versions of them; GSM-Symbolic (Mirzadeh et al. 2024) and GSM1k (Zhang et al. 2024) were built for exactly this check."
+              },
+              {
+                "q": "Why is your private task gold set still more important than public benchmark numbers?",
+                "options": [
+                  "It measures your task, not general knowledge",
+                  "It can't be contaminated",
+                  "Public benchmark licences forbid reporting fine-tuned scores",
+                  "Public benchmarks can't run on models under 1B parameters"
+                ],
+                "answer": 0,
+                "explanation": "Public benchmarks measure substrate; your gold set measures the task. A private set is less exposed to pretraining contamination but can still leak, through train↔gold overlap, near-duplicates, or a data-generating model copying examples into training rows, so check for leakage."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">What are MMLU / HellaSwag / ARC / GSM8K best used for in an SLM project?</p>
+              <li><p class="quiz__q-text">What are MMLU / HellaSwag / ARC-style benchmarks best used for in an SLM project?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>As the project's headline KPI — what you ship the model against</li>
-                  <li>As smoke checks against substrate knowledge and as a way to detect catastrophic forgetting during fine-tuning</li>
-                  <li>As a substitute for a task-specific gold set</li>
-                  <li>As a label source for SFT training</li>
+                  <li>Smoke checks for forgetting, not the project goal</li>
+                  <li>The headline KPI you ship the model against, with gold as backup</li>
+                  <li>A stand-in for a task gold set when labels are scarce</li>
+                  <li>A source of labelled rows to mix into SFT training</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. As smoke checks against substrate knowledge and as a way to detect catastrophic forgetting during fine-tuning</strong> They measure general substrate, not your task. Useful as smoke checks; not useful as the goal. Your task-specific gold set is the metric that actually pays the bills.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Smoke checks for forgetting, not the project goal</strong> They measure general substrate, not your task: useful for spotting catastrophic forgetting, not as the goal. Pick ones the model's size can move (for a 135M model, GSM8K sits at the floor). Your task gold set is the metric that pays the bills.</p></details></li>
               <li><p class="quiz__q-text">What's the difference between zero-shot and few-shot benchmark scoring?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Zero-shot uses fewer tokens; few-shot uses more — they're the same task</li>
-                  <li>Zero-shot prepends no in-context examples; few-shot prepends N. Few-shot scores are usually higher and measure in-context learning, not raw knowledge</li>
-                  <li>Zero-shot is for instruct models; few-shot is for base models</li>
-                  <li>Few-shot uses CoT; zero-shot does not</li>
+                  <li>Few-shot prepends N solved examples; zero-shot none</li>
+                  <li>Zero-shot is for instruct models, few-shot for base models</li>
+                  <li>Few-shot always uses chain-of-thought; zero-shot never does</li>
+                  <li>Same prompt; few-shot just averages N sampled runs</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Zero-shot prepends no in-context examples; few-shot prepends N. Few-shot scores are usually higher and measure in-context learning, not raw knowledge</strong> The shot count is the number of labelled examples prepended to the prompt. The same model can score 20+ points higher in 5-shot than in zero-shot; the shot count must be reported with the score.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Few-shot prepends N solved examples; zero-shot none</strong> The shot count is the number of solved examples prepended to the prompt. Its effect varies by task, from large to almost none (Brown et al. 2020 report HellaSwag at 78.9 zero-shot vs 79.3 few-shot), so always report the shot count with the score.</p></details></li>
               <li><p class="quiz__q-text">What is benchmark contamination, and what does it look like?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The benchmark file got corrupted on disk</li>
-                  <li>The benchmark's questions/answers appeared in the model's pretraining data; the tell is a large gap between canonical questions and paraphrased versions of the same questions</li>
-                  <li>A judge model leaked the gold answers</li>
-                  <li>Decoding noise inflates the score</li>
+                  <li>Test items seen in pretraining; paraphrases score lower</li>
+                  <li>A judge model saw the gold answers while grading</li>
+                  <li>Benchmark files corrupted on disk</li>
+                  <li>Sampling noise inflating the score above the true value</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The benchmark's questions/answers appeared in the model's pretraining data; the tell is a large gap between canonical questions and paraphrased versions of the same questions</strong> Public benchmarks are widely scraped; the canonical-vs-paraphrased gap is the standard contamination signature. Re-rendered variants (GSM-Symbolic, etc.) exist for exactly this check.</p></details></li>
-              <li><p class="quiz__q-text">Why is your private task gold set still more important than the public benchmark numbers?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Test items seen in pretraining; paraphrases score lower</strong> Public benchmarks are widely scraped. The tell is a gap between canonical items and fresh or re-rendered versions of them; GSM-Symbolic (Mirzadeh et al. 2024) and GSM1k (Zhang et al. 2024) were built for exactly this check.</p></details></li>
+              <li><p class="quiz__q-text">Why is your private task gold set still more important than public benchmark numbers?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It's cheaper to run</li>
-                  <li>It measures what the user actually pays for — your task — and it can't be contaminated because it isn't public</li>
-                  <li>Public benchmarks are illegal to use commercially</li>
-                  <li>Public benchmarks don't support batching</li>
+                  <li>It measures your task, not general knowledge</li>
+                  <li>It can't be contaminated</li>
+                  <li>Public benchmark licences forbid reporting fine-tuned scores</li>
+                  <li>Public benchmarks can't run on models under 1B parameters</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. It measures what the user actually pays for — your task — and it can't be contaminated because it isn't public</strong> Public benchmarks measure substrate; your gold set measures the task. A 5-point MMLU bump tells you nothing about whether your JSON extractor parses more reliably.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. It measures your task, not general knowledge</strong> Public benchmarks measure substrate; your gold set measures the task. A private set is less exposed to pretraining contamination but can still leak, through train↔gold overlap, near-duplicates, or a data-generating model copying examples into training rows, so check for leakage.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

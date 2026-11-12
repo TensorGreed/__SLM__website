@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Load only the adapter"
+              "position": 1,
+              "text": "Load the base alone; training already updated its weights"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Retrain it"
+              "text": "Load only the adapter file, since it holds a full model copy"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Load the optimizer state"
+              "text": "Load only the optimizer state"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Load the base model and attach the adapter with PeftModel.from_pretrained",
+            "position": 0,
+            "text": "Load the base and attach the adapter with PeftModel",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "LoRA keeps the base frozen; inference = base + adapter."
+              "text": "LoRA trains a small separate adapter while the base stays frozen, so inference is base + adapter (PeftModel.from_pretrained). The base's own weights are unchanged, and the adapter file holds only the low-rank matrices."
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "It's faster only"
+              "position": 1,
+              "text": "It always gives higher accuracy than sampling at any temperature"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It changes the labels"
+              "text": "It removes the need for a held-out gold set"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It merges the adapter"
+              "text": "It makes the outputs bit-identical across every GPU model"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Deterministic, reproducible results",
+            "position": 0,
+            "text": "Repeatable outputs on the same hardware and batch",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Greedy decoding makes eval reproducible run-to-run (Track 1)."
+              "text": "Greedy picks the top token each step, so reruns match on the same hardware and batch size. Different kernels or padding can still flip near-ties, so results are not bit-identical across setups."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why compute accuracy on the BASE model too?",
-          "text": "Why compute accuracy on the BASE model too?",
+          "name": "Your script prints the same base and tuned accuracy on every run. It scored the base after calling PeftModel.from_pretrained(base, …). What happened?",
+          "text": "Your script prints the same base and tuned accuracy on every run. It scored the base after calling PeftModel.from_pretrained(base, …). What happened?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "To warm up the GPU"
+              "position": 1,
+              "text": "Greedy decoding hid the difference"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Because peft requires it"
+              "text": "Accuracy needs a merged model; generate skips unmerged adapters"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "To pad batches"
+              "text": "from_pretrained reset the adapter to zero, so it does nothing"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "To get the baseline so you can report the lift fine-tuning bought",
+            "position": 0,
+            "text": "PEFT injected the adapter into base in place",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The lift over baseline is the meaningful result, not the tuned score alone."
+              "text": "PEFT modifies the model you pass in: after PeftModel.from_pretrained(base, …), base carries the LoRA layers, so the \"baseline\" is the tuned model and the lift reads about 0. Score the base before attaching, or inside `with tuned.disable_adapter():`."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Ignore them"
+              "position": 1,
+              "text": "Add those gold rows to training and re-score the same gold set"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Add them to the gold set's labels"
+              "text": "Drop them from gold so the score reflects typical cases"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Delete the gold set"
+              "text": "Raise the learning rate until those rows pass"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Use them to decide which training data to add or fix next",
+            "position": 0,
+            "text": "Use them to pick which training data to add or fix",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Failure analysis drives the data-centric iteration loop."
+              "text": "Misses show what the training data lacks, so add or fix similar training rows. Copying the gold rows themselves into training leaks the test set and inflates the score."
             }
           }
         }
@@ -362,52 +362,52 @@ print("tuned accuracy:", accuracy(tuned))   # after fine-tuning</code></pre>
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "How do you run a LoRA fine-tuned model for inference?",
-    "options": [
-      "Load only the adapter",
-      "Load the base model and attach the adapter with PeftModel.from_pretrained",
-      "Retrain it",
-      "Load the optimizer state"
-    ],
-    "answer": 1,
-    "explanation": "LoRA keeps the base frozen; inference = base + adapter."
-  },
-  {
-    "q": "Why use do_sample=False (greedy) for evaluation?",
-    "options": [
-      "It's faster only",
-      "Deterministic, reproducible results",
-      "It changes the labels",
-      "It merges the adapter"
-    ],
-    "answer": 1,
-    "explanation": "Greedy decoding makes eval reproducible run-to-run (Track 1)."
-  },
-  {
-    "q": "Why compute accuracy on the BASE model too?",
-    "options": [
-      "To warm up the GPU",
-      "To get the baseline so you can report the lift fine-tuning bought",
-      "Because peft requires it",
-      "To pad batches"
-    ],
-    "answer": 1,
-    "explanation": "The lift over baseline is the meaningful result, not the tuned score alone."
-  },
-  {
-    "q": "What should you do with the gold-set misses?",
-    "options": [
-      "Ignore them",
-      "Use them to decide which training data to add or fix next",
-      "Add them to the gold set's labels",
-      "Delete the gold set"
-    ],
-    "answer": 1,
-    "explanation": "Failure analysis drives the data-centric iteration loop."
-  }
-]
+            [
+              {
+                "q": "How do you run a LoRA fine-tuned model for inference?",
+                "options": [
+                  "Load the base and attach the adapter with PeftModel",
+                  "Load the base alone; training already updated its weights",
+                  "Load only the adapter file, since it holds a full model copy",
+                  "Load only the optimizer state"
+                ],
+                "answer": 0,
+                "explanation": "LoRA trains a small separate adapter while the base stays frozen, so inference is base + adapter (PeftModel.from_pretrained). The base's own weights are unchanged, and the adapter file holds only the low-rank matrices."
+              },
+              {
+                "q": "Why use do_sample=False (greedy) for evaluation?",
+                "options": [
+                  "Repeatable outputs on the same hardware and batch",
+                  "It always gives higher accuracy than sampling at any temperature",
+                  "It removes the need for a held-out gold set",
+                  "It makes the outputs bit-identical across every GPU model"
+                ],
+                "answer": 0,
+                "explanation": "Greedy picks the top token each step, so reruns match on the same hardware and batch size. Different kernels or padding can still flip near-ties, so results are not bit-identical across setups."
+              },
+              {
+                "q": "Your script prints the same base and tuned accuracy on every run. It scored the base after calling PeftModel.from_pretrained(base, …). What happened?",
+                "options": [
+                  "PEFT injected the adapter into base in place",
+                  "Greedy decoding hid the difference",
+                  "Accuracy needs a merged model; generate skips unmerged adapters",
+                  "from_pretrained reset the adapter to zero, so it does nothing"
+                ],
+                "answer": 0,
+                "explanation": "PEFT modifies the model you pass in: after PeftModel.from_pretrained(base, …), base carries the LoRA layers, so the \"baseline\" is the tuned model and the lift reads about 0. Score the base before attaching, or inside `with tuned.disable_adapter():`."
+              },
+              {
+                "q": "What should you do with the gold-set misses?",
+                "options": [
+                  "Use them to pick which training data to add or fix",
+                  "Add those gold rows to training and re-score the same gold set",
+                  "Drop them from gold so the score reflects typical cases",
+                  "Raise the learning rate until those rows pass"
+                ],
+                "answer": 0,
+                "explanation": "Misses show what the training data lacks, so add or fix similar training rows. Copying the gold rows themselves into training leaks the test set and inflates the score."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -415,36 +415,36 @@ print("tuned accuracy:", accuracy(tuned))   # after fine-tuning</code></pre>
             <ol class="quiz__static">
               <li><p class="quiz__q-text">How do you run a LoRA fine-tuned model for inference?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Load only the adapter</li>
-                  <li>Load the base model and attach the adapter with PeftModel.from_pretrained</li>
-                  <li>Retrain it</li>
-                  <li>Load the optimizer state</li>
+                  <li>Load the base and attach the adapter with PeftModel</li>
+                  <li>Load the base alone; training already updated its weights</li>
+                  <li>Load only the adapter file, since it holds a full model copy</li>
+                  <li>Load only the optimizer state</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Load the base model and attach the adapter with PeftModel.from_pretrained</strong> LoRA keeps the base frozen; inference = base + adapter.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Load the base and attach the adapter with PeftModel</strong> LoRA trains a small separate adapter while the base stays frozen, so inference is base + adapter (PeftModel.from_pretrained). The base's own weights are unchanged, and the adapter file holds only the low-rank matrices.</p></details></li>
               <li><p class="quiz__q-text">Why use do_sample=False (greedy) for evaluation?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It's faster only</li>
-                  <li>Deterministic, reproducible results</li>
-                  <li>It changes the labels</li>
-                  <li>It merges the adapter</li>
+                  <li>Repeatable outputs on the same hardware and batch</li>
+                  <li>It always gives higher accuracy than sampling at any temperature</li>
+                  <li>It removes the need for a held-out gold set</li>
+                  <li>It makes the outputs bit-identical across every GPU model</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Deterministic, reproducible results</strong> Greedy decoding makes eval reproducible run-to-run (Track 1).</p></details></li>
-              <li><p class="quiz__q-text">Why compute accuracy on the BASE model too?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Repeatable outputs on the same hardware and batch</strong> Greedy picks the top token each step, so reruns match on the same hardware and batch size. Different kernels or padding can still flip near-ties, so results are not bit-identical across setups.</p></details></li>
+              <li><p class="quiz__q-text">Your script prints the same base and tuned accuracy on every run. It scored the base after calling PeftModel.from_pretrained(base, …). What happened?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>To warm up the GPU</li>
-                  <li>To get the baseline so you can report the lift fine-tuning bought</li>
-                  <li>Because peft requires it</li>
-                  <li>To pad batches</li>
+                  <li>PEFT injected the adapter into base in place</li>
+                  <li>Greedy decoding hid the difference</li>
+                  <li>Accuracy needs a merged model; generate skips unmerged adapters</li>
+                  <li>from_pretrained reset the adapter to zero, so it does nothing</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. To get the baseline so you can report the lift fine-tuning bought</strong> The lift over baseline is the meaningful result, not the tuned score alone.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. PEFT injected the adapter into base in place</strong> PEFT modifies the model you pass in: after PeftModel.from_pretrained(base, …), base carries the LoRA layers, so the "baseline" is the tuned model and the lift reads about 0. Score the base before attaching, or inside `with tuned.disable_adapter():`.</p></details></li>
               <li><p class="quiz__q-text">What should you do with the gold-set misses?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Ignore them</li>
-                  <li>Use them to decide which training data to add or fix next</li>
-                  <li>Add them to the gold set's labels</li>
-                  <li>Delete the gold set</li>
+                  <li>Use them to pick which training data to add or fix</li>
+                  <li>Add those gold rows to training and re-score the same gold set</li>
+                  <li>Drop them from gold so the score reflects typical cases</li>
+                  <li>Raise the learning rate until those rows pass</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Use them to decide which training data to add or fix next</strong> Failure analysis drives the data-centric iteration loop.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Use them to pick which training data to add or fix</strong> Misses show what the training data lacks, so add or fix similar training rows. Copying the gold rows themselves into training leaks the test set and inflates the score.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

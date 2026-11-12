@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why does ad-hoc training without tracking lose to bookkeeping every time?",
-          "text": "Why does ad-hoc training without tracking lose to bookkeeping every time?",
+          "name": "Why does ad-hoc training without tracking lose to bookkeeping?",
+          "text": "Why does ad-hoc training without tracking lose to bookkeeping?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "It runs slower"
+              "position": 1,
+              "text": "Untracked runs train slower because nothing is cached"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "It uses more GPU memory"
+              "position": 2,
+              "text": "Trainer only saves checkpoints when a tracker is attached"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It's harder to type the command"
+              "text": "Without a tracker, eval metrics aren't computed during training at all"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "When eval regresses weeks later, you can't reconstruct the config, code state, or data split — and the comparison restarts from scratch",
+            "position": 0,
+            "text": "You can't reconstruct an old run's config, code or data",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Tracking turns 'why did this regress?' into a two-click join. Without it, every comparison is a fresh forensic exercise."
+              "text": "When eval regresses weeks later, tracking turns 'why?' into a join over config, code SHA and data. Without it every comparison restarts from scratch. Tracking doesn't change speed, checkpointing or whether eval runs."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What is the difference between reproducible and replicable?",
-          "text": "What is the difference between reproducible and replicable?",
+          "name": "What is the practical reproducibility bar a tracking setup should target?",
+          "text": "What is the practical reproducibility bar a tracking setup should target?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "They're synonyms"
+              "position": 1,
+              "text": "A rerun gives bit-for-bit identical weights and outputs"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Reproducible is for papers; replicable is for production — that's all"
+              "text": "Identical eval score on any GPU"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Reproducible means open-source; replicable means closed"
+              "text": "Seeds don't matter once the config and data hash are logged"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Reproducible means same inputs → bit-for-bit identical outputs; replicable means same recipe → equivalent outcome within noise",
+            "position": 0,
+            "text": "A rerun lands within noise of the original result",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Bit-equivalence (reproducible) is hard in ML and usually not what you actually need; equivalence-within-noise (replicable) is the practical bar tracking should target."
+              "text": "Bit-identity is hard in ML (GPU kernels, library versions) and rarely needed; the practical bar is that the same recipe gives an equivalent result within noise. Still pin seeds: it's cheap and reduces variance between compared runs. Terms vary; ACM's badging calls same-team, same-setup reruns 'repeatability'."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Just the final eval number"
+              "position": 1,
+              "text": "The final eval number"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "Loss curves only"
+              "position": 2,
+              "text": "Per-step loss curves and the GPU type, which explain most regressions"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The README file"
+              "text": "The command line used, since it fully determines the run"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "Full config, git SHA, dataset hash, per-step loss + eval, system metrics, output artefacts",
+            "position": 0,
+            "text": "Config, git SHA, data hash, metrics and artefacts",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Anything less and you can't reliably compare two runs later. Missing a field breaks the join — the dataset hash and the code SHA are the ones teams most often skip and most often regret."
+              "text": "Anything less and you can't reliably compare two runs later. Metrics means per-step loss, eval and system metrics (the MLflow callback needs enable_system_metrics_logging for those). Library versions and a hash of the tokenized data catch preprocessing changes the raw-file hash misses."
             }
           }
         },
@@ -190,8 +190,8 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "When you want a hosted UI with sweeps and zero ops"
+              "position": 1,
+              "text": "When you want a hosted UI with built-in sweeps and zero ops"
             },
             {
               "@type": "Answer",
@@ -201,16 +201,16 @@
             {
               "@type": "Answer",
               "position": 3,
-              "text": "When you don't want a UI"
+              "text": "When you need a built-in sweep agent across many machines"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "When you can't send run metadata to a third party, or when you want a free self-hosted tool that works at any scale",
+            "position": 0,
+            "text": "When you need a free tracker you host yourself",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "MLflow is open-source and self-hosted — the right pick under compliance / IP constraints or for free tooling at scale. W&B is the zero-ops hosted option."
+              "text": "MLflow is open-source (Apache 2.0) and self-hosted, the usual pick when run metadata can't leave your infrastructure. W&B is the zero-ops hosted option with native sweeps; MLflow has none, so pair it with Optuna or Ray Tune. Loss curves alone is TensorBoard territory."
             }
           }
         }
@@ -395,61 +395,89 @@ with mlflow.start_run():
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "Why does ad-hoc training without tracking lose to bookkeeping every time?",
-   "options": ["It runs slower", "It uses more GPU memory", "When eval regresses weeks later, you can't reconstruct the config, code state, or data split — and the comparison restarts from scratch", "It's harder to type the command"],
-   "answer": 2,
-   "explanation": "Tracking turns 'why did this regress?' into a two-click join. Without it, every comparison is a fresh forensic exercise."},
-  {"q": "What is the difference between reproducible and replicable?",
-   "options": ["They're synonyms", "Reproducible means same inputs → bit-for-bit identical outputs; replicable means same recipe → equivalent outcome within noise", "Reproducible is for papers; replicable is for production — that's all", "Reproducible means open-source; replicable means closed"],
-   "answer": 1,
-   "explanation": "Bit-equivalence (reproducible) is hard in ML and usually not what you actually need; equivalence-within-noise (replicable) is the practical bar tracking should target."},
-  {"q": "What is the minimum useful set of things to log on every run?",
-   "options": ["Just the final eval number", "Loss curves only", "Full config, git SHA, dataset hash, per-step loss + eval, system metrics, output artefacts", "The README file"],
-   "answer": 2,
-   "explanation": "Anything less and you can't reliably compare two runs later. Missing a field breaks the join — the dataset hash and the code SHA are the ones teams most often skip and most often regret."},
-  {"q": "When would you pick MLflow over Weights & Biases?",
-   "options": ["When you want a hosted UI with sweeps and zero ops", "When you can't send run metadata to a third party, or when you want a free self-hosted tool that works at any scale", "When you only need loss curves", "When you don't want a UI"],
-   "answer": 1,
-   "explanation": "MLflow is open-source and self-hosted — the right pick under compliance / IP constraints or for free tooling at scale. W&B is the zero-ops hosted option."}
-]
+            [
+              {
+                "q": "Why does ad-hoc training without tracking lose to bookkeeping?",
+                "options": [
+                  "You can't reconstruct an old run's config, code or data",
+                  "Untracked runs train slower because nothing is cached",
+                  "Trainer only saves checkpoints when a tracker is attached",
+                  "Without a tracker, eval metrics aren't computed during training at all"
+                ],
+                "answer": 0,
+                "explanation": "When eval regresses weeks later, tracking turns 'why?' into a join over config, code SHA and data. Without it every comparison restarts from scratch. Tracking doesn't change speed, checkpointing or whether eval runs."
+              },
+              {
+                "q": "What is the practical reproducibility bar a tracking setup should target?",
+                "options": [
+                  "A rerun lands within noise of the original result",
+                  "A rerun gives bit-for-bit identical weights and outputs",
+                  "Identical eval score on any GPU",
+                  "Seeds don't matter once the config and data hash are logged"
+                ],
+                "answer": 0,
+                "explanation": "Bit-identity is hard in ML (GPU kernels, library versions) and rarely needed; the practical bar is that the same recipe gives an equivalent result within noise. Still pin seeds: it's cheap and reduces variance between compared runs. Terms vary; ACM's badging calls same-team, same-setup reruns 'repeatability'."
+              },
+              {
+                "q": "What is the minimum useful set of things to log on every run?",
+                "options": [
+                  "Config, git SHA, data hash, metrics and artefacts",
+                  "The final eval number",
+                  "Per-step loss curves and the GPU type, which explain most regressions",
+                  "The command line used, since it fully determines the run"
+                ],
+                "answer": 0,
+                "explanation": "Anything less and you can't reliably compare two runs later. Metrics means per-step loss, eval and system metrics (the MLflow callback needs enable_system_metrics_logging for those). Library versions and a hash of the tokenized data catch preprocessing changes the raw-file hash misses."
+              },
+              {
+                "q": "When would you pick MLflow over Weights & Biases?",
+                "options": [
+                  "When you need a free tracker you host yourself",
+                  "When you want a hosted UI with built-in sweeps and zero ops",
+                  "When you only need loss curves",
+                  "When you need a built-in sweep agent across many machines"
+                ],
+                "answer": 0,
+                "explanation": "MLflow is open-source (Apache 2.0) and self-hosted, the usual pick when run metadata can't leave your infrastructure. W&B is the zero-ops hosted option with native sweeps; MLflow has none, so pair it with Optuna or Ray Tune. Loss curves alone is TensorBoard territory."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">Why does ad-hoc training without tracking lose to bookkeeping every time?</p>
+              <li><p class="quiz__q-text">Why does ad-hoc training without tracking lose to bookkeeping?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It runs slower</li>
-                  <li>It uses more GPU memory</li>
-                  <li>When eval regresses weeks later, you can't reconstruct the config, code state, or data split — and the comparison restarts from scratch</li>
-                  <li>It's harder to type the command</li>
+                  <li>You can't reconstruct an old run's config, code or data</li>
+                  <li>Untracked runs train slower because nothing is cached</li>
+                  <li>Trainer only saves checkpoints when a tracker is attached</li>
+                  <li>Without a tracker, eval metrics aren't computed during training at all</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. When eval regresses weeks later, you can't reconstruct the config, code state, or data split — and the comparison restarts from scratch</strong> Tracking turns 'why did this regress?' into a two-click join. Without it, every comparison is a fresh forensic exercise.</p></details></li>
-              <li><p class="quiz__q-text">What is the difference between reproducible and replicable?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. You can't reconstruct an old run's config, code or data</strong> When eval regresses weeks later, tracking turns 'why?' into a join over config, code SHA and data. Without it every comparison restarts from scratch. Tracking doesn't change speed, checkpointing or whether eval runs.</p></details></li>
+              <li><p class="quiz__q-text">What is the practical reproducibility bar a tracking setup should target?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>They're synonyms</li>
-                  <li>Reproducible means same inputs → bit-for-bit identical outputs; replicable means same recipe → equivalent outcome within noise</li>
-                  <li>Reproducible is for papers; replicable is for production — that's all</li>
-                  <li>Reproducible means open-source; replicable means closed</li>
+                  <li>A rerun lands within noise of the original result</li>
+                  <li>A rerun gives bit-for-bit identical weights and outputs</li>
+                  <li>Identical eval score on any GPU</li>
+                  <li>Seeds don't matter once the config and data hash are logged</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Reproducible means same inputs → bit-for-bit identical outputs; replicable means same recipe → equivalent outcome within noise</strong> Bit-equivalence (reproducible) is hard in ML and usually not what you actually need; equivalence-within-noise (replicable) is the practical bar tracking should target.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A rerun lands within noise of the original result</strong> Bit-identity is hard in ML (GPU kernels, library versions) and rarely needed; the practical bar is that the same recipe gives an equivalent result within noise. Still pin seeds: it's cheap and reduces variance between compared runs. Terms vary; ACM's badging calls same-team, same-setup reruns 'repeatability'.</p></details></li>
               <li><p class="quiz__q-text">What is the minimum useful set of things to log on every run?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Just the final eval number</li>
-                  <li>Loss curves only</li>
-                  <li>Full config, git SHA, dataset hash, per-step loss + eval, system metrics, output artefacts</li>
-                  <li>The README file</li>
+                  <li>Config, git SHA, data hash, metrics and artefacts</li>
+                  <li>The final eval number</li>
+                  <li>Per-step loss curves and the GPU type, which explain most regressions</li>
+                  <li>The command line used, since it fully determines the run</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Full config, git SHA, dataset hash, per-step loss + eval, system metrics, output artefacts</strong> Anything less and you can't reliably compare two runs later. Missing a field breaks the join — the dataset hash and the code SHA are the ones teams most often skip and most often regret.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Config, git SHA, data hash, metrics and artefacts</strong> Anything less and you can't reliably compare two runs later. Metrics means per-step loss, eval and system metrics (the MLflow callback needs enable_system_metrics_logging for those). Library versions and a hash of the tokenized data catch preprocessing changes the raw-file hash misses.</p></details></li>
               <li><p class="quiz__q-text">When would you pick MLflow over Weights &amp; Biases?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>When you want a hosted UI with sweeps and zero ops</li>
-                  <li>When you can't send run metadata to a third party, or when you want a free self-hosted tool that works at any scale</li>
+                  <li>When you need a free tracker you host yourself</li>
+                  <li>When you want a hosted UI with built-in sweeps and zero ops</li>
                   <li>When you only need loss curves</li>
-                  <li>When you don't want a UI</li>
+                  <li>When you need a built-in sweep agent across many machines</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. When you can't send run metadata to a third party, or when you want a free self-hosted tool that works at any scale</strong> MLflow is open-source and self-hosted — the right pick under compliance / IP constraints or for free tooling at scale. W&amp;B is the zero-ops hosted option.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. When you need a free tracker you host yourself</strong> MLflow is open-source (Apache 2.0) and self-hosted, the usual pick when run metadata can't leave your infrastructure. W&amp;B is the zero-ops hosted option with native sweeps; MLflow has none, so pair it with Optuna or Ray Tune. Loss curves alone is TensorBoard territory.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

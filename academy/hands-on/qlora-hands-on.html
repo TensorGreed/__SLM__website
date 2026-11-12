@@ -91,24 +91,24 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The whole quantized base"
+              "position": 1,
+              "text": "The whole base, with 4-bit gradients to save memory"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "A separate small model"
+              "text": "A smaller student model distilled from the 4-bit base"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Nothing — it's inference-only"
+              "text": "The quantization scales first, then the adapter on top"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The LoRA adapter only — the base is frozen and quantized to 4-bit",
+            "position": 0,
+            "text": "Only the LoRA adapter; the 4-bit base is frozen",
             "answerExplanation": {
               "@type": "Comment",
               "text": "The base is 4-bit and frozen (no gradients, no optimizer state). The adapter trains on top in higher precision."
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why call prepare_model_for_kbit_training before LoRA?",
-          "text": "Why call prepare_model_for_kbit_training before LoRA?",
+          "name": "What does prepare_model_for_kbit_training do before LoRA is attached?",
+          "text": "What does prepare_model_for_kbit_training do before LoRA is attached?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "It improves accuracy"
+              "position": 1,
+              "text": "Disables optimizer states the 4-bit base can't carry, saving memory"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It downloads bitsandbytes"
+              "text": "Quantizes the base to 4-bit NF4 and attaches the LoRA adapters"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It saves a checkpoint"
+              "text": "Merges earlier adapters so the quantized base trains cleanly"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "It enables gradient checkpointing, casts norm layers to a stable dtype, and makes adapter training on the quantized base work",
+            "position": 0,
+            "text": "Freezes the base, upcasts 16-bit params, enables checkpointing",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Forgetting this call is the most common 'my QLoRA isn't training' bug."
+              "text": "It freezes the base, casts every non-quantized fp16/bf16 param (norms, embeddings) to fp32, which costs memory, enables input gradients, and turns on gradient checkpointing. It does nothing to optimizer states; quantization happens at load time via BitsAndBytesConfig."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What dtype goes in bnb_4bit_compute_dtype?",
-          "text": "What dtype goes in bnb_4bit_compute_dtype?",
+          "name": "On a modern GPU, what do you usually set bnb_4bit_compute_dtype to?",
+          "text": "On a modern GPU, what do you usually set bnb_4bit_compute_dtype to?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "int4"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "fp32 only"
+              "position": 2,
+              "text": "int8, for faster 8-bit matmuls"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "uint8"
+              "text": "fp32, the only dtype bitsandbytes computes in"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "bf16 (or fp16) — the dtype for the activations and gradients on top of the 4-bit weights",
+            "position": 0,
+            "text": "bf16 (or fp16)",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The weights are 4-bit but operations happen in a higher-precision compute dtype; bf16 is the standard on modern GPUs."
+              "text": "Weights are stored in 4-bit (NF4) and dequantized to the compute dtype for each matmul. bf16 is standard on Ampere and newer, fp16 on older GPUs. 4-bit is the storage format, never the compute dtype; the fp32 default works but is slower."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Skip evaluation — quantization is lossless"
+              "position": 1,
+              "text": "Ship it; NF4 is lossless"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Halve the learning rate"
+              "text": "Merge the adapter into the 4-bit base and ship that as-is"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Always merge the adapter"
+              "text": "Halve the learning rate and retrain to recover 4-bit losses"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Re-evaluate against the same gold set; 4-bit usually loses ~1–2 points vs full-precision LoRA of the same model",
+            "position": 0,
+            "text": "Re-evaluate on the same gold set and compare",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "QLoRA's win is fitting a larger model; the trade-off is a small, re-evaluable quality drop. Measure it."
+              "text": "The QLoRA paper (Dettmers et al. 2023, arXiv:2305.14314) found NF4 with double quantization matched 16-bit LoRA and full fine-tuning on its benchmarks; on your task it may differ, so measure. To export, reload the base in bf16, attach the adapter, then merge."
             }
           }
         }
@@ -414,24 +414,52 @@ trainer.save_model("qlora-out/adapter")</code></pre>
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "What does QLoRA actually train?",
-   "options": ["The whole quantized base", "The LoRA adapter only — the base is frozen and quantized to 4-bit", "A separate small model", "Nothing — it's inference-only"],
-   "answer": 1,
-   "explanation": "The base is 4-bit and frozen (no gradients, no optimizer state). The adapter trains on top in higher precision."},
-  {"q": "Why call prepare_model_for_kbit_training before LoRA?",
-   "options": ["It improves accuracy", "It enables gradient checkpointing, casts norm layers to a stable dtype, and makes adapter training on the quantized base work", "It downloads bitsandbytes", "It saves a checkpoint"],
-   "answer": 1,
-   "explanation": "Forgetting this call is the most common 'my QLoRA isn't training' bug."},
-  {"q": "What dtype goes in bnb_4bit_compute_dtype?",
-   "options": ["int4", "fp32 only", "bf16 (or fp16) — the dtype for the activations and gradients on top of the 4-bit weights", "uint8"],
-   "answer": 2,
-   "explanation": "The weights are 4-bit but operations happen in a higher-precision compute dtype; bf16 is the standard on modern GPUs."},
-  {"q": "After a QLoRA run, you should…",
-   "options": ["Skip evaluation — quantization is lossless", "Re-evaluate against the same gold set; 4-bit usually loses ~1–2 points vs full-precision LoRA of the same model", "Halve the learning rate", "Always merge the adapter"],
-   "answer": 1,
-   "explanation": "QLoRA's win is fitting a larger model; the trade-off is a small, re-evaluable quality drop. Measure it."}
-]
+            [
+              {
+                "q": "What does QLoRA actually train?",
+                "options": [
+                  "Only the LoRA adapter; the 4-bit base is frozen",
+                  "The whole base, with 4-bit gradients to save memory",
+                  "A smaller student model distilled from the 4-bit base",
+                  "The quantization scales first, then the adapter on top"
+                ],
+                "answer": 0,
+                "explanation": "The base is 4-bit and frozen (no gradients, no optimizer state). The adapter trains on top in higher precision."
+              },
+              {
+                "q": "What does prepare_model_for_kbit_training do before LoRA is attached?",
+                "options": [
+                  "Freezes the base, upcasts 16-bit params, enables checkpointing",
+                  "Disables optimizer states the 4-bit base can't carry, saving memory",
+                  "Quantizes the base to 4-bit NF4 and attaches the LoRA adapters",
+                  "Merges earlier adapters so the quantized base trains cleanly"
+                ],
+                "answer": 0,
+                "explanation": "It freezes the base, casts every non-quantized fp16/bf16 param (norms, embeddings) to fp32, which costs memory, enables input gradients, and turns on gradient checkpointing. It does nothing to optimizer states; quantization happens at load time via BitsAndBytesConfig."
+              },
+              {
+                "q": "On a modern GPU, what do you usually set bnb_4bit_compute_dtype to?",
+                "options": [
+                  "bf16 (or fp16)",
+                  "int4",
+                  "int8, for faster 8-bit matmuls",
+                  "fp32, the only dtype bitsandbytes computes in"
+                ],
+                "answer": 0,
+                "explanation": "Weights are stored in 4-bit (NF4) and dequantized to the compute dtype for each matmul. bf16 is standard on Ampere and newer, fp16 on older GPUs. 4-bit is the storage format, never the compute dtype; the fp32 default works but is slower."
+              },
+              {
+                "q": "After a QLoRA run, you should…",
+                "options": [
+                  "Re-evaluate on the same gold set and compare",
+                  "Ship it; NF4 is lossless",
+                  "Merge the adapter into the 4-bit base and ship that as-is",
+                  "Halve the learning rate and retrain to recover 4-bit losses"
+                ],
+                "answer": 0,
+                "explanation": "The QLoRA paper (Dettmers et al. 2023, arXiv:2305.14314) found NF4 with double quantization matched 16-bit LoRA and full fine-tuning on its benchmarks; on your task it may differ, so measure. To export, reload the base in bf16, attach the adapter, then merge."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -439,36 +467,36 @@ trainer.save_model("qlora-out/adapter")</code></pre>
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does QLoRA actually train?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The whole quantized base</li>
-                  <li>The LoRA adapter only — the base is frozen and quantized to 4-bit</li>
-                  <li>A separate small model</li>
-                  <li>Nothing — it's inference-only</li>
+                  <li>Only the LoRA adapter; the 4-bit base is frozen</li>
+                  <li>The whole base, with 4-bit gradients to save memory</li>
+                  <li>A smaller student model distilled from the 4-bit base</li>
+                  <li>The quantization scales first, then the adapter on top</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The LoRA adapter only — the base is frozen and quantized to 4-bit</strong> The base is 4-bit and frozen (no gradients, no optimizer state). The adapter trains on top in higher precision.</p></details></li>
-              <li><p class="quiz__q-text">Why call prepare_model_for_kbit_training before LoRA?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Only the LoRA adapter; the 4-bit base is frozen</strong> The base is 4-bit and frozen (no gradients, no optimizer state). The adapter trains on top in higher precision.</p></details></li>
+              <li><p class="quiz__q-text">What does prepare_model_for_kbit_training do before LoRA is attached?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It improves accuracy</li>
-                  <li>It enables gradient checkpointing, casts norm layers to a stable dtype, and makes adapter training on the quantized base work</li>
-                  <li>It downloads bitsandbytes</li>
-                  <li>It saves a checkpoint</li>
+                  <li>Freezes the base, upcasts 16-bit params, enables checkpointing</li>
+                  <li>Disables optimizer states the 4-bit base can't carry, saving memory</li>
+                  <li>Quantizes the base to 4-bit NF4 and attaches the LoRA adapters</li>
+                  <li>Merges earlier adapters so the quantized base trains cleanly</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. It enables gradient checkpointing, casts norm layers to a stable dtype, and makes adapter training on the quantized base work</strong> Forgetting this call is the most common 'my QLoRA isn't training' bug.</p></details></li>
-              <li><p class="quiz__q-text">What dtype goes in bnb_4bit_compute_dtype?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Freezes the base, upcasts 16-bit params, enables checkpointing</strong> It freezes the base, casts every non-quantized fp16/bf16 param (norms, embeddings) to fp32, which costs memory, enables input gradients, and turns on gradient checkpointing. It does nothing to optimizer states; quantization happens at load time via BitsAndBytesConfig.</p></details></li>
+              <li><p class="quiz__q-text">On a modern GPU, what do you usually set bnb_4bit_compute_dtype to?</p>
                 <ol class="quiz__static-options" type="A">
+                  <li>bf16 (or fp16)</li>
                   <li>int4</li>
-                  <li>fp32 only</li>
-                  <li>bf16 (or fp16) — the dtype for the activations and gradients on top of the 4-bit weights</li>
-                  <li>uint8</li>
+                  <li>int8, for faster 8-bit matmuls</li>
+                  <li>fp32, the only dtype bitsandbytes computes in</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. bf16 (or fp16) — the dtype for the activations and gradients on top of the 4-bit weights</strong> The weights are 4-bit but operations happen in a higher-precision compute dtype; bf16 is the standard on modern GPUs.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. bf16 (or fp16)</strong> Weights are stored in 4-bit (NF4) and dequantized to the compute dtype for each matmul. bf16 is standard on Ampere and newer, fp16 on older GPUs. 4-bit is the storage format, never the compute dtype; the fp32 default works but is slower.</p></details></li>
               <li><p class="quiz__q-text">After a QLoRA run, you should…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Skip evaluation — quantization is lossless</li>
-                  <li>Re-evaluate against the same gold set; 4-bit usually loses ~1–2 points vs full-precision LoRA of the same model</li>
-                  <li>Halve the learning rate</li>
-                  <li>Always merge the adapter</li>
+                  <li>Re-evaluate on the same gold set and compare</li>
+                  <li>Ship it; NF4 is lossless</li>
+                  <li>Merge the adapter into the 4-bit base and ship that as-is</li>
+                  <li>Halve the learning rate and retrain to recover 4-bit losses</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Re-evaluate against the same gold set; 4-bit usually loses ~1–2 points vs full-precision LoRA of the same model</strong> QLoRA's win is fitting a larger model; the trade-off is a small, re-evaluable quality drop. Measure it.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Re-evaluate on the same gold set and compare</strong> The QLoRA paper (Dettmers et al. 2023, arXiv:2305.14314) found NF4 with double quantization matched 16-bit LoRA and full fine-tuning on its benchmarks; on your task it may differ, so measure. To export, reload the base in bf16, attach the adapter, then merge.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

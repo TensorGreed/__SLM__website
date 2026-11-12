@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The whole input repeated"
+              "position": 1,
+              "text": "The full prompt followed by the label"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "A summary"
+              "text": "A sentence explaining why the label applies"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The tokenizer"
+              "text": "The input text"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The target label",
+            "position": 0,
+            "text": "The target label alone",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The completion is the target output — here, the class label."
+              "text": "The completion is what the model must produce: the class label. The prompt carries the instruction and input; repeating it in the completion teaches the model to echo the prompt."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why keep the instruction wording identical across examples?",
-          "text": "Why keep the instruction wording identical across examples?",
+          "name": "When does keeping the instruction wording identical across every example make sense?",
+          "text": "When does keeping the instruction wording identical across every example make sense?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "To save tokens"
+              "position": 1,
+              "text": "Always, for any dataset"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "To balance classes"
+              "text": "Only for small datasets, where variety would cause overfitting"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "To merge LoRA"
+              "text": "Never; paraphrased instructions always raise gold accuracy"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "So the model learns the task, not incidental wording",
+            "position": 0,
+            "text": "When production always sends that exact prompt",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Consistent framing focuses learning on the task itself."
+              "text": "A fixed instruction focuses learning on the task when the deployed prompt is fixed. If real users will phrase requests differently, train on varied phrasings so the model doesn't depend on one wording."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "A merged model"
+              "position": 1,
+              "text": "A 20% train / 80% validation split"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "A tokenizer"
+              "text": "A verified gold set you can report final accuracy on"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "A gold set"
+              "text": "A split stratified by label, so class balance is kept automatically"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "A train portion and a held-out portion to watch overfitting",
+            "position": 0,
+            "text": "An 80% train split and a 20% held-out split",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "It produces train and held-out splits; the held-out slice monitors generalization."
+              "text": "test_size=0.2 holds out a random 20% to watch overfitting during training. It is not stratified unless you pass stratify_by_column, and a random slice is not a verified gold set."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The same as the training data"
+              "position": 1,
+              "text": "A random 20% of the training rows, re-drawn each run"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Auto-generated each run"
+              "text": "The validation split"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Larger than the train set"
+              "text": "Your training rows, relabelled by a stronger model"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "A small, verified set you never train on",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "A gold set is curated, verified, and strictly held out from training."
+              "text": "A gold set is curated, verified, and held out from training and from checkpoint selection. Re-drawing it each run makes scores incomparable, and a split you tune against is indirectly fitted."
             }
           }
         }
@@ -352,52 +352,52 @@ print(len(train_ds), "train /", len(val_ds), "val")</code></pre>
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "For a classification SFT example, the completion is\u2026",
-    "options": [
-      "The whole input repeated",
-      "The target label",
-      "A summary",
-      "The tokenizer"
-    ],
-    "answer": 1,
-    "explanation": "The completion is the target output \u2014 here, the class label."
-  },
-  {
-    "q": "Why keep the instruction wording identical across examples?",
-    "options": [
-      "To save tokens",
-      "So the model learns the task, not incidental wording",
-      "To balance classes",
-      "To merge LoRA"
-    ],
-    "answer": 1,
-    "explanation": "Consistent framing focuses learning on the task itself."
-  },
-  {
-    "q": "What does ds.train_test_split(test_size=0.2) give you?",
-    "options": [
-      "A merged model",
-      "A train portion and a held-out portion to watch overfitting",
-      "A tokenizer",
-      "A gold set"
-    ],
-    "answer": 1,
-    "explanation": "It produces train and held-out splits; the held-out slice monitors generalization."
-  },
-  {
-    "q": "The gold set should be\u2026",
-    "options": [
-      "The same as the training data",
-      "A small, verified set you never train on",
-      "Auto-generated each run",
-      "Larger than the train set"
-    ],
-    "answer": 1,
-    "explanation": "A gold set is curated, verified, and strictly held out from training."
-  }
-]
+            [
+              {
+                "q": "For a classification SFT example, the completion is…",
+                "options": [
+                  "The target label alone",
+                  "The full prompt followed by the label",
+                  "A sentence explaining why the label applies",
+                  "The input text"
+                ],
+                "answer": 0,
+                "explanation": "The completion is what the model must produce: the class label. The prompt carries the instruction and input; repeating it in the completion teaches the model to echo the prompt."
+              },
+              {
+                "q": "When does keeping the instruction wording identical across every example make sense?",
+                "options": [
+                  "When production always sends that exact prompt",
+                  "Always, for any dataset",
+                  "Only for small datasets, where variety would cause overfitting",
+                  "Never; paraphrased instructions always raise gold accuracy"
+                ],
+                "answer": 0,
+                "explanation": "A fixed instruction focuses learning on the task when the deployed prompt is fixed. If real users will phrase requests differently, train on varied phrasings so the model doesn't depend on one wording."
+              },
+              {
+                "q": "What does ds.train_test_split(test_size=0.2) give you?",
+                "options": [
+                  "An 80% train split and a 20% held-out split",
+                  "A 20% train / 80% validation split",
+                  "A verified gold set you can report final accuracy on",
+                  "A split stratified by label, so class balance is kept automatically"
+                ],
+                "answer": 0,
+                "explanation": "test_size=0.2 holds out a random 20% to watch overfitting during training. It is not stratified unless you pass stratify_by_column, and a random slice is not a verified gold set."
+              },
+              {
+                "q": "The gold set should be…",
+                "options": [
+                  "A small, verified set you never train on",
+                  "A random 20% of the training rows, re-drawn each run",
+                  "The validation split",
+                  "Your training rows, relabelled by a stronger model"
+                ],
+                "answer": 0,
+                "explanation": "A gold set is curated, verified, and held out from training and from checkpoint selection. Re-drawing it each run makes scores incomparable, and a split you tune against is indirectly fitted."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -405,36 +405,36 @@ print(len(train_ds), "train /", len(val_ds), "val")</code></pre>
             <ol class="quiz__static">
               <li><p class="quiz__q-text">For a classification SFT example, the completion is…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The whole input repeated</li>
-                  <li>The target label</li>
-                  <li>A summary</li>
-                  <li>The tokenizer</li>
+                  <li>The target label alone</li>
+                  <li>The full prompt followed by the label</li>
+                  <li>A sentence explaining why the label applies</li>
+                  <li>The input text</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The target label</strong> The completion is the target output — here, the class label.</p></details></li>
-              <li><p class="quiz__q-text">Why keep the instruction wording identical across examples?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The target label alone</strong> The completion is what the model must produce: the class label. The prompt carries the instruction and input; repeating it in the completion teaches the model to echo the prompt.</p></details></li>
+              <li><p class="quiz__q-text">When does keeping the instruction wording identical across every example make sense?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>To save tokens</li>
-                  <li>So the model learns the task, not incidental wording</li>
-                  <li>To balance classes</li>
-                  <li>To merge LoRA</li>
+                  <li>When production always sends that exact prompt</li>
+                  <li>Always, for any dataset</li>
+                  <li>Only for small datasets, where variety would cause overfitting</li>
+                  <li>Never; paraphrased instructions always raise gold accuracy</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. So the model learns the task, not incidental wording</strong> Consistent framing focuses learning on the task itself.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. When production always sends that exact prompt</strong> A fixed instruction focuses learning on the task when the deployed prompt is fixed. If real users will phrase requests differently, train on varied phrasings so the model doesn't depend on one wording.</p></details></li>
               <li><p class="quiz__q-text">What does ds.train_test_split(test_size=0.2) give you?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A merged model</li>
-                  <li>A train portion and a held-out portion to watch overfitting</li>
-                  <li>A tokenizer</li>
-                  <li>A gold set</li>
+                  <li>An 80% train split and a 20% held-out split</li>
+                  <li>A 20% train / 80% validation split</li>
+                  <li>A verified gold set you can report final accuracy on</li>
+                  <li>A split stratified by label, so class balance is kept automatically</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A train portion and a held-out portion to watch overfitting</strong> It produces train and held-out splits; the held-out slice monitors generalization.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. An 80% train split and a 20% held-out split</strong> test_size=0.2 holds out a random 20% to watch overfitting during training. It is not stratified unless you pass stratify_by_column, and a random slice is not a verified gold set.</p></details></li>
               <li><p class="quiz__q-text">The gold set should be…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The same as the training data</li>
                   <li>A small, verified set you never train on</li>
-                  <li>Auto-generated each run</li>
-                  <li>Larger than the train set</li>
+                  <li>A random 20% of the training rows, re-drawn each run</li>
+                  <li>The validation split</li>
+                  <li>Your training rows, relabelled by a stronger model</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A small, verified set you never train on</strong> A gold set is curated, verified, and strictly held out from training.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A small, verified set you never train on</strong> A gold set is curated, verified, and held out from training and from checkpoint selection. Re-drawing it each run makes scores incomparable, and a split you tune against is indirectly fitted.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

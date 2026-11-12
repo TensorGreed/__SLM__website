@@ -91,7 +91,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "Accuracy"
             },
             {
@@ -102,16 +102,16 @@
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Recall on the largest class"
+              "text": "Recall on the majority class"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Macro F1 — equal weight per class, so the model can't hide poor minority-intent recall behind a strong majority",
+            "position": 0,
+            "text": "Macro-averaged F1",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Imbalanced multi-class needs macro F1 to expose minority-class weakness."
+              "text": "Macro F1 gives each class equal weight, so poor minority-intent recall can't hide behind a strong majority. Weighted F1 weights by support, so the majority dominates, and accuracy has the same problem."
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Fine-tune a model to memorise the FAQ"
+              "position": 1,
+              "text": "Fine-tune on the FAQ alone"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "A bigger base model"
+              "text": "A larger base model that already knows the domain"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Train on the whole web"
+              "text": "Fine-tune on paraphrases of every FAQ entry, no retrieval"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "RAG + a small fine-tune (retrieval supplies the facts; SFT teaches tone, format, and refusals)",
+            "position": 0,
+            "text": "RAG for facts plus a small fine-tune for style",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Fine-tuning teaches behaviour, not facts (Foundations 0.7). RAG + SFT is the canonical split."
+              "text": "Fine-tuning is an inefficient, hallucination-prone way to add new facts (Ovadia et al. 2024, arXiv:2312.05934; Gekhman et al. 2024, arXiv:2405.05904). Retrieval supplies the facts; SFT teaches tone, format, and refusals."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "False positives — flagging non-PII as PII"
+              "position": 1,
+              "text": "False positives — every over-flag erodes user trust"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Both equal"
+              "text": "Both cost the same"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Depends on the tokenizer"
+              "text": "Whichever error type is rarer in the gold set"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "False negatives — missing real PII; defend recall accordingly",
+            "position": 0,
+            "text": "False negatives — missing real PII",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Missing a phone number is far worse than over-flagging an innocent string. Tune the threshold or add data to favour recall."
+              "text": "Missing a phone number leaks it; over-flagging costs some review. Favour recall: add hard positive examples, and if you have a confidence source (token log-probs, sample-and-vote, or a token-classification head) set its threshold lower."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "More epochs"
+              "position": 1,
+              "text": "Train more epochs"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "A larger model"
+              "text": "Lower the temperature so a tool call is less likely"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Lower learning rate"
+              "text": "Remove the tool descriptions from the prompt at inference"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Add negative examples — inputs where the right answer is 'no tool needed' or 'ask for clarification'",
+            "position": 0,
+            "text": "Add examples where no tool call is right",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "A model that always calls a tool was never taught not to. Negative examples teach the no-tool path."
+              "text": "A model that always calls a tool was never taught not to. Negative examples (inputs where the right answer is 'no tool needed' or 'ask for clarification') teach the no-tool path; more epochs on the same data only reinforce the habit."
             }
           }
         }
@@ -402,24 +402,52 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "For a multi-class intent classifier with class imbalance, which metric should you lead with?",
-   "options": ["Accuracy", "Macro F1 — equal weight per class, so the model can't hide poor minority-intent recall behind a strong majority", "Weighted F1", "Recall on the largest class"],
-   "answer": 1,
-   "explanation": "Imbalanced multi-class needs macro F1 to expose minority-class weakness."},
-  {"q": "An FAQ assistant must answer from a knowledge base only. The right architecture is…",
-   "options": ["Fine-tune a model to memorise the FAQ", "RAG + a small fine-tune (retrieval supplies the facts; SFT teaches tone, format, and refusals)", "A bigger base model", "Train on the whole web"],
-   "answer": 1,
-   "explanation": "Fine-tuning teaches behaviour, not facts (Foundations 0.7). RAG + SFT is the canonical split."},
-  {"q": "For a PII detector, which direction of error is more costly?",
-   "options": ["False positives — flagging non-PII as PII", "False negatives — missing real PII; defend recall accordingly", "Both equal", "Depends on the tokenizer"],
-   "answer": 1,
-   "explanation": "Missing a phone number is far worse than over-flagging an innocent string. Tune the threshold or add data to favour recall."},
-  {"q": "Your tool-call generator calls a tool on every input. The fix is…",
-   "options": ["More epochs", "Add negative examples — inputs where the right answer is 'no tool needed' or 'ask for clarification'", "A larger model", "Lower learning rate"],
-   "answer": 1,
-   "explanation": "A model that always calls a tool was never taught not to. Negative examples teach the no-tool path."}
-]
+            [
+              {
+                "q": "For a multi-class intent classifier with class imbalance, which metric should you lead with?",
+                "options": [
+                  "Macro-averaged F1",
+                  "Accuracy",
+                  "Weighted F1",
+                  "Recall on the majority class"
+                ],
+                "answer": 0,
+                "explanation": "Macro F1 gives each class equal weight, so poor minority-intent recall can't hide behind a strong majority. Weighted F1 weights by support, so the majority dominates, and accuracy has the same problem."
+              },
+              {
+                "q": "An FAQ assistant must answer from a knowledge base only. The right architecture is…",
+                "options": [
+                  "RAG for facts plus a small fine-tune for style",
+                  "Fine-tune on the FAQ alone",
+                  "A larger base model that already knows the domain",
+                  "Fine-tune on paraphrases of every FAQ entry, no retrieval"
+                ],
+                "answer": 0,
+                "explanation": "Fine-tuning is an inefficient, hallucination-prone way to add new facts (Ovadia et al. 2024, arXiv:2312.05934; Gekhman et al. 2024, arXiv:2405.05904). Retrieval supplies the facts; SFT teaches tone, format, and refusals."
+              },
+              {
+                "q": "For a PII detector, which direction of error is more costly?",
+                "options": [
+                  "False negatives — missing real PII",
+                  "False positives — every over-flag erodes user trust",
+                  "Both cost the same",
+                  "Whichever error type is rarer in the gold set"
+                ],
+                "answer": 0,
+                "explanation": "Missing a phone number leaks it; over-flagging costs some review. Favour recall: add hard positive examples, and if you have a confidence source (token log-probs, sample-and-vote, or a token-classification head) set its threshold lower."
+              },
+              {
+                "q": "Your tool-call generator calls a tool on every input. The fix is…",
+                "options": [
+                  "Add examples where no tool call is right",
+                  "Train more epochs",
+                  "Lower the temperature so a tool call is less likely",
+                  "Remove the tool descriptions from the prompt at inference"
+                ],
+                "answer": 0,
+                "explanation": "A model that always calls a tool was never taught not to. Negative examples (inputs where the right answer is 'no tool needed' or 'ask for clarification') teach the no-tool path; more epochs on the same data only reinforce the habit."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -427,36 +455,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">For a multi-class intent classifier with class imbalance, which metric should you lead with?</p>
                 <ol class="quiz__static-options" type="A">
+                  <li>Macro-averaged F1</li>
                   <li>Accuracy</li>
-                  <li>Macro F1 — equal weight per class, so the model can't hide poor minority-intent recall behind a strong majority</li>
                   <li>Weighted F1</li>
-                  <li>Recall on the largest class</li>
+                  <li>Recall on the majority class</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Macro F1 — equal weight per class, so the model can't hide poor minority-intent recall behind a strong majority</strong> Imbalanced multi-class needs macro F1 to expose minority-class weakness.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Macro-averaged F1</strong> Macro F1 gives each class equal weight, so poor minority-intent recall can't hide behind a strong majority. Weighted F1 weights by support, so the majority dominates, and accuracy has the same problem.</p></details></li>
               <li><p class="quiz__q-text">An FAQ assistant must answer from a knowledge base only. The right architecture is…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Fine-tune a model to memorise the FAQ</li>
-                  <li>RAG + a small fine-tune (retrieval supplies the facts; SFT teaches tone, format, and refusals)</li>
-                  <li>A bigger base model</li>
-                  <li>Train on the whole web</li>
+                  <li>RAG for facts plus a small fine-tune for style</li>
+                  <li>Fine-tune on the FAQ alone</li>
+                  <li>A larger base model that already knows the domain</li>
+                  <li>Fine-tune on paraphrases of every FAQ entry, no retrieval</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. RAG + a small fine-tune (retrieval supplies the facts; SFT teaches tone, format, and refusals)</strong> Fine-tuning teaches behaviour, not facts (Foundations 0.7). RAG + SFT is the canonical split.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. RAG for facts plus a small fine-tune for style</strong> Fine-tuning is an inefficient, hallucination-prone way to add new facts (Ovadia et al. 2024, arXiv:2312.05934; Gekhman et al. 2024, arXiv:2405.05904). Retrieval supplies the facts; SFT teaches tone, format, and refusals.</p></details></li>
               <li><p class="quiz__q-text">For a PII detector, which direction of error is more costly?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>False positives — flagging non-PII as PII</li>
-                  <li>False negatives — missing real PII; defend recall accordingly</li>
-                  <li>Both equal</li>
-                  <li>Depends on the tokenizer</li>
+                  <li>False negatives — missing real PII</li>
+                  <li>False positives — every over-flag erodes user trust</li>
+                  <li>Both cost the same</li>
+                  <li>Whichever error type is rarer in the gold set</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. False negatives — missing real PII; defend recall accordingly</strong> Missing a phone number is far worse than over-flagging an innocent string. Tune the threshold or add data to favour recall.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. False negatives — missing real PII</strong> Missing a phone number leaks it; over-flagging costs some review. Favour recall: add hard positive examples, and if you have a confidence source (token log-probs, sample-and-vote, or a token-classification head) set its threshold lower.</p></details></li>
               <li><p class="quiz__q-text">Your tool-call generator calls a tool on every input. The fix is…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>More epochs</li>
-                  <li>Add negative examples — inputs where the right answer is 'no tool needed' or 'ask for clarification'</li>
-                  <li>A larger model</li>
-                  <li>Lower learning rate</li>
+                  <li>Add examples where no tool call is right</li>
+                  <li>Train more epochs</li>
+                  <li>Lower the temperature so a tool call is less likely</li>
+                  <li>Remove the tool descriptions from the prompt at inference</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Add negative examples — inputs where the right answer is 'no tool needed' or 'ask for clarification'</strong> A model that always calls a tool was never taught not to. Negative examples teach the no-tool path.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Add examples where no tool call is right</strong> A model that always calls a tool was never taught not to. Negative examples (inputs where the right answer is 'no tool needed' or 'ask for clarification') teach the no-tool path; more epochs on the same data only reinforce the habit.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

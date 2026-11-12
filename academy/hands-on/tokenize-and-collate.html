@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Pads the sequence"
+              "position": 1,
+              "text": "Marks the position as padding for attention"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Marks the EOS token"
+              "text": "Marks the end-of-sequence token"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Doubles its weight"
+              "text": "Gives that position a negative, discouraging weight"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Tells the cross-entropy loss to ignore that position",
+            "position": 0,
+            "text": "Excludes that position from the loss",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "-100 is PyTorch's ignore index; those positions contribute no loss — the loss mask in code."
+              "text": "-100 is PyTorch cross-entropy's ignore index: those positions contribute no loss. Attention is controlled separately by attention_mask."
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "To pad the batch"
+              "position": 1,
+              "text": "So the model sees the prompt only once during attention"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "To change the tokenizer"
+              "text": "To pad the batch"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "To merge LoRA"
+              "text": "So the prompt tokens are hidden from the model's input"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "To compute loss only on the completion tokens",
+            "position": 0,
+            "text": "So loss falls only on the completion",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "It implements completion-only supervision: the model learns to produce the answer, not echo the prompt."
+              "text": "It implements completion-only supervision: the model learns to produce the answer, not echo the prompt. Labels don't change the input; the model still reads the full prompt."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "0"
-            },
-            {
-              "@type": "Answer",
               "position": 1,
               "text": "The pad token id"
             },
             {
               "@type": "Answer",
+              "position": 2,
+              "text": "0"
+            },
+            {
+              "@type": "Answer",
               "position": 3,
-              "text": "1"
+              "text": "The EOS token id"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
+            "position": 0,
             "text": "-100",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "It pads labels with -100 so padded positions are ignored by the loss too."
+              "text": "It pads labels with label_pad_token_id, -100 by default, so padded positions are ignored by the loss too. Padding labels with the pad token id would train the model on padding."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The GPU temperature"
+              "position": 1,
+              "text": "Every label equals its input id, including the prompt"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The learning rate"
+              "text": "The attention mask is 0 on the prompt tokens"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The vocabulary size"
+              "text": "The labels are shifted one position right of input_ids"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "That completion tokens are unmasked and not truncated",
+            "position": 0,
+            "text": "Completion tokens are unmasked and not truncated",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Verifying the mask and that completions fit prevents the silent data bugs from Track 1."
+              "text": "Check that the completion (including the end-of-turn token) survives truncation and is unmasked. If MAX_LEN cuts inside the prompt, every label is -100 and the row teaches nothing. The model shifts labels internally, so don't shift them yourself."
             }
           }
         }
@@ -367,52 +367,52 @@ print({k: tuple(v.shape) for k, v in batch.items()})</code></pre>
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "What does setting a label position to -100 do?",
-    "options": [
-      "Pads the sequence",
-      "Tells the cross-entropy loss to ignore that position",
-      "Marks the EOS token",
-      "Doubles its weight"
-    ],
-    "answer": 1,
-    "explanation": "-100 is PyTorch's ignore index; those positions contribute no loss \u2014 the loss mask in code."
-  },
-  {
-    "q": "Why copy input_ids into labels and then overwrite the prompt span with -100?",
-    "options": [
-      "To pad the batch",
-      "To compute loss only on the completion tokens",
-      "To change the tokenizer",
-      "To merge LoRA"
-    ],
-    "answer": 1,
-    "explanation": "It implements completion-only supervision: the model learns to produce the answer, not echo the prompt."
-  },
-  {
-    "q": "What does DataCollatorForSeq2Seq pad labels with?",
-    "options": [
-      "0",
-      "The pad token id",
-      "-100",
-      "1"
-    ],
-    "answer": 2,
-    "explanation": "It pads labels with -100 so padded positions are ignored by the loss too."
-  },
-  {
-    "q": "Before training, you should inspect a tokenized example to confirm\u2026",
-    "options": [
-      "The GPU temperature",
-      "That completion tokens are unmasked and not truncated",
-      "The learning rate",
-      "The vocabulary size"
-    ],
-    "answer": 1,
-    "explanation": "Verifying the mask and that completions fit prevents the silent data bugs from Track 1."
-  }
-]
+            [
+              {
+                "q": "What does setting a label position to -100 do?",
+                "options": [
+                  "Excludes that position from the loss",
+                  "Marks the position as padding for attention",
+                  "Marks the end-of-sequence token",
+                  "Gives that position a negative, discouraging weight"
+                ],
+                "answer": 0,
+                "explanation": "-100 is PyTorch cross-entropy's ignore index: those positions contribute no loss. Attention is controlled separately by attention_mask."
+              },
+              {
+                "q": "Why copy input_ids into labels and then overwrite the prompt span with -100?",
+                "options": [
+                  "So loss falls only on the completion",
+                  "So the model sees the prompt only once during attention",
+                  "To pad the batch",
+                  "So the prompt tokens are hidden from the model's input"
+                ],
+                "answer": 0,
+                "explanation": "It implements completion-only supervision: the model learns to produce the answer, not echo the prompt. Labels don't change the input; the model still reads the full prompt."
+              },
+              {
+                "q": "What does DataCollatorForSeq2Seq pad labels with?",
+                "options": [
+                  "-100",
+                  "The pad token id",
+                  "0",
+                  "The EOS token id"
+                ],
+                "answer": 0,
+                "explanation": "It pads labels with label_pad_token_id, -100 by default, so padded positions are ignored by the loss too. Padding labels with the pad token id would train the model on padding."
+              },
+              {
+                "q": "Before training, you should inspect a tokenized example to confirm…",
+                "options": [
+                  "Completion tokens are unmasked and not truncated",
+                  "Every label equals its input id, including the prompt",
+                  "The attention mask is 0 on the prompt tokens",
+                  "The labels are shifted one position right of input_ids"
+                ],
+                "answer": 0,
+                "explanation": "Check that the completion (including the end-of-turn token) survives truncation and is unmasked. If MAX_LEN cuts inside the prompt, every label is -100 and the row teaches nothing. The model shifts labels internally, so don't shift them yourself."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -420,36 +420,36 @@ print({k: tuple(v.shape) for k, v in batch.items()})</code></pre>
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does setting a label position to -100 do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Pads the sequence</li>
-                  <li>Tells the cross-entropy loss to ignore that position</li>
-                  <li>Marks the EOS token</li>
-                  <li>Doubles its weight</li>
+                  <li>Excludes that position from the loss</li>
+                  <li>Marks the position as padding for attention</li>
+                  <li>Marks the end-of-sequence token</li>
+                  <li>Gives that position a negative, discouraging weight</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Tells the cross-entropy loss to ignore that position</strong> -100 is PyTorch's ignore index; those positions contribute no loss — the loss mask in code.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Excludes that position from the loss</strong> -100 is PyTorch cross-entropy's ignore index: those positions contribute no loss. Attention is controlled separately by attention_mask.</p></details></li>
               <li><p class="quiz__q-text">Why copy input_ids into labels and then overwrite the prompt span with -100?</p>
                 <ol class="quiz__static-options" type="A">
+                  <li>So loss falls only on the completion</li>
+                  <li>So the model sees the prompt only once during attention</li>
                   <li>To pad the batch</li>
-                  <li>To compute loss only on the completion tokens</li>
-                  <li>To change the tokenizer</li>
-                  <li>To merge LoRA</li>
+                  <li>So the prompt tokens are hidden from the model's input</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. To compute loss only on the completion tokens</strong> It implements completion-only supervision: the model learns to produce the answer, not echo the prompt.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. So loss falls only on the completion</strong> It implements completion-only supervision: the model learns to produce the answer, not echo the prompt. Labels don't change the input; the model still reads the full prompt.</p></details></li>
               <li><p class="quiz__q-text">What does DataCollatorForSeq2Seq pad labels with?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>0</li>
-                  <li>The pad token id</li>
                   <li>-100</li>
-                  <li>1</li>
+                  <li>The pad token id</li>
+                  <li>0</li>
+                  <li>The EOS token id</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. -100</strong> It pads labels with -100 so padded positions are ignored by the loss too.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. -100</strong> It pads labels with label_pad_token_id, -100 by default, so padded positions are ignored by the loss too. Padding labels with the pad token id would train the model on padding.</p></details></li>
               <li><p class="quiz__q-text">Before training, you should inspect a tokenized example to confirm…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The GPU temperature</li>
-                  <li>That completion tokens are unmasked and not truncated</li>
-                  <li>The learning rate</li>
-                  <li>The vocabulary size</li>
+                  <li>Completion tokens are unmasked and not truncated</li>
+                  <li>Every label equals its input id, including the prompt</li>
+                  <li>The attention mask is 0 on the prompt tokens</li>
+                  <li>The labels are shifted one position right of input_ids</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. That completion tokens are unmasked and not truncated</strong> Verifying the mask and that completions fit prevents the silent data bugs from Track 1.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Completion tokens are unmasked and not truncated</strong> Check that the completion (including the end-of-turn token) survives truncation and is unmasked. If MAX_LEN cuts inside the prompt, every label is -100 and the row teaches nothing. The model shifts labels internally, so don't shift them yourself.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

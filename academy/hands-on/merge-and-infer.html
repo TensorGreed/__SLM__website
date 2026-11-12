@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Just the adapter"
+              "position": 1,
+              "text": "The base model with the adapter detached and discarded"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The optimizer state"
+              "text": "A PeftModel whose adapter can still be toggled off"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "A tokenizer"
+              "text": "A 4-bit GGUF copy"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "A plain standalone model with the adapter folded in",
+            "position": 0,
+            "text": "A plain model with the adapter folded in",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "It merges LoRA into the base weights and removes the PEFT wrapper."
+              "text": "It adds the LoRA delta into the base weights and removes the PEFT wrapper. unload() alone strips the adapter without merging. Merging into a bf16 base rounds the merged weights to bf16; merge in fp32 for maximum fidelity."
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Never"
+              "position": 1,
+              "text": "When serving on CPU, where merged weights run slower"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Only on CPU"
+              "text": "When the base is large"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "When the model is large"
+              "text": "Never; unmerged adapters can't be loaded for serving"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "When serving many tasks off one shared base (swap small adapters)",
+            "position": 0,
+            "text": "When many tasks share one base model",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Separate adapters let you switch tasks cheaply on a shared base."
+              "text": "Separate adapters let you switch tasks cheaply on one shared base, and serving stacks can load several. Merging doesn't change the model's size, and merged and unmerged models run the same math."
             }
           }
         },
@@ -157,13 +157,13 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "GGUF"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "CSV"
+              "text": "PyTorch .bin pickle"
             },
             {
               "@type": "Answer",
@@ -173,11 +173,11 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "safetensors",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "safetensors is the safe, fast default; GGUF is a separate conversion for edge."
+              "text": "safetensors is the safe, fast default; the older pickle-based .bin needs safe_serialization=False. GGUF and ONNX are separate conversions."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Keep the LoRA adapter unmerged"
+              "position": 1,
+              "text": "Serve the adapter with vLLM"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Train longer"
+              "text": "Load the merged safetensors in fp32 with transformers"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Increase the context window"
+              "text": "Raise the context window so fewer calls are needed"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Convert the merged model to GGUF (llama.cpp) and quantize",
+            "position": 0,
+            "text": "Convert the merged model to GGUF and quantize",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "GGUF + quantization is the common path for CPU/edge inference."
+              "text": "GGUF plus quantization (llama.cpp's convert_hf_to_gguf.py, e.g. --outtype q8_0) is the common path for CPU and edge inference. Plain fp32 transformers runs, but slowly and with several times the memory."
             }
           }
         }
@@ -352,52 +352,52 @@ print(t.decode(m.generate(**ids, max_new_tokens=8, do_sample=False)[0][ids["inpu
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "What does merge_and_unload() return?",
-    "options": [
-      "Just the adapter",
-      "A plain standalone model with the adapter folded in",
-      "The optimizer state",
-      "A tokenizer"
-    ],
-    "answer": 1,
-    "explanation": "It merges LoRA into the base weights and removes the PEFT wrapper."
-  },
-  {
-    "q": "When should you KEEP the adapter separate instead of merging?",
-    "options": [
-      "Never",
-      "When serving many tasks off one shared base (swap small adapters)",
-      "Only on CPU",
-      "When the model is large"
-    ],
-    "answer": 1,
-    "explanation": "Separate adapters let you switch tasks cheaply on a shared base."
-  },
-  {
-    "q": "What format does save_pretrained write weights in by default?",
-    "options": [
-      "GGUF",
-      "safetensors",
-      "CSV",
-      "ONNX"
-    ],
-    "answer": 1,
-    "explanation": "safetensors is the safe, fast default; GGUF is a separate conversion for edge."
-  },
-  {
-    "q": "To run your model efficiently on a laptop CPU, you'd typically\u2026",
-    "options": [
-      "Keep the LoRA adapter unmerged",
-      "Convert the merged model to GGUF (llama.cpp) and quantize",
-      "Train longer",
-      "Increase the context window"
-    ],
-    "answer": 1,
-    "explanation": "GGUF + quantization is the common path for CPU/edge inference."
-  }
-]
+            [
+              {
+                "q": "What does merge_and_unload() return?",
+                "options": [
+                  "A plain model with the adapter folded in",
+                  "The base model with the adapter detached and discarded",
+                  "A PeftModel whose adapter can still be toggled off",
+                  "A 4-bit GGUF copy"
+                ],
+                "answer": 0,
+                "explanation": "It adds the LoRA delta into the base weights and removes the PEFT wrapper. unload() alone strips the adapter without merging. Merging into a bf16 base rounds the merged weights to bf16; merge in fp32 for maximum fidelity."
+              },
+              {
+                "q": "When should you KEEP the adapter separate instead of merging?",
+                "options": [
+                  "When many tasks share one base model",
+                  "When serving on CPU, where merged weights run slower",
+                  "When the base is large",
+                  "Never; unmerged adapters can't be loaded for serving"
+                ],
+                "answer": 0,
+                "explanation": "Separate adapters let you switch tasks cheaply on one shared base, and serving stacks can load several. Merging doesn't change the model's size, and merged and unmerged models run the same math."
+              },
+              {
+                "q": "What format does save_pretrained write weights in by default?",
+                "options": [
+                  "safetensors",
+                  "GGUF",
+                  "PyTorch .bin pickle",
+                  "ONNX"
+                ],
+                "answer": 0,
+                "explanation": "safetensors is the safe, fast default; the older pickle-based .bin needs safe_serialization=False. GGUF and ONNX are separate conversions."
+              },
+              {
+                "q": "To run your model efficiently on a laptop CPU, you'd typically…",
+                "options": [
+                  "Convert the merged model to GGUF and quantize",
+                  "Serve the adapter with vLLM",
+                  "Load the merged safetensors in fp32 with transformers",
+                  "Raise the context window so fewer calls are needed"
+                ],
+                "answer": 0,
+                "explanation": "GGUF plus quantization (llama.cpp's convert_hf_to_gguf.py, e.g. --outtype q8_0) is the common path for CPU and edge inference. Plain fp32 transformers runs, but slowly and with several times the memory."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -405,36 +405,36 @@ print(t.decode(m.generate(**ids, max_new_tokens=8, do_sample=False)[0][ids["inpu
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does merge_and_unload() return?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Just the adapter</li>
-                  <li>A plain standalone model with the adapter folded in</li>
-                  <li>The optimizer state</li>
-                  <li>A tokenizer</li>
+                  <li>A plain model with the adapter folded in</li>
+                  <li>The base model with the adapter detached and discarded</li>
+                  <li>A PeftModel whose adapter can still be toggled off</li>
+                  <li>A 4-bit GGUF copy</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A plain standalone model with the adapter folded in</strong> It merges LoRA into the base weights and removes the PEFT wrapper.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A plain model with the adapter folded in</strong> It adds the LoRA delta into the base weights and removes the PEFT wrapper. unload() alone strips the adapter without merging. Merging into a bf16 base rounds the merged weights to bf16; merge in fp32 for maximum fidelity.</p></details></li>
               <li><p class="quiz__q-text">When should you KEEP the adapter separate instead of merging?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Never</li>
-                  <li>When serving many tasks off one shared base (swap small adapters)</li>
-                  <li>Only on CPU</li>
-                  <li>When the model is large</li>
+                  <li>When many tasks share one base model</li>
+                  <li>When serving on CPU, where merged weights run slower</li>
+                  <li>When the base is large</li>
+                  <li>Never; unmerged adapters can't be loaded for serving</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. When serving many tasks off one shared base (swap small adapters)</strong> Separate adapters let you switch tasks cheaply on a shared base.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. When many tasks share one base model</strong> Separate adapters let you switch tasks cheaply on one shared base, and serving stacks can load several. Merging doesn't change the model's size, and merged and unmerged models run the same math.</p></details></li>
               <li><p class="quiz__q-text">What format does save_pretrained write weights in by default?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>GGUF</li>
                   <li>safetensors</li>
-                  <li>CSV</li>
+                  <li>GGUF</li>
+                  <li>PyTorch .bin pickle</li>
                   <li>ONNX</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. safetensors</strong> safetensors is the safe, fast default; GGUF is a separate conversion for edge.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. safetensors</strong> safetensors is the safe, fast default; the older pickle-based .bin needs safe_serialization=False. GGUF and ONNX are separate conversions.</p></details></li>
               <li><p class="quiz__q-text">To run your model efficiently on a laptop CPU, you'd typically…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Keep the LoRA adapter unmerged</li>
-                  <li>Convert the merged model to GGUF (llama.cpp) and quantize</li>
-                  <li>Train longer</li>
-                  <li>Increase the context window</li>
+                  <li>Convert the merged model to GGUF and quantize</li>
+                  <li>Serve the adapter with vLLM</li>
+                  <li>Load the merged safetensors in fp32 with transformers</li>
+                  <li>Raise the context window so fewer calls are needed</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Convert the merged model to GGUF (llama.cpp) and quantize</strong> GGUF + quantization is the common path for CPU/edge inference.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Convert the merged model to GGUF and quantize</strong> GGUF plus quantization (llama.cpp's convert_hf_to_gguf.py, e.g. --outtype q8_0) is the common path for CPU and edge inference. Plain fp32 transformers runs, but slowly and with several times the memory.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

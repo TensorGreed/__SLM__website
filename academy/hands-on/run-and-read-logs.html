@@ -91,8 +91,8 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "A healthy run"
+              "position": 1,
+              "text": "A healthy run still converging"
             },
             {
               "@type": "Answer",
@@ -102,16 +102,16 @@
             {
               "@type": "Answer",
               "position": 3,
-              "text": "A learning-rate that's too low"
+              "text": "A learning rate that's too low"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "Overfitting",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Diverging train/eval losses = memorization; keep the lowest-eval_loss checkpoint."
+              "text": "Diverging train and eval losses mean the model is memorising the training rows. Keep the lowest-eval_loss checkpoint."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Loss prints as nan after a few steps. Most likely fix?",
-          "text": "Loss prints as nan after a few steps. Most likely fix?",
+          "name": "Loss prints as nan after a few steps. Most likely first fix?",
+          "text": "Loss prints as nan after a few steps. Most likely first fix?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Train longer"
+              "position": 1,
+              "text": "Train longer so it recovers"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Add more data"
+              "text": "Switch bf16 to fp16 for more precision"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Increase logging_steps"
+              "text": "Add more data to stabilise the gradients"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "Lower the learning rate",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "NaN/exploding loss is the classic too-high-learning-rate symptom."
+              "text": "NaN or exploding loss is the classic too-high-learning-rate symptom. fp16 has less range than bf16 and overflows more easily. Also check that no batch has every label at -100, which gives a NaN loss too."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Saves disk"
+              "position": 1,
+              "text": "Stops training early"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Merges the adapter"
+              "text": "Keeps only the best checkpoint on disk, deleting the rest"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Disables validation"
+              "text": "Picks the best epoch count and retrains from scratch"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Restores the best-scoring checkpoint at the end (automated early stopping)",
+            "position": 0,
+            "text": "Reloads the best checkpoint when training ends",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "It keeps the best checkpoint by the chosen metric, not the final one."
+              "text": "It restores the best checkpoint by metric_for_best_model after training finishes; it does not stop early. Early stopping is EarlyStoppingCallback(early_stopping_patience=…), which requires load_best_model_at_end=True. Disk cleanup is save_total_limit."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "A healthy loss curve proves the model is good at the task. True?",
-          "text": "A healthy loss curve proves the model is good at the task. True?",
+          "name": "A smooth, falling loss curve proves the model is good at the task. True?",
+          "text": "A smooth, falling loss curve proves the model is good at the task. True?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "True"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Only for LoRA"
+              "text": "True for LoRA runs, where the base can't degrade"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Only on CPU"
+              "text": "False; only gold-set perplexity can prove it"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "False — the gold-set metric is the real test",
+            "position": 0,
+            "text": "False; the gold-set metric is the test",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Loss is a proxy; task quality is judged on the gold set (next lesson)."
+              "text": "Loss is a proxy; task quality is judged by the task metric on the gold set (next lesson). A loss near 0 within a few steps is a warning, not a win: it usually means unmasked prompts or duplicate rows."
             }
           }
         }
@@ -350,52 +350,52 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "Training loss keeps falling but eval_loss starts rising. This is\u2026",
-    "options": [
-      "A healthy run",
-      "Overfitting",
-      "Underfitting",
-      "A learning-rate that's too low"
-    ],
-    "answer": 1,
-    "explanation": "Diverging train/eval losses = memorization; keep the lowest-eval_loss checkpoint."
-  },
-  {
-    "q": "Loss prints as nan after a few steps. Most likely fix?",
-    "options": [
-      "Train longer",
-      "Lower the learning rate",
-      "Add more data",
-      "Increase logging_steps"
-    ],
-    "answer": 1,
-    "explanation": "NaN/exploding loss is the classic too-high-learning-rate symptom."
-  },
-  {
-    "q": "What does load_best_model_at_end=True do?",
-    "options": [
-      "Saves disk",
-      "Restores the best-scoring checkpoint at the end (automated early stopping)",
-      "Merges the adapter",
-      "Disables validation"
-    ],
-    "answer": 1,
-    "explanation": "It keeps the best checkpoint by the chosen metric, not the final one."
-  },
-  {
-    "q": "A healthy loss curve proves the model is good at the task. True?",
-    "options": [
-      "True",
-      "False \u2014 the gold-set metric is the real test",
-      "Only for LoRA",
-      "Only on CPU"
-    ],
-    "answer": 1,
-    "explanation": "Loss is a proxy; task quality is judged on the gold set (next lesson)."
-  }
-]
+            [
+              {
+                "q": "Training loss keeps falling but eval_loss starts rising. This is…",
+                "options": [
+                  "Overfitting",
+                  "A healthy run still converging",
+                  "Underfitting",
+                  "A learning rate that's too low"
+                ],
+                "answer": 0,
+                "explanation": "Diverging train and eval losses mean the model is memorising the training rows. Keep the lowest-eval_loss checkpoint."
+              },
+              {
+                "q": "Loss prints as nan after a few steps. Most likely first fix?",
+                "options": [
+                  "Lower the learning rate",
+                  "Train longer so it recovers",
+                  "Switch bf16 to fp16 for more precision",
+                  "Add more data to stabilise the gradients"
+                ],
+                "answer": 0,
+                "explanation": "NaN or exploding loss is the classic too-high-learning-rate symptom. fp16 has less range than bf16 and overflows more easily. Also check that no batch has every label at -100, which gives a NaN loss too."
+              },
+              {
+                "q": "What does load_best_model_at_end=True do?",
+                "options": [
+                  "Reloads the best checkpoint when training ends",
+                  "Stops training early",
+                  "Keeps only the best checkpoint on disk, deleting the rest",
+                  "Picks the best epoch count and retrains from scratch"
+                ],
+                "answer": 0,
+                "explanation": "It restores the best checkpoint by metric_for_best_model after training finishes; it does not stop early. Early stopping is EarlyStoppingCallback(early_stopping_patience=…), which requires load_best_model_at_end=True. Disk cleanup is save_total_limit."
+              },
+              {
+                "q": "A smooth, falling loss curve proves the model is good at the task. True?",
+                "options": [
+                  "False; the gold-set metric is the test",
+                  "True",
+                  "True for LoRA runs, where the base can't degrade",
+                  "False; only gold-set perplexity can prove it"
+                ],
+                "answer": 0,
+                "explanation": "Loss is a proxy; task quality is judged by the task metric on the gold set (next lesson). A loss near 0 within a few steps is a warning, not a win: it usually means unmasked prompts or duplicate rows."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -403,36 +403,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Training loss keeps falling but eval_loss starts rising. This is…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A healthy run</li>
                   <li>Overfitting</li>
+                  <li>A healthy run still converging</li>
                   <li>Underfitting</li>
-                  <li>A learning-rate that's too low</li>
+                  <li>A learning rate that's too low</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Overfitting</strong> Diverging train/eval losses = memorization; keep the lowest-eval_loss checkpoint.</p></details></li>
-              <li><p class="quiz__q-text">Loss prints as nan after a few steps. Most likely fix?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Overfitting</strong> Diverging train and eval losses mean the model is memorising the training rows. Keep the lowest-eval_loss checkpoint.</p></details></li>
+              <li><p class="quiz__q-text">Loss prints as nan after a few steps. Most likely first fix?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Train longer</li>
                   <li>Lower the learning rate</li>
-                  <li>Add more data</li>
-                  <li>Increase logging_steps</li>
+                  <li>Train longer so it recovers</li>
+                  <li>Switch bf16 to fp16 for more precision</li>
+                  <li>Add more data to stabilise the gradients</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Lower the learning rate</strong> NaN/exploding loss is the classic too-high-learning-rate symptom.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Lower the learning rate</strong> NaN or exploding loss is the classic too-high-learning-rate symptom. fp16 has less range than bf16 and overflows more easily. Also check that no batch has every label at -100, which gives a NaN loss too.</p></details></li>
               <li><p class="quiz__q-text">What does load_best_model_at_end=True do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Saves disk</li>
-                  <li>Restores the best-scoring checkpoint at the end (automated early stopping)</li>
-                  <li>Merges the adapter</li>
-                  <li>Disables validation</li>
+                  <li>Reloads the best checkpoint when training ends</li>
+                  <li>Stops training early</li>
+                  <li>Keeps only the best checkpoint on disk, deleting the rest</li>
+                  <li>Picks the best epoch count and retrains from scratch</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Restores the best-scoring checkpoint at the end (automated early stopping)</strong> It keeps the best checkpoint by the chosen metric, not the final one.</p></details></li>
-              <li><p class="quiz__q-text">A healthy loss curve proves the model is good at the task. True?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Reloads the best checkpoint when training ends</strong> It restores the best checkpoint by metric_for_best_model after training finishes; it does not stop early. Early stopping is EarlyStoppingCallback(early_stopping_patience=…), which requires load_best_model_at_end=True. Disk cleanup is save_total_limit.</p></details></li>
+              <li><p class="quiz__q-text">A smooth, falling loss curve proves the model is good at the task. True?</p>
                 <ol class="quiz__static-options" type="A">
+                  <li>False; the gold-set metric is the test</li>
                   <li>True</li>
-                  <li>False — the gold-set metric is the real test</li>
-                  <li>Only for LoRA</li>
-                  <li>Only on CPU</li>
+                  <li>True for LoRA runs, where the base can't degrade</li>
+                  <li>False; only gold-set perplexity can prove it</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. False — the gold-set metric is the real test</strong> Loss is a proxy; task quality is judged on the gold set (next lesson).</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. False; the gold-set metric is the test</strong> Loss is a proxy; task quality is judged by the task metric on the gold set (next lesson). A loss near 0 within a few steps is a warning, not a win: it usually means unmasked prompts or duplicate rows.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

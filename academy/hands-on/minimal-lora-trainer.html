@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Trains the model"
+              "position": 1,
+              "text": "Copies the base and trains every weight in fp32"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Saves a checkpoint"
+              "text": "Merges a pretrained adapter into the base weights"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Tokenizes the data"
+              "text": "Quantizes the base to 4-bit"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Wraps the base with LoRA adapters and freezes the base",
+            "position": 0,
+            "text": "Adds LoRA adapters and freezes the base",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "It attaches LoRA adapters and freezes the base, so only the adapter trains."
+              "text": "It attaches LoRA adapters and freezes the base, so only the adapter trains (921,600 params, about 0.68% of SmolLM2-135M, with r=16 on q_proj and v_proj). Quantization is a separate step, configured at load time for QLoRA."
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "8"
+              "position": 1,
+              "text": "8 — accumulation only saves memory"
             },
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 2,
               "text": "2"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "4"
+              "text": "4 (8 ÷ 2)"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
+            "position": 0,
             "text": "16",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Effective batch = per-device batch × accumulation steps = 8 × 2 = 16."
+              "text": "Effective batch = per-device batch × accumulation steps = 8 × 2 = 16. Accumulation sums gradients over two micro-batches before each optimizer step, so the update sees 16 examples."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Only inference"
+              "position": 1,
+              "text": "Tokenization of the raw dataset, then one epoch of eval"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Tokenization"
+              "text": "Only the forward passes"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Adapter merging"
+              "text": "A forward pass per batch, with gradients applied at the end"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The gradient-descent loop: forward, loss, backward, optimizer step",
+            "position": 0,
+            "text": "Forward, loss, backward and optimizer steps",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The Trainer implements the Track 1 training loop over your dataset."
+              "text": "The Trainer runs the Track 1 training loop: for each (accumulated) batch it computes the loss, backpropagates, and steps the optimizer. Updates happen throughout, not once at the end."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "A full copy of the 135M model"
+              "position": 1,
+              "text": "A full copy of the 135M model with the adapter merged"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Only the tokenizer"
+              "text": "The adapter plus the base"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Nothing"
+              "text": "The tokenizer and training config, but no weights"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Just the small LoRA adapter",
+            "position": 0,
+            "text": "Only the small LoRA adapter",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "For a PEFT model it saves only the adapter — a few megabytes."
+              "text": "For a PEFT model it saves only the adapter weights and adapter_config.json, a few megabytes. Merging is a separate, explicit step."
             }
           }
         }
@@ -371,52 +371,52 @@ tok.save_pretrained("sft-out/adapter")</code></pre>
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "What does get_peft_model(model, lora_config) do?",
-    "options": [
-      "Trains the model",
-      "Wraps the base with LoRA adapters and freezes the base",
-      "Saves a checkpoint",
-      "Tokenizes the data"
-    ],
-    "answer": 1,
-    "explanation": "It attaches LoRA adapters and freezes the base, so only the adapter trains."
-  },
-  {
-    "q": "With per_device_train_batch_size=8 and gradient_accumulation_steps=2, the effective batch is\u2026",
-    "options": [
-      "8",
-      "2",
-      "16",
-      "4"
-    ],
-    "answer": 2,
-    "explanation": "Effective batch = per-device batch \u00d7 accumulation steps = 8 \u00d7 2 = 16."
-  },
-  {
-    "q": "What does Trainer.train() actually run?",
-    "options": [
-      "Only inference",
-      "The gradient-descent loop: forward, loss, backward, optimizer step",
-      "Tokenization",
-      "Adapter merging"
-    ],
-    "answer": 1,
-    "explanation": "The Trainer implements the Track 1 training loop over your dataset."
-  },
-  {
-    "q": "After training a LoRA model, model.save_pretrained writes\u2026",
-    "options": [
-      "A full copy of the 135M model",
-      "Just the small LoRA adapter",
-      "Only the tokenizer",
-      "Nothing"
-    ],
-    "answer": 1,
-    "explanation": "For a PEFT model it saves only the adapter \u2014 a few megabytes."
-  }
-]
+            [
+              {
+                "q": "What does get_peft_model(model, lora_config) do?",
+                "options": [
+                  "Adds LoRA adapters and freezes the base",
+                  "Copies the base and trains every weight in fp32",
+                  "Merges a pretrained adapter into the base weights",
+                  "Quantizes the base to 4-bit"
+                ],
+                "answer": 0,
+                "explanation": "It attaches LoRA adapters and freezes the base, so only the adapter trains (921,600 params, about 0.68% of SmolLM2-135M, with r=16 on q_proj and v_proj). Quantization is a separate step, configured at load time for QLoRA."
+              },
+              {
+                "q": "With per_device_train_batch_size=8 and gradient_accumulation_steps=2, the effective batch is…",
+                "options": [
+                  "16",
+                  "8 — accumulation only saves memory",
+                  "2",
+                  "4 (8 ÷ 2)"
+                ],
+                "answer": 0,
+                "explanation": "Effective batch = per-device batch × accumulation steps = 8 × 2 = 16. Accumulation sums gradients over two micro-batches before each optimizer step, so the update sees 16 examples."
+              },
+              {
+                "q": "What does Trainer.train() actually run?",
+                "options": [
+                  "Forward, loss, backward and optimizer steps",
+                  "Tokenization of the raw dataset, then one epoch of eval",
+                  "Only the forward passes",
+                  "A forward pass per batch, with gradients applied at the end"
+                ],
+                "answer": 0,
+                "explanation": "The Trainer runs the Track 1 training loop: for each (accumulated) batch it computes the loss, backpropagates, and steps the optimizer. Updates happen throughout, not once at the end."
+              },
+              {
+                "q": "After training a LoRA model, model.save_pretrained writes…",
+                "options": [
+                  "Only the small LoRA adapter",
+                  "A full copy of the 135M model with the adapter merged",
+                  "The adapter plus the base",
+                  "The tokenizer and training config, but no weights"
+                ],
+                "answer": 0,
+                "explanation": "For a PEFT model it saves only the adapter weights and adapter_config.json, a few megabytes. Merging is a separate, explicit step."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -424,36 +424,36 @@ tok.save_pretrained("sft-out/adapter")</code></pre>
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does get_peft_model(model, lora_config) do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Trains the model</li>
-                  <li>Wraps the base with LoRA adapters and freezes the base</li>
-                  <li>Saves a checkpoint</li>
-                  <li>Tokenizes the data</li>
+                  <li>Adds LoRA adapters and freezes the base</li>
+                  <li>Copies the base and trains every weight in fp32</li>
+                  <li>Merges a pretrained adapter into the base weights</li>
+                  <li>Quantizes the base to 4-bit</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Wraps the base with LoRA adapters and freezes the base</strong> It attaches LoRA adapters and freezes the base, so only the adapter trains.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Adds LoRA adapters and freezes the base</strong> It attaches LoRA adapters and freezes the base, so only the adapter trains (921,600 params, about 0.68% of SmolLM2-135M, with r=16 on q_proj and v_proj). Quantization is a separate step, configured at load time for QLoRA.</p></details></li>
               <li><p class="quiz__q-text">With per_device_train_batch_size=8 and gradient_accumulation_steps=2, the effective batch is…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>8</li>
-                  <li>2</li>
                   <li>16</li>
-                  <li>4</li>
+                  <li>8 — accumulation only saves memory</li>
+                  <li>2</li>
+                  <li>4 (8 ÷ 2)</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. 16</strong> Effective batch = per-device batch × accumulation steps = 8 × 2 = 16.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. 16</strong> Effective batch = per-device batch × accumulation steps = 8 × 2 = 16. Accumulation sums gradients over two micro-batches before each optimizer step, so the update sees 16 examples.</p></details></li>
               <li><p class="quiz__q-text">What does Trainer.train() actually run?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Only inference</li>
-                  <li>The gradient-descent loop: forward, loss, backward, optimizer step</li>
-                  <li>Tokenization</li>
-                  <li>Adapter merging</li>
+                  <li>Forward, loss, backward and optimizer steps</li>
+                  <li>Tokenization of the raw dataset, then one epoch of eval</li>
+                  <li>Only the forward passes</li>
+                  <li>A forward pass per batch, with gradients applied at the end</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The gradient-descent loop: forward, loss, backward, optimizer step</strong> The Trainer implements the Track 1 training loop over your dataset.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Forward, loss, backward and optimizer steps</strong> The Trainer runs the Track 1 training loop: for each (accumulated) batch it computes the loss, backpropagates, and steps the optimizer. Updates happen throughout, not once at the end.</p></details></li>
               <li><p class="quiz__q-text">After training a LoRA model, model.save_pretrained writes…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A full copy of the 135M model</li>
-                  <li>Just the small LoRA adapter</li>
-                  <li>Only the tokenizer</li>
-                  <li>Nothing</li>
+                  <li>Only the small LoRA adapter</li>
+                  <li>A full copy of the 135M model with the adapter merged</li>
+                  <li>The adapter plus the base</li>
+                  <li>The tokenizer and training config, but no weights</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Just the small LoRA adapter</strong> For a PEFT model it saves only the adapter — a few megabytes.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Only the small LoRA adapter</strong> For a PEFT model it saves only the adapter weights and adapter_config.json, a few megabytes. Merging is a separate, explicit step.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

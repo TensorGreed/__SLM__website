@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "Sentiment classification with a labelled gold set"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "JSON extraction where the schema is known"
+              "position": 2,
+              "text": "JSON extraction against a known schema and gold values"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Tool-call generation against a labelled function-call ground truth"
+              "text": "Tool-call generation with labelled function-call ground truth"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "Free-form customer-support replies where no exact-match metric applies",
+            "position": 0,
+            "text": "Free-form support replies with no exact-match metric",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Free-form outputs are where deterministic metrics break down — that's the gap LLM-as-a-judge fills. The other three have labelled answers; use the deterministic metric."
+              "text": "Free-form outputs are where deterministic metrics break down; that's the gap a judge fills. The other three have labelled answers, so use the deterministic metric."
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "It's cheaper to run"
+              "position": 1,
+              "text": "It removes position bias, so no order swap is needed"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "It avoids tokenization overhead"
+              "position": 2,
+              "text": "It needs half the judge calls"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It eliminates position bias automatically"
+              "text": "Absolute scores can't be computed without a reference answer"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "Discriminative 'which is better?' judgments compound; absolute scores drift in calibration and invite length/style bias",
+            "position": 0,
+            "text": "Relative choices are steadier than absolute scores",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Pairwise A/B is a discrimination task LLMs handle well, and the comparative signal compounds. Position bias still exists — order-swap mitigates it."
+              "text": "Picking the better of two outputs is an easier, more consistent judgement than placing one on a scale, which drifts and invites length and style bias. Position bias still exists (Wang et al. 2023): run both orders and map the letters back to candidates before comparing."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Pinning the judge's decoding temperature"
+              "position": 1,
+              "text": "Pinning the judge's temperature to 0 for determinism"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Running the judge twice and averaging"
+              "text": "Averaging two judges so their errors cancel out"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Using two different judges"
+              "text": "Running the judge twice and keeping the higher score"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Comparing judge scores against a small human-rated set and reporting the agreement (κ / ρ)",
+            "position": 0,
+            "text": "Measuring agreement with a small human-rated set",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Judge scores are a proxy. Without a human-rated gold-of-the-gold set to calibrate against, you don't know what the judge is measuring — and inter-judge agreement isn't a substitute."
+              "text": "Judge scores are a proxy until you report agreement with human labels (κ, or weighted κ / Krippendorff's α for ordinal scores; Spearman ρ alone is perfect for a judge that is always one point high). Temperature 0 isn't fully deterministic on many stacks, and two judges agreeing doesn't show either matches people."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Licensing restrictions prevent it"
+              "position": 1,
+              "text": "Licensing forbids it"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The output format conflicts"
+              "text": "Same-family tokenizers can't parse each other's outputs"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It triggers tokenizer warnings"
+              "text": "Same-family judges grade more harshly to avoid looking biased"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Same-family judges share training-data biases and style preferences — they favour their own family's outputs",
+            "position": 0,
+            "text": "Judges tend to favour their own family's outputs",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Style / family bias is robust enough that it's the first thing to check on any LLM-as-judge result. Use a different family, ideally two judges from different labs."
+              "text": "Self-preference: judges tend to prefer outputs from their own model family (Zheng et al. 2023, arXiv:2306.05685; Panickssery et al. 2024, arXiv:2404.13076). The size varies by judge, so check for it: use a judge from a different family, or two judges from different families."
             }
           }
         }
@@ -415,24 +415,52 @@ win = forward.winner == reverse.winner and forward.winner != "tie"</code></pre>
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "Which is a good task for LLM-as-a-judge?",
-   "options": ["Sentiment classification with a labelled gold set", "JSON extraction where the schema is known", "Free-form customer-support replies where no exact-match metric applies", "Tool-call generation against a labelled function-call ground truth"],
-   "answer": 2,
-   "explanation": "Free-form outputs are where deterministic metrics break down — that's the gap LLM-as-a-judge fills. The other three have labelled answers; use the deterministic metric."},
-  {"q": "Why is pairwise judging usually more reliable than absolute scoring?",
-   "options": ["It's cheaper to run", "It avoids tokenization overhead", "Discriminative 'which is better?' judgments compound; absolute scores drift in calibration and invite length/style bias", "It eliminates position bias automatically"],
-   "answer": 2,
-   "explanation": "Pairwise A/B is a discrimination task LLMs handle well, and the comparative signal compounds. Position bias still exists — order-swap mitigates it."},
-  {"q": "What's the calibration step that everyone skips and everyone regrets?",
-   "options": ["Pinning the judge's decoding temperature", "Comparing judge scores against a small human-rated set and reporting the agreement (κ / ρ)", "Running the judge twice and averaging", "Using two different judges"],
-   "answer": 1,
-   "explanation": "Judge scores are a proxy. Without a human-rated gold-of-the-gold set to calibrate against, you don't know what the judge is measuring — and inter-judge agreement isn't a substitute."},
-  {"q": "Why is using a judge from the same model family as a candidate a problem?",
-   "options": ["Licensing restrictions prevent it", "Same-family judges share training-data biases and style preferences — they favour their own family's outputs", "The output format conflicts", "It triggers tokenizer warnings"],
-   "answer": 1,
-   "explanation": "Style / family bias is robust enough that it's the first thing to check on any LLM-as-judge result. Use a different family, ideally two judges from different labs."}
-]
+            [
+              {
+                "q": "Which is a good task for LLM-as-a-judge?",
+                "options": [
+                  "Free-form support replies with no exact-match metric",
+                  "Sentiment classification with a labelled gold set",
+                  "JSON extraction against a known schema and gold values",
+                  "Tool-call generation with labelled function-call ground truth"
+                ],
+                "answer": 0,
+                "explanation": "Free-form outputs are where deterministic metrics break down; that's the gap a judge fills. The other three have labelled answers, so use the deterministic metric."
+              },
+              {
+                "q": "Why is pairwise judging usually more reliable than absolute scoring?",
+                "options": [
+                  "Relative choices are steadier than absolute scores",
+                  "It removes position bias, so no order swap is needed",
+                  "It needs half the judge calls",
+                  "Absolute scores can't be computed without a reference answer"
+                ],
+                "answer": 0,
+                "explanation": "Picking the better of two outputs is an easier, more consistent judgement than placing one on a scale, which drifts and invites length and style bias. Position bias still exists (Wang et al. 2023): run both orders and map the letters back to candidates before comparing."
+              },
+              {
+                "q": "What's the calibration step that everyone skips and everyone regrets?",
+                "options": [
+                  "Measuring agreement with a small human-rated set",
+                  "Pinning the judge's temperature to 0 for determinism",
+                  "Averaging two judges so their errors cancel out",
+                  "Running the judge twice and keeping the higher score"
+                ],
+                "answer": 0,
+                "explanation": "Judge scores are a proxy until you report agreement with human labels (κ, or weighted κ / Krippendorff's α for ordinal scores; Spearman ρ alone is perfect for a judge that is always one point high). Temperature 0 isn't fully deterministic on many stacks, and two judges agreeing doesn't show either matches people."
+              },
+              {
+                "q": "Why is using a judge from the same model family as a candidate a problem?",
+                "options": [
+                  "Judges tend to favour their own family's outputs",
+                  "Licensing forbids it",
+                  "Same-family tokenizers can't parse each other's outputs",
+                  "Same-family judges grade more harshly to avoid looking biased"
+                ],
+                "answer": 0,
+                "explanation": "Self-preference: judges tend to prefer outputs from their own model family (Zheng et al. 2023, arXiv:2306.05685; Panickssery et al. 2024, arXiv:2404.13076). The size varies by judge, so check for it: use a judge from a different family, or two judges from different families."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -440,36 +468,36 @@ win = forward.winner == reverse.winner and forward.winner != "tie"</code></pre>
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Which is a good task for LLM-as-a-judge?</p>
                 <ol class="quiz__static-options" type="A">
+                  <li>Free-form support replies with no exact-match metric</li>
                   <li>Sentiment classification with a labelled gold set</li>
-                  <li>JSON extraction where the schema is known</li>
-                  <li>Free-form customer-support replies where no exact-match metric applies</li>
-                  <li>Tool-call generation against a labelled function-call ground truth</li>
+                  <li>JSON extraction against a known schema and gold values</li>
+                  <li>Tool-call generation with labelled function-call ground truth</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Free-form customer-support replies where no exact-match metric applies</strong> Free-form outputs are where deterministic metrics break down — that's the gap LLM-as-a-judge fills. The other three have labelled answers; use the deterministic metric.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Free-form support replies with no exact-match metric</strong> Free-form outputs are where deterministic metrics break down; that's the gap a judge fills. The other three have labelled answers, so use the deterministic metric.</p></details></li>
               <li><p class="quiz__q-text">Why is pairwise judging usually more reliable than absolute scoring?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It's cheaper to run</li>
-                  <li>It avoids tokenization overhead</li>
-                  <li>Discriminative 'which is better?' judgments compound; absolute scores drift in calibration and invite length/style bias</li>
-                  <li>It eliminates position bias automatically</li>
+                  <li>Relative choices are steadier than absolute scores</li>
+                  <li>It removes position bias, so no order swap is needed</li>
+                  <li>It needs half the judge calls</li>
+                  <li>Absolute scores can't be computed without a reference answer</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Discriminative 'which is better?' judgments compound; absolute scores drift in calibration and invite length/style bias</strong> Pairwise A/B is a discrimination task LLMs handle well, and the comparative signal compounds. Position bias still exists — order-swap mitigates it.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Relative choices are steadier than absolute scores</strong> Picking the better of two outputs is an easier, more consistent judgement than placing one on a scale, which drifts and invites length and style bias. Position bias still exists (Wang et al. 2023): run both orders and map the letters back to candidates before comparing.</p></details></li>
               <li><p class="quiz__q-text">What's the calibration step that everyone skips and everyone regrets?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Pinning the judge's decoding temperature</li>
-                  <li>Comparing judge scores against a small human-rated set and reporting the agreement (κ / ρ)</li>
-                  <li>Running the judge twice and averaging</li>
-                  <li>Using two different judges</li>
+                  <li>Measuring agreement with a small human-rated set</li>
+                  <li>Pinning the judge's temperature to 0 for determinism</li>
+                  <li>Averaging two judges so their errors cancel out</li>
+                  <li>Running the judge twice and keeping the higher score</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Comparing judge scores against a small human-rated set and reporting the agreement (κ / ρ)</strong> Judge scores are a proxy. Without a human-rated gold-of-the-gold set to calibrate against, you don't know what the judge is measuring — and inter-judge agreement isn't a substitute.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Measuring agreement with a small human-rated set</strong> Judge scores are a proxy until you report agreement with human labels (κ, or weighted κ / Krippendorff's α for ordinal scores; Spearman ρ alone is perfect for a judge that is always one point high). Temperature 0 isn't fully deterministic on many stacks, and two judges agreeing doesn't show either matches people.</p></details></li>
               <li><p class="quiz__q-text">Why is using a judge from the same model family as a candidate a problem?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Licensing restrictions prevent it</li>
-                  <li>Same-family judges share training-data biases and style preferences — they favour their own family's outputs</li>
-                  <li>The output format conflicts</li>
-                  <li>It triggers tokenizer warnings</li>
+                  <li>Judges tend to favour their own family's outputs</li>
+                  <li>Licensing forbids it</li>
+                  <li>Same-family tokenizers can't parse each other's outputs</li>
+                  <li>Same-family judges grade more harshly to avoid looking biased</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Same-family judges share training-data biases and style preferences — they favour their own family's outputs</strong> Style / family bias is robust enough that it's the first thing to check on any LLM-as-judge result. Use a different family, ideally two judges from different labs.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Judges tend to favour their own family's outputs</strong> Self-preference: judges tend to prefer outputs from their own model family (Zheng et al. 2023, arXiv:2306.05685; Panickssery et al. 2024, arXiv:2404.13076). The size varies by judge, so check for it: use a judge from a different family, or two judges from different families.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->
