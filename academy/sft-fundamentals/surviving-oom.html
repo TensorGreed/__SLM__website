@@ -91,12 +91,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Raise the learning rate"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Truncate long completions so every row fits the limit"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Lower per-device batch, raise gradient accumulation",
             "answerExplanation": {
               "@type": "Comment",
@@ -124,12 +124,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Saving model checkpoints to disk more often to free GPU memory"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Storing gradients in 8-bit instead of fp32"
             },
             {
@@ -140,7 +140,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Recomputing activations during backprop instead of storing them",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,12 +190,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Turning on gradient checkpointing"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Lowering batch size and raising accumulation"
             },
             {
@@ -206,7 +206,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Silently truncating completions or dropping hard examples",
             "answerExplanation": {
               "@type": "Comment",
@@ -341,23 +341,23 @@
               {
                 "q": "What is usually the first, cheapest lever against out-of-memory errors?",
                 "options": [
-                  "Lower per-device batch, raise gradient accumulation",
                   "Raise the learning rate",
                   "Truncate long completions so every row fits the limit",
+                  "Lower per-device batch, raise gradient accumulation",
                   "Switch from bf16 to fp32 for more numerical headroom"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "A smaller per-device batch cuts activation memory, and accumulation keeps the effective batch, so the dynamics barely change."
               },
               {
                 "q": "Gradient checkpointing saves memory by…",
                 "options": [
-                  "Recomputing activations during backprop instead of storing them",
                   "Saving model checkpoints to disk more often to free GPU memory",
                   "Storing gradients in 8-bit instead of fp32",
+                  "Recomputing activations during backprop instead of storing them",
                   "Skipping the backward pass for every other layer"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "It trades roughly one extra forward pass (~33% compute) for a large cut in activation memory. On small models the slowdown can outweigh the benefit; BrewSLM's auto policy turns it off at 2B and below."
               },
               {
@@ -374,12 +374,12 @@
               {
                 "q": "Which is the WRONG way to fix an out-of-memory error?",
                 "options": [
-                  "Silently truncating completions or dropping hard examples",
                   "Turning on gradient checkpointing",
                   "Lowering batch size and raising accumulation",
+                  "Silently truncating completions or dropping hard examples",
                   "Switching to QLoRA"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "That trades a crash for a silent data and quality bug. If an automatic retry shrinks max_seq_length (BrewSLM's OOM ladder can), check the run report for truncated rows."
               }
             ]
@@ -390,20 +390,20 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What is usually the first, cheapest lever against out-of-memory errors?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Lower per-device batch, raise gradient accumulation</li>
                   <li>Raise the learning rate</li>
                   <li>Truncate long completions so every row fits the limit</li>
+                  <li>Lower per-device batch, raise gradient accumulation</li>
                   <li>Switch from bf16 to fp32 for more numerical headroom</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Lower per-device batch, raise gradient accumulation</strong> A smaller per-device batch cuts activation memory, and accumulation keeps the effective batch, so the dynamics barely change.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Lower per-device batch, raise gradient accumulation</strong> A smaller per-device batch cuts activation memory, and accumulation keeps the effective batch, so the dynamics barely change.</p></details></li>
               <li><p class="quiz__q-text">Gradient checkpointing saves memory by…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Recomputing activations during backprop instead of storing them</li>
                   <li>Saving model checkpoints to disk more often to free GPU memory</li>
                   <li>Storing gradients in 8-bit instead of fp32</li>
+                  <li>Recomputing activations during backprop instead of storing them</li>
                   <li>Skipping the backward pass for every other layer</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Recomputing activations during backprop instead of storing them</strong> It trades roughly one extra forward pass (~33% compute) for a large cut in activation memory. On small models the slowdown can outweigh the benefit; BrewSLM's auto policy turns it off at 2B and below.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Recomputing activations during backprop instead of storing them</strong> It trades roughly one extra forward pass (~33% compute) for a large cut in activation memory. On small models the slowdown can outweigh the benefit; BrewSLM's auto policy turns it off at 2B and below.</p></details></li>
               <li><p class="quiz__q-text">A run trains fine for 1,800 steps, then hits OOM. What is the most likely cause?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>That step's batch held the longest sequences</li>
@@ -414,12 +414,12 @@
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. That step's batch held the longest sequences</strong> Activation memory follows the tokens in each batch, so the longest batch sets the peak. Optimizer state is allocated once, at the first step. Smoke-test with the longest batch first.</p></details></li>
               <li><p class="quiz__q-text">Which is the WRONG way to fix an out-of-memory error?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Silently truncating completions or dropping hard examples</li>
                   <li>Turning on gradient checkpointing</li>
                   <li>Lowering batch size and raising accumulation</li>
+                  <li>Silently truncating completions or dropping hard examples</li>
                   <li>Switching to QLoRA</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Silently truncating completions or dropping hard examples</strong> That trades a crash for a silent data and quality bug. If an automatic retry shrinks max_seq_length (BrewSLM's OOM ladder can), check the run report for truncated rows.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Silently truncating completions or dropping hard examples</strong> That trades a crash for a silent data and quality bug. If an automatic retry shrinks max_seq_length (BrewSLM's OOM ladder can), check the run report for truncated rows.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

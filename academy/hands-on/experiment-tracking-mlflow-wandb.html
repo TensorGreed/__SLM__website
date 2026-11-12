@@ -124,23 +124,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "A rerun gives bit-for-bit identical weights and outputs"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Identical eval score on any GPU"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Seeds don't matter once the config and data hash are logged"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "A rerun lands within noise of the original result",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,12 +157,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "The final eval number"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Per-step loss curves and the GPU type, which explain most regressions"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Config, git SHA, data hash, metrics and artefacts",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,23 +190,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "When you want a hosted UI with built-in sweeps and zero ops"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "When you only need loss curves"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "When you need a built-in sweep agent across many machines"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "When you need a free tracker you host yourself",
             "answerExplanation": {
               "@type": "Comment",
@@ -410,34 +410,34 @@ with mlflow.start_run():
               {
                 "q": "What is the practical reproducibility bar a tracking setup should target?",
                 "options": [
-                  "A rerun lands within noise of the original result",
                   "A rerun gives bit-for-bit identical weights and outputs",
                   "Identical eval score on any GPU",
-                  "Seeds don't matter once the config and data hash are logged"
+                  "Seeds don't matter once the config and data hash are logged",
+                  "A rerun lands within noise of the original result"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Bit-identity is hard in ML (GPU kernels, library versions) and rarely needed; the practical bar is that the same recipe gives an equivalent result within noise. Still pin seeds: it's cheap and reduces variance between compared runs. Terms vary; ACM's badging calls same-team, same-setup reruns 'repeatability'."
               },
               {
                 "q": "What is the minimum useful set of things to log on every run?",
                 "options": [
-                  "Config, git SHA, data hash, metrics and artefacts",
                   "The final eval number",
                   "Per-step loss curves and the GPU type, which explain most regressions",
+                  "Config, git SHA, data hash, metrics and artefacts",
                   "The command line used, since it fully determines the run"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "Anything less and you can't reliably compare two runs later. Metrics means per-step loss, eval and system metrics (the MLflow callback needs enable_system_metrics_logging for those). Library versions and a hash of the tokenized data catch preprocessing changes the raw-file hash misses."
               },
               {
                 "q": "When would you pick MLflow over Weights & Biases?",
                 "options": [
-                  "When you need a free tracker you host yourself",
                   "When you want a hosted UI with built-in sweeps and zero ops",
                   "When you only need loss curves",
-                  "When you need a built-in sweep agent across many machines"
+                  "When you need a built-in sweep agent across many machines",
+                  "When you need a free tracker you host yourself"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "MLflow is open-source (Apache 2.0) and self-hosted, the usual pick when run metadata can't leave your infrastructure. W&B is the zero-ops hosted option with native sweeps; MLflow has none, so pair it with Optuna or Ray Tune. Loss curves alone is TensorBoard territory."
               }
             ]
@@ -456,28 +456,28 @@ with mlflow.start_run():
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. You can't reconstruct an old run's config, code or data</strong> When eval regresses weeks later, tracking turns 'why?' into a join over config, code SHA and data. Without it every comparison restarts from scratch. Tracking doesn't change speed, checkpointing or whether eval runs.</p></details></li>
               <li><p class="quiz__q-text">What is the practical reproducibility bar a tracking setup should target?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A rerun lands within noise of the original result</li>
                   <li>A rerun gives bit-for-bit identical weights and outputs</li>
                   <li>Identical eval score on any GPU</li>
                   <li>Seeds don't matter once the config and data hash are logged</li>
+                  <li>A rerun lands within noise of the original result</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A rerun lands within noise of the original result</strong> Bit-identity is hard in ML (GPU kernels, library versions) and rarely needed; the practical bar is that the same recipe gives an equivalent result within noise. Still pin seeds: it's cheap and reduces variance between compared runs. Terms vary; ACM's badging calls same-team, same-setup reruns 'repeatability'.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. A rerun lands within noise of the original result</strong> Bit-identity is hard in ML (GPU kernels, library versions) and rarely needed; the practical bar is that the same recipe gives an equivalent result within noise. Still pin seeds: it's cheap and reduces variance between compared runs. Terms vary; ACM's badging calls same-team, same-setup reruns 'repeatability'.</p></details></li>
               <li><p class="quiz__q-text">What is the minimum useful set of things to log on every run?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Config, git SHA, data hash, metrics and artefacts</li>
                   <li>The final eval number</li>
                   <li>Per-step loss curves and the GPU type, which explain most regressions</li>
+                  <li>Config, git SHA, data hash, metrics and artefacts</li>
                   <li>The command line used, since it fully determines the run</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Config, git SHA, data hash, metrics and artefacts</strong> Anything less and you can't reliably compare two runs later. Metrics means per-step loss, eval and system metrics (the MLflow callback needs enable_system_metrics_logging for those). Library versions and a hash of the tokenized data catch preprocessing changes the raw-file hash misses.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Config, git SHA, data hash, metrics and artefacts</strong> Anything less and you can't reliably compare two runs later. Metrics means per-step loss, eval and system metrics (the MLflow callback needs enable_system_metrics_logging for those). Library versions and a hash of the tokenized data catch preprocessing changes the raw-file hash misses.</p></details></li>
               <li><p class="quiz__q-text">When would you pick MLflow over Weights &amp; Biases?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>When you need a free tracker you host yourself</li>
                   <li>When you want a hosted UI with built-in sweeps and zero ops</li>
                   <li>When you only need loss curves</li>
                   <li>When you need a built-in sweep agent across many machines</li>
+                  <li>When you need a free tracker you host yourself</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. When you need a free tracker you host yourself</strong> MLflow is open-source (Apache 2.0) and self-hosted, the usual pick when run metadata can't leave your infrastructure. W&amp;B is the zero-ops hosted option with native sweeps; MLflow has none, so pair it with Optuna or Ray Tune. Loss curves alone is TensorBoard territory.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. When you need a free tracker you host yourself</strong> MLflow is open-source (Apache 2.0) and self-hosted, the usual pick when run metadata can't leave your infrastructure. W&amp;B is the zero-ops hosted option with native sweeps; MLflow has none, so pair it with Optuna or Ray Tune. Loss curves alone is TensorBoard territory.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

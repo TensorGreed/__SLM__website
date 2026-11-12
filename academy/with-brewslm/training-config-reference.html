@@ -91,12 +91,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "It's silently ignored and dropped on the next export"
             },
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 2,
               "text": "It's logged as a warning and kept as-is in the manifest"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
+            "position": 0,
             "text": "Validation fails, so validate / diff / apply flag it",
             "answerExplanation": {
               "@type": "Comment",
@@ -129,18 +129,18 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "fast / balanced / thorough"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "sft / distillation / dpo"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 3,
             "text": "safe / balanced / max_quality",
             "answerExplanation": {
               "@type": "Comment",
@@ -162,7 +162,7 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "spec.adapters[].adapter_config"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 2,
             "text": "spec.training_plan.config",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,12 +190,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "cache_fingerprint"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "registry_id, which apply re-uses as-is"
             },
             {
@@ -206,7 +206,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "base_model — the others are not applied",
             "answerExplanation": {
               "@type": "Comment",
@@ -456,45 +456,45 @@ spec:
               {
                 "q": "What does brewslm.yaml's extra='forbid' behaviour mean for an unknown key?",
                 "options": [
+                  "Validation fails, so validate / diff / apply flag it",
                   "It's silently ignored and dropped on the next export",
                   "It's logged as a warning and kept as-is in the manifest",
-                  "Validation fails, so validate / diff / apply flag it",
                   "It's auto-renamed to the closest known field name"
                 ],
-                "answer": 2,
+                "answer": 0,
                 "explanation": "extra='forbid' is the explicit choice on every manifest section: unknown keys are usually typos or stale fields, so they fail validation instead of becoming silent no-ops."
               },
               {
                 "q": "What are the three named training-plan profiles?",
                 "options": [
                   "minimal / standard / production",
-                  "safe / balanced / max_quality",
                   "fast / balanced / thorough",
-                  "sft / distillation / dpo"
+                  "sft / distillation / dpo",
+                  "safe / balanced / max_quality"
                 ],
-                "answer": 1,
+                "answer": 3,
                 "explanation": "The profiles are safe, balanced and max_quality; balanced is the default. On apply, the profile comes from workflow.training_preferred_plan_profile — training_plan.plan_profile is carried, not applied."
               },
               {
                 "q": "Which section carries the flat hyperparameter dict?",
                 "options": [
                   "spec.workflow.budget_settings",
-                  "spec.training_plan.config",
                   "spec.adapters[].adapter_config",
+                  "spec.training_plan.config",
                   "spec.model.cache_fingerprint"
                 ],
-                "answer": 1,
+                "answer": 2,
                 "explanation": "training_plan.config is a flat bag (learning rate, batch, epochs, LoRA knobs…). Apply stores it on the project as its preset; it is not validated against TrainingConfig at apply time."
               },
               {
                 "q": "Which field in spec.model does apply actually use?",
                 "options": [
-                  "base_model — the others are not applied",
                   "cache_fingerprint",
                   "registry_id, which apply re-uses as-is",
+                  "base_model — the others are not applied",
                   "source_ref"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "base_model is authoritative. registry_id is re-resolved from base_model on apply, and cache_fingerprint / source_ref are carried for provenance, not applied."
               }
             ]
@@ -505,36 +505,36 @@ spec:
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does brewslm.yaml's extra='forbid' behaviour mean for an unknown key?</p>
                 <ol class="quiz__static-options" type="A">
+                  <li>Validation fails, so validate / diff / apply flag it</li>
                   <li>It's silently ignored and dropped on the next export</li>
                   <li>It's logged as a warning and kept as-is in the manifest</li>
-                  <li>Validation fails, so validate / diff / apply flag it</li>
                   <li>It's auto-renamed to the closest known field name</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Validation fails, so validate / diff / apply flag it</strong> extra='forbid' is the explicit choice on every manifest section: unknown keys are usually typos or stale fields, so they fail validation instead of becoming silent no-ops.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Validation fails, so validate / diff / apply flag it</strong> extra='forbid' is the explicit choice on every manifest section: unknown keys are usually typos or stale fields, so they fail validation instead of becoming silent no-ops.</p></details></li>
               <li><p class="quiz__q-text">What are the three named training-plan profiles?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>minimal / standard / production</li>
-                  <li>safe / balanced / max_quality</li>
                   <li>fast / balanced / thorough</li>
                   <li>sft / distillation / dpo</li>
+                  <li>safe / balanced / max_quality</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. safe / balanced / max_quality</strong> The profiles are safe, balanced and max_quality; balanced is the default. On apply, the profile comes from workflow.training_preferred_plan_profile — training_plan.plan_profile is carried, not applied.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. safe / balanced / max_quality</strong> The profiles are safe, balanced and max_quality; balanced is the default. On apply, the profile comes from workflow.training_preferred_plan_profile — training_plan.plan_profile is carried, not applied.</p></details></li>
               <li><p class="quiz__q-text">Which section carries the flat hyperparameter dict?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>spec.workflow.budget_settings</li>
-                  <li>spec.training_plan.config</li>
                   <li>spec.adapters[].adapter_config</li>
+                  <li>spec.training_plan.config</li>
                   <li>spec.model.cache_fingerprint</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. spec.training_plan.config</strong> training_plan.config is a flat bag (learning rate, batch, epochs, LoRA knobs…). Apply stores it on the project as its preset; it is not validated against TrainingConfig at apply time.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. spec.training_plan.config</strong> training_plan.config is a flat bag (learning rate, batch, epochs, LoRA knobs…). Apply stores it on the project as its preset; it is not validated against TrainingConfig at apply time.</p></details></li>
               <li><p class="quiz__q-text">Which field in spec.model does apply actually use?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>base_model — the others are not applied</li>
                   <li>cache_fingerprint</li>
                   <li>registry_id, which apply re-uses as-is</li>
+                  <li>base_model — the others are not applied</li>
                   <li>source_ref</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. base_model — the others are not applied</strong> base_model is authoritative. registry_id is re-resolved from base_model on apply, and cache_fingerprint / source_ref are carried for provenance, not applied.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. base_model — the others are not applied</strong> base_model is authoritative. registry_id is re-resolved from base_model on apply, and cache_fingerprint / source_ref are carried for provenance, not applied.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

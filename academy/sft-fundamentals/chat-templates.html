@@ -124,23 +124,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Hand-write the role markers"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Join the messages with newlines and a 'User:' / 'Assistant:' prefix"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Paste the messages in as raw JSON"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Use the tokenizer's own apply_chat_template",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,23 +157,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Adds the training labels for the assistant turn so loss masking works"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Appends an end-of-turn token so the model knows the conversation is over"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Prepends a default system prompt when the messages list has none"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Appends the assistant-turn opener so generation starts in the right place",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,23 +190,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "The learning rate, since a low loss with bad output means it was set too high"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "The GPU model"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "The tokenizer's vocabulary size, since fine-tuning may have changed it"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "The chat template used at inference",
             "answerExplanation": {
               "@type": "Comment",
@@ -357,34 +357,34 @@
               {
                 "q": "What is the right way to format chat data for a model?",
                 "options": [
-                  "Use the tokenizer's own apply_chat_template",
                   "Hand-write the role markers",
                   "Join the messages with newlines and a 'User:' / 'Assistant:' prefix",
-                  "Paste the messages in as raw JSON"
+                  "Paste the messages in as raw JSON",
+                  "Use the tokenizer's own apply_chat_template"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "The tokenizer ships the model's template, so the special tokens and layout match training. Note: with transformers v5 defaults it returns token IDs; pass tokenize=False for the string, and if you then call tokenizer(text) use add_special_tokens=False to avoid a double BOS."
               },
               {
                 "q": "What does add_generation_prompt=True do?",
                 "options": [
-                  "Appends the assistant-turn opener so generation starts in the right place",
                   "Adds the training labels for the assistant turn so loss masking works",
                   "Appends an end-of-turn token so the model knows the conversation is over",
-                  "Prepends a default system prompt when the messages list has none"
+                  "Prepends a default system prompt when the messages list has none",
+                  "Appends the assistant-turn opener so generation starts in the right place"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "At inference the rendered prompt should end where the assistant's reply begins; this flag appends that opener. It has nothing to do with labels or loss."
               },
               {
                 "q": "A fine-tuned model reached a decent loss but emits garbled, mis-formatted text at inference. What should you check first?",
                 "options": [
-                  "The chat template used at inference",
                   "The learning rate, since a low loss with bad output means it was set too high",
                   "The GPU model",
-                  "The tokenizer's vocabulary size, since fine-tuning may have changed it"
+                  "The tokenizer's vocabulary size, since fine-tuning may have changed it",
+                  "The chat template used at inference"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Good loss with bad output is the classic signature of a train/serve template mismatch: the model is fine, the prompt layout is not."
               }
             ]
@@ -403,28 +403,28 @@
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A format mismatch is out of distribution and silently degrades output</strong> Instruct models learn a precise layout of role markers and special tokens. Serving a different layout raises no error; quality just drops. If you SFT a base model, you choose the template — then train/serve consistency is what matters.</p></details></li>
               <li><p class="quiz__q-text">What is the right way to format chat data for a model?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Use the tokenizer's own apply_chat_template</li>
                   <li>Hand-write the role markers</li>
                   <li>Join the messages with newlines and a 'User:' / 'Assistant:' prefix</li>
                   <li>Paste the messages in as raw JSON</li>
+                  <li>Use the tokenizer's own apply_chat_template</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Use the tokenizer's own apply_chat_template</strong> The tokenizer ships the model's template, so the special tokens and layout match training. Note: with transformers v5 defaults it returns token IDs; pass tokenize=False for the string, and if you then call tokenizer(text) use add_special_tokens=False to avoid a double BOS.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Use the tokenizer's own apply_chat_template</strong> The tokenizer ships the model's template, so the special tokens and layout match training. Note: with transformers v5 defaults it returns token IDs; pass tokenize=False for the string, and if you then call tokenizer(text) use add_special_tokens=False to avoid a double BOS.</p></details></li>
               <li><p class="quiz__q-text">What does add_generation_prompt=True do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Appends the assistant-turn opener so generation starts in the right place</li>
                   <li>Adds the training labels for the assistant turn so loss masking works</li>
                   <li>Appends an end-of-turn token so the model knows the conversation is over</li>
                   <li>Prepends a default system prompt when the messages list has none</li>
+                  <li>Appends the assistant-turn opener so generation starts in the right place</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Appends the assistant-turn opener so generation starts in the right place</strong> At inference the rendered prompt should end where the assistant's reply begins; this flag appends that opener. It has nothing to do with labels or loss.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Appends the assistant-turn opener so generation starts in the right place</strong> At inference the rendered prompt should end where the assistant's reply begins; this flag appends that opener. It has nothing to do with labels or loss.</p></details></li>
               <li><p class="quiz__q-text">A fine-tuned model reached a decent loss but emits garbled, mis-formatted text at inference. What should you check first?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The chat template used at inference</li>
                   <li>The learning rate, since a low loss with bad output means it was set too high</li>
                   <li>The GPU model</li>
                   <li>The tokenizer's vocabulary size, since fine-tuning may have changed it</li>
+                  <li>The chat template used at inference</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The chat template used at inference</strong> Good loss with bad output is the classic signature of a train/serve template mismatch: the model is fine, the prompt layout is not.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. The chat template used at inference</strong> Good loss with bad output is the classic signature of a train/serve template mismatch: the model is fine, the prompt layout is not.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

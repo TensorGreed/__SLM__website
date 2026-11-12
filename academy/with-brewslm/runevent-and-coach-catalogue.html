@@ -101,13 +101,13 @@
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "The Coach assigns the closest known code"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
+            "position": 3,
             "text": "emit_event raises reason_code_required; the event is dropped",
             "answerExplanation": {
               "@type": "Comment",
@@ -124,7 +124,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "export / export_quantization_failed"
             },
             {
@@ -140,7 +140,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "export / export_run_failed",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,12 +190,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "navigate"
             },
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 2,
               "text": "run_playbook"
             },
             {
@@ -206,7 +206,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
+            "position": 0,
             "text": "augment_from_cluster",
             "answerExplanation": {
               "@type": "Comment",
@@ -484,21 +484,21 @@ SUGGESTED_TOPUP_CEILING       500   # don't suggest above this</code></pre>
                 "options": [
                   "It's stored with reason_code null and a warning is logged instead",
                   "emit_event raises invalid_reason_code:<value>",
-                  "emit_event raises reason_code_required; the event is dropped",
-                  "The Coach assigns the closest known code"
+                  "The Coach assigns the closest known code",
+                  "emit_event raises reason_code_required; the event is dropped"
                 ],
-                "answer": 2,
+                "answer": 3,
                 "explanation": "A missing code raises reason_code_required; invalid_reason_code:<value> is for an unknown code. The check is a runtime validation in emit_event for error and critical events. Call sites swallow the exception, so in practice the event is dropped and logged."
               },
               {
                 "q": "An export run fails today. Which stage and reason code does its RunEvent carry?",
                 "options": [
-                  "export / export_run_failed",
                   "export / export_quantization_failed",
+                  "export / export_run_failed",
                   "deployment / deployment_promote_blocked",
                   "export / export_artifact_missing"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "export_run_failed is the export code actually emitted. export_quantization_failed and export_artifact_missing are declared in the taxonomy but nothing emits them yet, and deployment emits info events only."
               },
               {
@@ -515,12 +515,12 @@ SUGGESTED_TOPUP_CEILING       500   # don't suggest above this</code></pre>
               {
                 "q": "After an eval surfaces a failure cluster of similar errors, the natural Coach action kind is…",
                 "options": [
+                  "augment_from_cluster",
                   "navigate",
                   "run_playbook",
-                  "augment_from_cluster",
                   "reroute_to_rag (open the sibling)"
                 ],
-                "answer": 2,
+                "answer": 0,
                 "explanation": "augment_from_cluster takes the cluster id and a suggested top-up — the 'fix the data that broke me' loop. run_playbook is generic generation, and reroute_to_rag is for knowledge-bound tasks."
               }
             ]
@@ -533,18 +533,18 @@ SUGGESTED_TOPUP_CEILING       500   # don't suggest above this</code></pre>
                 <ol class="quiz__static-options" type="A">
                   <li>It's stored with reason_code null and a warning is logged instead</li>
                   <li>emit_event raises invalid_reason_code:&lt;value&gt;</li>
-                  <li>emit_event raises reason_code_required; the event is dropped</li>
                   <li>The Coach assigns the closest known code</li>
+                  <li>emit_event raises reason_code_required; the event is dropped</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. emit_event raises reason_code_required; the event is dropped</strong> A missing code raises reason_code_required; invalid_reason_code:&lt;value&gt; is for an unknown code. The check is a runtime validation in emit_event for error and critical events. Call sites swallow the exception, so in practice the event is dropped and logged.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. emit_event raises reason_code_required; the event is dropped</strong> A missing code raises reason_code_required; invalid_reason_code:&lt;value&gt; is for an unknown code. The check is a runtime validation in emit_event for error and critical events. Call sites swallow the exception, so in practice the event is dropped and logged.</p></details></li>
               <li><p class="quiz__q-text">An export run fails today. Which stage and reason code does its RunEvent carry?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>export / export_run_failed</li>
                   <li>export / export_quantization_failed</li>
+                  <li>export / export_run_failed</li>
                   <li>deployment / deployment_promote_blocked</li>
                   <li>export / export_artifact_missing</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. export / export_run_failed</strong> export_run_failed is the export code actually emitted. export_quantization_failed and export_artifact_missing are declared in the taxonomy but nothing emits them yet, and deployment emits info events only.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. export / export_run_failed</strong> export_run_failed is the export code actually emitted. export_quantization_failed and export_artifact_missing are declared in the taxonomy but nothing emits them yet, and deployment emits info events only.</p></details></li>
               <li><p class="quiz__q-text">Coach suggestions can call the backend on render. True or false?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>True — generators refresh project state on each render</li>
@@ -555,12 +555,12 @@ SUGGESTED_TOPUP_CEILING       500   # don't suggest above this</code></pre>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. False — side effects run only when you click the action</strong> Generators are read-only. The action payload tells the frontend what to call on click; that is where any side effect happens.</p></details></li>
               <li><p class="quiz__q-text">After an eval surfaces a failure cluster of similar errors, the natural Coach action kind is…</p>
                 <ol class="quiz__static-options" type="A">
+                  <li>augment_from_cluster</li>
                   <li>navigate</li>
                   <li>run_playbook</li>
-                  <li>augment_from_cluster</li>
                   <li>reroute_to_rag (open the sibling)</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. augment_from_cluster</strong> augment_from_cluster takes the cluster id and a suggested top-up — the 'fix the data that broke me' loop. run_playbook is generic generation, and reroute_to_rag is for knowledge-bound tasks.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. augment_from_cluster</strong> augment_from_cluster takes the cluster id and a suggested top-up — the 'fix the data that broke me' loop. run_playbook is generic generation, and reroute_to_rag is for knowledge-bound tasks.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

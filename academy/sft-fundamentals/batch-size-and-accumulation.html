@@ -91,7 +91,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "A noisier gradient, because more examples disagree with each other"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "A less noisy gradient, at the cost of more memory",
             "answerExplanation": {
               "@type": "Comment",
@@ -124,23 +124,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Takes an optimizer step after every micro-batch, then averages the weights"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Stores activations from several batches so the backward pass is skipped"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Splits each example across several GPUs to fit longer sequences"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Sums gradients over several micro-batches, then takes one optimizer step",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,7 +157,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "per_device_batch × devices"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "per_device_batch × accumulation_steps × devices",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,7 +190,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "The tokenizer's vocabulary, since bigger batches need more distinct tokens"
             },
             {
@@ -206,7 +206,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "The learning rate",
             "answerExplanation": {
               "@type": "Comment",
@@ -344,45 +344,45 @@
               {
                 "q": "Compared with a small batch, a larger batch size generally gives…",
                 "options": [
-                  "A less noisy gradient, at the cost of more memory",
                   "A noisier gradient, because more examples disagree with each other",
+                  "A less noisy gradient, at the cost of more memory",
                   "A lower final loss, because each step sees more of the data at once",
                   "The same gradient noise, but with fewer optimizer steps per epoch only"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "Averaging over more examples smooths the gradient estimate; activation memory grows with the batch. A bigger batch does not by itself buy a lower final loss."
               },
               {
                 "q": "What does gradient accumulation do?",
                 "options": [
-                  "Sums gradients over several micro-batches, then takes one optimizer step",
                   "Takes an optimizer step after every micro-batch, then averages the weights",
                   "Stores activations from several batches so the backward pass is skipped",
-                  "Splits each example across several GPUs to fit longer sequences"
+                  "Splits each example across several GPUs to fit longer sequences",
+                  "Sums gradients over several micro-batches, then takes one optimizer step"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Accumulate gradients over micro-batches and step once: a large effective batch with a small-batch memory footprint. With the loss normalised by total tokens the dynamics are near-identical to the large batch (transformers fixed this in v4.46)."
               },
               {
                 "q": "Effective batch size equals…",
                 "options": [
-                  "per_device_batch × accumulation_steps × devices",
                   "per_device_batch × devices",
+                  "per_device_batch × accumulation_steps × devices",
                   "per_device_batch × accumulation_steps",
                   "per_device_batch × max_seq_length, counted in tokens rather than rows"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "Every example that contributes to one optimizer step counts: per-device batch, times accumulation steps, times device count."
               },
               {
                 "q": "You raise the effective batch size from 16 to 128. What else should you revisit?",
                 "options": [
-                  "The learning rate",
                   "The tokenizer's vocabulary, since bigger batches need more distinct tokens",
+                  "The learning rate",
                   "The loss mask, since accumulation changes which tokens are trained on",
                   "Nothing — effective batch size and learning rate are fully independent"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "Batch size and learning rate interact: fewer, cleaner steps often tolerate a larger LR. LoRA is less tolerant of very large batches than full fine-tuning, so verify rather than assume."
               }
             ]
@@ -393,36 +393,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Compared with a small batch, a larger batch size generally gives…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A less noisy gradient, at the cost of more memory</li>
                   <li>A noisier gradient, because more examples disagree with each other</li>
+                  <li>A less noisy gradient, at the cost of more memory</li>
                   <li>A lower final loss, because each step sees more of the data at once</li>
                   <li>The same gradient noise, but with fewer optimizer steps per epoch only</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A less noisy gradient, at the cost of more memory</strong> Averaging over more examples smooths the gradient estimate; activation memory grows with the batch. A bigger batch does not by itself buy a lower final loss.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A less noisy gradient, at the cost of more memory</strong> Averaging over more examples smooths the gradient estimate; activation memory grows with the batch. A bigger batch does not by itself buy a lower final loss.</p></details></li>
               <li><p class="quiz__q-text">What does gradient accumulation do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Sums gradients over several micro-batches, then takes one optimizer step</li>
                   <li>Takes an optimizer step after every micro-batch, then averages the weights</li>
                   <li>Stores activations from several batches so the backward pass is skipped</li>
                   <li>Splits each example across several GPUs to fit longer sequences</li>
+                  <li>Sums gradients over several micro-batches, then takes one optimizer step</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Sums gradients over several micro-batches, then takes one optimizer step</strong> Accumulate gradients over micro-batches and step once: a large effective batch with a small-batch memory footprint. With the loss normalised by total tokens the dynamics are near-identical to the large batch (transformers fixed this in v4.46).</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Sums gradients over several micro-batches, then takes one optimizer step</strong> Accumulate gradients over micro-batches and step once: a large effective batch with a small-batch memory footprint. With the loss normalised by total tokens the dynamics are near-identical to the large batch (transformers fixed this in v4.46).</p></details></li>
               <li><p class="quiz__q-text">Effective batch size equals…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>per_device_batch × accumulation_steps × devices</li>
                   <li>per_device_batch × devices</li>
+                  <li>per_device_batch × accumulation_steps × devices</li>
                   <li>per_device_batch × accumulation_steps</li>
                   <li>per_device_batch × max_seq_length, counted in tokens rather than rows</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. per_device_batch × accumulation_steps × devices</strong> Every example that contributes to one optimizer step counts: per-device batch, times accumulation steps, times device count.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. per_device_batch × accumulation_steps × devices</strong> Every example that contributes to one optimizer step counts: per-device batch, times accumulation steps, times device count.</p></details></li>
               <li><p class="quiz__q-text">You raise the effective batch size from 16 to 128. What else should you revisit?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The learning rate</li>
                   <li>The tokenizer's vocabulary, since bigger batches need more distinct tokens</li>
+                  <li>The learning rate</li>
                   <li>The loss mask, since accumulation changes which tokens are trained on</li>
                   <li>Nothing — effective batch size and learning rate are fully independent</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The learning rate</strong> Batch size and learning rate interact: fewer, cleaner steps often tolerate a larger LR. LoRA is less tolerant of very large batches than full fine-tuning, so verify rather than assume.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The learning rate</strong> Batch size and learning rate interact: fewer, cleaner steps often tolerate a larger LR. LoRA is less tolerant of very large batches than full fine-tuning, so verify rather than assume.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

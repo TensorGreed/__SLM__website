@@ -96,18 +96,18 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "The step size used for each parameter update"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "The percentage of training examples the model gets exactly right"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 3,
             "text": "A single number measuring how wrong the predictions are",
             "answerExplanation": {
               "@type": "Comment",
@@ -134,13 +134,13 @@
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Straight to the minimum, solved in one step from the gradient"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
+            "position": 3,
             "text": "Opposite the gradient, scaled by the learning rate",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,23 +157,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Training for too many epochs"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "The dataset is too small to learn from"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "A batch size of 8 is too small for stable gradients"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Learning rate too high",
             "answerExplanation": {
               "@type": "Comment",
@@ -195,7 +195,7 @@
             },
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 2,
               "text": "One forward and backward pass of one example"
             },
             {
@@ -206,7 +206,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
+            "position": 1,
             "text": "One full pass through the training data",
             "answerExplanation": {
               "@type": "Comment",
@@ -377,11 +377,11 @@
                 "q": "What does a loss function produce?",
                 "options": [
                   "The updated values of the model's parameters",
-                  "A single number measuring how wrong the predictions are",
                   "The step size used for each parameter update",
-                  "The percentage of training examples the model gets exactly right"
+                  "The percentage of training examples the model gets exactly right",
+                  "A single number measuring how wrong the predictions are"
                 ],
-                "answer": 1,
+                "answer": 3,
                 "explanation": "A loss collapses 'how wrong are we' into one number to minimise. Accuracy is a metric you report; it is not smooth enough to take gradients of, which is why training minimises a loss instead."
               },
               {
@@ -389,32 +389,32 @@
                 "options": [
                   "Along the gradient, the direction where loss rises fastest",
                   "In random directions, keeping any step that lowers the loss",
-                  "Opposite the gradient, scaled by the learning rate",
-                  "Straight to the minimum, solved in one step from the gradient"
+                  "Straight to the minimum, solved in one step from the gradient",
+                  "Opposite the gradient, scaled by the learning rate"
                 ],
-                "answer": 2,
+                "answer": 3,
                 "explanation": "The gradient points uphill, so you step the opposite way, scaled by the learning rate, and repeat many times. In practice the optimiser is usually AdamW, which adapts the step per parameter, but the idea is the same."
               },
               {
                 "q": "Your loss jumps to NaN after a few steps. Most likely cause?",
                 "options": [
-                  "Learning rate too high",
                   "Training for too many epochs",
                   "The dataset is too small to learn from",
-                  "A batch size of 8 is too small for stable gradients"
+                  "A batch size of 8 is too small for stable gradients",
+                  "Learning rate too high"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Exploding or NaN loss is most often a learning rate that is too high. Other causes: fp16 overflow, a bad row, or a batch where every label is masked. Too many epochs causes overfitting, not NaN."
               },
               {
                 "q": "What is an epoch?",
                 "options": [
                   "One parameter update from a single minibatch",
-                  "One forward and backward pass of one example",
                   "One full pass through the training data",
+                  "One forward and backward pass of one example",
                   "The time it takes the loss to stop falling"
                 ],
-                "answer": 2,
+                "answer": 1,
                 "explanation": "An epoch is one complete pass over the training set. A single update from one minibatch is a step; an epoch is many steps."
               }
             ]
@@ -426,35 +426,35 @@
               <li><p class="quiz__q-text">What does a loss function produce?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>The updated values of the model's parameters</li>
-                  <li>A single number measuring how wrong the predictions are</li>
                   <li>The step size used for each parameter update</li>
                   <li>The percentage of training examples the model gets exactly right</li>
+                  <li>A single number measuring how wrong the predictions are</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A single number measuring how wrong the predictions are</strong> A loss collapses 'how wrong are we' into one number to minimise. Accuracy is a metric you report; it is not smooth enough to take gradients of, which is why training minimises a loss instead.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. A single number measuring how wrong the predictions are</strong> A loss collapses 'how wrong are we' into one number to minimise. Accuracy is a metric you report; it is not smooth enough to take gradients of, which is why training minimises a loss instead.</p></details></li>
               <li><p class="quiz__q-text">Gradient descent updates parameters by moving them…</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Along the gradient, the direction where loss rises fastest</li>
                   <li>In random directions, keeping any step that lowers the loss</li>
-                  <li>Opposite the gradient, scaled by the learning rate</li>
                   <li>Straight to the minimum, solved in one step from the gradient</li>
+                  <li>Opposite the gradient, scaled by the learning rate</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Opposite the gradient, scaled by the learning rate</strong> The gradient points uphill, so you step the opposite way, scaled by the learning rate, and repeat many times. In practice the optimiser is usually AdamW, which adapts the step per parameter, but the idea is the same.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Opposite the gradient, scaled by the learning rate</strong> The gradient points uphill, so you step the opposite way, scaled by the learning rate, and repeat many times. In practice the optimiser is usually AdamW, which adapts the step per parameter, but the idea is the same.</p></details></li>
               <li><p class="quiz__q-text">Your loss jumps to NaN after a few steps. Most likely cause?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Learning rate too high</li>
                   <li>Training for too many epochs</li>
                   <li>The dataset is too small to learn from</li>
                   <li>A batch size of 8 is too small for stable gradients</li>
+                  <li>Learning rate too high</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Learning rate too high</strong> Exploding or NaN loss is most often a learning rate that is too high. Other causes: fp16 overflow, a bad row, or a batch where every label is masked. Too many epochs causes overfitting, not NaN.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Learning rate too high</strong> Exploding or NaN loss is most often a learning rate that is too high. Other causes: fp16 overflow, a bad row, or a batch where every label is masked. Too many epochs causes overfitting, not NaN.</p></details></li>
               <li><p class="quiz__q-text">What is an epoch?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>One parameter update from a single minibatch</li>
-                  <li>One forward and backward pass of one example</li>
                   <li>One full pass through the training data</li>
+                  <li>One forward and backward pass of one example</li>
                   <li>The time it takes the loss to stop falling</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. One full pass through the training data</strong> An epoch is one complete pass over the training set. A single update from one minibatch is a step; an epoch is many steps.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. One full pass through the training data</strong> An epoch is one complete pass over the training set. A single update from one minibatch is a step; an epoch is many steps.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

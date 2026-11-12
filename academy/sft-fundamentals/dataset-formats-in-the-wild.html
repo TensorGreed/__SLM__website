@@ -124,23 +124,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Alpaca instruction/input/output"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "ShareGPT, kept as-is with its from/value field names"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Completion, with every turn concatenated into one text field"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Chat messages rendered with apply_chat_template",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,7 +157,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Only the instruction field; the input goes in the system message"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "The instruction and input, separated by a blank line",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,7 +190,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "When the dataset is small"
             },
             {
@@ -206,7 +206,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "When training a dedicated classification head",
             "answerExplanation": {
               "@type": "Comment",
@@ -416,34 +416,34 @@ def sharegpt_to_chat(row):
               {
                 "q": "You're fine-tuning a chat instruct model on multi-turn customer support data. Which format fits?",
                 "options": [
-                  "Chat messages rendered with apply_chat_template",
                   "Alpaca instruction/input/output",
                   "ShareGPT, kept as-is with its from/value field names",
-                  "Completion, with every turn concatenated into one text field"
+                  "Completion, with every turn concatenated into one text field",
+                  "Chat messages rendered with apply_chat_template"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Multi-turn role data is the native shape for a chat model, and the tokenizer's template adds the special tokens. Check the loss mask too: under TRL defaults a messages dataset also trains on the user turns."
               },
               {
                 "q": "Converting an Alpaca row to chat messages, the user message should contain…",
                 "options": [
-                  "The instruction and input, separated by a blank line",
                   "Only the instruction field; the input goes in the system message",
+                  "The instruction and input, separated by a blank line",
                   "Only the input field, since the instruction is the same for every row",
                   "The instruction, input and output, so the model sees the full example"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "Instruction plus input form the user side and output is the assistant side. The blank line (when input is non-empty) keeps the boundary visible."
               },
               {
                 "q": "When can you skip the chat format entirely?",
                 "options": [
-                  "When training a dedicated classification head",
                   "When the dataset is small",
+                  "When training a dedicated classification head",
                   "When using QLoRA",
                   "Whenever the model is an instruct model rather than a base model"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "A classifier head consumes (text, label) directly. If you instead fine-tune a chat model to emit the label, the rows still need the chat wrap."
               }
             ]
@@ -462,28 +462,28 @@ def sharegpt_to_chat(row):
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. One JSON object per line, with any fields</strong> JSONL is only a container. Whether a file is completion-style, chat messages or classification rows depends on the inner schema.</p></details></li>
               <li><p class="quiz__q-text">You're fine-tuning a chat instruct model on multi-turn customer support data. Which format fits?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Chat messages rendered with apply_chat_template</li>
                   <li>Alpaca instruction/input/output</li>
                   <li>ShareGPT, kept as-is with its from/value field names</li>
                   <li>Completion, with every turn concatenated into one text field</li>
+                  <li>Chat messages rendered with apply_chat_template</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Chat messages rendered with apply_chat_template</strong> Multi-turn role data is the native shape for a chat model, and the tokenizer's template adds the special tokens. Check the loss mask too: under TRL defaults a messages dataset also trains on the user turns.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Chat messages rendered with apply_chat_template</strong> Multi-turn role data is the native shape for a chat model, and the tokenizer's template adds the special tokens. Check the loss mask too: under TRL defaults a messages dataset also trains on the user turns.</p></details></li>
               <li><p class="quiz__q-text">Converting an Alpaca row to chat messages, the user message should contain…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The instruction and input, separated by a blank line</li>
                   <li>Only the instruction field; the input goes in the system message</li>
+                  <li>The instruction and input, separated by a blank line</li>
                   <li>Only the input field, since the instruction is the same for every row</li>
                   <li>The instruction, input and output, so the model sees the full example</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The instruction and input, separated by a blank line</strong> Instruction plus input form the user side and output is the assistant side. The blank line (when input is non-empty) keeps the boundary visible.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The instruction and input, separated by a blank line</strong> Instruction plus input form the user side and output is the assistant side. The blank line (when input is non-empty) keeps the boundary visible.</p></details></li>
               <li><p class="quiz__q-text">When can you skip the chat format entirely?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>When training a dedicated classification head</li>
                   <li>When the dataset is small</li>
+                  <li>When training a dedicated classification head</li>
                   <li>When using QLoRA</li>
                   <li>Whenever the model is an instruct model rather than a base model</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. When training a dedicated classification head</strong> A classifier head consumes (text, label) directly. If you instead fine-tune a chat model to emit the label, the rows still need the chat wrap.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. When training a dedicated classification head</strong> A classifier head consumes (text, label) directly. If you instead fine-tune a chat model to emit the label, the rows still need the chat wrap.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

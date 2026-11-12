@@ -99,7 +99,7 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Tokens are generated independently of one another"
             },
             {
@@ -110,7 +110,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 2,
             "text": "The next token depends only on the previous n − 1 tokens",
             "answerExplanation": {
               "@type": "Comment",
@@ -132,7 +132,7 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "They let the model condition on unlimited history through recurrence"
             },
             {
@@ -143,7 +143,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 2,
             "text": "Learned embeddings let similar words share statistical strength",
             "answerExplanation": {
               "@type": "Comment",
@@ -160,7 +160,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "They cannot represent any dependency longer than a handful of tokens"
             },
             {
@@ -176,7 +176,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "Recurrence is sequential, so training can't parallelise across positions",
             "answerExplanation": {
               "@type": "Comment",
@@ -193,7 +193,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "SFT retrains the model from scratch on your task's examples"
             },
             {
@@ -209,7 +209,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "SFT nudges structure already learned in pretraining toward your task",
             "answerExplanation": {
               "@type": "Comment",
@@ -487,44 +487,44 @@
                 "q": "What is the Markov assumption in an n-gram model?",
                 "options": [
                   "The next token depends on the whole history, weighted by recency",
-                  "The next token depends only on the previous n − 1 tokens",
                   "Tokens are generated independently of one another",
+                  "The next token depends only on the previous n − 1 tokens",
                   "The model can only be trained on sequences of exactly n tokens"
                 ],
-                "answer": 1,
+                "answer": 2,
                 "explanation": "An n-gram model conditions only on a short fixed window, the previous n − 1 tokens, and forgets everything earlier. That is the Markov assumption."
               },
               {
                 "q": "What did neural language models (Bengio et al. 2003) fix that n-grams couldn't?",
                 "options": [
                   "They removed the need for training data by using hand-built grammars",
-                  "Learned embeddings let similar words share statistical strength",
                   "They let the model condition on unlimited history through recurrence",
+                  "Learned embeddings let similar words share statistical strength",
                   "They replaced counting with attention over the whole sentence"
                 ],
-                "answer": 1,
+                "answer": 2,
                 "explanation": "Similar words get similar vectors, so what the model learns about 'cat' transfers to 'dog' and unseen sequences generalise. Bengio's model still used a fixed window; recurrent LMs and attention came later."
               },
               {
                 "q": "What was the scaling bottleneck of RNNs and LSTMs that the Transformer removed?",
                 "options": [
-                  "They cannot represent any dependency longer than a handful of tokens",
                   "Recurrence is sequential, so training can't parallelise across positions",
+                  "They cannot represent any dependency longer than a handful of tokens",
                   "They need a separate vocabulary for every sequence length they handle",
                   "Their parameter count grows with every extra position in the input sequence"
                 ],
-                "answer": 1,
+                "answer": 0,
                 "explanation": "Position 5 cannot be computed until position 4 is done. Attention processes all positions in parallel, which let Transformers absorb far more compute and data. LSTMs can carry long dependencies (just less well), and their weights are shared across positions."
               },
               {
                 "q": "Why does SFT work at all on a modern Transformer?",
                 "options": [
-                  "SFT retrains the model from scratch on your task's examples",
                   "SFT nudges structure already learned in pretraining toward your task",
+                  "SFT retrains the model from scratch on your task's examples",
                   "LoRA adds enough new parameters to learn the language from your rows alone",
                   "SFT writes your examples into a lookup table the model consults at inference"
                 ],
-                "answer": 1,
+                "answer": 0,
                 "explanation": "You are not teaching language. Pretraining already encoded vast statistical structure; SFT shifts the output distribution toward your task. LoRA adapters are small and could not learn a language from a few thousand rows."
               }
             ]
@@ -536,35 +536,35 @@
               <li><p class="quiz__q-text">What is the Markov assumption in an n-gram model?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>The next token depends on the whole history, weighted by recency</li>
-                  <li>The next token depends only on the previous n − 1 tokens</li>
                   <li>Tokens are generated independently of one another</li>
+                  <li>The next token depends only on the previous n − 1 tokens</li>
                   <li>The model can only be trained on sequences of exactly n tokens</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The next token depends only on the previous n − 1 tokens</strong> An n-gram model conditions only on a short fixed window, the previous n − 1 tokens, and forgets everything earlier. That is the Markov assumption.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The next token depends only on the previous n − 1 tokens</strong> An n-gram model conditions only on a short fixed window, the previous n − 1 tokens, and forgets everything earlier. That is the Markov assumption.</p></details></li>
               <li><p class="quiz__q-text">What did neural language models (Bengio et al. 2003) fix that n-grams couldn't?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>They removed the need for training data by using hand-built grammars</li>
-                  <li>Learned embeddings let similar words share statistical strength</li>
                   <li>They let the model condition on unlimited history through recurrence</li>
+                  <li>Learned embeddings let similar words share statistical strength</li>
                   <li>They replaced counting with attention over the whole sentence</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Learned embeddings let similar words share statistical strength</strong> Similar words get similar vectors, so what the model learns about 'cat' transfers to 'dog' and unseen sequences generalise. Bengio's model still used a fixed window; recurrent LMs and attention came later.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Learned embeddings let similar words share statistical strength</strong> Similar words get similar vectors, so what the model learns about 'cat' transfers to 'dog' and unseen sequences generalise. Bengio's model still used a fixed window; recurrent LMs and attention came later.</p></details></li>
               <li><p class="quiz__q-text">What was the scaling bottleneck of RNNs and LSTMs that the Transformer removed?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>They cannot represent any dependency longer than a handful of tokens</li>
                   <li>Recurrence is sequential, so training can't parallelise across positions</li>
+                  <li>They cannot represent any dependency longer than a handful of tokens</li>
                   <li>They need a separate vocabulary for every sequence length they handle</li>
                   <li>Their parameter count grows with every extra position in the input sequence</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Recurrence is sequential, so training can't parallelise across positions</strong> Position 5 cannot be computed until position 4 is done. Attention processes all positions in parallel, which let Transformers absorb far more compute and data. LSTMs can carry long dependencies (just less well), and their weights are shared across positions.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Recurrence is sequential, so training can't parallelise across positions</strong> Position 5 cannot be computed until position 4 is done. Attention processes all positions in parallel, which let Transformers absorb far more compute and data. LSTMs can carry long dependencies (just less well), and their weights are shared across positions.</p></details></li>
               <li><p class="quiz__q-text">Why does SFT work at all on a modern Transformer?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>SFT retrains the model from scratch on your task's examples</li>
                   <li>SFT nudges structure already learned in pretraining toward your task</li>
+                  <li>SFT retrains the model from scratch on your task's examples</li>
                   <li>LoRA adds enough new parameters to learn the language from your rows alone</li>
                   <li>SFT writes your examples into a lookup table the model consults at inference</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. SFT nudges structure already learned in pretraining toward your task</strong> You are not teaching language. Pretraining already encoded vast statistical structure; SFT shifts the output distribution toward your task. LoRA adapters are small and could not learn a language from a few thousand rows.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. SFT nudges structure already learned in pretraining toward your task</strong> You are not teaching language. Pretraining already encoded vast statistical structure; SFT shifts the output distribution toward your task. LoRA adapters are small and could not learn a language from a few thousand rows.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

@@ -133,7 +133,7 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Positive payloads are too rare to collect in useful numbers"
             },
             {
@@ -144,7 +144,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 2,
             "text": "Injection-shaped text (quotes, OR, comments) is often legitimate input",
             "answerExplanation": {
               "@type": "Comment",
@@ -166,18 +166,18 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Per-class · injection → Recall ≥ 0.99"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Macro-F1 ≥ 0.99 across both classes"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 3,
             "text": "Per-class · benign → Recall ≥ 0.99",
             "answerExplanation": {
               "@type": "Comment",
@@ -199,7 +199,7 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "It trains the model online from production queries as they arrive"
             },
             {
@@ -210,7 +210,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 2,
             "text": "Calibrating the threshold on real traffic before acting on it",
             "answerExplanation": {
               "@type": "Comment",
@@ -232,18 +232,18 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "The adversarial set is mislabelled and should be removed from the eval"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Training stopped too early, and more epochs will close the gap"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 3,
             "text": "It fits the training patterns but misses obfuscated or novel injections",
             "answerExplanation": {
               "@type": "Comment",
@@ -659,44 +659,44 @@
                 "q": "Why does a SQLi classifier's quality hinge on hard negatives rather than positives?",
                 "options": [
                   "Regex filters already catch every positive, so only negatives need a model",
-                  "Injection-shaped text (quotes, OR, comments) is often legitimate input",
                   "Positive payloads are too rare to collect in useful numbers",
+                  "Injection-shaped text (quotes, OR, comments) is often legitimate input",
                   "Public SQLi datasets have too many positives, so they must be downsampled"
                 ],
-                "answer": 1,
+                "answer": 2,
                 "explanation": "Easy negatives ('hello', 'thanks') teach nothing a regex stack doesn't already catch. The precision work is teaching the model that O'Brien, semicolons in free text and SQL keywords used as English words are benign even though they look injection-shaped."
               },
               {
                 "q": "Inline blocking must not block more than 1% of legitimate queries. Which per-class rule enforces that?",
                 "options": [
                   "Per-class · benign → Precision ≥ 0.99",
-                  "Per-class · benign → Recall ≥ 0.99",
                   "Per-class · injection → Recall ≥ 0.99",
-                  "Macro-F1 ≥ 0.99 across both classes"
+                  "Macro-F1 ≥ 0.99 across both classes",
+                  "Per-class · benign → Recall ≥ 0.99"
                 ],
-                "answer": 1,
+                "answer": 3,
                 "explanation": "Legitimate queries that get blocked are benign inputs predicted 'injection', so the blocked share is 1 − benign recall (the false-positive rate on benign traffic). Benign precision measures something else: how much of what the model let through was actually an attack, i.e. missed attacks. Injection precision tells you how many blocks are false, but it depends on the production base rate, so a balanced test set overstates it. Both per-class metrics are in the scaffold's metric dropdown."
               },
               {
                 "q": "What does shadow-mode deployment achieve before inline blocking?",
                 "options": [
                   "It removes the need for an adversarial held-out test set",
-                  "Calibrating the threshold on real traffic before acting on it",
                   "It trains the model online from production queries as they arrive",
+                  "Calibrating the threshold on real traffic before acting on it",
                   "It replaces parameterised queries while the model is warming up"
                 ],
-                "answer": 1,
+                "answer": 2,
                 "explanation": "Your training and test data are not your production traffic. Shadow mode runs the classifier on real queries and logs verdicts without blocking, so you can measure the real false-positive rate and flag rate, and pick the threshold from a target FPR, before you wire the classifier to block."
               },
               {
                 "q": "The adversarial held-out set scores F1 = 0.45 while the main test set scores F1 = 0.90. What does this mean?",
                 "options": [
                   "Nothing is wrong; adversarial sets always score about half the main set",
-                  "It fits the training patterns but misses obfuscated or novel injections",
                   "The adversarial set is mislabelled and should be removed from the eval",
-                  "Training stopped too early, and more epochs will close the gap"
+                  "Training stopped too early, and more epochs will close the gap",
+                  "It fits the training patterns but misses obfuscated or novel injections"
                 ],
-                "answer": 1,
+                "answer": 3,
                 "explanation": "A high main score with a low adversarial score means the model learned the patterns it saw rather than injection in general. The first fix is more diverse data (obfuscation variants, second-order patterns), not more epochs — more training on the same data deepens the fit. A larger base model is a later lever."
               }
             ]
@@ -708,35 +708,35 @@
               <li><p class="quiz__q-text">Why does a SQLi classifier's quality hinge on hard negatives rather than positives?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Regex filters already catch every positive, so only negatives need a model</li>
-                  <li>Injection-shaped text (quotes, OR, comments) is often legitimate input</li>
                   <li>Positive payloads are too rare to collect in useful numbers</li>
+                  <li>Injection-shaped text (quotes, OR, comments) is often legitimate input</li>
                   <li>Public SQLi datasets have too many positives, so they must be downsampled</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Injection-shaped text (quotes, OR, comments) is often legitimate input</strong> Easy negatives ('hello', 'thanks') teach nothing a regex stack doesn't already catch. The precision work is teaching the model that O'Brien, semicolons in free text and SQL keywords used as English words are benign even though they look injection-shaped.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Injection-shaped text (quotes, OR, comments) is often legitimate input</strong> Easy negatives ('hello', 'thanks') teach nothing a regex stack doesn't already catch. The precision work is teaching the model that O'Brien, semicolons in free text and SQL keywords used as English words are benign even though they look injection-shaped.</p></details></li>
               <li><p class="quiz__q-text">Inline blocking must not block more than 1% of legitimate queries. Which per-class rule enforces that?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Per-class · benign → Precision ≥ 0.99</li>
-                  <li>Per-class · benign → Recall ≥ 0.99</li>
                   <li>Per-class · injection → Recall ≥ 0.99</li>
                   <li>Macro-F1 ≥ 0.99 across both classes</li>
+                  <li>Per-class · benign → Recall ≥ 0.99</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Per-class · benign → Recall ≥ 0.99</strong> Legitimate queries that get blocked are benign inputs predicted 'injection', so the blocked share is 1 − benign recall (the false-positive rate on benign traffic). Benign precision measures something else: how much of what the model let through was actually an attack, i.e. missed attacks. Injection precision tells you how many blocks are false, but it depends on the production base rate, so a balanced test set overstates it. Both per-class metrics are in the scaffold's metric dropdown.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Per-class · benign → Recall ≥ 0.99</strong> Legitimate queries that get blocked are benign inputs predicted 'injection', so the blocked share is 1 − benign recall (the false-positive rate on benign traffic). Benign precision measures something else: how much of what the model let through was actually an attack, i.e. missed attacks. Injection precision tells you how many blocks are false, but it depends on the production base rate, so a balanced test set overstates it. Both per-class metrics are in the scaffold's metric dropdown.</p></details></li>
               <li><p class="quiz__q-text">What does shadow-mode deployment achieve before inline blocking?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>It removes the need for an adversarial held-out test set</li>
-                  <li>Calibrating the threshold on real traffic before acting on it</li>
                   <li>It trains the model online from production queries as they arrive</li>
+                  <li>Calibrating the threshold on real traffic before acting on it</li>
                   <li>It replaces parameterised queries while the model is warming up</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Calibrating the threshold on real traffic before acting on it</strong> Your training and test data are not your production traffic. Shadow mode runs the classifier on real queries and logs verdicts without blocking, so you can measure the real false-positive rate and flag rate, and pick the threshold from a target FPR, before you wire the classifier to block.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Calibrating the threshold on real traffic before acting on it</strong> Your training and test data are not your production traffic. Shadow mode runs the classifier on real queries and logs verdicts without blocking, so you can measure the real false-positive rate and flag rate, and pick the threshold from a target FPR, before you wire the classifier to block.</p></details></li>
               <li><p class="quiz__q-text">The adversarial held-out set scores F1 = 0.45 while the main test set scores F1 = 0.90. What does this mean?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Nothing is wrong; adversarial sets always score about half the main set</li>
-                  <li>It fits the training patterns but misses obfuscated or novel injections</li>
                   <li>The adversarial set is mislabelled and should be removed from the eval</li>
                   <li>Training stopped too early, and more epochs will close the gap</li>
+                  <li>It fits the training patterns but misses obfuscated or novel injections</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. It fits the training patterns but misses obfuscated or novel injections</strong> A high main score with a low adversarial score means the model learned the patterns it saw rather than injection in general. The first fix is more diverse data (obfuscation variants, second-order patterns), not more epochs — more training on the same data deepens the fit. A larger base model is a later lever.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. It fits the training patterns but misses obfuscated or novel injections</strong> A high main score with a low adversarial score means the model learned the patterns it saw rather than injection in general. The first fix is more diverse data (obfuscation variants, second-order patterns), not more epochs — more training on the same data deepens the fit. A larger base model is a later lever.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

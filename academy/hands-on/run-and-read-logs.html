@@ -91,12 +91,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "A healthy run still converging"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Underfitting"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Overfitting",
             "answerExplanation": {
               "@type": "Comment",
@@ -124,12 +124,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Train longer so it recovers"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Switch bf16 to fp16 for more precision"
             },
             {
@@ -140,7 +140,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Lower the learning rate",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,12 +157,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Stops training early"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Keeps only the best checkpoint on disk, deleting the rest"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Reloads the best checkpoint when training ends",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,7 +190,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "True"
             },
             {
@@ -206,7 +206,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "False; the gold-set metric is the test",
             "answerExplanation": {
               "@type": "Comment",
@@ -354,45 +354,45 @@
               {
                 "q": "Training loss keeps falling but eval_loss starts rising. This is…",
                 "options": [
-                  "Overfitting",
                   "A healthy run still converging",
                   "Underfitting",
+                  "Overfitting",
                   "A learning rate that's too low"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "Diverging train and eval losses mean the model is memorising the training rows. Keep the lowest-eval_loss checkpoint."
               },
               {
                 "q": "Loss prints as nan after a few steps. Most likely first fix?",
                 "options": [
-                  "Lower the learning rate",
                   "Train longer so it recovers",
                   "Switch bf16 to fp16 for more precision",
+                  "Lower the learning rate",
                   "Add more data to stabilise the gradients"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "NaN or exploding loss is the classic too-high-learning-rate symptom. fp16 has less range than bf16 and overflows more easily. Also check that no batch has every label at -100, which gives a NaN loss too."
               },
               {
                 "q": "What does load_best_model_at_end=True do?",
                 "options": [
-                  "Reloads the best checkpoint when training ends",
                   "Stops training early",
                   "Keeps only the best checkpoint on disk, deleting the rest",
+                  "Reloads the best checkpoint when training ends",
                   "Picks the best epoch count and retrains from scratch"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "It restores the best checkpoint by metric_for_best_model after training finishes; it does not stop early. Early stopping is EarlyStoppingCallback(early_stopping_patience=…), which requires load_best_model_at_end=True. Disk cleanup is save_total_limit."
               },
               {
                 "q": "A smooth, falling loss curve proves the model is good at the task. True?",
                 "options": [
-                  "False; the gold-set metric is the test",
                   "True",
+                  "False; the gold-set metric is the test",
                   "True for LoRA runs, where the base can't degrade",
                   "False; only gold-set perplexity can prove it"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "Loss is a proxy; task quality is judged by the task metric on the gold set (next lesson). A loss near 0 within a few steps is a warning, not a win: it usually means unmasked prompts or duplicate rows."
               }
             ]
@@ -403,36 +403,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Training loss keeps falling but eval_loss starts rising. This is…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Overfitting</li>
                   <li>A healthy run still converging</li>
                   <li>Underfitting</li>
+                  <li>Overfitting</li>
                   <li>A learning rate that's too low</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Overfitting</strong> Diverging train and eval losses mean the model is memorising the training rows. Keep the lowest-eval_loss checkpoint.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Overfitting</strong> Diverging train and eval losses mean the model is memorising the training rows. Keep the lowest-eval_loss checkpoint.</p></details></li>
               <li><p class="quiz__q-text">Loss prints as nan after a few steps. Most likely first fix?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Lower the learning rate</li>
                   <li>Train longer so it recovers</li>
                   <li>Switch bf16 to fp16 for more precision</li>
+                  <li>Lower the learning rate</li>
                   <li>Add more data to stabilise the gradients</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Lower the learning rate</strong> NaN or exploding loss is the classic too-high-learning-rate symptom. fp16 has less range than bf16 and overflows more easily. Also check that no batch has every label at -100, which gives a NaN loss too.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Lower the learning rate</strong> NaN or exploding loss is the classic too-high-learning-rate symptom. fp16 has less range than bf16 and overflows more easily. Also check that no batch has every label at -100, which gives a NaN loss too.</p></details></li>
               <li><p class="quiz__q-text">What does load_best_model_at_end=True do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Reloads the best checkpoint when training ends</li>
                   <li>Stops training early</li>
                   <li>Keeps only the best checkpoint on disk, deleting the rest</li>
+                  <li>Reloads the best checkpoint when training ends</li>
                   <li>Picks the best epoch count and retrains from scratch</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Reloads the best checkpoint when training ends</strong> It restores the best checkpoint by metric_for_best_model after training finishes; it does not stop early. Early stopping is EarlyStoppingCallback(early_stopping_patience=…), which requires load_best_model_at_end=True. Disk cleanup is save_total_limit.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Reloads the best checkpoint when training ends</strong> It restores the best checkpoint by metric_for_best_model after training finishes; it does not stop early. Early stopping is EarlyStoppingCallback(early_stopping_patience=…), which requires load_best_model_at_end=True. Disk cleanup is save_total_limit.</p></details></li>
               <li><p class="quiz__q-text">A smooth, falling loss curve proves the model is good at the task. True?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>False; the gold-set metric is the test</li>
                   <li>True</li>
+                  <li>False; the gold-set metric is the test</li>
                   <li>True for LoRA runs, where the base can't degrade</li>
                   <li>False; only gold-set perplexity can prove it</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. False; the gold-set metric is the test</strong> Loss is a proxy; task quality is judged by the task metric on the gold set (next lesson). A loss near 0 within a few steps is a warning, not a win: it usually means unmasked prompts or duplicate rows.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. False; the gold-set metric is the test</strong> Loss is a proxy; task quality is judged by the task metric on the gold set (next lesson). A loss near 0 within a few steps is a warning, not a win: it usually means unmasked prompts or duplicate rows.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

@@ -91,7 +91,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "To switch on mixed precision with fp32 master weights"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "To halve weight memory versus fp32",
             "answerExplanation": {
               "@type": "Comment",
@@ -124,23 +124,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "So the model learns to stop by training on the pad tokens"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Generation refuses to run on any model without a pad token"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "To shrink the vocabulary"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Batches need a pad token to make rows equal length",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,12 +157,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "To cache the weights"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "To warm the CUDA kernels so training runs faster"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "To get a baseline to measure the lift against",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,12 +190,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "To append the target label"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "To add the system prompt the model was trained with"
             },
             {
@@ -206,7 +206,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "To cue the assistant turn so the model replies",
             "answerExplanation": {
               "@type": "Comment",
@@ -362,45 +362,45 @@ print(tok.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True
               {
                 "q": "Why load the model with dtype=torch.bfloat16?",
                 "options": [
-                  "To halve weight memory versus fp32",
                   "To switch on mixed precision with fp32 master weights",
+                  "To halve weight memory versus fp32",
                   "To speed up tokenization",
                   "Because every CPU and GPU computes fastest in bf16"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "Loading in bf16 stores the weights in 16 bits, half of fp32. That is plain bf16 storage, not mixed precision (autocast compute with fp32 master weights); LoRA keeps its adapter in fp32. Older GPUs such as the T4 lack bf16 support."
               },
               {
                 "q": "Why set tok.pad_token = tok.eos_token when pad_token is None?",
                 "options": [
-                  "Batches need a pad token to make rows equal length",
                   "So the model learns to stop by training on the pad tokens",
                   "Generation refuses to run on any model without a pad token",
-                  "To shrink the vocabulary"
+                  "To shrink the vocabulary",
+                  "Batches need a pad token to make rows equal length"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Rectangular batches need a pad token, and reusing EOS is the common fix. It's safe because pad positions are excluded by the attention mask and set to -100 in the labels, so the model never trains on them. SmolLM2-Instruct already defines one, so the branch doesn't fire there."
               },
               {
                 "q": "Why run a generation on the base model BEFORE fine-tuning?",
                 "options": [
-                  "To get a baseline to measure the lift against",
                   "To cache the weights",
                   "To warm the CUDA kernels so training runs faster",
+                  "To get a baseline to measure the lift against",
                   "Because peft refuses to attach LoRA to an unused model"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "The untuned model's output is your baseline. Here it answers with a full sentence, which scores 0 under a startswith check: a format failure, not a knowledge one (Track 1's evaluation lesson)."
               },
               {
                 "q": "Why use apply_chat_template with add_generation_prompt=True at inference?",
                 "options": [
-                  "To cue the assistant turn so the model replies",
                   "To append the target label",
                   "To add the system prompt the model was trained with",
+                  "To cue the assistant turn so the model replies",
                   "To pad the prompt to the model's maximum context length"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "Instruct models need their chat format; add_generation_prompt appends the assistant-turn header so the model answers rather than continuing the user turn. Any default system prompt comes from the template itself, not from this flag."
               }
             ]
@@ -411,36 +411,36 @@ print(tok.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Why load the model with dtype=torch.bfloat16?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>To halve weight memory versus fp32</li>
                   <li>To switch on mixed precision with fp32 master weights</li>
+                  <li>To halve weight memory versus fp32</li>
                   <li>To speed up tokenization</li>
                   <li>Because every CPU and GPU computes fastest in bf16</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. To halve weight memory versus fp32</strong> Loading in bf16 stores the weights in 16 bits, half of fp32. That is plain bf16 storage, not mixed precision (autocast compute with fp32 master weights); LoRA keeps its adapter in fp32. Older GPUs such as the T4 lack bf16 support.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. To halve weight memory versus fp32</strong> Loading in bf16 stores the weights in 16 bits, half of fp32. That is plain bf16 storage, not mixed precision (autocast compute with fp32 master weights); LoRA keeps its adapter in fp32. Older GPUs such as the T4 lack bf16 support.</p></details></li>
               <li><p class="quiz__q-text">Why set tok.pad_token = tok.eos_token when pad_token is None?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Batches need a pad token to make rows equal length</li>
                   <li>So the model learns to stop by training on the pad tokens</li>
                   <li>Generation refuses to run on any model without a pad token</li>
                   <li>To shrink the vocabulary</li>
+                  <li>Batches need a pad token to make rows equal length</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Batches need a pad token to make rows equal length</strong> Rectangular batches need a pad token, and reusing EOS is the common fix. It's safe because pad positions are excluded by the attention mask and set to -100 in the labels, so the model never trains on them. SmolLM2-Instruct already defines one, so the branch doesn't fire there.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Batches need a pad token to make rows equal length</strong> Rectangular batches need a pad token, and reusing EOS is the common fix. It's safe because pad positions are excluded by the attention mask and set to -100 in the labels, so the model never trains on them. SmolLM2-Instruct already defines one, so the branch doesn't fire there.</p></details></li>
               <li><p class="quiz__q-text">Why run a generation on the base model BEFORE fine-tuning?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>To get a baseline to measure the lift against</li>
                   <li>To cache the weights</li>
                   <li>To warm the CUDA kernels so training runs faster</li>
+                  <li>To get a baseline to measure the lift against</li>
                   <li>Because peft refuses to attach LoRA to an unused model</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. To get a baseline to measure the lift against</strong> The untuned model's output is your baseline. Here it answers with a full sentence, which scores 0 under a startswith check: a format failure, not a knowledge one (Track 1's evaluation lesson).</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. To get a baseline to measure the lift against</strong> The untuned model's output is your baseline. Here it answers with a full sentence, which scores 0 under a startswith check: a format failure, not a knowledge one (Track 1's evaluation lesson).</p></details></li>
               <li><p class="quiz__q-text">Why use apply_chat_template with add_generation_prompt=True at inference?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>To cue the assistant turn so the model replies</li>
                   <li>To append the target label</li>
                   <li>To add the system prompt the model was trained with</li>
+                  <li>To cue the assistant turn so the model replies</li>
                   <li>To pad the prompt to the model's maximum context length</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. To cue the assistant turn so the model replies</strong> Instruct models need their chat format; add_generation_prompt appends the assistant-turn header so the model answers rather than continuing the user turn. Any default system prompt comes from the template itself, not from this flag.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. To cue the assistant turn so the model replies</strong> Instruct models need their chat format; add_generation_prompt appends the assistant-turn header so the model answers rather than continuing the user turn. Any default system prompt comes from the template itself, not from this flag.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

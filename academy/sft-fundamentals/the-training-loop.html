@@ -91,7 +91,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "forward → optimizer step → loss → backward"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "forward → loss → backward → optimizer step",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,12 +190,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "The trainer needs them to compute the validation loss"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "AdamW reloads them to rebuild its moment estimates"
             },
             {
@@ -206,7 +206,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "The best point may come before the final step",
             "answerExplanation": {
               "@type": "Comment",
@@ -345,12 +345,12 @@
               {
                 "q": "What is the correct order within one training step?",
                 "options": [
-                  "forward → loss → backward → optimizer step",
                   "forward → optimizer step → loss → backward",
+                  "forward → loss → backward → optimizer step",
                   "backward → forward → loss → optimizer step",
                   "loss → forward → optimizer step → backward"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "The forward pass produces logits, the loss compares them with the labels, backprop computes gradients, then the optimizer updates the parameters."
               },
               {
@@ -378,12 +378,12 @@
               {
                 "q": "Why save several checkpoints during a run?",
                 "options": [
-                  "The best point may come before the final step",
                   "The trainer needs them to compute the validation loss",
                   "AdamW reloads them to rebuild its moment estimates",
+                  "The best point may come before the final step",
                   "Each holds a slice of the weights"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "Keep the checkpoint with the best held-out performance, which is often not the last one. With LoRA, a checkpoint is just the adapter."
               }
             ]
@@ -394,12 +394,12 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What is the correct order within one training step?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>forward → loss → backward → optimizer step</li>
                   <li>forward → optimizer step → loss → backward</li>
+                  <li>forward → loss → backward → optimizer step</li>
                   <li>backward → forward → loss → optimizer step</li>
                   <li>loss → forward → optimizer step → backward</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. forward → loss → backward → optimizer step</strong> The forward pass produces logits, the loss compares them with the labels, backprop computes gradients, then the optimizer updates the parameters.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. forward → loss → backward → optimizer step</strong> The forward pass produces logits, the loss compares them with the labels, backprop computes gradients, then the optimizer updates the parameters.</p></details></li>
               <li><p class="quiz__q-text">Why use AdamW instead of plain SGD?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>It adapts the step size per parameter</li>
@@ -418,12 +418,12 @@
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A metric on held-out data</strong> Held-out data estimates generalisation; training loss can keep dropping while the model overfits.</p></details></li>
               <li><p class="quiz__q-text">Why save several checkpoints during a run?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The best point may come before the final step</li>
                   <li>The trainer needs them to compute the validation loss</li>
                   <li>AdamW reloads them to rebuild its moment estimates</li>
+                  <li>The best point may come before the final step</li>
                   <li>Each holds a slice of the weights</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The best point may come before the final step</strong> Keep the checkpoint with the best held-out performance, which is often not the last one. With LoRA, a checkpoint is just the adapter.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The best point may come before the final step</strong> Keep the checkpoint with the best held-out performance, which is often not the last one. With LoRA, a checkpoint is just the adapter.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

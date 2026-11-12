@@ -91,12 +91,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Events are optional, so failures are expected"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Retrying failed events would slow training down"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "A logging bug must never break the work",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,23 +157,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Shifts in the distribution of production inputs"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Only drops large enough to pass a significance test"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Stale gold rows"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Deployment and serving regressions",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,23 +190,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Retrain at once on recent inputs"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Raise the tolerance"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Re-label the gold set against the new model's outputs"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "The serving setup: artifact, template, decoding",
             "answerExplanation": {
               "@type": "Comment",
@@ -350,12 +350,12 @@ re-run the answer key vs the deployed model
               {
                 "q": "Why is RunEvent emission best-effort (wrapped in try/except)?",
                 "options": [
-                  "A logging bug must never break the work",
                   "Events are optional, so failures are expected",
                   "Retrying failed events would slow training down",
+                  "A logging bug must never break the work",
                   "Lost events are rebuilt later from the logs"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "Observability must never compromise the data or training path it observes, so an emission failure is swallowed rather than raised."
               },
               {
@@ -372,23 +372,23 @@ re-run the answer key vs the deployed model
               {
                 "q": "What does BrewSLM's drift check (Ship → Deploy → Run drift check) actually catch?",
                 "options": [
-                  "Deployment and serving regressions",
                   "Shifts in the distribution of production inputs",
                   "Only drops large enough to pass a significance test",
-                  "Stale gold rows"
+                  "Stale gold rows",
+                  "Deployment and serving regressions"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "It exact-match-scores the same gold rows against the deployed model and compares with the training baseline, firing when |Δ| > the tolerance (default 0.05, both directions, no significance test). That catches a wrong artifact, quantization, chat template, decoding settings or a provider change — not input drift."
               },
               {
                 "q": "The drift check fires. What should you check first?",
                 "options": [
-                  "The serving setup: artifact, template, decoding",
                   "Retrain at once on recent inputs",
                   "Raise the tolerance",
-                  "Re-label the gold set against the new model's outputs"
+                  "Re-label the gold set against the new model's outputs",
+                  "The serving setup: artifact, template, decoding"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "With a frozen gold set the alert means the deployed model now answers those rows differently, so the cause is usually serving-side. Retraining on recent inputs answers a different question (input drift) and needs labelled recent data."
               }
             ]
@@ -399,12 +399,12 @@ re-run the answer key vs the deployed model
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Why is RunEvent emission best-effort (wrapped in try/except)?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A logging bug must never break the work</li>
                   <li>Events are optional, so failures are expected</li>
                   <li>Retrying failed events would slow training down</li>
+                  <li>A logging bug must never break the work</li>
                   <li>Lost events are rebuilt later from the logs</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A logging bug must never break the work</strong> Observability must never compromise the data or training path it observes, so an emission failure is swallowed rather than raised.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. A logging bug must never break the work</strong> Observability must never compromise the data or training path it observes, so an emission failure is swallowed rather than raised.</p></details></li>
               <li><p class="quiz__q-text">Production inputs have shifted since launch. Why won't re-scoring the same frozen gold set on the same deployed model reveal it?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Same model, same rows — same score</li>
@@ -415,20 +415,20 @@ re-run the answer key vs the deployed model
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Same model, same rows — same score</strong> A frozen model scored on frozen rows gives the same result whatever production inputs do. Detecting input drift needs monitoring of the live input distribution (embedding or OOD shift, label mix) plus freshly labelled samples of recent traffic.</p></details></li>
               <li><p class="quiz__q-text">What does BrewSLM's drift check (Ship → Deploy → Run drift check) actually catch?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Deployment and serving regressions</li>
                   <li>Shifts in the distribution of production inputs</li>
                   <li>Only drops large enough to pass a significance test</li>
                   <li>Stale gold rows</li>
+                  <li>Deployment and serving regressions</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Deployment and serving regressions</strong> It exact-match-scores the same gold rows against the deployed model and compares with the training baseline, firing when |Δ| &gt; the tolerance (default 0.05, both directions, no significance test). That catches a wrong artifact, quantization, chat template, decoding settings or a provider change — not input drift.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Deployment and serving regressions</strong> It exact-match-scores the same gold rows against the deployed model and compares with the training baseline, firing when |Δ| &gt; the tolerance (default 0.05, both directions, no significance test). That catches a wrong artifact, quantization, chat template, decoding settings or a provider change — not input drift.</p></details></li>
               <li><p class="quiz__q-text">The drift check fires. What should you check first?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The serving setup: artifact, template, decoding</li>
                   <li>Retrain at once on recent inputs</li>
                   <li>Raise the tolerance</li>
                   <li>Re-label the gold set against the new model's outputs</li>
+                  <li>The serving setup: artifact, template, decoding</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The serving setup: artifact, template, decoding</strong> With a frozen gold set the alert means the deployed model now answers those rows differently, so the cause is usually serving-side. Retraining on recent inputs answers a different question (input drift) and needs labelled recent data.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. The serving setup: artifact, template, decoding</strong> With a frozen gold set the alert means the deployed model now answers those rows differently, so the cause is usually serving-side. Retraining on recent inputs answers a different question (input drift) and needs labelled recent data.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

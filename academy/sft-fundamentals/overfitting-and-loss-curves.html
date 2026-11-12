@@ -91,23 +91,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Both training and validation loss rise together after warmup"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Validation loss falls faster than training loss throughout"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Training loss spikes to NaN partway through the run"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Training loss falls while validation loss turns up",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,12 +157,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "The val-loss minimum"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "The final checkpoint"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "The one with the best dev-set task metric",
             "answerExplanation": {
               "@type": "Comment",
@@ -357,12 +357,12 @@
               {
                 "q": "What is the classic signature of overfitting?",
                 "options": [
-                  "Training loss falls while validation loss turns up",
                   "Both training and validation loss rise together after warmup",
                   "Validation loss falls faster than training loss throughout",
-                  "Training loss spikes to NaN partway through the run"
+                  "Training loss spikes to NaN partway through the run",
+                  "Training loss falls while validation loss turns up"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Diverging curves — training improving, validation worsening — mean memorisation rather than generalisation. A NaN spike is instability, usually a too-high LR."
               },
               {
@@ -379,12 +379,12 @@
               {
                 "q": "Validation loss starts rising after epoch 1, but the task metric on the dev gold set keeps improving through epoch 3. Which checkpoint do you keep?",
                 "options": [
-                  "The one with the best dev-set task metric",
                   "The val-loss minimum",
                   "The final checkpoint",
+                  "The one with the best dev-set task metric",
                   "None — rising validation loss means the run must restart"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "In SFT, val loss often rises after about one epoch while task quality still improves (InstructGPT trained 16 epochs for this reason). Treat val loss as a warning and select on the task metric — on the dev split of the gold set, never the test split you report at the end."
               },
               {
@@ -406,12 +406,12 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What is the classic signature of overfitting?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Training loss falls while validation loss turns up</li>
                   <li>Both training and validation loss rise together after warmup</li>
                   <li>Validation loss falls faster than training loss throughout</li>
                   <li>Training loss spikes to NaN partway through the run</li>
+                  <li>Training loss falls while validation loss turns up</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Training loss falls while validation loss turns up</strong> Diverging curves — training improving, validation worsening — mean memorisation rather than generalisation. A NaN spike is instability, usually a too-high LR.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Training loss falls while validation loss turns up</strong> Diverging curves — training improving, validation worsening — mean memorisation rather than generalisation. A NaN spike is instability, usually a too-high LR.</p></details></li>
               <li><p class="quiz__q-text">Both training and validation loss stay high and barely move. This is…</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Underfitting</li>
@@ -422,12 +422,12 @@
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Underfitting</strong> Underfitting: train longer, raise the LR carefully, add capacity, or check the data and loss mask.</p></details></li>
               <li><p class="quiz__q-text">Validation loss starts rising after epoch 1, but the task metric on the dev gold set keeps improving through epoch 3. Which checkpoint do you keep?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The one with the best dev-set task metric</li>
                   <li>The val-loss minimum</li>
                   <li>The final checkpoint</li>
+                  <li>The one with the best dev-set task metric</li>
                   <li>None — rising validation loss means the run must restart</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The one with the best dev-set task metric</strong> In SFT, val loss often rises after about one epoch while task quality still improves (InstructGPT trained 16 epochs for this reason). Treat val loss as a warning and select on the task metric — on the dev split of the gold set, never the test split you report at the end.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The one with the best dev-set task metric</strong> In SFT, val loss often rises after about one epoch while task quality still improves (InstructGPT trained 16 epochs for this reason). Treat val loss as a warning and select on the task metric — on the dev split of the gold set, never the test split you report at the end.</p></details></li>
               <li><p class="quiz__q-text">Why isn't a low training loss enough to call a run good?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Training loss falls even when the model is overfitting</li>

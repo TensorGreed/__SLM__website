@@ -91,7 +91,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "Picks the single highest-scoring token as the output"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "Turns logits into probabilities that sum to 1",
             "answerExplanation": {
               "@type": "Comment",
@@ -129,7 +129,7 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "The model updates its own weights after every token it writes"
             },
             {
@@ -140,7 +140,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 2,
             "text": "Each generated token is appended and fed back in",
             "answerExplanation": {
               "@type": "Comment",
@@ -162,7 +162,7 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Sharpens the distribution toward the single likeliest token"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 2,
             "text": "Flattens the distribution, so sampling gets more varied",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,7 +190,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "Sampling at a high temperature to cover more answers"
             },
             {
@@ -206,7 +206,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "Greedy decoding",
             "answerExplanation": {
               "@type": "Comment",
@@ -381,45 +381,45 @@
               {
                 "q": "What does softmax do in a language model?",
                 "options": [
-                  "Picks the single highest-scoring token as the output",
                   "Turns logits into probabilities that sum to 1",
+                  "Picks the single highest-scoring token as the output",
                   "Splits the input text into tokens from the vocabulary",
                   "Computes the gradient used to update the weights"
                 ],
-                "answer": 1,
+                "answer": 0,
                 "explanation": "Softmax normalises the LM head's logits into a next-token probability distribution. Picking the top token is a decoding choice (greedy) made afterwards."
               },
               {
                 "q": "What makes generation 'autoregressive'?",
                 "options": [
                   "The model writes the whole answer in a single forward pass",
-                  "Each generated token is appended and fed back in",
                   "The model updates its own weights after every token it writes",
+                  "Each generated token is appended and fed back in",
                   "It predicts each token from the prompt alone, ignoring its own output"
                 ],
-                "answer": 1,
+                "answer": 2,
                 "explanation": "Each generated token is appended to the sequence and fed back in to predict the next one. The weights do not change during generation."
               },
               {
                 "q": "Raising the temperature during decoding…",
                 "options": [
                   "Makes the model more accurate on factual questions",
-                  "Flattens the distribution, so sampling gets more varied",
                   "Sharpens the distribution toward the single likeliest token",
+                  "Flattens the distribution, so sampling gets more varied",
                   "Retrains the output layer so rare tokens get bigger weights"
                 ],
-                "answer": 1,
+                "answer": 2,
                 "explanation": "Temperature divides the logits before softmax: softmax(logits / T). Higher T flattens the distribution, so samples vary more; lower T sharpens it. Parameters are unchanged, and more variety is not more accuracy."
               },
               {
                 "q": "For reproducible, comparable evaluation runs you generally want…",
                 "options": [
-                  "Sampling at a high temperature to cover more answers",
                   "Greedy decoding",
+                  "Sampling at a high temperature to cover more answers",
                   "Nucleus sampling with top-p 0.95",
                   "A repetition penalty of 1.15 to stop loops"
                 ],
-                "answer": 1,
+                "answer": 0,
                 "explanation": "Greedy decoding is deterministic, so runs are comparable (GPU kernels can still differ slightly). A repetition penalty changes the scores and also penalises copying tokens from the prompt, which hurts extraction and QA; BrewSLM's evals pin it to 1.0."
               }
             ]
@@ -430,36 +430,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does softmax do in a language model?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Picks the single highest-scoring token as the output</li>
                   <li>Turns logits into probabilities that sum to 1</li>
+                  <li>Picks the single highest-scoring token as the output</li>
                   <li>Splits the input text into tokens from the vocabulary</li>
                   <li>Computes the gradient used to update the weights</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Turns logits into probabilities that sum to 1</strong> Softmax normalises the LM head's logits into a next-token probability distribution. Picking the top token is a decoding choice (greedy) made afterwards.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Turns logits into probabilities that sum to 1</strong> Softmax normalises the LM head's logits into a next-token probability distribution. Picking the top token is a decoding choice (greedy) made afterwards.</p></details></li>
               <li><p class="quiz__q-text">What makes generation 'autoregressive'?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>The model writes the whole answer in a single forward pass</li>
-                  <li>Each generated token is appended and fed back in</li>
                   <li>The model updates its own weights after every token it writes</li>
+                  <li>Each generated token is appended and fed back in</li>
                   <li>It predicts each token from the prompt alone, ignoring its own output</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Each generated token is appended and fed back in</strong> Each generated token is appended to the sequence and fed back in to predict the next one. The weights do not change during generation.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Each generated token is appended and fed back in</strong> Each generated token is appended to the sequence and fed back in to predict the next one. The weights do not change during generation.</p></details></li>
               <li><p class="quiz__q-text">Raising the temperature during decoding…</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Makes the model more accurate on factual questions</li>
-                  <li>Flattens the distribution, so sampling gets more varied</li>
                   <li>Sharpens the distribution toward the single likeliest token</li>
+                  <li>Flattens the distribution, so sampling gets more varied</li>
                   <li>Retrains the output layer so rare tokens get bigger weights</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Flattens the distribution, so sampling gets more varied</strong> Temperature divides the logits before softmax: softmax(logits / T). Higher T flattens the distribution, so samples vary more; lower T sharpens it. Parameters are unchanged, and more variety is not more accuracy.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Flattens the distribution, so sampling gets more varied</strong> Temperature divides the logits before softmax: softmax(logits / T). Higher T flattens the distribution, so samples vary more; lower T sharpens it. Parameters are unchanged, and more variety is not more accuracy.</p></details></li>
               <li><p class="quiz__q-text">For reproducible, comparable evaluation runs you generally want…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Sampling at a high temperature to cover more answers</li>
                   <li>Greedy decoding</li>
+                  <li>Sampling at a high temperature to cover more answers</li>
                   <li>Nucleus sampling with top-p 0.95</li>
                   <li>A repetition penalty of 1.15 to stop loops</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Greedy decoding</strong> Greedy decoding is deterministic, so runs are comparable (GPU kernels can still differ slightly). A repetition penalty changes the scores and also penalises copying tokens from the prompt, which hurts extraction and QA; BrewSLM's evals pin it to 1.0.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Greedy decoding</strong> Greedy decoding is deterministic, so runs are comparable (GPU kernels can still differ slightly). A repetition penalty changes the scores and also penalises copying tokens from the prompt, which hurts extraction and QA; BrewSLM's evals pin it to 1.0.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

@@ -91,23 +91,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Accuracy for training speed, every time"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Lossless compression for slower loading"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Vocabulary size for shorter sequences"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "A small quality cost for size and speed",
             "answerExplanation": {
               "@type": "Comment",
@@ -124,23 +124,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "format / type"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "mixed-precision mode / runtime"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "training method / tokenizer format"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "type / file format",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,7 +157,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "safetensors in bf16"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "GGUF with a k-quant",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,23 +190,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Retrain the adapter on the quantized model"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Nothing if it loads"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Re-run training-loss checks on the old data"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Re-run your gold set",
             "answerExplanation": {
               "@type": "Comment",
@@ -363,45 +363,45 @@
               {
                 "q": "What does quantization trade?",
                 "options": [
-                  "A small quality cost for size and speed",
                   "Accuracy for training speed, every time",
                   "Lossless compression for slower loading",
-                  "Vocabulary size for shorter sequences"
+                  "Vocabulary size for shorter sequences",
+                  "A small quality cost for size and speed"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Fewer bits per weight make the model smaller and often faster, usually for a small but measurable quality cost — larger on sub-1B models, so measure it."
               },
               {
                 "q": "Q4_K_M is a quantization ___, and GGUF is a ___.",
                 "options": [
-                  "type / file format",
                   "format / type",
                   "mixed-precision mode / runtime",
-                  "training method / tokenizer format"
+                  "training method / tokenizer format",
+                  "type / file format"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Q4_K_M is a llama.cpp k-quant type: the 'K' is the k-quant block format, and 'M' is the medium mix that keeps some tensors at 6-bit (≈4.8–4.9 bits per weight). GGUF is the container file it is stored in. The 'K' does not mean mixed precision."
               },
               {
                 "q": "For CPU or edge deployment, the common choice is…",
                 "options": [
-                  "GGUF with a k-quant",
                   "safetensors in bf16",
+                  "GGUF with a k-quant",
                   "A GPTQ checkpoint",
                   "An FP8 checkpoint"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "GGUF k-quants run well on CPUs via llama.cpp. FP8 is a GPU format (Hopper/Blackwell). For sub-1B models, try Q5_K_M/Q6_K/Q8_0 before Q4_K_M and measure."
               },
               {
                 "q": "What must you do after quantizing?",
                 "options": [
-                  "Re-run your gold set",
                   "Retrain the adapter on the quantized model",
                   "Nothing if it loads",
-                  "Re-run training-loss checks on the old data"
+                  "Re-run training-loss checks on the old data",
+                  "Re-run your gold set"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Quantization can change outputs; the size win is only real if quality holds. Run the same gold set through the quantized runtime with the same chat template and decoding, paired against the original."
               }
             ]
@@ -412,36 +412,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does quantization trade?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A small quality cost for size and speed</li>
                   <li>Accuracy for training speed, every time</li>
                   <li>Lossless compression for slower loading</li>
                   <li>Vocabulary size for shorter sequences</li>
+                  <li>A small quality cost for size and speed</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A small quality cost for size and speed</strong> Fewer bits per weight make the model smaller and often faster, usually for a small but measurable quality cost — larger on sub-1B models, so measure it.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. A small quality cost for size and speed</strong> Fewer bits per weight make the model smaller and often faster, usually for a small but measurable quality cost — larger on sub-1B models, so measure it.</p></details></li>
               <li><p class="quiz__q-text">Q4_K_M is a quantization ___, and GGUF is a ___.</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>type / file format</li>
                   <li>format / type</li>
                   <li>mixed-precision mode / runtime</li>
                   <li>training method / tokenizer format</li>
+                  <li>type / file format</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. type / file format</strong> Q4_K_M is a llama.cpp k-quant type: the 'K' is the k-quant block format, and 'M' is the medium mix that keeps some tensors at 6-bit (≈4.8–4.9 bits per weight). GGUF is the container file it is stored in. The 'K' does not mean mixed precision.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. type / file format</strong> Q4_K_M is a llama.cpp k-quant type: the 'K' is the k-quant block format, and 'M' is the medium mix that keeps some tensors at 6-bit (≈4.8–4.9 bits per weight). GGUF is the container file it is stored in. The 'K' does not mean mixed precision.</p></details></li>
               <li><p class="quiz__q-text">For CPU or edge deployment, the common choice is…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>GGUF with a k-quant</li>
                   <li>safetensors in bf16</li>
+                  <li>GGUF with a k-quant</li>
                   <li>A GPTQ checkpoint</li>
                   <li>An FP8 checkpoint</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. GGUF with a k-quant</strong> GGUF k-quants run well on CPUs via llama.cpp. FP8 is a GPU format (Hopper/Blackwell). For sub-1B models, try Q5_K_M/Q6_K/Q8_0 before Q4_K_M and measure.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. GGUF with a k-quant</strong> GGUF k-quants run well on CPUs via llama.cpp. FP8 is a GPU format (Hopper/Blackwell). For sub-1B models, try Q5_K_M/Q6_K/Q8_0 before Q4_K_M and measure.</p></details></li>
               <li><p class="quiz__q-text">What must you do after quantizing?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Re-run your gold set</li>
                   <li>Retrain the adapter on the quantized model</li>
                   <li>Nothing if it loads</li>
                   <li>Re-run training-loss checks on the old data</li>
+                  <li>Re-run your gold set</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Re-run your gold set</strong> Quantization can change outputs; the size win is only real if quality holds. Run the same gold set through the quantized runtime with the same chat template and decoding, paired against the original.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Re-run your gold set</strong> Quantization can change outputs; the size win is only real if quality holds. Run the same gold set through the quantized runtime with the same chat template and decoding, paired against the original.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

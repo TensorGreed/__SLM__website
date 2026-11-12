@@ -91,7 +91,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Synchronously inside the HTTP request"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "As a background Job that the notification bell tracks",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,7 +157,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "A training_oom RunEvent on Ship → Monitor"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "The failure banner (code signal) and log tail",
             "answerExplanation": {
               "@type": "Comment",
@@ -356,12 +356,12 @@ training_cancelled             # you cancelled it</code></pre>
               {
                 "q": "How does BrewSLM run a training job so the request doesn't block?",
                 "options": [
-                  "As a background Job that the notification bell tracks",
                   "Synchronously inside the HTTP request",
+                  "As a background Job that the notification bell tracks",
                   "In a browser web worker on the client",
                   "As a cron task the worker picks up at the next scheduled interval"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "Training is a background Job launched from the Train form; the bell polls /api/jobs/active for progress."
               },
               {
@@ -378,12 +378,12 @@ training_cancelled             # you cancelled it</code></pre>
               {
                 "q": "A real run is killed partway through, most likely by the system running out of memory. Where do you learn the cause?",
                 "options": [
-                  "A training_oom RunEvent on Ship → Monitor",
                   "The failure banner (code signal) and log tail",
+                  "A training_oom RunEvent on Ship → Monitor",
                   "A training_cancelled entry in the notification bell",
                   "The preflight report, rerun after the failure"
                 ],
-                "answer": 1,
+                "answer": 0,
                 "explanation": "Real runs record a failure code — timeout, signal, exit or error — and the banner says 'killed by a signal … often the system running out of memory'. training_oom and training_cancelled are declared but never emitted."
               },
               {
@@ -405,12 +405,12 @@ training_cancelled             # you cancelled it</code></pre>
             <ol class="quiz__static">
               <li><p class="quiz__q-text">How does BrewSLM run a training job so the request doesn't block?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>As a background Job that the notification bell tracks</li>
                   <li>Synchronously inside the HTTP request</li>
+                  <li>As a background Job that the notification bell tracks</li>
                   <li>In a browser web worker on the client</li>
                   <li>As a cron task the worker picks up at the next scheduled interval</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. As a background Job that the notification bell tracks</strong> Training is a background Job launched from the Train form; the bell polls /api/jobs/active for progress.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. As a background Job that the notification bell tracks</strong> Training is a background Job launched from the Train form; the bell polls /api/jobs/active for progress.</p></details></li>
               <li><p class="quiz__q-text">What does the delta-from-baseline curve make explicit?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>How far the training loss has moved from its starting value</li>
@@ -421,12 +421,12 @@ training_cancelled             # you cancelled it</code></pre>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. How far the training loss has moved from its starting value</strong> The starting loss is the zero line; the curve shows how much the run improves on it. The base-vs-fine-tune verdict itself is on Results → Verdict.</p></details></li>
               <li><p class="quiz__q-text">A real run is killed partway through, most likely by the system running out of memory. Where do you learn the cause?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A training_oom RunEvent on Ship → Monitor</li>
                   <li>The failure banner (code signal) and log tail</li>
+                  <li>A training_oom RunEvent on Ship → Monitor</li>
                   <li>A training_cancelled entry in the notification bell</li>
                   <li>The preflight report, rerun after the failure</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The failure banner (code signal) and log tail</strong> Real runs record a failure code — timeout, signal, exit or error — and the banner says 'killed by a signal … often the system running out of memory'. training_oom and training_cancelled are declared but never emitted.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The failure banner (code signal) and log tail</strong> Real runs record a failure code — timeout, signal, exit or error — and the banner says 'killed by a signal … often the system running out of memory'. training_oom and training_cancelled are declared but never emitted.</p></details></li>
               <li><p class="quiz__q-text">Why hold a strong reference to the running task?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>So the garbage collector can't silently kill it mid-run</li>

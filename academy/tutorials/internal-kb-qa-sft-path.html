@@ -160,7 +160,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "The qa-sft scaffold: exact match, F1 and LLM-judge all required"
             },
             {
@@ -176,7 +176,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "evalpack.general.default, where the LLM-judge rule is optional",
             "answerExplanation": {
               "@type": "Comment",
@@ -193,7 +193,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "Your run under-trained; the click restarts training with more epochs"
             },
             {
@@ -209,7 +209,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "Low pass rate plus retrieval-shaped signals; it clones a RAG-first sibling",
             "answerExplanation": {
               "@type": "Comment",
@@ -226,7 +226,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "Keep all three — answer variety helps the model generalise"
             },
             {
@@ -242,7 +242,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "Keep one canonical answer and drop the other two",
             "answerExplanation": {
               "@type": "Comment",
@@ -660,34 +660,34 @@
               {
                 "q": "You picked the qa-sft task but never clicked Use scaffold under Results → Failures → Pass/fail rules. Which rule set does Results → Verdict score you against?",
                 "options": [
-                  "The qa-sft scaffold: exact match, F1 and LLM-judge all required",
                   "evalpack.general.default, where the LLM-judge rule is optional",
+                  "The qa-sft scaffold: exact match, F1 and LLM-judge all required",
                   "None — Verdict shows no rules until a scaffold has been saved",
                   "The recipe's own pack, applied automatically when you pick the task"
                 ],
-                "answer": 1,
+                "answer": 0,
                 "explanation": "Choosing a recipe or task does not switch the rule set. The scaffold (exact match ≥ 0.45, F1 ≥ 0.60, LLM-judge ≥ 0.75 required) is only a draft until you click Use scaffold. Until then Verdict falls back to evalpack.general.default: exact match and F1 required, LLM-judge and safety optional. The scaffold adds a required judge rule because exact match misses correct paraphrases ('Go to Settings, then Security')."
               },
               {
                 "q": "The post-eval decision engine shows 'This task looks more like a RAG fit' on your qa-sft project. What does it mean, and what happens if you click 'Switch to RAG (keeps your answer key)'?",
                 "options": [
-                  "Your run under-trained; the click restarts training with more epochs",
                   "Low pass rate plus retrieval-shaped signals; it clones a RAG-first sibling",
+                  "Your run under-trained; the click restarts training with more epochs",
                   "The click converts this project in place to the rag-protocol recipe",
                   "The click deletes the fine-tuned run and serves the base model instead"
                 ],
-                "answer": 1,
+                "answer": 0,
                 "explanation": "The card appears when the pass rate is below 0.5 and a retrieval signal fires: the brief mentions retrieval, or the answer key's answers are very diverse (mean pairwise Jaccard below 0.20). Switching creates a new sibling project with rag_first on — the base model answering with retrieval over your answer key, no LoRA — and carries the answer key forward. The original qa-sft project is untouched, so you can compare both. The sibling is not the rag-protocol recipe."
               },
               {
                 "q": "Your answer key contains the same question with three slightly different canonical answers. What should you do?",
                 "options": [
-                  "Keep all three — answer variety helps the model generalise",
                   "Keep one canonical answer and drop the other two",
+                  "Keep all three — answer variety helps the model generalise",
                   "Add a fourth phrasing so no single answer dominates",
                   "Run the paraphrase playbook to make more variants of each answer"
                 ],
-                "answer": 1,
+                "answer": 0,
                 "explanation": "qa-sft is a memorisation task: you want one canonical answer per question. Three different answers teach the model that the question has a spread of valid responses, which is noise for direct-answer QA and lowers exact match. Put the variation on the question side (the paraphrase playbook rewrites questions), not the answer side."
               }
             ]
@@ -706,28 +706,28 @@
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Small, stable corpus; no citations or refusal training needed</strong> qa-sft trains the answers into the weights. That is workable for a small corpus that rarely changes, but fine-tuning is an inefficient, hallucination-prone way to add facts, so it does not scale to large or fast-moving knowledge. When facts change often, when you need citations, or when you need clean refusals on out-of-scope questions, rag-protocol is the better pick.</p></details></li>
               <li><p class="quiz__q-text">You picked the qa-sft task but never clicked Use scaffold under Results → Failures → Pass/fail rules. Which rule set does Results → Verdict score you against?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The qa-sft scaffold: exact match, F1 and LLM-judge all required</li>
                   <li>evalpack.general.default, where the LLM-judge rule is optional</li>
+                  <li>The qa-sft scaffold: exact match, F1 and LLM-judge all required</li>
                   <li>None — Verdict shows no rules until a scaffold has been saved</li>
                   <li>The recipe's own pack, applied automatically when you pick the task</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. evalpack.general.default, where the LLM-judge rule is optional</strong> Choosing a recipe or task does not switch the rule set. The scaffold (exact match ≥ 0.45, F1 ≥ 0.60, LLM-judge ≥ 0.75 required) is only a draft until you click Use scaffold. Until then Verdict falls back to evalpack.general.default: exact match and F1 required, LLM-judge and safety optional. The scaffold adds a required judge rule because exact match misses correct paraphrases ('Go to Settings, then Security').</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. evalpack.general.default, where the LLM-judge rule is optional</strong> Choosing a recipe or task does not switch the rule set. The scaffold (exact match ≥ 0.45, F1 ≥ 0.60, LLM-judge ≥ 0.75 required) is only a draft until you click Use scaffold. Until then Verdict falls back to evalpack.general.default: exact match and F1 required, LLM-judge and safety optional. The scaffold adds a required judge rule because exact match misses correct paraphrases ('Go to Settings, then Security').</p></details></li>
               <li><p class="quiz__q-text">The post-eval decision engine shows 'This task looks more like a RAG fit' on your qa-sft project. What does it mean, and what happens if you click 'Switch to RAG (keeps your answer key)'?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Your run under-trained; the click restarts training with more epochs</li>
                   <li>Low pass rate plus retrieval-shaped signals; it clones a RAG-first sibling</li>
+                  <li>Your run under-trained; the click restarts training with more epochs</li>
                   <li>The click converts this project in place to the rag-protocol recipe</li>
                   <li>The click deletes the fine-tuned run and serves the base model instead</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Low pass rate plus retrieval-shaped signals; it clones a RAG-first sibling</strong> The card appears when the pass rate is below 0.5 and a retrieval signal fires: the brief mentions retrieval, or the answer key's answers are very diverse (mean pairwise Jaccard below 0.20). Switching creates a new sibling project with rag_first on — the base model answering with retrieval over your answer key, no LoRA — and carries the answer key forward. The original qa-sft project is untouched, so you can compare both. The sibling is not the rag-protocol recipe.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Low pass rate plus retrieval-shaped signals; it clones a RAG-first sibling</strong> The card appears when the pass rate is below 0.5 and a retrieval signal fires: the brief mentions retrieval, or the answer key's answers are very diverse (mean pairwise Jaccard below 0.20). Switching creates a new sibling project with rag_first on — the base model answering with retrieval over your answer key, no LoRA — and carries the answer key forward. The original qa-sft project is untouched, so you can compare both. The sibling is not the rag-protocol recipe.</p></details></li>
               <li><p class="quiz__q-text">Your answer key contains the same question with three slightly different canonical answers. What should you do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Keep all three — answer variety helps the model generalise</li>
                   <li>Keep one canonical answer and drop the other two</li>
+                  <li>Keep all three — answer variety helps the model generalise</li>
                   <li>Add a fourth phrasing so no single answer dominates</li>
                   <li>Run the paraphrase playbook to make more variants of each answer</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Keep one canonical answer and drop the other two</strong> qa-sft is a memorisation task: you want one canonical answer per question. Three different answers teach the model that the question has a spread of valid responses, which is noise for direct-answer QA and lowers exact match. Put the variation on the question side (the paraphrase playbook rewrites questions), not the answer side.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Keep one canonical answer and drop the other two</strong> qa-sft is a memorisation task: you want one canonical answer per question. Three different answers teach the model that the question has a spread of valid responses, which is noise for direct-answer QA and lowers exact match. Put the variation on the question side (the paraphrase playbook rewrites questions), not the answer side.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

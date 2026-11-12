@@ -91,7 +91,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "A faster regression check"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "Corrected rows to retrain on",
             "answerExplanation": {
               "@type": "Comment",
@@ -124,23 +124,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Redacting later changes the training loss"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Logs are only readable at write time"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Redaction is too slow to run in a batch"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Raw PII on disk is already the liability",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,7 +190,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Retrain immediately on the 12 rows alone"
             },
             {
@@ -206,7 +206,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "Collect more, then retrain with replay",
             "answerExplanation": {
               "@type": "Comment",
@@ -476,23 +476,23 @@ def logs_to_sft(log_path: str, tags: set[str], gold_corrections: dict[str, str])
               {
                 "q": "A regression alert tells you something got worse. The feedback loop adds…",
                 "options": [
-                  "Corrected rows to retrain on",
                   "A faster regression check",
+                  "Corrected rows to retrain on",
                   "A larger hyperparameter sweep for the retrain",
                   "A second gold set to cross-check the first"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "The alert is the alarm; logged, tagged and corrected production rows are what the next retrain learns from. Without them, retraining has nothing new to learn."
               },
               {
                 "q": "Why redact PII at log time rather than later?",
                 "options": [
-                  "Raw PII on disk is already the liability",
                   "Redacting later changes the training loss",
                   "Logs are only readable at write time",
-                  "Redaction is too slow to run in a batch"
+                  "Redaction is too slow to run in a batch",
+                  "Raw PII on disk is already the liability"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Once raw user data is written you hold a privacy liability. Redact before writing — both the prompt and the model's response, since outputs often echo PII. An unsalted hash of a user id is still personal data; use a keyed HMAC."
               },
               {
@@ -509,12 +509,12 @@ def logs_to_sft(log_path: str, tags: set[str], gold_corrections: dict[str, str])
               {
                 "q": "You have a regression but only 12 corrected rows. Best move?",
                 "options": [
-                  "Collect more, then retrain with replay",
                   "Retrain immediately on the 12 rows alone",
+                  "Collect more, then retrain with replay",
                   "Fine-tune on the 12 rows for more epochs",
                   "Roll back for good"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "Forgetting comes from training on the new data alone, not from its size: mix the corrections with replay of the original training set (Lesson 1.22, catastrophic forgetting), collect to a sensible floor, and re-run all prior gates."
               }
             ]
@@ -525,20 +525,20 @@ def logs_to_sft(log_path: str, tags: set[str], gold_corrections: dict[str, str])
             <ol class="quiz__static">
               <li><p class="quiz__q-text">A regression alert tells you something got worse. The feedback loop adds…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Corrected rows to retrain on</li>
                   <li>A faster regression check</li>
+                  <li>Corrected rows to retrain on</li>
                   <li>A larger hyperparameter sweep for the retrain</li>
                   <li>A second gold set to cross-check the first</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Corrected rows to retrain on</strong> The alert is the alarm; logged, tagged and corrected production rows are what the next retrain learns from. Without them, retraining has nothing new to learn.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Corrected rows to retrain on</strong> The alert is the alarm; logged, tagged and corrected production rows are what the next retrain learns from. Without them, retraining has nothing new to learn.</p></details></li>
               <li><p class="quiz__q-text">Why redact PII at log time rather than later?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Raw PII on disk is already the liability</li>
                   <li>Redacting later changes the training loss</li>
                   <li>Logs are only readable at write time</li>
                   <li>Redaction is too slow to run in a batch</li>
+                  <li>Raw PII on disk is already the liability</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Raw PII on disk is already the liability</strong> Once raw user data is written you hold a privacy liability. Redact before writing — both the prompt and the model's response, since outputs often echo PII. An unsalted hash of a user id is still personal data; use a keyed HMAC.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Raw PII on disk is already the liability</strong> Once raw user data is written you hold a privacy liability. Redact before writing — both the prompt and the model's response, since outputs often echo PII. An unsalted hash of a user id is still personal data; use a keyed HMAC.</p></details></li>
               <li><p class="quiz__q-text">Rows logged in the hours before a regression alert are tagged drift_window. How should you use them?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>As a pool to sample for review</li>
@@ -549,12 +549,12 @@ def logs_to_sft(log_path: str, tags: set[str], gold_corrections: dict[str, str])
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. As a pool to sample for review</strong> Rows near an alert aren't known failures — most may be fine. Sample them for review alongside sharper signals (user negative feedback, low confidence, OOD score, judge flags) and label what you find.</p></details></li>
               <li><p class="quiz__q-text">You have a regression but only 12 corrected rows. Best move?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Collect more, then retrain with replay</li>
                   <li>Retrain immediately on the 12 rows alone</li>
+                  <li>Collect more, then retrain with replay</li>
                   <li>Fine-tune on the 12 rows for more epochs</li>
                   <li>Roll back for good</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Collect more, then retrain with replay</strong> Forgetting comes from training on the new data alone, not from its size: mix the corrections with replay of the original training set (Lesson 1.22, catastrophic forgetting), collect to a sensible floor, and re-run all prior gates.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Collect more, then retrain with replay</strong> Forgetting comes from training on the new data alone, not from its size: mix the corrections with replay of the original training set (Lesson 1.22, catastrophic forgetting), collect to a sensible floor, and re-run all prior gates.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

@@ -91,7 +91,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "When there is no single correct output, only better and worse ones"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "When each input has a clear target output",
             "answerExplanation": {
               "@type": "Comment",
@@ -124,12 +124,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "One target per input"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Raw domain text"
             },
             {
@@ -140,7 +140,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "(chosen, rejected) preference pairs",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,12 +190,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Start continued pretraining on whatever domain text you can collect"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Run DPO with domain experts ranking pairs of the model's answers"
             },
             {
@@ -206,7 +206,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Measure held-out per-token loss on domain text versus generic text",
             "answerExplanation": {
               "@type": "Comment",
@@ -337,23 +337,23 @@
               {
                 "q": "When is SFT the right objective?",
                 "options": [
-                  "When each input has a clear target output",
                   "When there is no single correct output, only better and worse ones",
+                  "When each input has a clear target output",
                   "Only for chat models; classifiers and extractors need another objective",
                   "When you already have a reward model that scores each response"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "SFT imitates a target, so it fits inputs with a clear correct output: a label, an extraction, an answer, a format. Ranked better/worse outputs are preference data."
               },
               {
                 "q": "DPO learns from…",
                 "options": [
-                  "(chosen, rejected) preference pairs",
                   "One target per input",
                   "Raw domain text",
+                  "(chosen, rejected) preference pairs",
                   "A separate reward model plus PPO updates"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "DPO optimises directly on preference pairs, raising the likelihood of the chosen response relative to the rejected one, with an implicit reward and no separate reward model."
               },
               {
@@ -370,12 +370,12 @@
               {
                 "q": "Your base model may not handle a specialised domain's text well. What is the best first move?",
                 "options": [
-                  "Measure held-out per-token loss on domain text versus generic text",
                   "Start continued pretraining on whatever domain text you can collect",
                   "Run DPO with domain experts ranking pairs of the model's answers",
+                  "Measure held-out per-token loss on domain text versus generic text",
                   "Go straight to SFT, raising the learning rate to force in the new vocabulary"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "Continued pretraining is the most over-prescribed step (lesson 1.21). Only if domain loss is far above generic text and you have tens of millions of tokens is CPT-then-SFT worth it; otherwise SFT from the base is the cheaper first move."
               }
             ]
@@ -386,20 +386,20 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">When is SFT the right objective?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>When each input has a clear target output</li>
                   <li>When there is no single correct output, only better and worse ones</li>
+                  <li>When each input has a clear target output</li>
                   <li>Only for chat models; classifiers and extractors need another objective</li>
                   <li>When you already have a reward model that scores each response</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. When each input has a clear target output</strong> SFT imitates a target, so it fits inputs with a clear correct output: a label, an extraction, an answer, a format. Ranked better/worse outputs are preference data.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. When each input has a clear target output</strong> SFT imitates a target, so it fits inputs with a clear correct output: a label, an extraction, an answer, a format. Ranked better/worse outputs are preference data.</p></details></li>
               <li><p class="quiz__q-text">DPO learns from…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>(chosen, rejected) preference pairs</li>
                   <li>One target per input</li>
                   <li>Raw domain text</li>
+                  <li>(chosen, rejected) preference pairs</li>
                   <li>A separate reward model plus PPO updates</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. (chosen, rejected) preference pairs</strong> DPO optimises directly on preference pairs, raising the likelihood of the chosen response relative to the rejected one, with an implicit reward and no separate reward model.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. (chosen, rejected) preference pairs</strong> DPO optimises directly on preference pairs, raising the likelihood of the chosen response relative to the rejected one, with an implicit reward and no separate reward model.</p></details></li>
               <li><p class="quiz__q-text">Why has DPO largely displaced RLHF for preference-tuning small models?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>It skips the separate reward model and RL loop</li>
@@ -410,12 +410,12 @@
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. It skips the separate reward model and RL loop</strong> DPO reaches comparable results with far less machinery. For tasks with a programmatic checker (tests, schema-valid JSON), RL with verifiable rewards (GRPO-style) is now the main RL branch after SFT.</p></details></li>
               <li><p class="quiz__q-text">Your base model may not handle a specialised domain's text well. What is the best first move?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Measure held-out per-token loss on domain text versus generic text</li>
                   <li>Start continued pretraining on whatever domain text you can collect</li>
                   <li>Run DPO with domain experts ranking pairs of the model's answers</li>
+                  <li>Measure held-out per-token loss on domain text versus generic text</li>
                   <li>Go straight to SFT, raising the learning rate to force in the new vocabulary</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Measure held-out per-token loss on domain text versus generic text</strong> Continued pretraining is the most over-prescribed step (lesson 1.21). Only if domain loss is far above generic text and you have tens of millions of tokens is CPT-then-SFT worth it; otherwise SFT from the base is the cheaper first move.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Measure held-out per-token loss on domain text versus generic text</strong> Continued pretraining is the most over-prescribed step (lesson 1.21). Only if domain loss is far above generic text and you have tens of millions of tokens is CPT-then-SFT worth it; otherwise SFT from the base is the cheaper first move.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

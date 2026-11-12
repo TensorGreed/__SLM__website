@@ -124,23 +124,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Retrains the adapter on the retrieved passages before answering"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Swaps in a fine-tuned embedding model for the base"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Appends the closest answer-key row as a few-shot example"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Prepends the top-K BM25-retrieved passages to the prompt",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,7 +157,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "The parent's LoRA adapter plus retrieval"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "The base model plus retrieved passages, with no LoRA adapter",
             "answerExplanation": {
               "@type": "Comment",
@@ -358,23 +358,23 @@
               {
                 "q": "What does auto-RAG do at inference?",
                 "options": [
-                  "Prepends the top-K BM25-retrieved passages to the prompt",
                   "Retrains the adapter on the retrieved passages before answering",
                   "Swaps in a fine-tuned embedding model for the base",
-                  "Appends the closest answer-key row as a few-shot example"
+                  "Appends the closest answer-key row as a few-shot example",
+                  "Prepends the top-K BM25-retrieved passages to the prompt"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "It retrieves the top-K passages (default 3) with BM25 and puts them in front of the prompt; no weights change. The index is built from the project's training rows plus document passages — never the answer key, which would leak the test answers."
               },
               {
                 "q": "A reroute-to-RAG sibling project uses…",
                 "options": [
-                  "The base model plus retrieved passages, with no LoRA adapter",
                   "The parent's LoRA adapter plus retrieval",
+                  "The base model plus retrieved passages, with no LoRA adapter",
                   "A larger base model fine-tuned on the parent's passages",
                   "A copy of the parent's merged checkpoint with a longer context"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "Reroute clones the project as a RAG-first sibling (rag_first=True): the base model answers with retrieved passages and no adapter."
               },
               {
@@ -404,20 +404,20 @@
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Base model + passages beats the fine-tune on the same judge</strong> The Coach rule eval:passages-beat-finetune fires when the judged base-model-plus-passages score beats the fine-tune under the same judge. The post-eval recommender's try_rag is a heuristic (brief phrasing, answer diversity, output/input length ratio); it does not read failure clusters.</p></details></li>
               <li><p class="quiz__q-text">What does auto-RAG do at inference?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Prepends the top-K BM25-retrieved passages to the prompt</li>
                   <li>Retrains the adapter on the retrieved passages before answering</li>
                   <li>Swaps in a fine-tuned embedding model for the base</li>
                   <li>Appends the closest answer-key row as a few-shot example</li>
+                  <li>Prepends the top-K BM25-retrieved passages to the prompt</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Prepends the top-K BM25-retrieved passages to the prompt</strong> It retrieves the top-K passages (default 3) with BM25 and puts them in front of the prompt; no weights change. The index is built from the project's training rows plus document passages — never the answer key, which would leak the test answers.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Prepends the top-K BM25-retrieved passages to the prompt</strong> It retrieves the top-K passages (default 3) with BM25 and puts them in front of the prompt; no weights change. The index is built from the project's training rows plus document passages — never the answer key, which would leak the test answers.</p></details></li>
               <li><p class="quiz__q-text">A reroute-to-RAG sibling project uses…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The base model plus retrieved passages, with no LoRA adapter</li>
                   <li>The parent's LoRA adapter plus retrieval</li>
+                  <li>The base model plus retrieved passages, with no LoRA adapter</li>
                   <li>A larger base model fine-tuned on the parent's passages</li>
                   <li>A copy of the parent's merged checkpoint with a longer context</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The base model plus retrieved passages, with no LoRA adapter</strong> Reroute clones the project as a RAG-first sibling (rag_first=True): the base model answers with retrieved passages and no adapter.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The base model plus retrieved passages, with no LoRA adapter</strong> Reroute clones the project as a RAG-first sibling (rag_first=True): the base model answers with retrieved passages and no adapter.</p></details></li>
               <li><p class="quiz__q-text">The post-eval recommender returns try_rag, but no passages-vs-fine-tune comparison has run yet. How should you treat it?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>As a heuristic lead to test with the auto-RAG comparison</li>

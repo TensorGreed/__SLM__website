@@ -91,23 +91,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Every parameter, but at a lower learning rate than full fine-tuning"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Only the final output layer"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "A compressed copy of the base weights that replaces the original"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Small low-rank matrices added to a frozen base",
             "answerExplanation": {
               "@type": "Comment",
@@ -124,23 +124,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "It skips the backward pass through the frozen layers entirely"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "It stores fewer activations, since frozen layers keep none"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "It loads only the layers that carry an adapter into memory"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Gradients and optimizer state exist only for the adapter",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,7 +157,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Averages two adapters into one"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "Folds the adapter's update into the base weights",
             "answerExplanation": {
               "@type": "Comment",
@@ -336,34 +336,34 @@
               {
                 "q": "What does LoRA train?",
                 "options": [
-                  "Small low-rank matrices added to a frozen base",
                   "Every parameter, but at a lower learning rate than full fine-tuning",
                   "Only the final output layer",
-                  "A compressed copy of the base weights that replaces the original"
+                  "A compressed copy of the base weights that replaces the original",
+                  "Small low-rank matrices added to a frozen base"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "LoRA freezes the base and trains low-rank matrices B·A added to chosen layers, often well under 1% of the parameters. B starts at zero, so training begins exactly at the base model."
               },
               {
                 "q": "Why does LoRA need far less memory than full fine-tuning?",
                 "options": [
-                  "Gradients and optimizer state exist only for the adapter",
                   "It skips the backward pass through the frozen layers entirely",
                   "It stores fewer activations, since frozen layers keep none",
-                  "It loads only the layers that carry an adapter into memory"
+                  "It loads only the layers that carry an adapter into memory",
+                  "Gradients and optimizer state exist only for the adapter"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "The frozen base needs no gradients or AdamW state. Backprop still flows through every frozen layer, so activation memory is about the same as full fine-tuning."
               },
               {
                 "q": "What does merging a LoRA adapter do?",
                 "options": [
-                  "Folds the adapter's update into the base weights",
                   "Averages two adapters into one",
+                  "Folds the adapter's update into the base weights",
                   "Deletes the adapter",
                   "Saves the adapter next to the base so both load together"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "Merging computes W + (α/r)·B·A once, giving a standalone model with no adapter overhead at inference. Merge a QLoRA adapter into a dequantised bf16 base, not into the 4-bit weights."
               },
               {
@@ -385,28 +385,28 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does LoRA train?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Small low-rank matrices added to a frozen base</li>
                   <li>Every parameter, but at a lower learning rate than full fine-tuning</li>
                   <li>Only the final output layer</li>
                   <li>A compressed copy of the base weights that replaces the original</li>
+                  <li>Small low-rank matrices added to a frozen base</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Small low-rank matrices added to a frozen base</strong> LoRA freezes the base and trains low-rank matrices B·A added to chosen layers, often well under 1% of the parameters. B starts at zero, so training begins exactly at the base model.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Small low-rank matrices added to a frozen base</strong> LoRA freezes the base and trains low-rank matrices B·A added to chosen layers, often well under 1% of the parameters. B starts at zero, so training begins exactly at the base model.</p></details></li>
               <li><p class="quiz__q-text">Why does LoRA need far less memory than full fine-tuning?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Gradients and optimizer state exist only for the adapter</li>
                   <li>It skips the backward pass through the frozen layers entirely</li>
                   <li>It stores fewer activations, since frozen layers keep none</li>
                   <li>It loads only the layers that carry an adapter into memory</li>
+                  <li>Gradients and optimizer state exist only for the adapter</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Gradients and optimizer state exist only for the adapter</strong> The frozen base needs no gradients or AdamW state. Backprop still flows through every frozen layer, so activation memory is about the same as full fine-tuning.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Gradients and optimizer state exist only for the adapter</strong> The frozen base needs no gradients or AdamW state. Backprop still flows through every frozen layer, so activation memory is about the same as full fine-tuning.</p></details></li>
               <li><p class="quiz__q-text">What does merging a LoRA adapter do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Folds the adapter's update into the base weights</li>
                   <li>Averages two adapters into one</li>
+                  <li>Folds the adapter's update into the base weights</li>
                   <li>Deletes the adapter</li>
                   <li>Saves the adapter next to the base so both load together</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Folds the adapter's update into the base weights</strong> Merging computes W + (α/r)·B·A once, giving a standalone model with no adapter overhead at inference. Merge a QLoRA adapter into a dequantised bf16 base, not into the 4-bit weights.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Folds the adapter's update into the base weights</strong> Merging computes W + (α/r)·B·A once, giving a standalone model with no adapter overhead at inference. Merge a QLoRA adapter into a dequantised bf16 base, not into the 4-bit weights.</p></details></li>
               <li><p class="quiz__q-text">For the narrow SFT tasks in this course, LoRA usually…</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Comes close to full fine-tuning at a fraction of the cost</li>

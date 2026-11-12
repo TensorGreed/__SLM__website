@@ -91,23 +91,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "The mapper that turns the raw rows into the project's task shape"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "The project and dataset the rows are written into"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "The label set the classification mapper allows"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Where the rows live: the connector, dataset and split",
             "answerExplanation": {
               "@type": "Comment",
@@ -124,12 +124,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "It picks the top hypothesis anyway and logs a warning in the preview"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "It falls back to the generic mapper without asking"
             },
             {
@@ -140,7 +140,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "It exits and asks for --force (or an explicit mapper)",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,23 +157,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "A row in the review queue with review_status pending, awaiting your accept"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "A TransformedRow; unmappable rows are skipped quietly"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "A RunEvent recording the row's accept or reject"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "A TransformedRow, or a RejectedRow carrying a reason code",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,12 +190,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Skips the line so the import can keep going"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Aborts the whole import with a parse exception naming the bad line number"
             },
             {
@@ -206,7 +206,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Yields a __parse_error__ sentinel row that the mapper rejects",
             "answerExplanation": {
               "@type": "Comment",
@@ -358,45 +358,45 @@ rejected:   188
               {
                 "q": "What does a source locator like hf:imdb:train specify?",
                 "options": [
-                  "Where the rows live: the connector, dataset and split",
                   "The mapper that turns the raw rows into the project's task shape",
                   "The project and dataset the rows are written into",
-                  "The label set the classification mapper allows"
+                  "The label set the classification mapper allows",
+                  "Where the rows live: the connector, dataset and split"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "A locator names the source connector, the dataset and the split; a connector load()s it. The mapper and target project are chosen separately."
               },
               {
                 "q": "With --auto, the introspector's confidence is below 0.80. What happens?",
                 "options": [
-                  "It exits and asks for --force (or an explicit mapper)",
                   "It picks the top hypothesis anyway and logs a warning in the preview",
                   "It falls back to the generic mapper without asking",
+                  "It exits and asks for --force (or an explicit mapper)",
                   "It runs with --llm-assist to raise the confidence"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "The contract is: never auto-pick silently. Below 0.8, --auto exits and names the escape hatch — inspect with introspect, then re-run with --force or an explicit mapper."
               },
               {
                 "q": "In a Map dry-run, every input row becomes…",
                 "options": [
-                  "A TransformedRow, or a RejectedRow carrying a reason code",
                   "A row in the review queue with review_status pending, awaiting your accept",
                   "A TransformedRow; unmappable rows are skipped quietly",
-                  "A RunEvent recording the row's accept or reject"
+                  "A RunEvent recording the row's accept or reject",
+                  "A TransformedRow, or a RejectedRow carrying a reason code"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Per-row accountability: accepted (TransformedRow) or rejected with a reason code such as missing_text, label_not_allowed or parse_error. The dry-run emits no RunEvent, and committed imports are written already accepted — they skip the review queue."
               },
               {
                 "q": "A JSONL source has a line that isn't valid JSON. What does the connector do?",
                 "options": [
-                  "Yields a __parse_error__ sentinel row that the mapper rejects",
                   "Skips the line so the import can keep going",
                   "Aborts the whole import with a parse exception naming the bad line number",
+                  "Yields a __parse_error__ sentinel row that the mapper rejects",
                   "Repairs the JSON and passes the row to the mapper"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "It yields a row carrying __parse_error__, which the mapper rejects as parse_error. Nothing is silently dropped, and one bad line doesn't sink the import."
               }
             ]
@@ -407,36 +407,36 @@ rejected:   188
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does a source locator like hf:imdb:train specify?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Where the rows live: the connector, dataset and split</li>
                   <li>The mapper that turns the raw rows into the project's task shape</li>
                   <li>The project and dataset the rows are written into</li>
                   <li>The label set the classification mapper allows</li>
+                  <li>Where the rows live: the connector, dataset and split</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Where the rows live: the connector, dataset and split</strong> A locator names the source connector, the dataset and the split; a connector load()s it. The mapper and target project are chosen separately.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Where the rows live: the connector, dataset and split</strong> A locator names the source connector, the dataset and the split; a connector load()s it. The mapper and target project are chosen separately.</p></details></li>
               <li><p class="quiz__q-text">With --auto, the introspector's confidence is below 0.80. What happens?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It exits and asks for --force (or an explicit mapper)</li>
                   <li>It picks the top hypothesis anyway and logs a warning in the preview</li>
                   <li>It falls back to the generic mapper without asking</li>
+                  <li>It exits and asks for --force (or an explicit mapper)</li>
                   <li>It runs with --llm-assist to raise the confidence</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. It exits and asks for --force (or an explicit mapper)</strong> The contract is: never auto-pick silently. Below 0.8, --auto exits and names the escape hatch — inspect with introspect, then re-run with --force or an explicit mapper.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. It exits and asks for --force (or an explicit mapper)</strong> The contract is: never auto-pick silently. Below 0.8, --auto exits and names the escape hatch — inspect with introspect, then re-run with --force or an explicit mapper.</p></details></li>
               <li><p class="quiz__q-text">In a Map dry-run, every input row becomes…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A TransformedRow, or a RejectedRow carrying a reason code</li>
                   <li>A row in the review queue with review_status pending, awaiting your accept</li>
                   <li>A TransformedRow; unmappable rows are skipped quietly</li>
                   <li>A RunEvent recording the row's accept or reject</li>
+                  <li>A TransformedRow, or a RejectedRow carrying a reason code</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A TransformedRow, or a RejectedRow carrying a reason code</strong> Per-row accountability: accepted (TransformedRow) or rejected with a reason code such as missing_text, label_not_allowed or parse_error. The dry-run emits no RunEvent, and committed imports are written already accepted — they skip the review queue.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. A TransformedRow, or a RejectedRow carrying a reason code</strong> Per-row accountability: accepted (TransformedRow) or rejected with a reason code such as missing_text, label_not_allowed or parse_error. The dry-run emits no RunEvent, and committed imports are written already accepted — they skip the review queue.</p></details></li>
               <li><p class="quiz__q-text">A JSONL source has a line that isn't valid JSON. What does the connector do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Yields a __parse_error__ sentinel row that the mapper rejects</li>
                   <li>Skips the line so the import can keep going</li>
                   <li>Aborts the whole import with a parse exception naming the bad line number</li>
+                  <li>Yields a __parse_error__ sentinel row that the mapper rejects</li>
                   <li>Repairs the JSON and passes the row to the mapper</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Yields a __parse_error__ sentinel row that the mapper rejects</strong> It yields a row carrying __parse_error__, which the mapper rejects as parse_error. Nothing is silently dropped, and one bad line doesn't sink the import.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Yields a __parse_error__ sentinel row that the mapper rejects</strong> It yields a row carrying __parse_error__, which the mapper rejects as parse_error. Nothing is silently dropped, and one bad line doesn't sink the import.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

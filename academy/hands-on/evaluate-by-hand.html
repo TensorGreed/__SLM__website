@@ -157,7 +157,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Greedy decoding hid the difference"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "PEFT injected the adapter into base in place",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,7 +190,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Add those gold rows to training and re-score the same gold set"
             },
             {
@@ -206,7 +206,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "Use them to pick which training data to add or fix",
             "answerExplanation": {
               "@type": "Comment",
@@ -388,23 +388,23 @@ print("tuned accuracy:", accuracy(tuned))   # after fine-tuning</code></pre>
               {
                 "q": "Your script prints the same base and tuned accuracy on every run. It scored the base after calling PeftModel.from_pretrained(base, …). What happened?",
                 "options": [
-                  "PEFT injected the adapter into base in place",
                   "Greedy decoding hid the difference",
+                  "PEFT injected the adapter into base in place",
                   "Accuracy needs a merged model; generate skips unmerged adapters",
                   "from_pretrained reset the adapter to zero, so it does nothing"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "PEFT modifies the model you pass in: after PeftModel.from_pretrained(base, …), base carries the LoRA layers, so the \"baseline\" is the tuned model and the lift reads about 0. Score the base before attaching, or inside `with tuned.disable_adapter():`."
               },
               {
                 "q": "What should you do with the gold-set misses?",
                 "options": [
-                  "Use them to pick which training data to add or fix",
                   "Add those gold rows to training and re-score the same gold set",
+                  "Use them to pick which training data to add or fix",
                   "Drop them from gold so the score reflects typical cases",
                   "Raise the learning rate until those rows pass"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "Misses show what the training data lacks, so add or fix similar training rows. Copying the gold rows themselves into training leaks the test set and inflates the score."
               }
             ]
@@ -431,20 +431,20 @@ print("tuned accuracy:", accuracy(tuned))   # after fine-tuning</code></pre>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Repeatable outputs on the same hardware and batch</strong> Greedy picks the top token each step, so reruns match on the same hardware and batch size. Different kernels or padding can still flip near-ties, so results are not bit-identical across setups.</p></details></li>
               <li><p class="quiz__q-text">Your script prints the same base and tuned accuracy on every run. It scored the base after calling PeftModel.from_pretrained(base, …). What happened?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>PEFT injected the adapter into base in place</li>
                   <li>Greedy decoding hid the difference</li>
+                  <li>PEFT injected the adapter into base in place</li>
                   <li>Accuracy needs a merged model; generate skips unmerged adapters</li>
                   <li>from_pretrained reset the adapter to zero, so it does nothing</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. PEFT injected the adapter into base in place</strong> PEFT modifies the model you pass in: after PeftModel.from_pretrained(base, …), base carries the LoRA layers, so the "baseline" is the tuned model and the lift reads about 0. Score the base before attaching, or inside `with tuned.disable_adapter():`.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. PEFT injected the adapter into base in place</strong> PEFT modifies the model you pass in: after PeftModel.from_pretrained(base, …), base carries the LoRA layers, so the "baseline" is the tuned model and the lift reads about 0. Score the base before attaching, or inside `with tuned.disable_adapter():`.</p></details></li>
               <li><p class="quiz__q-text">What should you do with the gold-set misses?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Use them to pick which training data to add or fix</li>
                   <li>Add those gold rows to training and re-score the same gold set</li>
+                  <li>Use them to pick which training data to add or fix</li>
                   <li>Drop them from gold so the score reflects typical cases</li>
                   <li>Raise the learning rate until those rows pass</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Use them to pick which training data to add or fix</strong> Misses show what the training data lacks, so add or fix similar training rows. Copying the gold rows themselves into training leaks the test set and inflates the score.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Use them to pick which training data to add or fix</strong> Misses show what the training data lacks, so add or fix similar training rows. Copying the gold rows themselves into training leaks the test set and inflates the score.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

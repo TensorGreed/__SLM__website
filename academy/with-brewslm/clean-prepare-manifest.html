@@ -91,12 +91,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "The only file paths Train, Evaluate and Export may read"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "The tokenizer vocabulary and chat template used at train time"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "The rows, schema, scoring mode and file hashes of the split",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,23 +190,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "The RunEvent the Prepare stage emits for each split it writes"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "The project name and the dataset's row count"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "The training loss curve's starting value for each run"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "The file hashes recorded in each split's manifest.json",
             "answerExplanation": {
               "@type": "Comment",
@@ -346,12 +346,12 @@
               {
                 "q": "What does the prepared split's manifest.json record?",
                 "options": [
-                  "The rows, schema, scoring mode and file hashes of the split",
                   "The only file paths Train, Evaluate and Export may read",
                   "The tokenizer vocabulary and chat template used at train time",
+                  "The rows, schema, scoring mode and file hashes of the split",
                   "The trained adapter's hyperparameters and final eval scores"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "The manifest records what the split produced. Training still reads prepared/train.jsonl and val.jsonl directly, evaluation reads its task profile and scoring mode from the manifest, and export writes its own run manifest — so 'everything reads the manifest' overstates it."
               },
               {
@@ -379,12 +379,12 @@
               {
                 "q": "Two runs show different scores. What lets you check whether they saw the same data?",
                 "options": [
-                  "The file hashes recorded in each split's manifest.json",
                   "The RunEvent the Prepare stage emits for each split it writes",
                   "The project name and the dataset's row count",
-                  "The training loss curve's starting value for each run"
+                  "The training loss curve's starting value for each run",
+                  "The file hashes recorded in each split's manifest.json"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "The manifest's file hashes tell you whether two runs trained and tested on the same split files. Prepare emits no RunEvent, and row counts can match while the rows differ."
               }
             ]
@@ -395,12 +395,12 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does the prepared split's manifest.json record?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The rows, schema, scoring mode and file hashes of the split</li>
                   <li>The only file paths Train, Evaluate and Export may read</li>
                   <li>The tokenizer vocabulary and chat template used at train time</li>
+                  <li>The rows, schema, scoring mode and file hashes of the split</li>
                   <li>The trained adapter's hyperparameters and final eval scores</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The rows, schema, scoring mode and file hashes of the split</strong> The manifest records what the split produced. Training still reads prepared/train.jsonl and val.jsonl directly, evaluation reads its task profile and scoring mode from the manifest, and export writes its own run manifest — so 'everything reads the manifest' overstates it.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The rows, schema, scoring mode and file hashes of the split</strong> The manifest records what the split produced. Training still reads prepared/train.jsonl and val.jsonl directly, evaluation reads its task profile and scoring mode from the manifest, and export writes its own run manifest — so 'everything reads the manifest' overstates it.</p></details></li>
               <li><p class="quiz__q-text">Your by-hand tokenization and loss mask moved where in BrewSLM?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Into the trainer (scripts/train.py), driven by the task profile</li>
@@ -419,12 +419,12 @@
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. manifest.json plus train.jsonl, val.jsonl and test.jsonl</strong> The Split step builds the manifest and the train / val / test files. Prepare emits no RunEvent.</p></details></li>
               <li><p class="quiz__q-text">Two runs show different scores. What lets you check whether they saw the same data?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The file hashes recorded in each split's manifest.json</li>
                   <li>The RunEvent the Prepare stage emits for each split it writes</li>
                   <li>The project name and the dataset's row count</li>
                   <li>The training loss curve's starting value for each run</li>
+                  <li>The file hashes recorded in each split's manifest.json</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The file hashes recorded in each split's manifest.json</strong> The manifest's file hashes tell you whether two runs trained and tested on the same split files. Prepare emits no RunEvent, and row counts can match while the rows differ.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. The file hashes recorded in each split's manifest.json</strong> The manifest's file hashes tell you whether two runs trained and tested on the same split files. Prepare emits no RunEvent, and row counts can match while the rows differ.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

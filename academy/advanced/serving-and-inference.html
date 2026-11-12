@@ -91,12 +91,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Re-tokenizing the prompt at each step"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Reloading weights for every new request"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Recomputing past keys/values each step",
             "answerExplanation": {
               "@type": "Comment",
@@ -124,7 +124,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Groups requests by prompt length first"
             },
             {
@@ -140,7 +140,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "Swaps requests in and out each step",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,7 +157,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Lower both throughput and per-request cost"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "Raise throughput but can add latency",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,23 +190,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "It removes the KV cache"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "It always raises throughput"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "It only speeds up loading"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Frees memory for KV cache and batches",
             "answerExplanation": {
               "@type": "Comment",
@@ -350,45 +350,45 @@ batch job (offline)    -&gt;  large batches, high throughput  (cheap per token)
               {
                 "q": "What does the KV cache avoid?",
                 "options": [
-                  "Recomputing past keys/values each step",
                   "Re-tokenizing the prompt at each step",
                   "Reloading weights for every new request",
+                  "Recomputing past keys/values each step",
                   "Storing the attention scores on disk"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "It stores the keys and values of earlier tokens so each decode step only computes them for the new token. Its memory grows with layers × KV heads × head_dim × tokens."
               },
               {
                 "q": "What does continuous batching achieve?",
                 "options": [
-                  "Swaps requests in and out each step",
                   "Groups requests by prompt length first",
+                  "Swaps requests in and out each step",
                   "Waits until a full batch has arrived",
                   "Pads every request to the longest one"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "Finished requests leave and new ones join at every decode step, so the GPU stays busy instead of idling while fast requests wait for slow ones (Orca; vLLM)."
               },
               {
                 "q": "Bigger batches generally…",
                 "options": [
-                  "Raise throughput but can add latency",
                   "Lower both throughput and per-request cost",
+                  "Raise throughput but can add latency",
                   "Lower per-request latency in every case",
                   "Leave throughput unchanged on a GPU"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "More requests share each forward pass, so throughput rises and cost per token falls, while each request may wait longer. Tune to the use case: interactive vs bulk."
               },
               {
                 "q": "How can quantization help serving beyond disk size?",
                 "options": [
-                  "Frees memory for KV cache and batches",
                   "It removes the KV cache",
                   "It always raises throughput",
-                  "It only speeds up loading"
+                  "It only speeds up loading",
+                  "Frees memory for KV cache and batches"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Smaller weights leave room for a bigger KV cache and larger batches, and cut memory traffic per token at batch 1. At large batch, weight-only int4 can be dequant- or compute-bound and may not raise throughput — measure at your batch size."
               }
             ]
@@ -399,36 +399,36 @@ batch job (offline)    -&gt;  large batches, high throughput  (cheap per token)
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does the KV cache avoid?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Recomputing past keys/values each step</li>
                   <li>Re-tokenizing the prompt at each step</li>
                   <li>Reloading weights for every new request</li>
+                  <li>Recomputing past keys/values each step</li>
                   <li>Storing the attention scores on disk</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Recomputing past keys/values each step</strong> It stores the keys and values of earlier tokens so each decode step only computes them for the new token. Its memory grows with layers × KV heads × head_dim × tokens.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Recomputing past keys/values each step</strong> It stores the keys and values of earlier tokens so each decode step only computes them for the new token. Its memory grows with layers × KV heads × head_dim × tokens.</p></details></li>
               <li><p class="quiz__q-text">What does continuous batching achieve?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Swaps requests in and out each step</li>
                   <li>Groups requests by prompt length first</li>
+                  <li>Swaps requests in and out each step</li>
                   <li>Waits until a full batch has arrived</li>
                   <li>Pads every request to the longest one</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Swaps requests in and out each step</strong> Finished requests leave and new ones join at every decode step, so the GPU stays busy instead of idling while fast requests wait for slow ones (Orca; vLLM).</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Swaps requests in and out each step</strong> Finished requests leave and new ones join at every decode step, so the GPU stays busy instead of idling while fast requests wait for slow ones (Orca; vLLM).</p></details></li>
               <li><p class="quiz__q-text">Bigger batches generally…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Raise throughput but can add latency</li>
                   <li>Lower both throughput and per-request cost</li>
+                  <li>Raise throughput but can add latency</li>
                   <li>Lower per-request latency in every case</li>
                   <li>Leave throughput unchanged on a GPU</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Raise throughput but can add latency</strong> More requests share each forward pass, so throughput rises and cost per token falls, while each request may wait longer. Tune to the use case: interactive vs bulk.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Raise throughput but can add latency</strong> More requests share each forward pass, so throughput rises and cost per token falls, while each request may wait longer. Tune to the use case: interactive vs bulk.</p></details></li>
               <li><p class="quiz__q-text">How can quantization help serving beyond disk size?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Frees memory for KV cache and batches</li>
                   <li>It removes the KV cache</li>
                   <li>It always raises throughput</li>
                   <li>It only speeds up loading</li>
+                  <li>Frees memory for KV cache and batches</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Frees memory for KV cache and batches</strong> Smaller weights leave room for a bigger KV cache and larger batches, and cut memory traffic per token at batch 1. At large batch, weight-only int4 can be dequant- or compute-bound and may not raise throughput — measure at your batch size.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Frees memory for KV cache and batches</strong> Smaller weights leave room for a bigger KV cache and larger batches, and cut memory traffic per token at batch 1. At large batch, weight-only int4 can be dequant- or compute-bound and may not raise throughput — measure at your batch size.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

@@ -166,7 +166,7 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Grouped splits put more rows in train, so the model sees more styles"
             },
             {
@@ -177,7 +177,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 2,
             "text": "Same-author reviews share a voice, so random splits leak it into test",
             "answerExplanation": {
               "@type": "Comment",
@@ -199,7 +199,7 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Blocking reviews need a bigger model and a longer context window"
             },
             {
@@ -210,7 +210,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 2,
             "text": "Low blast radius: a human decides before any comment can block the merge",
             "answerExplanation": {
               "@type": "Comment",
@@ -692,22 +692,22 @@
                 "q": "Why does the code-review recipe recommend splitting train/val/test by repository or by author rather than randomly?",
                 "options": [
                   "Random splits aren't reproducible, so scores drift between runs",
-                  "Same-author reviews share a voice, so random splits leak it into test",
                   "Grouped splits put more rows in train, so the model sees more styles",
+                  "Same-author reviews share a voice, so random splits leak it into test",
                   "Each repository uses its own tokenizer settings, so rows can't be mixed"
                 ],
-                "answer": 1,
+                "answer": 2,
                 "explanation": "Reviews by one engineer are stylistically correlated. With a random split the model can 'recognise' a reviewer's voice in test instead of generalising the critique, which inflates eval scores and then disappoints in production. Splitting with Disjoint By Field on author or repository forces generalisation across reviewers and codebases."
               },
               {
                 "q": "Why start a review bot in a reviewer-only stage, where a human sees its comments before anything reaches the PR, rather than letting it post blocking reviews on day one?",
                 "options": [
                   "GitHub hides suggested changes from the PR author until a reviewer approves them",
-                  "Low blast radius: a human decides before any comment can block the merge",
                   "Blocking reviews need a bigger model and a longer context window",
+                  "Low blast radius: a human decides before any comment can block the merge",
                   "Comments in that stage don't count as reviews, so the bot runs faster"
                 ],
-                "answer": 1,
+                "answer": 2,
                 "explanation": "The point is containment: a wrong comment costs the reviewer a few seconds and never holds up the merge, so you can measure the bot's hit rate before giving it more power. The tempting idea that GitHub keeps suggested changes invisible to the author is false: suggestions live on review comments the author can see and apply. A real reviewer-only stage posts somewhere the author doesn't see, such as a private channel or a check-run summary for reviewers."
               },
               {
@@ -738,19 +738,19 @@
               <li><p class="quiz__q-text">Why does the code-review recipe recommend splitting train/val/test by repository or by author rather than randomly?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Random splits aren't reproducible, so scores drift between runs</li>
-                  <li>Same-author reviews share a voice, so random splits leak it into test</li>
                   <li>Grouped splits put more rows in train, so the model sees more styles</li>
+                  <li>Same-author reviews share a voice, so random splits leak it into test</li>
                   <li>Each repository uses its own tokenizer settings, so rows can't be mixed</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Same-author reviews share a voice, so random splits leak it into test</strong> Reviews by one engineer are stylistically correlated. With a random split the model can 'recognise' a reviewer's voice in test instead of generalising the critique, which inflates eval scores and then disappoints in production. Splitting with Disjoint By Field on author or repository forces generalisation across reviewers and codebases.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Same-author reviews share a voice, so random splits leak it into test</strong> Reviews by one engineer are stylistically correlated. With a random split the model can 'recognise' a reviewer's voice in test instead of generalising the critique, which inflates eval scores and then disappoints in production. Splitting with Disjoint By Field on author or repository forces generalisation across reviewers and codebases.</p></details></li>
               <li><p class="quiz__q-text">Why start a review bot in a reviewer-only stage, where a human sees its comments before anything reaches the PR, rather than letting it post blocking reviews on day one?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>GitHub hides suggested changes from the PR author until a reviewer approves them</li>
-                  <li>Low blast radius: a human decides before any comment can block the merge</li>
                   <li>Blocking reviews need a bigger model and a longer context window</li>
+                  <li>Low blast radius: a human decides before any comment can block the merge</li>
                   <li>Comments in that stage don't count as reviews, so the bot runs faster</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Low blast radius: a human decides before any comment can block the merge</strong> The point is containment: a wrong comment costs the reviewer a few seconds and never holds up the merge, so you can measure the bot's hit rate before giving it more power. The tempting idea that GitHub keeps suggested changes invisible to the author is false: suggestions live on review comments the author can see and apply. A real reviewer-only stage posts somewhere the author doesn't see, such as a private channel or a check-run summary for reviewers.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Low blast radius: a human decides before any comment can block the merge</strong> The point is containment: a wrong comment costs the reviewer a few seconds and never holds up the merge, so you can measure the bot's hit rate before giving it more power. The tempting idea that GitHub keeps suggested changes invisible to the author is false: suggestions live on review comments the author can see and apply. A real reviewer-only stage posts somewhere the author doesn't see, such as a private channel or a check-run summary for reviewers.</p></details></li>
               <li><p class="quiz__q-text">What does a 'hard negative' look like for code review (compared to a hard negative for SQL-injection classification)?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>A diff with no changed lines, paired with an empty review</li>

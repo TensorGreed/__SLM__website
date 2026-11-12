@@ -91,23 +91,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Because prompt tokens have no labels and would crash the loss function"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Because masking the prompt cuts the GPU memory a training step needs"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "So the model forgets the prompt and cannot copy text from it later"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "So the gradient teaches producing the answer, not predicting the prompt",
             "answerExplanation": {
               "@type": "Comment",
@@ -347,12 +347,12 @@
               {
                 "q": "Why does SFT usually compute loss only on the completion tokens?",
                 "options": [
-                  "So the gradient teaches producing the answer, not predicting the prompt",
                   "Because prompt tokens have no labels and would crash the loss function",
                   "Because masking the prompt cuts the GPU memory a training step needs",
-                  "So the model forgets the prompt and cannot copy text from it later"
+                  "So the model forgets the prompt and cannot copy text from it later",
+                  "So the gradient teaches producing the answer, not predicting the prompt"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "The prompt is context the user supplies at inference, so learning to predict it is usually wasted effort. The prompt still goes through the forward pass, so masking saves no memory. It is a default, not a law: Shi et al. 2024 (arXiv:2405.14394) found prompt loss can help when prompts are long and completions short."
               },
               {
@@ -396,12 +396,12 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Why does SFT usually compute loss only on the completion tokens?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>So the gradient teaches producing the answer, not predicting the prompt</li>
                   <li>Because prompt tokens have no labels and would crash the loss function</li>
                   <li>Because masking the prompt cuts the GPU memory a training step needs</li>
                   <li>So the model forgets the prompt and cannot copy text from it later</li>
+                  <li>So the gradient teaches producing the answer, not predicting the prompt</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. So the gradient teaches producing the answer, not predicting the prompt</strong> The prompt is context the user supplies at inference, so learning to predict it is usually wasted effort. The prompt still goes through the forward pass, so masking saves no memory. It is a default, not a law: Shi et al. 2024 (arXiv:2405.14394) found prompt loss can help when prompts are long and completions short.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. So the gradient teaches producing the answer, not predicting the prompt</strong> The prompt is context the user supplies at inference, so learning to predict it is usually wasted effort. The prompt still goes through the forward pass, so masking saves no memory. It is a default, not a law: Shi et al. 2024 (arXiv:2405.14394) found prompt loss can help when prompts are long and completions short.</p></details></li>
               <li><p class="quiz__q-text">Your tokenizer has no pad token, so you set pad_token = eos_token, and the collator masks every pad ID out of the labels. What goes wrong?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>The real EOS gets masked too, so the model never learns to stop</li>

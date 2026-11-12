@@ -133,18 +133,18 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Recall on structured IDs is computed by regex, so it runs higher"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "0.98 is BrewSLM's built-in floor for every numeric entity type"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 3,
             "text": "A missed SSN is a compliance incident; a missed name costs less",
             "answerExplanation": {
               "@type": "Comment",
@@ -166,18 +166,18 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Hosted frontier models can't return character offsets for spans"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Per-token pricing makes it too expensive at any traffic volume"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 3,
             "text": "To redact the PII you first have to ship it to a third party",
             "answerExplanation": {
               "@type": "Comment",
@@ -227,7 +227,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "Regulations everywhere forbid ever deleting the original text"
             },
             {
@@ -243,7 +243,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "False positives stay recoverable, and compliance can show what was redacted",
             "answerExplanation": {
               "@type": "Comment",
@@ -694,22 +694,22 @@
                 "q": "You set recall floors of 0.98 on SSN and credit card but 0.85 on PERSON. Why is that asymmetry sensible?",
                 "options": [
                   "SSNs are easier to learn, so a higher floor costs nothing extra",
-                  "A missed SSN is a compliance incident; a missed name costs less",
                   "Recall on structured IDs is computed by regex, so it runs higher",
-                  "0.98 is BrewSLM's built-in floor for every numeric entity type"
+                  "0.98 is BrewSLM's built-in floor for every numeric entity type",
+                  "A missed SSN is a compliance incident; a missed name costs less"
                 ],
-                "answer": 1,
+                "answer": 3,
                 "explanation": "These floors are a policy you set, not platform defaults: the scaffold starts every type at 0.60, and the compliance bundles suggest 0.95 (PCI-DSS, HIPAA) or 0.90 (GDPR, CCPA). The asymmetry follows miss cost: one leaked SSN or card number is a reportable incident, while a missed common name in noisy text is cheaper and often genuinely ambiguous ('May', 'Will')."
               },
               {
                 "q": "Why is sending raw text to a hosted frontier-model API to 'redact PII for me' the wrong architecture?",
                 "options": [
                   "Hosted frontier models are too slow for per-request redaction",
-                  "To redact the PII you first have to ship it to a third party",
                   "Hosted frontier models can't return character offsets for spans",
-                  "Per-token pricing makes it too expensive at any traffic volume"
+                  "Per-token pricing makes it too expensive at any traffic volume",
+                  "To redact the PII you first have to ship it to a third party"
                 ],
-                "answer": 1,
+                "answer": 3,
                 "explanation": "The point of PII tagging is to keep sensitive data inside your boundary; routing raw text through a third-party API leaks it before redaction runs. Any architecture that keeps the text in-house avoids that — a self-hosted model of any size, rules, or a contractual zero-retention deployment — and a small self-hosted tagger is a cheap way to get there."
               },
               {
@@ -726,12 +726,12 @@
               {
                 "q": "Why does the deployed pipeline keep the original text alongside the redacted copy and an audit log, instead of redacting and destroying in one step?",
                 "options": [
-                  "Regulations everywhere forbid ever deleting the original text",
                   "False positives stay recoverable, and compliance can show what was redacted",
+                  "Regulations everywhere forbid ever deleting the original text",
                   "Keeping both copies lets the redactor skip work on re-runs",
                   "The audit log replaces the held-out eval as the quality measure"
                 ],
-                "answer": 1,
+                "answer": 0,
                 "explanation": "Redact-and-destroy is unauditable: every false positive permanently corrupts text that may matter, and nobody can answer 'what did you redact?'. Keeping the original (under a retention policy compliance owns) makes false positives recoverable, and the log lets reviewers sample decisions. False negatives are still measured on the held-out eval set; the log complements it, it does not replace it."
               }
             ]
@@ -743,19 +743,19 @@
               <li><p class="quiz__q-text">You set recall floors of 0.98 on SSN and credit card but 0.85 on PERSON. Why is that asymmetry sensible?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>SSNs are easier to learn, so a higher floor costs nothing extra</li>
-                  <li>A missed SSN is a compliance incident; a missed name costs less</li>
                   <li>Recall on structured IDs is computed by regex, so it runs higher</li>
                   <li>0.98 is BrewSLM's built-in floor for every numeric entity type</li>
+                  <li>A missed SSN is a compliance incident; a missed name costs less</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A missed SSN is a compliance incident; a missed name costs less</strong> These floors are a policy you set, not platform defaults: the scaffold starts every type at 0.60, and the compliance bundles suggest 0.95 (PCI-DSS, HIPAA) or 0.90 (GDPR, CCPA). The asymmetry follows miss cost: one leaked SSN or card number is a reportable incident, while a missed common name in noisy text is cheaper and often genuinely ambiguous ('May', 'Will').</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. A missed SSN is a compliance incident; a missed name costs less</strong> These floors are a policy you set, not platform defaults: the scaffold starts every type at 0.60, and the compliance bundles suggest 0.95 (PCI-DSS, HIPAA) or 0.90 (GDPR, CCPA). The asymmetry follows miss cost: one leaked SSN or card number is a reportable incident, while a missed common name in noisy text is cheaper and often genuinely ambiguous ('May', 'Will').</p></details></li>
               <li><p class="quiz__q-text">Why is sending raw text to a hosted frontier-model API to 'redact PII for me' the wrong architecture?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Hosted frontier models are too slow for per-request redaction</li>
-                  <li>To redact the PII you first have to ship it to a third party</li>
                   <li>Hosted frontier models can't return character offsets for spans</li>
                   <li>Per-token pricing makes it too expensive at any traffic volume</li>
+                  <li>To redact the PII you first have to ship it to a third party</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. To redact the PII you first have to ship it to a third party</strong> The point of PII tagging is to keep sensitive data inside your boundary; routing raw text through a third-party API leaks it before redaction runs. Any architecture that keeps the text in-house avoids that — a self-hosted model of any size, rules, or a contractual zero-retention deployment — and a small self-hosted tagger is a cheap way to get there.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. To redact the PII you first have to ship it to a third party</strong> The point of PII tagging is to keep sensitive data inside your boundary; routing raw text through a third-party API leaks it before redaction runs. Any architecture that keeps the text in-house avoids that — a self-hosted model of any size, rules, or a contractual zero-retention deployment — and a small self-hosted tagger is a cheap way to get there.</p></details></li>
               <li><p class="quiz__q-text">What makes a good hard negative for PII tagging?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>A plain sentence with no names, numbers or dates in it at all</li>
@@ -766,12 +766,12 @@
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. PII-looking words that aren't PII in context: 'May 2024 revenue'</strong> Hard negatives defend precision: look-alike strings the model must use context to reject. 'May' is a name in one sentence and a month in another. A plain sentence teaches little. An obfuscated email is still PII — a positive the model should recall. The Hard negatives playbook writes zero-entity look-alike rows; for targeted look-alikes, write them yourself or seed from a failure cluster.</p></details></li>
               <li><p class="quiz__q-text">Why does the deployed pipeline keep the original text alongside the redacted copy and an audit log, instead of redacting and destroying in one step?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Regulations everywhere forbid ever deleting the original text</li>
                   <li>False positives stay recoverable, and compliance can show what was redacted</li>
+                  <li>Regulations everywhere forbid ever deleting the original text</li>
                   <li>Keeping both copies lets the redactor skip work on re-runs</li>
                   <li>The audit log replaces the held-out eval as the quality measure</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. False positives stay recoverable, and compliance can show what was redacted</strong> Redact-and-destroy is unauditable: every false positive permanently corrupts text that may matter, and nobody can answer 'what did you redact?'. Keeping the original (under a retention policy compliance owns) makes false positives recoverable, and the log lets reviewers sample decisions. False negatives are still measured on the held-out eval set; the log complements it, it does not replace it.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. False positives stay recoverable, and compliance can show what was redacted</strong> Redact-and-destroy is unauditable: every false positive permanently corrupts text that may matter, and nobody can answer 'what did you redact?'. Keeping the original (under a retention policy compliance owns) makes false positives recoverable, and the log lets reviewers sample decisions. False negatives are still measured on the held-out eval set; the log complements it, it does not replace it.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

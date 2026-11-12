@@ -91,12 +91,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Runs the target in parallel on later positions"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Skips low-probability tokens while decoding"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Target verifies K draft tokens in one pass",
             "answerExplanation": {
               "@type": "Comment",
@@ -124,7 +124,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Only the target model's parameter count"
             },
             {
@@ -140,7 +140,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "α, K, and the cost ratio c",
             "answerExplanation": {
               "@type": "Comment",
@@ -404,23 +404,23 @@ print(tok.decode(out[0], skip_special_tokens=True))</code></pre>
               {
                 "q": "What does speculative decoding do that beats one-token-at-a-time decoding?",
                 "options": [
-                  "Target verifies K draft tokens in one pass",
                   "Runs the target in parallel on later positions",
                   "Skips low-probability tokens while decoding",
+                  "Target verifies K draft tokens in one pass",
                   "Shares the target's KV cache across requests"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "A small draft proposes K tokens; the target scores them in a single forward pass and keeps the accepted prefix plus one token of its own. Each round always yields at least one token, so it wins when tokens per round outweigh the draft's added cost."
               },
               {
                 "q": "What determines the expected speed-up from speculative decoding?",
                 "options": [
-                  "α, K, and the cost ratio c",
                   "Only the target model's parameter count",
+                  "α, K, and the cost ratio c",
                   "The number of GPUs the target spans",
                   "Vocabulary size"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "speedup ≈ (1 − α^(K+1)) / ((1 − α)(1 + c·K)): acceptance rate α, draft length K, and draft-to-target cost ratio c. With c = 0.1, K = 4: α = 0.7 gives ≈1.98×, α = 0.9 ≈2.93×."
               },
               {
@@ -453,20 +453,20 @@ print(tok.decode(out[0], skip_special_tokens=True))</code></pre>
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does speculative decoding do that beats one-token-at-a-time decoding?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Target verifies K draft tokens in one pass</li>
                   <li>Runs the target in parallel on later positions</li>
                   <li>Skips low-probability tokens while decoding</li>
+                  <li>Target verifies K draft tokens in one pass</li>
                   <li>Shares the target's KV cache across requests</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Target verifies K draft tokens in one pass</strong> A small draft proposes K tokens; the target scores them in a single forward pass and keeps the accepted prefix plus one token of its own. Each round always yields at least one token, so it wins when tokens per round outweigh the draft's added cost.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Target verifies K draft tokens in one pass</strong> A small draft proposes K tokens; the target scores them in a single forward pass and keeps the accepted prefix plus one token of its own. Each round always yields at least one token, so it wins when tokens per round outweigh the draft's added cost.</p></details></li>
               <li><p class="quiz__q-text">What determines the expected speed-up from speculative decoding?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>α, K, and the cost ratio c</li>
                   <li>Only the target model's parameter count</li>
+                  <li>α, K, and the cost ratio c</li>
                   <li>The number of GPUs the target spans</li>
                   <li>Vocabulary size</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. α, K, and the cost ratio c</strong> speedup ≈ (1 − α^(K+1)) / ((1 − α)(1 + c·K)): acceptance rate α, draft length K, and draft-to-target cost ratio c. With c = 0.1, K = 4: α = 0.7 gives ≈1.98×, α = 0.9 ≈2.93×.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. α, K, and the cost ratio c</strong> speedup ≈ (1 − α^(K+1)) / ((1 − α)(1 + c·K)): acceptance rate α, draft length K, and draft-to-target cost ratio c. With c = 0.1, K = 4: α = 0.7 gives ≈1.98×, α = 0.9 ≈2.93×.</p></details></li>
               <li><p class="quiz__q-text">Draft and target use different tokenizers. What are your options?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Cross-tokenizer drafting, or a draft-free method</li>

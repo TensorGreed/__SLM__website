@@ -124,12 +124,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "JSONL rows with a prompt field and a completion field for each document"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Chat-template messages with system, user and assistant role markers"
             },
             {
@@ -140,7 +140,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Raw documents packed into long sequences, with no labels or mask",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,23 +157,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Check that training loss on the domain corpus went down during CPT"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Check that the model now uses more domain jargon in its free-text answers"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Check that perplexity dropped on a generic benchmark after CPT"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Compare task metrics from the same SFT on the CPT'd and the original base",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,12 +190,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "New rows start as random noise"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Extended vocabularies cannot be saved, so the model only works in the training process"
             },
             {
@@ -206,7 +206,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "The new embedding rows carry no specific meaning until enough CPT trains them",
             "answerExplanation": {
               "@type": "Comment",
@@ -437,34 +437,34 @@ Evaluate task-model on the same gold set you would have used without stage 1.</c
               {
                 "q": "What does CPT training data look like?",
                 "options": [
-                  "Raw documents packed into long sequences, with no labels or mask",
                   "JSONL rows with a prompt field and a completion field for each document",
                   "Chat-template messages with system, user and assistant role markers",
+                  "Raw documents packed into long sequences, with no labels or mask",
                   "Preference pairs of a better and a worse continuation for each passage"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "CPT is the next-token objective on raw text, the same shape as the original pretraining. Separate documents with an EOS token when packing so the model doesn't learn that one document flows into the next."
               },
               {
                 "q": "How should you decide whether a CPT run was worth doing?",
                 "options": [
-                  "Compare task metrics from the same SFT on the CPT'd and the original base",
                   "Check that training loss on the domain corpus went down during CPT",
                   "Check that the model now uses more domain jargon in its free-text answers",
-                  "Check that perplexity dropped on a generic benchmark after CPT"
+                  "Check that perplexity dropped on a generic benchmark after CPT",
+                  "Compare task metrics from the same SFT on the CPT'd and the original base"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Training loss on in-distribution text almost always falls, and held-out domain loss falling is fluency, not task usefulness. The honest signal is the frozen gold set: same SFT recipe, original base versus CPT'd base."
               },
               {
                 "q": "You add 2,000 domain tokens to the vocabulary before CPT. Why is this a trade-off rather than a free win?",
                 "options": [
-                  "The new embedding rows carry no specific meaning until enough CPT trains them",
                   "New rows start as random noise",
                   "Extended vocabularies cannot be saved, so the model only works in the training process",
+                  "The new embedding rows carry no specific meaning until enough CPT trains them",
                   "New tokens are never updated by CPT"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "Since transformers 4.46, resize_token_embeddings initialises new rows around the mean of the existing embeddings (better still: the mean of the sub-tokens they replace) — not random, but not meaningful either. With LoRA-CPT the embedding and lm_head rows must also be trained (modules_to_save), and a changed tokenizer breaks logit-level distillation from the original teacher."
               }
             ]
@@ -483,28 +483,28 @@ Evaluate task-model on the same gold set you would have used without stage 1.</c
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The base model reads your domain's text with unusually high per-token loss</strong> CPT addresses token-level unfamiliarity with a domain's text. Format-following, task answers and refusals are SFT or preference-tuning problems; CPT will not fix them and burns compute trying.</p></details></li>
               <li><p class="quiz__q-text">What does CPT training data look like?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Raw documents packed into long sequences, with no labels or mask</li>
                   <li>JSONL rows with a prompt field and a completion field for each document</li>
                   <li>Chat-template messages with system, user and assistant role markers</li>
+                  <li>Raw documents packed into long sequences, with no labels or mask</li>
                   <li>Preference pairs of a better and a worse continuation for each passage</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Raw documents packed into long sequences, with no labels or mask</strong> CPT is the next-token objective on raw text, the same shape as the original pretraining. Separate documents with an EOS token when packing so the model doesn't learn that one document flows into the next.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Raw documents packed into long sequences, with no labels or mask</strong> CPT is the next-token objective on raw text, the same shape as the original pretraining. Separate documents with an EOS token when packing so the model doesn't learn that one document flows into the next.</p></details></li>
               <li><p class="quiz__q-text">How should you decide whether a CPT run was worth doing?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Compare task metrics from the same SFT on the CPT'd and the original base</li>
                   <li>Check that training loss on the domain corpus went down during CPT</li>
                   <li>Check that the model now uses more domain jargon in its free-text answers</li>
                   <li>Check that perplexity dropped on a generic benchmark after CPT</li>
+                  <li>Compare task metrics from the same SFT on the CPT'd and the original base</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Compare task metrics from the same SFT on the CPT'd and the original base</strong> Training loss on in-distribution text almost always falls, and held-out domain loss falling is fluency, not task usefulness. The honest signal is the frozen gold set: same SFT recipe, original base versus CPT'd base.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Compare task metrics from the same SFT on the CPT'd and the original base</strong> Training loss on in-distribution text almost always falls, and held-out domain loss falling is fluency, not task usefulness. The honest signal is the frozen gold set: same SFT recipe, original base versus CPT'd base.</p></details></li>
               <li><p class="quiz__q-text">You add 2,000 domain tokens to the vocabulary before CPT. Why is this a trade-off rather than a free win?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The new embedding rows carry no specific meaning until enough CPT trains them</li>
                   <li>New rows start as random noise</li>
                   <li>Extended vocabularies cannot be saved, so the model only works in the training process</li>
+                  <li>The new embedding rows carry no specific meaning until enough CPT trains them</li>
                   <li>New tokens are never updated by CPT</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The new embedding rows carry no specific meaning until enough CPT trains them</strong> Since transformers 4.46, resize_token_embeddings initialises new rows around the mean of the existing embeddings (better still: the mean of the sub-tokens they replace) — not random, but not meaningful either. With LoRA-CPT the embedding and lm_head rows must also be trained (modules_to_save), and a changed tokenizer breaks logit-level distillation from the original teacher.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The new embedding rows carry no specific meaning until enough CPT trains them</strong> Since transformers 4.46, resize_token_embeddings initialises new rows around the mean of the existing embeddings (better still: the mean of the sub-tokens they replace) — not random, but not meaningful either. With LoRA-CPT the embedding and lm_head rows must also be trained (modules_to_save), and a changed tokenizer breaks logit-level distillation from the original teacher.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

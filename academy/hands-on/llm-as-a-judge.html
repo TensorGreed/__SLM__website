@@ -91,7 +91,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Sentiment classification with a labelled gold set"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "Free-form support replies with no exact-match metric",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,12 +157,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Pinning the judge's temperature to 0 for determinism"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Averaging two judges so their errors cancel out"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Measuring agreement with a small human-rated set",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,23 +190,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Licensing forbids it"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Same-family tokenizers can't parse each other's outputs"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Same-family judges grade more harshly to avoid looking biased"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Judges tend to favour their own family's outputs",
             "answerExplanation": {
               "@type": "Comment",
@@ -419,12 +419,12 @@ win = forward.winner == reverse.winner and forward.winner != "tie"</code></pre>
               {
                 "q": "Which is a good task for LLM-as-a-judge?",
                 "options": [
-                  "Free-form support replies with no exact-match metric",
                   "Sentiment classification with a labelled gold set",
+                  "Free-form support replies with no exact-match metric",
                   "JSON extraction against a known schema and gold values",
                   "Tool-call generation with labelled function-call ground truth"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "Free-form outputs are where deterministic metrics break down; that's the gap a judge fills. The other three have labelled answers, so use the deterministic metric."
               },
               {
@@ -441,23 +441,23 @@ win = forward.winner == reverse.winner and forward.winner != "tie"</code></pre>
               {
                 "q": "What's the calibration step that everyone skips and everyone regrets?",
                 "options": [
-                  "Measuring agreement with a small human-rated set",
                   "Pinning the judge's temperature to 0 for determinism",
                   "Averaging two judges so their errors cancel out",
+                  "Measuring agreement with a small human-rated set",
                   "Running the judge twice and keeping the higher score"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "Judge scores are a proxy until you report agreement with human labels (κ, or weighted κ / Krippendorff's α for ordinal scores; Spearman ρ alone is perfect for a judge that is always one point high). Temperature 0 isn't fully deterministic on many stacks, and two judges agreeing doesn't show either matches people."
               },
               {
                 "q": "Why is using a judge from the same model family as a candidate a problem?",
                 "options": [
-                  "Judges tend to favour their own family's outputs",
                   "Licensing forbids it",
                   "Same-family tokenizers can't parse each other's outputs",
-                  "Same-family judges grade more harshly to avoid looking biased"
+                  "Same-family judges grade more harshly to avoid looking biased",
+                  "Judges tend to favour their own family's outputs"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Self-preference: judges tend to prefer outputs from their own model family (Zheng et al. 2023, arXiv:2306.05685; Panickssery et al. 2024, arXiv:2404.13076). The size varies by judge, so check for it: use a judge from a different family, or two judges from different families."
               }
             ]
@@ -468,12 +468,12 @@ win = forward.winner == reverse.winner and forward.winner != "tie"</code></pre>
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Which is a good task for LLM-as-a-judge?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Free-form support replies with no exact-match metric</li>
                   <li>Sentiment classification with a labelled gold set</li>
+                  <li>Free-form support replies with no exact-match metric</li>
                   <li>JSON extraction against a known schema and gold values</li>
                   <li>Tool-call generation with labelled function-call ground truth</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Free-form support replies with no exact-match metric</strong> Free-form outputs are where deterministic metrics break down; that's the gap a judge fills. The other three have labelled answers, so use the deterministic metric.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Free-form support replies with no exact-match metric</strong> Free-form outputs are where deterministic metrics break down; that's the gap a judge fills. The other three have labelled answers, so use the deterministic metric.</p></details></li>
               <li><p class="quiz__q-text">Why is pairwise judging usually more reliable than absolute scoring?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Relative choices are steadier than absolute scores</li>
@@ -484,20 +484,20 @@ win = forward.winner == reverse.winner and forward.winner != "tie"</code></pre>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Relative choices are steadier than absolute scores</strong> Picking the better of two outputs is an easier, more consistent judgement than placing one on a scale, which drifts and invites length and style bias. Position bias still exists (Wang et al. 2023): run both orders and map the letters back to candidates before comparing.</p></details></li>
               <li><p class="quiz__q-text">What's the calibration step that everyone skips and everyone regrets?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Measuring agreement with a small human-rated set</li>
                   <li>Pinning the judge's temperature to 0 for determinism</li>
                   <li>Averaging two judges so their errors cancel out</li>
+                  <li>Measuring agreement with a small human-rated set</li>
                   <li>Running the judge twice and keeping the higher score</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Measuring agreement with a small human-rated set</strong> Judge scores are a proxy until you report agreement with human labels (κ, or weighted κ / Krippendorff's α for ordinal scores; Spearman ρ alone is perfect for a judge that is always one point high). Temperature 0 isn't fully deterministic on many stacks, and two judges agreeing doesn't show either matches people.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Measuring agreement with a small human-rated set</strong> Judge scores are a proxy until you report agreement with human labels (κ, or weighted κ / Krippendorff's α for ordinal scores; Spearman ρ alone is perfect for a judge that is always one point high). Temperature 0 isn't fully deterministic on many stacks, and two judges agreeing doesn't show either matches people.</p></details></li>
               <li><p class="quiz__q-text">Why is using a judge from the same model family as a candidate a problem?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Judges tend to favour their own family's outputs</li>
                   <li>Licensing forbids it</li>
                   <li>Same-family tokenizers can't parse each other's outputs</li>
                   <li>Same-family judges grade more harshly to avoid looking biased</li>
+                  <li>Judges tend to favour their own family's outputs</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Judges tend to favour their own family's outputs</strong> Self-preference: judges tend to prefer outputs from their own model family (Zheng et al. 2023, arXiv:2306.05685; Panickssery et al. 2024, arXiv:2404.13076). The size varies by judge, so check for it: use a judge from a different family, or two judges from different families.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Judges tend to favour their own family's outputs</strong> Self-preference: judges tend to prefer outputs from their own model family (Zheng et al. 2023, arXiv:2306.05685; Panickssery et al. 2024, arXiv:2404.13076). The size varies by judge, so check for it: use a judge from a different family, or two judges from different families.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

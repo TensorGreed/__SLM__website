@@ -91,7 +91,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "A bug in gradient descent that corrupts weights when the learning rate is high"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "Losing broad skills while fine-tuning on narrow data",
             "answerExplanation": {
               "@type": "Comment",
@@ -124,12 +124,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Raise the learning rate so the task is learned in fewer steps"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Train for more epochs so the model settles back to its old skills"
             },
             {
@@ -140,7 +140,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Train a LoRA adapter instead of fully fine-tuning",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,12 +157,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "About 50% of the dataset"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "None — it dilutes the task"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "About 5–10% of the narrow dataset",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,23 +190,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "It is settled: fewer weights leave less spare capacity, so small models always forget more"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "It is settled the other way: forgetting falls steadily as models get larger"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Size has no effect; only LR matters"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "It is contested; measure forgetting with a broad eval",
             "answerExplanation": {
               "@type": "Comment",
@@ -362,45 +362,45 @@ mixed = concatenate_datasets([narrow_ds, broad_sample]).shuffle(seed=42)</code><
               {
                 "q": "Catastrophic forgetting is best described as…",
                 "options": [
-                  "Losing broad skills while fine-tuning on narrow data",
                   "A bug in gradient descent that corrupts weights when the learning rate is high",
+                  "Losing broad skills while fine-tuning on narrow data",
                   "Underfitting because the model is too small",
                   "The model losing its fine-tuned task when you later change the prompt"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "Nothing in the narrow-task loss rewards keeping the broader behaviours, so the optimizer is free to overwrite them. It is the expected result of the objective, not an algorithmic bug."
               },
               {
                 "q": "Which is the cheapest first mitigation for catastrophic forgetting?",
                 "options": [
-                  "Train a LoRA adapter instead of fully fine-tuning",
                   "Raise the learning rate so the task is learned in fewer steps",
                   "Train for more epochs so the model settles back to its old skills",
+                  "Train a LoRA adapter instead of fully fine-tuning",
                   "Use a larger batch size so each step averages over more examples"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "LoRA leaves the base weights untouched and forgets less than full fine-tuning (Biderman et al. 2024, arXiv:2405.09673) — but less, not none: with the adapter active the model can still forget. Higher LR and more epochs usually make forgetting worse."
               },
               {
                 "q": "Roughly how much general instruction data is a common starting heuristic to mix in against forgetting?",
                 "options": [
-                  "About 5–10% of the narrow dataset",
                   "About 50% of the dataset",
                   "None — it dilutes the task",
+                  "About 5–10% of the narrow dataset",
                   "Twice the narrow dataset, so the broad skills dominate every epoch"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "A small fraction gives the optimizer counter-pressure each epoch without diluting the task. It is a heuristic, not a law; Ibrahim et al. 2024 (arXiv:2403.08763) support about 5% replay for continued pretraining. Measure with a broad eval."
               },
               {
                 "q": "A colleague says small models always forget more than large ones when fine-tuned. What does the evidence support?",
                 "options": [
-                  "It is contested; measure forgetting with a broad eval",
                   "It is settled: fewer weights leave less spare capacity, so small models always forget more",
                   "It is settled the other way: forgetting falls steadily as models get larger",
-                  "Size has no effect; only LR matters"
+                  "Size has no effect; only LR matters",
+                  "It is contested; measure forgetting with a broad eval"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "The capacity argument sounds right but lacks a primary source, and Luo et al. 2023 (arXiv:2308.08747) found forgetting grew with scale in the 1B–7B range. Treat it as an open question and measure before and after on a broad eval."
               }
             ]
@@ -411,36 +411,36 @@ mixed = concatenate_datasets([narrow_ds, broad_sample]).shuffle(seed=42)</code><
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Catastrophic forgetting is best described as…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Losing broad skills while fine-tuning on narrow data</li>
                   <li>A bug in gradient descent that corrupts weights when the learning rate is high</li>
+                  <li>Losing broad skills while fine-tuning on narrow data</li>
                   <li>Underfitting because the model is too small</li>
                   <li>The model losing its fine-tuned task when you later change the prompt</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Losing broad skills while fine-tuning on narrow data</strong> Nothing in the narrow-task loss rewards keeping the broader behaviours, so the optimizer is free to overwrite them. It is the expected result of the objective, not an algorithmic bug.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Losing broad skills while fine-tuning on narrow data</strong> Nothing in the narrow-task loss rewards keeping the broader behaviours, so the optimizer is free to overwrite them. It is the expected result of the objective, not an algorithmic bug.</p></details></li>
               <li><p class="quiz__q-text">Which is the cheapest first mitigation for catastrophic forgetting?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Train a LoRA adapter instead of fully fine-tuning</li>
                   <li>Raise the learning rate so the task is learned in fewer steps</li>
                   <li>Train for more epochs so the model settles back to its old skills</li>
+                  <li>Train a LoRA adapter instead of fully fine-tuning</li>
                   <li>Use a larger batch size so each step averages over more examples</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Train a LoRA adapter instead of fully fine-tuning</strong> LoRA leaves the base weights untouched and forgets less than full fine-tuning (Biderman et al. 2024, arXiv:2405.09673) — but less, not none: with the adapter active the model can still forget. Higher LR and more epochs usually make forgetting worse.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Train a LoRA adapter instead of fully fine-tuning</strong> LoRA leaves the base weights untouched and forgets less than full fine-tuning (Biderman et al. 2024, arXiv:2405.09673) — but less, not none: with the adapter active the model can still forget. Higher LR and more epochs usually make forgetting worse.</p></details></li>
               <li><p class="quiz__q-text">Roughly how much general instruction data is a common starting heuristic to mix in against forgetting?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>About 5–10% of the narrow dataset</li>
                   <li>About 50% of the dataset</li>
                   <li>None — it dilutes the task</li>
+                  <li>About 5–10% of the narrow dataset</li>
                   <li>Twice the narrow dataset, so the broad skills dominate every epoch</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. About 5–10% of the narrow dataset</strong> A small fraction gives the optimizer counter-pressure each epoch without diluting the task. It is a heuristic, not a law; Ibrahim et al. 2024 (arXiv:2403.08763) support about 5% replay for continued pretraining. Measure with a broad eval.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. About 5–10% of the narrow dataset</strong> A small fraction gives the optimizer counter-pressure each epoch without diluting the task. It is a heuristic, not a law; Ibrahim et al. 2024 (arXiv:2403.08763) support about 5% replay for continued pretraining. Measure with a broad eval.</p></details></li>
               <li><p class="quiz__q-text">A colleague says small models always forget more than large ones when fine-tuned. What does the evidence support?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It is contested; measure forgetting with a broad eval</li>
                   <li>It is settled: fewer weights leave less spare capacity, so small models always forget more</li>
                   <li>It is settled the other way: forgetting falls steadily as models get larger</li>
                   <li>Size has no effect; only LR matters</li>
+                  <li>It is contested; measure forgetting with a broad eval</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. It is contested; measure forgetting with a broad eval</strong> The capacity argument sounds right but lacks a primary source, and Luo et al. 2023 (arXiv:2308.08747) found forgetting grew with scale in the 1B–7B range. Treat it as an open question and measure before and after on a broad eval.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. It is contested; measure forgetting with a broad eval</strong> The capacity argument sounds right but lacks a primary source, and Luo et al. 2023 (arXiv:2308.08747) found forgetting grew with scale in the 1B–7B range. Treat it as an open question and measure before and after on a broad eval.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

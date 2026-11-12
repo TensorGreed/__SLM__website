@@ -91,12 +91,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Marks the position as padding for attention"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Marks the end-of-sequence token"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Excludes that position from the loss",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,7 +190,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Every label equals its input id, including the prompt"
             },
             {
@@ -206,7 +206,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "Completion tokens are unmasked and not truncated",
             "answerExplanation": {
               "@type": "Comment",
@@ -371,12 +371,12 @@ print({k: tuple(v.shape) for k, v in batch.items()})</code></pre>
               {
                 "q": "What does setting a label position to -100 do?",
                 "options": [
-                  "Excludes that position from the loss",
                   "Marks the position as padding for attention",
                   "Marks the end-of-sequence token",
+                  "Excludes that position from the loss",
                   "Gives that position a negative, discouraging weight"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "-100 is PyTorch cross-entropy's ignore index: those positions contribute no loss. Attention is controlled separately by attention_mask."
               },
               {
@@ -404,12 +404,12 @@ print({k: tuple(v.shape) for k, v in batch.items()})</code></pre>
               {
                 "q": "Before training, you should inspect a tokenized example to confirm…",
                 "options": [
-                  "Completion tokens are unmasked and not truncated",
                   "Every label equals its input id, including the prompt",
+                  "Completion tokens are unmasked and not truncated",
                   "The attention mask is 0 on the prompt tokens",
                   "The labels are shifted one position right of input_ids"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "Check that the completion (including the end-of-turn token) survives truncation and is unmasked. If MAX_LEN cuts inside the prompt, every label is -100 and the row teaches nothing. The model shifts labels internally, so don't shift them yourself."
               }
             ]
@@ -420,12 +420,12 @@ print({k: tuple(v.shape) for k, v in batch.items()})</code></pre>
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does setting a label position to -100 do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Excludes that position from the loss</li>
                   <li>Marks the position as padding for attention</li>
                   <li>Marks the end-of-sequence token</li>
+                  <li>Excludes that position from the loss</li>
                   <li>Gives that position a negative, discouraging weight</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Excludes that position from the loss</strong> -100 is PyTorch cross-entropy's ignore index: those positions contribute no loss. Attention is controlled separately by attention_mask.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Excludes that position from the loss</strong> -100 is PyTorch cross-entropy's ignore index: those positions contribute no loss. Attention is controlled separately by attention_mask.</p></details></li>
               <li><p class="quiz__q-text">Why copy input_ids into labels and then overwrite the prompt span with -100?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>So loss falls only on the completion</li>
@@ -444,12 +444,12 @@ print({k: tuple(v.shape) for k, v in batch.items()})</code></pre>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. -100</strong> It pads labels with label_pad_token_id, -100 by default, so padded positions are ignored by the loss too. Padding labels with the pad token id would train the model on padding.</p></details></li>
               <li><p class="quiz__q-text">Before training, you should inspect a tokenized example to confirm…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Completion tokens are unmasked and not truncated</li>
                   <li>Every label equals its input id, including the prompt</li>
+                  <li>Completion tokens are unmasked and not truncated</li>
                   <li>The attention mask is 0 on the prompt tokens</li>
                   <li>The labels are shifted one position right of input_ids</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Completion tokens are unmasked and not truncated</strong> Check that the completion (including the end-of-turn token) survives truncation and is unmasked. If MAX_LEN cuts inside the prompt, every label is -100 and the row teaches nothing. The model shifts labels internally, so don't shift them yourself.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Completion tokens are unmasked and not truncated</strong> Check that the completion (including the end-of-turn token) survives truncation and is unmasked. If MAX_LEN cuts inside the prompt, every label is -100 and the row teaches nothing. The model shifts labels internally, so don't shift them yourself.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

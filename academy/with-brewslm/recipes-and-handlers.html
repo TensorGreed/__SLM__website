@@ -124,12 +124,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "The training preset chosen on the Train form for this experiment"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "The export format picked on Ship → Package"
             },
             {
@@ -140,7 +140,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "The task_profile, routed through the eval dispatcher",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,7 +157,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Domain handlers would need a separate base model each"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "So one handler serves many domains via a scoring mode",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,23 +190,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Tokenization, the -100 label mask, and score() for each output"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "The chat template and the LoRA target modules"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "The train / val / test split and its hashes"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Building the eval prompt and the score() of each output",
             "answerExplanation": {
               "@type": "Comment",
@@ -365,34 +365,34 @@ AudioTranscriptHandler       SafetyHandler</code></pre>
               {
                 "q": "What picks the task handler that scores an evaluation?",
                 "options": [
-                  "The task_profile, routed through the eval dispatcher",
                   "The training preset chosen on the Train form for this experiment",
                   "The export format picked on Ship → Package",
+                  "The task_profile, routed through the eval dispatcher",
                   "The base model's architecture family"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "The eval dispatcher routes the task_profile to a handler (with a Generic fallback)."
               },
               {
                 "q": "Why are handlers named after task shapes (Classification, QA) not domains (Invoice, PII)?",
                 "options": [
-                  "So one handler serves many domains via a scoring mode",
                   "Domain handlers would need a separate base model each",
+                  "So one handler serves many domains via a scoring mode",
                   "Task shapes need fewer training rows than domains do",
                   "Domain names can't be stored in the task_profile field"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "Task-shape generality keeps the platform broadly applicable: a handler plus a scoring mode (field_match, span_set, finding_set, remediation, structured_plan, multi_option) covers many domains."
               },
               {
                 "q": "What does the task handler own that your script wrote by hand?",
                 "options": [
-                  "Building the eval prompt and the score() of each output",
                   "Tokenization, the -100 label mask, and score() for each output",
                   "The chat template and the LoRA target modules",
-                  "The train / val / test split and its hashes"
+                  "The train / val / test split and its hashes",
+                  "Building the eval prompt and the score() of each output"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Handlers are evaluation-only: build_prompts() and score(). Tokenization and the -100 loss mask live in the trainer (scripts/train.py)."
               }
             ]
@@ -411,28 +411,28 @@ AudioTranscriptHandler       SafetyHandler</code></pre>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. TrainingConfig, the schema in backend/app/schemas/training.py</strong> TrainingConfig carries lora_r, learning_rate, batch_size, gradient_accumulation_steps and the rest. Task-shape recipes carry no hyperparameters, and training presets are patches applied to a TrainingConfig.</p></details></li>
               <li><p class="quiz__q-text">What picks the task handler that scores an evaluation?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The task_profile, routed through the eval dispatcher</li>
                   <li>The training preset chosen on the Train form for this experiment</li>
                   <li>The export format picked on Ship → Package</li>
+                  <li>The task_profile, routed through the eval dispatcher</li>
                   <li>The base model's architecture family</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The task_profile, routed through the eval dispatcher</strong> The eval dispatcher routes the task_profile to a handler (with a Generic fallback).</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The task_profile, routed through the eval dispatcher</strong> The eval dispatcher routes the task_profile to a handler (with a Generic fallback).</p></details></li>
               <li><p class="quiz__q-text">Why are handlers named after task shapes (Classification, QA) not domains (Invoice, PII)?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>So one handler serves many domains via a scoring mode</li>
                   <li>Domain handlers would need a separate base model each</li>
+                  <li>So one handler serves many domains via a scoring mode</li>
                   <li>Task shapes need fewer training rows than domains do</li>
                   <li>Domain names can't be stored in the task_profile field</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. So one handler serves many domains via a scoring mode</strong> Task-shape generality keeps the platform broadly applicable: a handler plus a scoring mode (field_match, span_set, finding_set, remediation, structured_plan, multi_option) covers many domains.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. So one handler serves many domains via a scoring mode</strong> Task-shape generality keeps the platform broadly applicable: a handler plus a scoring mode (field_match, span_set, finding_set, remediation, structured_plan, multi_option) covers many domains.</p></details></li>
               <li><p class="quiz__q-text">What does the task handler own that your script wrote by hand?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Building the eval prompt and the score() of each output</li>
                   <li>Tokenization, the -100 label mask, and score() for each output</li>
                   <li>The chat template and the LoRA target modules</li>
                   <li>The train / val / test split and its hashes</li>
+                  <li>Building the eval prompt and the score() of each output</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Building the eval prompt and the score() of each output</strong> Handlers are evaluation-only: build_prompts() and score(). Tokenization and the -100 loss mask live in the trainer (scripts/train.py).</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Building the eval prompt and the score() of each output</strong> Handlers are evaluation-only: build_prompts() and score(). Tokenization and the -100 loss mask live in the trainer (scripts/train.py).</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

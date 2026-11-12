@@ -91,12 +91,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Nothing — the gate is dropped because gate_id, operator and threshold are required"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "gate_id min_accuracy, operator gte, required false (optional)"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "gate_id min_accuracy, operator gte, required true, threshold 0.9",
             "answerExplanation": {
               "@type": "Comment",
@@ -124,7 +124,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "At promote, where the deploy stage refuses with deployment_promote_blocked"
             },
             {
@@ -140,7 +140,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "At export, and only when the project's gate_policy is switched on",
             "answerExplanation": {
               "@type": "Comment",
@@ -162,18 +162,18 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "(project_id, eval_result_id, output fingerprint)"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "exemplar_event_ids, capped at the first five events"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 3,
             "text": "(project_id, stage, reason_code, signature)",
             "answerExplanation": {
               "@type": "Comment",
@@ -433,34 +433,34 @@ last_computed_at    datetime           refresh marker for clustering runs</code>
               {
                 "q": "A gate is written as {metric_id: accuracy, threshold: 0.9} and nothing else. What does the pack store?",
                 "options": [
-                  "gate_id min_accuracy, operator gte, required true, threshold 0.9",
                   "Nothing — the gate is dropped because gate_id, operator and threshold are required",
                   "gate_id min_accuracy, operator gte, required false (optional)",
+                  "gate_id min_accuracy, operator gte, required true, threshold 0.9",
                   "gate_id accuracy, operator lte, required true, weight 1.0"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "Only metric_id is needed; a gate without it is dropped. gate_id defaults to min_<metric_id>, operator to gte, and required to true. A null threshold makes the gate not_enforced, and it passes."
               },
               {
                 "q": "Where are unmet required gates enforced today?",
                 "options": [
-                  "At export, and only when the project's gate_policy is switched on",
                   "At promote, where the deploy stage refuses with deployment_promote_blocked",
+                  "At export, and only when the project's gate_policy is switched on",
                   "At training launch, as a preflight blocking error",
                   "At eval time, which discards the failing result"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "Promotion only checks the version's status. Gates block through project.gate_policy (must_pass / min_score / blocked_if_missing) at export, and that policy is off by default; a blocked export fails with 'Export blocked by deployment gates: …'."
               },
               {
                 "q": "What uniquely keys a FailureCluster row (Ship → Monitor)?",
                 "options": [
                   "run_id plus the experiment's base model",
-                  "(project_id, stage, reason_code, signature)",
                   "(project_id, eval_result_id, output fingerprint)",
-                  "exemplar_event_ids, capped at the first five events"
+                  "exemplar_event_ids, capped at the first five events",
+                  "(project_id, stage, reason_code, signature)"
                 ],
-                "answer": 1,
+                "answer": 3,
                 "explanation": "One row per distinct RunEvent failure shape per project. The signature is sha1 of stage, reason code and a digit-stripped summary, so different batch sizes collapse into one cluster. Eval-miss clusters on Results → Failures are a separate feature and are not stored in this table."
               },
               {
@@ -482,28 +482,28 @@ last_computed_at    datetime           refresh marker for clustering runs</code>
             <ol class="quiz__static">
               <li><p class="quiz__q-text">A gate is written as {metric_id: accuracy, threshold: 0.9} and nothing else. What does the pack store?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>gate_id min_accuracy, operator gte, required true, threshold 0.9</li>
                   <li>Nothing — the gate is dropped because gate_id, operator and threshold are required</li>
                   <li>gate_id min_accuracy, operator gte, required false (optional)</li>
+                  <li>gate_id min_accuracy, operator gte, required true, threshold 0.9</li>
                   <li>gate_id accuracy, operator lte, required true, weight 1.0</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. gate_id min_accuracy, operator gte, required true, threshold 0.9</strong> Only metric_id is needed; a gate without it is dropped. gate_id defaults to min_&lt;metric_id&gt;, operator to gte, and required to true. A null threshold makes the gate not_enforced, and it passes.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. gate_id min_accuracy, operator gte, required true, threshold 0.9</strong> Only metric_id is needed; a gate without it is dropped. gate_id defaults to min_&lt;metric_id&gt;, operator to gte, and required to true. A null threshold makes the gate not_enforced, and it passes.</p></details></li>
               <li><p class="quiz__q-text">Where are unmet required gates enforced today?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>At export, and only when the project's gate_policy is switched on</li>
                   <li>At promote, where the deploy stage refuses with deployment_promote_blocked</li>
+                  <li>At export, and only when the project's gate_policy is switched on</li>
                   <li>At training launch, as a preflight blocking error</li>
                   <li>At eval time, which discards the failing result</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. At export, and only when the project's gate_policy is switched on</strong> Promotion only checks the version's status. Gates block through project.gate_policy (must_pass / min_score / blocked_if_missing) at export, and that policy is off by default; a blocked export fails with 'Export blocked by deployment gates: …'.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. At export, and only when the project's gate_policy is switched on</strong> Promotion only checks the version's status. Gates block through project.gate_policy (must_pass / min_score / blocked_if_missing) at export, and that policy is off by default; a blocked export fails with 'Export blocked by deployment gates: …'.</p></details></li>
               <li><p class="quiz__q-text">What uniquely keys a FailureCluster row (Ship → Monitor)?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>run_id plus the experiment's base model</li>
-                  <li>(project_id, stage, reason_code, signature)</li>
                   <li>(project_id, eval_result_id, output fingerprint)</li>
                   <li>exemplar_event_ids, capped at the first five events</li>
+                  <li>(project_id, stage, reason_code, signature)</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. (project_id, stage, reason_code, signature)</strong> One row per distinct RunEvent failure shape per project. The signature is sha1 of stage, reason code and a digit-stripped summary, so different batch sizes collapse into one cluster. Eval-miss clusters on Results → Failures are a separate feature and are not stored in this table.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. (project_id, stage, reason_code, signature)</strong> One row per distinct RunEvent failure shape per project. The signature is sha1 of stage, reason code and a digit-stripped summary, so different batch sizes collapse into one cluster. Eval-miss clusters on Results → Failures are a separate feature and are not stored in this table.</p></details></li>
               <li><p class="quiz__q-text">How does augment_from_cluster close the loop?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>It retrains on the RunEvent payloads stored in failure_clusters</li>

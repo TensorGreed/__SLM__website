@@ -91,23 +91,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Copies the base and trains every weight in fp32"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Merges a pretrained adapter into the base weights"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Quantizes the base to 4-bit"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Adds LoRA adapters and freezes the base",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,12 +157,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Tokenization of the raw dataset, then one epoch of eval"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Only the forward passes"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Forward, loss, backward and optimizer steps",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,23 +190,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "A full copy of the 135M model with the adapter merged"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "The adapter plus the base"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "The tokenizer and training config, but no weights"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Only the small LoRA adapter",
             "answerExplanation": {
               "@type": "Comment",
@@ -375,12 +375,12 @@ tok.save_pretrained("sft-out/adapter")</code></pre>
               {
                 "q": "What does get_peft_model(model, lora_config) do?",
                 "options": [
-                  "Adds LoRA adapters and freezes the base",
                   "Copies the base and trains every weight in fp32",
                   "Merges a pretrained adapter into the base weights",
-                  "Quantizes the base to 4-bit"
+                  "Quantizes the base to 4-bit",
+                  "Adds LoRA adapters and freezes the base"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "It attaches LoRA adapters and freezes the base, so only the adapter trains (921,600 params, about 0.68% of SmolLM2-135M, with r=16 on q_proj and v_proj). Quantization is a separate step, configured at load time for QLoRA."
               },
               {
@@ -397,23 +397,23 @@ tok.save_pretrained("sft-out/adapter")</code></pre>
               {
                 "q": "What does Trainer.train() actually run?",
                 "options": [
-                  "Forward, loss, backward and optimizer steps",
                   "Tokenization of the raw dataset, then one epoch of eval",
                   "Only the forward passes",
+                  "Forward, loss, backward and optimizer steps",
                   "A forward pass per batch, with gradients applied at the end"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "The Trainer runs the Track 1 training loop: for each (accumulated) batch it computes the loss, backpropagates, and steps the optimizer. Updates happen throughout, not once at the end."
               },
               {
                 "q": "After training a LoRA model, model.save_pretrained writes…",
                 "options": [
-                  "Only the small LoRA adapter",
                   "A full copy of the 135M model with the adapter merged",
                   "The adapter plus the base",
-                  "The tokenizer and training config, but no weights"
+                  "The tokenizer and training config, but no weights",
+                  "Only the small LoRA adapter"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "For a PEFT model it saves only the adapter weights and adapter_config.json, a few megabytes. Merging is a separate, explicit step."
               }
             ]
@@ -424,12 +424,12 @@ tok.save_pretrained("sft-out/adapter")</code></pre>
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does get_peft_model(model, lora_config) do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Adds LoRA adapters and freezes the base</li>
                   <li>Copies the base and trains every weight in fp32</li>
                   <li>Merges a pretrained adapter into the base weights</li>
                   <li>Quantizes the base to 4-bit</li>
+                  <li>Adds LoRA adapters and freezes the base</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Adds LoRA adapters and freezes the base</strong> It attaches LoRA adapters and freezes the base, so only the adapter trains (921,600 params, about 0.68% of SmolLM2-135M, with r=16 on q_proj and v_proj). Quantization is a separate step, configured at load time for QLoRA.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Adds LoRA adapters and freezes the base</strong> It attaches LoRA adapters and freezes the base, so only the adapter trains (921,600 params, about 0.68% of SmolLM2-135M, with r=16 on q_proj and v_proj). Quantization is a separate step, configured at load time for QLoRA.</p></details></li>
               <li><p class="quiz__q-text">With per_device_train_batch_size=8 and gradient_accumulation_steps=2, the effective batch is…</p>
                 <ol class="quiz__static-options" type="A">
                   <li>16</li>
@@ -440,20 +440,20 @@ tok.save_pretrained("sft-out/adapter")</code></pre>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. 16</strong> Effective batch = per-device batch × accumulation steps = 8 × 2 = 16. Accumulation sums gradients over two micro-batches before each optimizer step, so the update sees 16 examples.</p></details></li>
               <li><p class="quiz__q-text">What does Trainer.train() actually run?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Forward, loss, backward and optimizer steps</li>
                   <li>Tokenization of the raw dataset, then one epoch of eval</li>
                   <li>Only the forward passes</li>
+                  <li>Forward, loss, backward and optimizer steps</li>
                   <li>A forward pass per batch, with gradients applied at the end</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Forward, loss, backward and optimizer steps</strong> The Trainer runs the Track 1 training loop: for each (accumulated) batch it computes the loss, backpropagates, and steps the optimizer. Updates happen throughout, not once at the end.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Forward, loss, backward and optimizer steps</strong> The Trainer runs the Track 1 training loop: for each (accumulated) batch it computes the loss, backpropagates, and steps the optimizer. Updates happen throughout, not once at the end.</p></details></li>
               <li><p class="quiz__q-text">After training a LoRA model, model.save_pretrained writes…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Only the small LoRA adapter</li>
                   <li>A full copy of the 135M model with the adapter merged</li>
                   <li>The adapter plus the base</li>
                   <li>The tokenizer and training config, but no weights</li>
+                  <li>Only the small LoRA adapter</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Only the small LoRA adapter</strong> For a PEFT model it saves only the adapter weights and adapter_config.json, a few megabytes. Merging is a separate, explicit step.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Only the small LoRA adapter</strong> For a PEFT model it saves only the adapter weights and adapter_config.json, a few megabytes. Merging is a separate, explicit step.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

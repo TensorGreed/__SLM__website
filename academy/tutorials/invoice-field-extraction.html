@@ -133,18 +133,18 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Classification has no eval pack, so its rules can't be configured"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Span extraction is faster at inference on long multi-page invoices"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 3,
             "text": "It locates each field's characters, not one label per document",
             "answerExplanation": {
               "@type": "Comment",
@@ -161,7 +161,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "The scorer rates one entity type per run, so each needs its own floor"
             },
             {
@@ -177,7 +177,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "Wrong totals misroute money; a missed line item is caught downstream",
             "answerExplanation": {
               "@type": "Comment",
@@ -693,22 +693,22 @@ Box of ballpoint pens   8    4.50    36.00
                 "q": "Why does span extraction beat classification for invoice field extraction?",
                 "options": [
                   "Span extraction runs on a larger base model with more capacity",
-                  "It locates each field's characters, not one label per document",
                   "Classification has no eval pack, so its rules can't be configured",
-                  "Span extraction is faster at inference on long multi-page invoices"
+                  "Span extraction is faster at inference on long multi-page invoices",
+                  "It locates each field's characters, not one label per document"
                 ],
-                "answer": 1,
+                "answer": 3,
                 "explanation": "Classification gives one label per document ('this is an invoice'). Span extraction returns character offsets for every field, so your AP automation can audit which characters produced each value and a reviewer can highlight the source on the original document."
               },
               {
                 "q": "Why set per-entity precision floors with different thresholds (e.g. 0.95 on total vs 0.75 on line_item)?",
                 "options": [
-                  "The scorer rates one entity type per run, so each needs its own floor",
                   "Wrong totals misroute money; a missed line item is caught downstream",
+                  "The scorer rates one entity type per run, so each needs its own floor",
                   "Line items are easier to extract, so a lower floor keeps them strict",
                   "Higher floors always train better models, so the riskiest field gets the most"
                 ],
-                "answer": 1,
+                "answer": 0,
                 "explanation": "A floor should reflect the downstream cost of an error. A wrong total pays a vendor the wrong amount; a missed line item is annoying but reconcilable. Setting every floor to 0.95 makes the pass/fail rules on Results fail a model that is perfectly good for the fields that matter. The per-entity metrics appear as precision_<type>, e.g. precision_total."
               },
               {
@@ -742,19 +742,19 @@ Box of ballpoint pens   8    4.50    36.00
               <li><p class="quiz__q-text">Why does span extraction beat classification for invoice field extraction?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Span extraction runs on a larger base model with more capacity</li>
-                  <li>It locates each field's characters, not one label per document</li>
                   <li>Classification has no eval pack, so its rules can't be configured</li>
                   <li>Span extraction is faster at inference on long multi-page invoices</li>
+                  <li>It locates each field's characters, not one label per document</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. It locates each field's characters, not one label per document</strong> Classification gives one label per document ('this is an invoice'). Span extraction returns character offsets for every field, so your AP automation can audit which characters produced each value and a reviewer can highlight the source on the original document.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. It locates each field's characters, not one label per document</strong> Classification gives one label per document ('this is an invoice'). Span extraction returns character offsets for every field, so your AP automation can audit which characters produced each value and a reviewer can highlight the source on the original document.</p></details></li>
               <li><p class="quiz__q-text">Why set per-entity precision floors with different thresholds (e.g. 0.95 on total vs 0.75 on line_item)?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The scorer rates one entity type per run, so each needs its own floor</li>
                   <li>Wrong totals misroute money; a missed line item is caught downstream</li>
+                  <li>The scorer rates one entity type per run, so each needs its own floor</li>
                   <li>Line items are easier to extract, so a lower floor keeps them strict</li>
                   <li>Higher floors always train better models, so the riskiest field gets the most</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Wrong totals misroute money; a missed line item is caught downstream</strong> A floor should reflect the downstream cost of an error. A wrong total pays a vendor the wrong amount; a missed line item is annoying but reconcilable. Setting every floor to 0.95 makes the pass/fail rules on Results fail a model that is perfectly good for the fields that matter. The per-entity metrics appear as precision_&lt;type&gt;, e.g. precision_total.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Wrong totals misroute money; a missed line item is caught downstream</strong> A floor should reflect the downstream cost of an error. A wrong total pays a vendor the wrong amount; a missed line item is annoying but reconcilable. Setting every floor to 0.95 makes the pass/fail rules on Results fail a model that is perfectly good for the fields that matter. The per-entity metrics appear as precision_&lt;type&gt;, e.g. precision_total.</p></details></li>
               <li><p class="quiz__q-text">What does a template-disjoint split (Disjoint By Field on the vendor template) prevent?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Class imbalance between entity types across train and test</li>

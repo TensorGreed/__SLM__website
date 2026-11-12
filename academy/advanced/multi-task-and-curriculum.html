@@ -91,12 +91,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "One task's rows leaking into another's test split"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "A tokenizer splitting two tasks' labels the same way"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Tasks degrading each other in joint training",
             "answerExplanation": {
               "@type": "Comment",
@@ -124,7 +124,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Task B to dominate because its rows are rarer"
             },
             {
@@ -140,7 +140,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "The model to barely learn task B",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,12 +157,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Hard to easy, so hard cases get more epochs"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Shortest to longest, regardless of difficulty"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Easy to hard",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,12 +190,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Check whether training loss fell faster"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Check that the run finished in fewer steps"
             },
             {
@@ -206,7 +206,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "A/B it on a fixed gold set, several seeds",
             "answerExplanation": {
               "@type": "Comment",
@@ -355,45 +355,45 @@
               {
                 "q": "What is task interference?",
                 "options": [
-                  "Tasks degrading each other in joint training",
                   "One task's rows leaking into another's test split",
                   "A tokenizer splitting two tasks' labels the same way",
+                  "Tasks degrading each other in joint training",
                   "Tasks needing different learning rates"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "Negative transfer: unrelated or imbalanced tasks compete for capacity and both get worse. Split leakage is a different problem."
               },
               {
                 "q": "Task A has 50k rows, task B has 500. Naive proportional mixing causes…",
                 "options": [
-                  "The model to barely learn task B",
                   "Task B to dominate because its rows are rarer",
+                  "The model to barely learn task B",
                   "Both tasks to converge at the same rate",
                   "An out-of-memory error from the larger task"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "Imbalance starves the small task. Up-sample or up-weight it; temperature sampling p_i ∝ n_i^(1/τ) is the standard knob between proportional and uniform mixing."
               },
               {
                 "q": "Curriculum learning typically orders examples…",
                 "options": [
-                  "Easy to hard",
                   "Hard to easy, so hard cases get more epochs",
                   "Shortest to longest, regardless of difficulty",
+                  "Easy to hard",
                   "By label"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "The classic curriculum goes easy→hard. Random order is often just as good for LLM SFT, which is why the next question matters."
               },
               {
                 "q": "How should you decide whether a curriculum helped?",
                 "options": [
-                  "A/B it on a fixed gold set, several seeds",
                   "Check whether training loss fell faster",
                   "Check that the run finished in fewer steps",
+                  "A/B it on a fixed gold set, several seeds",
                   "Compare final loss against the previous run once"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "Train with and without the curriculum on the same data and compare on a fixed gold set, across several seeds. A faster-falling training loss doesn't show better held-out quality."
               }
             ]
@@ -404,36 +404,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What is task interference?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Tasks degrading each other in joint training</li>
                   <li>One task's rows leaking into another's test split</li>
                   <li>A tokenizer splitting two tasks' labels the same way</li>
+                  <li>Tasks degrading each other in joint training</li>
                   <li>Tasks needing different learning rates</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Tasks degrading each other in joint training</strong> Negative transfer: unrelated or imbalanced tasks compete for capacity and both get worse. Split leakage is a different problem.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Tasks degrading each other in joint training</strong> Negative transfer: unrelated or imbalanced tasks compete for capacity and both get worse. Split leakage is a different problem.</p></details></li>
               <li><p class="quiz__q-text">Task A has 50k rows, task B has 500. Naive proportional mixing causes…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The model to barely learn task B</li>
                   <li>Task B to dominate because its rows are rarer</li>
+                  <li>The model to barely learn task B</li>
                   <li>Both tasks to converge at the same rate</li>
                   <li>An out-of-memory error from the larger task</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The model to barely learn task B</strong> Imbalance starves the small task. Up-sample or up-weight it; temperature sampling p_i ∝ n_i^(1/τ) is the standard knob between proportional and uniform mixing.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The model to barely learn task B</strong> Imbalance starves the small task. Up-sample or up-weight it; temperature sampling p_i ∝ n_i^(1/τ) is the standard knob between proportional and uniform mixing.</p></details></li>
               <li><p class="quiz__q-text">Curriculum learning typically orders examples…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Easy to hard</li>
                   <li>Hard to easy, so hard cases get more epochs</li>
                   <li>Shortest to longest, regardless of difficulty</li>
+                  <li>Easy to hard</li>
                   <li>By label</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Easy to hard</strong> The classic curriculum goes easy→hard. Random order is often just as good for LLM SFT, which is why the next question matters.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Easy to hard</strong> The classic curriculum goes easy→hard. Random order is often just as good for LLM SFT, which is why the next question matters.</p></details></li>
               <li><p class="quiz__q-text">How should you decide whether a curriculum helped?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A/B it on a fixed gold set, several seeds</li>
                   <li>Check whether training loss fell faster</li>
                   <li>Check that the run finished in fewer steps</li>
+                  <li>A/B it on a fixed gold set, several seeds</li>
                   <li>Compare final loss against the previous run once</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A/B it on a fixed gold set, several seeds</strong> Train with and without the curriculum on the same data and compare on a fixed gold set, across several seeds. A faster-falling training loss doesn't show better held-out quality.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. A/B it on a fixed gold set, several seeds</strong> Train with and without the curriculum on the same data and compare on a fixed gold set, across several seeds. A faster-falling training loss doesn't show better held-out quality.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

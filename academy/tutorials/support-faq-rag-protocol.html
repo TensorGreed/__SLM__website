@@ -198,7 +198,7 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Refusing exactly when it should; 0.05 is the share of refusal rows"
             },
             {
@@ -209,7 +209,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 2,
             "text": "Refusing many of the questions it should answer",
             "answerExplanation": {
               "@type": "Comment",
@@ -226,7 +226,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "Wait for the running training Job to finish, then retry the switch"
             },
             {
@@ -242,7 +242,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "Run an Auto-RAG comparison; the switch only clones qa-sft projects",
             "answerExplanation": {
               "@type": "Comment",
@@ -665,22 +665,22 @@
                 "q": "Your answer key has 60 rows, 6 of them refusals. After training, appropriate_refusal_rate is 0.05. What is the model most likely doing?",
                 "options": [
                   "Answering every question, including the six it should refuse",
-                  "Refusing many of the questions it should answer",
                   "Refusing exactly when it should; 0.05 is the share of refusal rows",
+                  "Refusing many of the questions it should answer",
                   "Either blanket behaviour — refusing all or answering all both score 0"
                 ],
-                "answer": 1,
+                "answer": 2,
                 "explanation": "The metric is the share of rows where the model's refuse/answer choice matches the answer key's. A blanket answerer matches the 54 answerable rows and scores 0.90 (it would even pass a 0.80 rule); a blanket refuser matches the 6 refusal rows and scores 0.10. A score of 0.05 means the choice is flipped on almost every row, and since most rows are answerable, the model is refusing questions it should answer. Because the majority class dominates, also check refusal recall on the refusal rows (per-row rag_pred_is_refusal vs rag_ref_is_refusal)."
               },
               {
                 "q": "On this rag-protocol project, Results shows 'This task looks more like a RAG fit', but clicking 'Switch to RAG (keeps your answer key)' fails. What should you do?",
                 "options": [
-                  "Wait for the running training Job to finish, then retry the switch",
                   "Run an Auto-RAG comparison; the switch only clones qa-sft projects",
+                  "Wait for the running training Job to finish, then retry the switch",
                   "Re-select rag-protocol under Train → Task so the clone sees the recipe",
                   "Delete the trained run so the clone can start from the base model"
                 ],
-                "answer": 1,
+                "answer": 0,
                 "explanation": "The one-click switch clones the project into a RAG-first sibling and refuses any source recipe other than qa-sft. On a rag-protocol project, compare the base model plus retrieval against your fine-tune with an Auto-RAG comparison instead. The card itself fires on a low pass rate (below 0.5) plus retrieval-shaped signals such as very diverse answers in the answer key."
               }
             ]
@@ -708,19 +708,19 @@
               <li><p class="quiz__q-text">Your answer key has 60 rows, 6 of them refusals. After training, appropriate_refusal_rate is 0.05. What is the model most likely doing?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Answering every question, including the six it should refuse</li>
-                  <li>Refusing many of the questions it should answer</li>
                   <li>Refusing exactly when it should; 0.05 is the share of refusal rows</li>
+                  <li>Refusing many of the questions it should answer</li>
                   <li>Either blanket behaviour — refusing all or answering all both score 0</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Refusing many of the questions it should answer</strong> The metric is the share of rows where the model's refuse/answer choice matches the answer key's. A blanket answerer matches the 54 answerable rows and scores 0.90 (it would even pass a 0.80 rule); a blanket refuser matches the 6 refusal rows and scores 0.10. A score of 0.05 means the choice is flipped on almost every row, and since most rows are answerable, the model is refusing questions it should answer. Because the majority class dominates, also check refusal recall on the refusal rows (per-row rag_pred_is_refusal vs rag_ref_is_refusal).</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Refusing many of the questions it should answer</strong> The metric is the share of rows where the model's refuse/answer choice matches the answer key's. A blanket answerer matches the 54 answerable rows and scores 0.90 (it would even pass a 0.80 rule); a blanket refuser matches the 6 refusal rows and scores 0.10. A score of 0.05 means the choice is flipped on almost every row, and since most rows are answerable, the model is refusing questions it should answer. Because the majority class dominates, also check refusal recall on the refusal rows (per-row rag_pred_is_refusal vs rag_ref_is_refusal).</p></details></li>
               <li><p class="quiz__q-text">On this rag-protocol project, Results shows 'This task looks more like a RAG fit', but clicking 'Switch to RAG (keeps your answer key)' fails. What should you do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Wait for the running training Job to finish, then retry the switch</li>
                   <li>Run an Auto-RAG comparison; the switch only clones qa-sft projects</li>
+                  <li>Wait for the running training Job to finish, then retry the switch</li>
                   <li>Re-select rag-protocol under Train → Task so the clone sees the recipe</li>
                   <li>Delete the trained run so the clone can start from the base model</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Run an Auto-RAG comparison; the switch only clones qa-sft projects</strong> The one-click switch clones the project into a RAG-first sibling and refuses any source recipe other than qa-sft. On a rag-protocol project, compare the base model plus retrieval against your fine-tune with an Auto-RAG comparison instead. The card itself fires on a low pass rate (below 0.5) plus retrieval-shaped signals such as very diverse answers in the answer key.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Run an Auto-RAG comparison; the switch only clones qa-sft projects</strong> The one-click switch clones the project into a RAG-first sibling and refuses any source recipe other than qa-sft. On a rag-protocol project, compare the base model plus retrieval against your fine-tune with an Auto-RAG comparison instead. The card itself fires on a low pass rate (below 0.5) plus retrieval-shaped signals such as very diverse answers in the answer key.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

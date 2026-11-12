@@ -125,18 +125,18 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Both on :3000"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Frontend on :3000, backend on :8080"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 3,
             "text": "Frontend on :5173, backend on :8000",
             "answerExplanation": {
               "@type": "Comment",
@@ -158,18 +158,18 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "It skips the password check that other usernames must pass"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Only admin can start real GPU training; other roles just simulate"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 3,
             "text": "Other names become ENGINEER users who can't see admin's projects",
             "answerExplanation": {
               "@type": "Comment",
@@ -186,7 +186,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "The browser dev tools' network tab, filtered to /api/jobs"
             },
             {
@@ -202,7 +202,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "The notification bell in the top bar",
             "answerExplanation": {
               "@type": "Comment",
@@ -224,7 +224,7 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Admin rights — runs from ENGINEER users wait for approval"
             },
             {
@@ -235,7 +235,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 2,
             "text": "Redis and a running Celery worker",
             "answerExplanation": {
               "@type": "Comment",
@@ -518,44 +518,44 @@ celery -A app.worker.celery_app worker --loglevel=INFO --pool=threads --concurre
                 "q": "On a fresh BrewSLM dev install, what URL serves the frontend you click and what URL serves the backend API?",
                 "options": [
                   "Frontend on :8000, backend on :5173",
-                  "Frontend on :5173, backend on :8000",
                   "Both on :3000",
-                  "Frontend on :3000, backend on :8080"
+                  "Frontend on :3000, backend on :8080",
+                  "Frontend on :5173, backend on :8000"
                 ],
-                "answer": 1,
+                "answer": 3,
                 "explanation": "Vite serves the frontend on :5173 (the URL you open in the browser). FastAPI serves the backend on :8000 (Swagger UI lives at /docs). The Vite dev proxy forwards /api calls to the backend."
               },
               {
                 "q": "Why log in as the username 'admin' specifically for the tutorials?",
                 "options": [
                   "It's the only username the local login form accepts",
-                  "Other names become ENGINEER users who can't see admin's projects",
                   "It skips the password check that other usernames must pass",
-                  "Only admin can start real GPU training; other roles just simulate"
+                  "Only admin can start real GPU training; other roles just simulate",
+                  "Other names become ENGINEER users who can't see admin's projects"
                 ],
-                "answer": 1,
+                "answer": 3,
                 "explanation": "New usernames are auto-provisioned with the ENGINEER role. They can create their own projects, but they don't see projects owned by admin, including the starter demos the tutorials use. 'admin' is the bootstrap account with full permissions."
               },
               {
                 "q": "Where do you watch progress for a background job (synth generation, a training run, an auto-RAG comparison)?",
                 "options": [
-                  "The browser dev tools' network tab, filtered to /api/jobs",
                   "The notification bell in the top bar",
+                  "The browser dev tools' network tab, filtered to /api/jobs",
                   "The uvicorn terminal, which prints each job's progress lines",
                   "The Celery worker log, which every background job writes to"
                 ],
-                "answer": 1,
+                "answer": 0,
                 "explanation": "The bell polls the active Jobs and shows progress for in-flight jobs and a deep link when one finishes; it survives page navigation. Synth and eval Jobs run inside the backend process rather than on the Celery worker, so the worker log is not where all of them report."
               },
               {
                 "q": "You click Train on a starter demo. The run sits at Queued for ten minutes and the bell never moves. What is most likely missing?",
                 "options": [
                   "A GPU — training waits in the queue until CUDA is detected",
-                  "Redis and a running Celery worker",
                   "Admin rights — runs from ENGINEER users wait for approval",
+                  "Redis and a running Celery worker",
                   "A Hugging Face token to download the base model weights"
                 ],
-                "answer": 1,
+                "answer": 2,
                 "explanation": "The shipped .env sets TRAINING_BACKEND=\"external\", which hands training to a Celery worker through Redis, and preflight does not check that a worker is up. Without one the run stays queued forever. Start Redis and the worker alongside the backend and frontend. CPU-only machines still train, just slower; synth and eval Jobs run in-process and don't need the worker."
               }
             ]
@@ -567,35 +567,35 @@ celery -A app.worker.celery_app worker --loglevel=INFO --pool=threads --concurre
               <li><p class="quiz__q-text">On a fresh BrewSLM dev install, what URL serves the frontend you click and what URL serves the backend API?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Frontend on :8000, backend on :5173</li>
-                  <li>Frontend on :5173, backend on :8000</li>
                   <li>Both on :3000</li>
                   <li>Frontend on :3000, backend on :8080</li>
+                  <li>Frontend on :5173, backend on :8000</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Frontend on :5173, backend on :8000</strong> Vite serves the frontend on :5173 (the URL you open in the browser). FastAPI serves the backend on :8000 (Swagger UI lives at /docs). The Vite dev proxy forwards /api calls to the backend.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Frontend on :5173, backend on :8000</strong> Vite serves the frontend on :5173 (the URL you open in the browser). FastAPI serves the backend on :8000 (Swagger UI lives at /docs). The Vite dev proxy forwards /api calls to the backend.</p></details></li>
               <li><p class="quiz__q-text">Why log in as the username 'admin' specifically for the tutorials?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>It's the only username the local login form accepts</li>
-                  <li>Other names become ENGINEER users who can't see admin's projects</li>
                   <li>It skips the password check that other usernames must pass</li>
                   <li>Only admin can start real GPU training; other roles just simulate</li>
+                  <li>Other names become ENGINEER users who can't see admin's projects</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Other names become ENGINEER users who can't see admin's projects</strong> New usernames are auto-provisioned with the ENGINEER role. They can create their own projects, but they don't see projects owned by admin, including the starter demos the tutorials use. 'admin' is the bootstrap account with full permissions.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Other names become ENGINEER users who can't see admin's projects</strong> New usernames are auto-provisioned with the ENGINEER role. They can create their own projects, but they don't see projects owned by admin, including the starter demos the tutorials use. 'admin' is the bootstrap account with full permissions.</p></details></li>
               <li><p class="quiz__q-text">Where do you watch progress for a background job (synth generation, a training run, an auto-RAG comparison)?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The browser dev tools' network tab, filtered to /api/jobs</li>
                   <li>The notification bell in the top bar</li>
+                  <li>The browser dev tools' network tab, filtered to /api/jobs</li>
                   <li>The uvicorn terminal, which prints each job's progress lines</li>
                   <li>The Celery worker log, which every background job writes to</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The notification bell in the top bar</strong> The bell polls the active Jobs and shows progress for in-flight jobs and a deep link when one finishes; it survives page navigation. Synth and eval Jobs run inside the backend process rather than on the Celery worker, so the worker log is not where all of them report.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The notification bell in the top bar</strong> The bell polls the active Jobs and shows progress for in-flight jobs and a deep link when one finishes; it survives page navigation. Synth and eval Jobs run inside the backend process rather than on the Celery worker, so the worker log is not where all of them report.</p></details></li>
               <li><p class="quiz__q-text">You click Train on a starter demo. The run sits at Queued for ten minutes and the bell never moves. What is most likely missing?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>A GPU — training waits in the queue until CUDA is detected</li>
-                  <li>Redis and a running Celery worker</li>
                   <li>Admin rights — runs from ENGINEER users wait for approval</li>
+                  <li>Redis and a running Celery worker</li>
                   <li>A Hugging Face token to download the base model weights</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Redis and a running Celery worker</strong> The shipped .env sets TRAINING_BACKEND="external", which hands training to a Celery worker through Redis, and preflight does not check that a worker is up. Without one the run stays queued forever. Start Redis and the worker alongside the backend and frontend. CPU-only machines still train, just slower; synth and eval Jobs run in-process and don't need the worker.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Redis and a running Celery worker</strong> The shipped .env sets TRAINING_BACKEND="external", which hands training to a Celery worker through Redis, and preflight does not check that a worker is up. Without one the run stays queued forever. Start Redis and the worker alongside the backend and frontend. CPU-only machines still train, just slower; synth and eval Jobs run in-process and don't need the worker.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

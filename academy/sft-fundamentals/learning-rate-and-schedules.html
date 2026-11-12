@@ -91,23 +91,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "~1e-3 for both, the same as pretraining from scratch"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "~1e-4–3e-4 full, ~1e-5–5e-5 for LoRA, since adapters are fragile"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "~1e-2 or higher, since the model only needs small changes"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "~1e-5–5e-5 full, ~1e-4–3e-4 for LoRA",
             "answerExplanation": {
               "@type": "Comment",
@@ -124,12 +124,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "A short constant-LR phase"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Training on easy examples first and hard examples later"
             },
             {
@@ -140,7 +140,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Ramping the LR up from near 0 over the first steps",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,12 +157,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "To free optimizer memory"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "To raise the loss late in training and avoid overfitting"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Large steps early, small steps late to settle",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,23 +190,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "1,000"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "16"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "16,000"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "63",
             "answerExplanation": {
               "@type": "Comment",
@@ -347,45 +347,45 @@
               {
                 "q": "Typical fine-tuning learning rates are…",
                 "options": [
-                  "~1e-5–5e-5 full, ~1e-4–3e-4 for LoRA",
                   "~1e-3 for both, the same as pretraining from scratch",
                   "~1e-4–3e-4 full, ~1e-5–5e-5 for LoRA, since adapters are fragile",
-                  "~1e-2 or higher, since the model only needs small changes"
+                  "~1e-2 or higher, since the model only needs small changes",
+                  "~1e-5–5e-5 full, ~1e-4–3e-4 for LoRA"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "You nudge an already-capable model, so LRs are small. LoRA's optimal LR is about 10× full fine-tuning's (LoRA Without Regret, 2025); BrewSLM's SFT recipes default to 2e-4 with r16/α32."
               },
               {
                 "q": "What is warmup?",
                 "options": [
-                  "Ramping the LR up from near 0 over the first steps",
                   "A short constant-LR phase",
                   "Training on easy examples first and hard examples later",
+                  "Ramping the LR up from near 0 over the first steps",
                   "Pre-tokenizing the dataset"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "Warmup avoids early instability while the optimizer's moment estimates settle. warmup_ratio=0.03 is a recipe convention, not a law."
               },
               {
                 "q": "Why decay the learning rate over training?",
                 "options": [
-                  "Large steps early, small steps late to settle",
                   "To free optimizer memory",
                   "To raise the loss late in training and avoid overfitting",
+                  "Large steps early, small steps late to settle",
                   "Because a constant LR would make every step identical"
                 ],
-                "answer": 0,
+                "answer": 2,
                 "explanation": "A decay such as cosine lets the model converge instead of bouncing around at a high LR near the end. On short runs the schedule matters less."
               },
               {
                 "q": "With 1,000 examples and an effective batch size of 16 (no packing), how many optimizer steps is one epoch?",
                 "options": [
-                  "63",
                   "1,000",
                   "16",
-                  "16,000"
+                  "16,000",
+                  "63"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "steps_per_epoch = ceil(examples / effective_batch) = ceil(62.5) = 63. With packing, count packed sequences instead of examples."
               }
             ]
@@ -396,36 +396,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Typical fine-tuning learning rates are…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>~1e-5–5e-5 full, ~1e-4–3e-4 for LoRA</li>
                   <li>~1e-3 for both, the same as pretraining from scratch</li>
                   <li>~1e-4–3e-4 full, ~1e-5–5e-5 for LoRA, since adapters are fragile</li>
                   <li>~1e-2 or higher, since the model only needs small changes</li>
+                  <li>~1e-5–5e-5 full, ~1e-4–3e-4 for LoRA</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. ~1e-5–5e-5 full, ~1e-4–3e-4 for LoRA</strong> You nudge an already-capable model, so LRs are small. LoRA's optimal LR is about 10× full fine-tuning's (LoRA Without Regret, 2025); BrewSLM's SFT recipes default to 2e-4 with r16/α32.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. ~1e-5–5e-5 full, ~1e-4–3e-4 for LoRA</strong> You nudge an already-capable model, so LRs are small. LoRA's optimal LR is about 10× full fine-tuning's (LoRA Without Regret, 2025); BrewSLM's SFT recipes default to 2e-4 with r16/α32.</p></details></li>
               <li><p class="quiz__q-text">What is warmup?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Ramping the LR up from near 0 over the first steps</li>
                   <li>A short constant-LR phase</li>
                   <li>Training on easy examples first and hard examples later</li>
+                  <li>Ramping the LR up from near 0 over the first steps</li>
                   <li>Pre-tokenizing the dataset</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Ramping the LR up from near 0 over the first steps</strong> Warmup avoids early instability while the optimizer's moment estimates settle. warmup_ratio=0.03 is a recipe convention, not a law.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Ramping the LR up from near 0 over the first steps</strong> Warmup avoids early instability while the optimizer's moment estimates settle. warmup_ratio=0.03 is a recipe convention, not a law.</p></details></li>
               <li><p class="quiz__q-text">Why decay the learning rate over training?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Large steps early, small steps late to settle</li>
                   <li>To free optimizer memory</li>
                   <li>To raise the loss late in training and avoid overfitting</li>
+                  <li>Large steps early, small steps late to settle</li>
                   <li>Because a constant LR would make every step identical</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Large steps early, small steps late to settle</strong> A decay such as cosine lets the model converge instead of bouncing around at a high LR near the end. On short runs the schedule matters less.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Large steps early, small steps late to settle</strong> A decay such as cosine lets the model converge instead of bouncing around at a high LR near the end. On short runs the schedule matters less.</p></details></li>
               <li><p class="quiz__q-text">With 1,000 examples and an effective batch size of 16 (no packing), how many optimizer steps is one epoch?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>63</li>
                   <li>1,000</li>
                   <li>16</li>
                   <li>16,000</li>
+                  <li>63</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. 63</strong> steps_per_epoch = ceil(examples / effective_batch) = ceil(62.5) = 63. With packing, count packed sequences instead of examples.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. 63</strong> steps_per_epoch = ceil(examples / effective_batch) = ceil(62.5) = 63. With packing, count packed sequences instead of examples.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

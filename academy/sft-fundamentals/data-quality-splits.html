@@ -91,23 +91,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "A sweep over learning rate and LoRA rank on the same dataset"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "A larger base model trained on the same messy dataset"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "More epochs, so the model sees every example several times"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Cleaner, more representative data",
             "answerExplanation": {
               "@type": "Comment",
@@ -124,7 +124,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "To save disk space"
             },
             {
@@ -140,7 +140,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "So no example sits in both train and test",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,23 +190,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Training gets slower because documents are split across batches"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "The class balance of the training set drifts away from the test set"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "The tokenizer cannot handle rows that were separated from their document"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Rows from one document land in both train and test",
             "answerExplanation": {
               "@type": "Comment",
@@ -359,23 +359,23 @@
               {
                 "q": "On a typical SFT project, what usually improves quality more?",
                 "options": [
-                  "Cleaner, more representative data",
                   "A sweep over learning rate and LoRA rank on the same dataset",
                   "A larger base model trained on the same messy dataset",
-                  "More epochs, so the model sees every example several times"
+                  "More epochs, so the model sees every example several times",
+                  "Cleaner, more representative data"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Model building is data-centric: fixing labels, coverage and duplicates usually beats tuning hyperparameters on a messy dataset."
               },
               {
                 "q": "Why deduplicate across splits, not just within the training set?",
                 "options": [
-                  "So no example sits in both train and test",
                   "To save disk space",
+                  "So no example sits in both train and test",
                   "So the tokenizer sees fewer distinct strings during training",
                   "To make training faster"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "A duplicate that lands in both train and test is leakage: the model is scored on what it trained on, which inflates the eval."
               },
               {
@@ -392,12 +392,12 @@
               {
                 "q": "Your dataset has many rows per source document, and you split it randomly by row. What is the risk?",
                 "options": [
-                  "Rows from one document land in both train and test",
                   "Training gets slower because documents are split across batches",
                   "The class balance of the training set drifts away from the test set",
-                  "The tokenizer cannot handle rows that were separated from their document"
+                  "The tokenizer cannot handle rows that were separated from their document",
+                  "Rows from one document land in both train and test"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Split by the unit that groups related rows (document, user, conversation); otherwise near-identical content leaks across the boundary and the test score is inflated."
               }
             ]
@@ -408,20 +408,20 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">On a typical SFT project, what usually improves quality more?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Cleaner, more representative data</li>
                   <li>A sweep over learning rate and LoRA rank on the same dataset</li>
                   <li>A larger base model trained on the same messy dataset</li>
                   <li>More epochs, so the model sees every example several times</li>
+                  <li>Cleaner, more representative data</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Cleaner, more representative data</strong> Model building is data-centric: fixing labels, coverage and duplicates usually beats tuning hyperparameters on a messy dataset.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Cleaner, more representative data</strong> Model building is data-centric: fixing labels, coverage and duplicates usually beats tuning hyperparameters on a messy dataset.</p></details></li>
               <li><p class="quiz__q-text">Why deduplicate across splits, not just within the training set?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>So no example sits in both train and test</li>
                   <li>To save disk space</li>
+                  <li>So no example sits in both train and test</li>
                   <li>So the tokenizer sees fewer distinct strings during training</li>
                   <li>To make training faster</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. So no example sits in both train and test</strong> A duplicate that lands in both train and test is leakage: the model is scored on what it trained on, which inflates the eval.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. So no example sits in both train and test</strong> A duplicate that lands in both train and test is leakage: the model is scored on what it trained on, which inflates the eval.</p></details></li>
               <li><p class="quiz__q-text">What is the validation set for?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Watching for overfitting and choosing checkpoints</li>
@@ -432,12 +432,12 @@
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Watching for overfitting and choosing checkpoints</strong> Validation is checked during training, never trained on, to monitor generalisation and select checkpoints. Because those choices leak into it, a separate test set gives the final score.</p></details></li>
               <li><p class="quiz__q-text">Your dataset has many rows per source document, and you split it randomly by row. What is the risk?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Rows from one document land in both train and test</li>
                   <li>Training gets slower because documents are split across batches</li>
                   <li>The class balance of the training set drifts away from the test set</li>
                   <li>The tokenizer cannot handle rows that were separated from their document</li>
+                  <li>Rows from one document land in both train and test</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Rows from one document land in both train and test</strong> Split by the unit that groups related rows (document, user, conversation); otherwise near-identical content leaks across the boundary and the test score is inflated.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Rows from one document land in both train and test</strong> Split by the unit that groups related rows (document, user, conversation); otherwise near-identical content leaks across the boundary and the test score is inflated.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

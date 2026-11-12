@@ -161,7 +161,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "Stratified batches hold every class, so each epoch trains faster"
             },
             {
@@ -177,7 +177,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "A random split can leave val/test with a handful of rare-class rows",
             "answerExplanation": {
               "@type": "Comment",
@@ -199,7 +199,7 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "The card stays hidden until you click Use scaffold on the rule set"
             },
             {
@@ -210,7 +210,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 2,
             "text": "The engine only recommends a different approach below a 0.5 pass rate",
             "answerExplanation": {
               "@type": "Comment",
@@ -232,18 +232,18 @@
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Hold every ticket for a human to approve the model's label until accuracy hits 0.95"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Skip shadow mode if test macro_f1 clears the rule, and route on the raw top score"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 3,
             "text": "Shadow mode, calibrate confidences, auto-route only the high-precision band",
             "answerExplanation": {
               "@type": "Comment",
@@ -700,34 +700,34 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
               {
                 "q": "Why set Stratify By Field on Data → Split instead of leaving the default uniform random split?",
                 "options": [
-                  "Stratified batches hold every class, so each epoch trains faster",
                   "A random split can leave val/test with a handful of rare-class rows",
+                  "Stratified batches hold every class, so each epoch trains faster",
                   "Uniform random splits can put the same ticket in both train and test",
                   "Stratifying by label is what turns on class weighting for rare classes"
                 ],
-                "answer": 1,
+                "answer": 0,
                 "explanation": "A uniform random split on an imbalanced dataset can, by bad luck, leave val or test with only a few cancellation rows, which makes per-class F1 noise. Stratify By Field on the label column splits each class at the same ratios, so every split carries the overall class mix. The post-split manifest's per-class breakdown lets you check it. Even stratified, a class with ~6 test rows gives a very noisy per-class F1."
               },
               {
                 "q": "Your triage eval lands at a 0.83 pass rate. Why does Results show no reroute recommendation card?",
                 "options": [
                   "Reroute cards are only built for qa-sft projects, never for classification",
-                  "The engine only recommends a different approach below a 0.5 pass rate",
                   "The card stays hidden until you click Use scaffold on the rule set",
+                  "The engine only recommends a different approach below a 0.5 pass rate",
                   "The card waits for the second evaluation so it can compare two runs"
                 ],
-                "answer": 1,
+                "answer": 2,
                 "explanation": "The post-eval decision engine returns 'stay the course' whenever the pass rate is at or above 0.5, and the panel then renders nothing. Below 0.5 it checks recipe-agnostic signals (the brief mentions retrieval, answer-key answers are very diverse, the output is a tiny slice of the input) and suggests a RAG-first sibling, iterating in Try it, or more data, listing the signals that fired. It never suggests swapping one recipe for another."
               },
               {
                 "q": "You're shipping the triage model. What's the right deployment sequence?",
                 "options": [
                   "Auto-route everything at once, then add human review for classes users complain about",
-                  "Shadow mode, calibrate confidences, auto-route only the high-precision band",
                   "Hold every ticket for a human to approve the model's label until accuracy hits 0.95",
-                  "Skip shadow mode if test macro_f1 clears the rule, and route on the raw top score"
+                  "Skip shadow mode if test macro_f1 clears the rule, and route on the raw top score",
+                  "Shadow mode, calibrate confidences, auto-route only the high-precision band"
                 ],
-                "answer": 1,
+                "answer": 3,
                 "explanation": "Test-set metrics don't reflect production traffic, and a fine-tuned classifier's softmax confidence is usually over-confident. Run in shadow mode, logging the model's label next to the human triager's; calibrate the confidences (for example temperature scaling on the validation split); then auto-route only the confidence band where measured per-class precision meets your target, and keep the rest on human review."
               }
             ]
@@ -746,28 +746,28 @@ OUTPUT: { "label": "account", "confidence": 0.83 }</code></pre>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Add cancellation rows, real or from Balance class distribution</strong> High accuracy with low macro_f1 means the model aces the majority classes and starves the rare ones. More epochs or a bigger model don't add rare-class signal, and class_weighting=auto already reweights the loss. Add rare-class rows — real tickets, or the Balance class distribution playbook, which fills the rarest class each run — then retrain. The trainability forecast's balance score warns below 0.75 and blocks below 0.50.</p></details></li>
               <li><p class="quiz__q-text">Why set Stratify By Field on Data → Split instead of leaving the default uniform random split?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Stratified batches hold every class, so each epoch trains faster</li>
                   <li>A random split can leave val/test with a handful of rare-class rows</li>
+                  <li>Stratified batches hold every class, so each epoch trains faster</li>
                   <li>Uniform random splits can put the same ticket in both train and test</li>
                   <li>Stratifying by label is what turns on class weighting for rare classes</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A random split can leave val/test with a handful of rare-class rows</strong> A uniform random split on an imbalanced dataset can, by bad luck, leave val or test with only a few cancellation rows, which makes per-class F1 noise. Stratify By Field on the label column splits each class at the same ratios, so every split carries the overall class mix. The post-split manifest's per-class breakdown lets you check it. Even stratified, a class with ~6 test rows gives a very noisy per-class F1.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A random split can leave val/test with a handful of rare-class rows</strong> A uniform random split on an imbalanced dataset can, by bad luck, leave val or test with only a few cancellation rows, which makes per-class F1 noise. Stratify By Field on the label column splits each class at the same ratios, so every split carries the overall class mix. The post-split manifest's per-class breakdown lets you check it. Even stratified, a class with ~6 test rows gives a very noisy per-class F1.</p></details></li>
               <li><p class="quiz__q-text">Your triage eval lands at a 0.83 pass rate. Why does Results show no reroute recommendation card?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Reroute cards are only built for qa-sft projects, never for classification</li>
-                  <li>The engine only recommends a different approach below a 0.5 pass rate</li>
                   <li>The card stays hidden until you click Use scaffold on the rule set</li>
+                  <li>The engine only recommends a different approach below a 0.5 pass rate</li>
                   <li>The card waits for the second evaluation so it can compare two runs</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The engine only recommends a different approach below a 0.5 pass rate</strong> The post-eval decision engine returns 'stay the course' whenever the pass rate is at or above 0.5, and the panel then renders nothing. Below 0.5 it checks recipe-agnostic signals (the brief mentions retrieval, answer-key answers are very diverse, the output is a tiny slice of the input) and suggests a RAG-first sibling, iterating in Try it, or more data, listing the signals that fired. It never suggests swapping one recipe for another.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The engine only recommends a different approach below a 0.5 pass rate</strong> The post-eval decision engine returns 'stay the course' whenever the pass rate is at or above 0.5, and the panel then renders nothing. Below 0.5 it checks recipe-agnostic signals (the brief mentions retrieval, answer-key answers are very diverse, the output is a tiny slice of the input) and suggests a RAG-first sibling, iterating in Try it, or more data, listing the signals that fired. It never suggests swapping one recipe for another.</p></details></li>
               <li><p class="quiz__q-text">You're shipping the triage model. What's the right deployment sequence?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Auto-route everything at once, then add human review for classes users complain about</li>
-                  <li>Shadow mode, calibrate confidences, auto-route only the high-precision band</li>
                   <li>Hold every ticket for a human to approve the model's label until accuracy hits 0.95</li>
                   <li>Skip shadow mode if test macro_f1 clears the rule, and route on the raw top score</li>
+                  <li>Shadow mode, calibrate confidences, auto-route only the high-precision band</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Shadow mode, calibrate confidences, auto-route only the high-precision band</strong> Test-set metrics don't reflect production traffic, and a fine-tuned classifier's softmax confidence is usually over-confident. Run in shadow mode, logging the model's label next to the human triager's; calibrate the confidences (for example temperature scaling on the validation split); then auto-route only the confidence band where measured per-class precision meets your target, and keep the rest on human review.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Shadow mode, calibrate confidences, auto-route only the high-precision band</strong> Test-set metrics don't reflect production traffic, and a fine-tuned classifier's softmax confidence is usually over-confident. Run in shadow mode, logging the model's label next to the human triager's; calibrate the confidences (for example temperature scaling on the validation split); then auto-route only the confidence band where measured per-class precision meets your target, and keep the rest on human review.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

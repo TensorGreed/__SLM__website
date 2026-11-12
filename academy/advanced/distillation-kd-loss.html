@@ -91,7 +91,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "CE on gold + KL(student ‖ teacher)"
             },
             {
@@ -107,7 +107,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "CE on gold labels + KL(teacher ‖ student)",
             "answerExplanation": {
               "@type": "Comment",
@@ -358,12 +358,12 @@ def kd_loss(student_logits, teacher_logits, labels, alpha=0.5, T=2.0):
               {
                 "q": "What are the two terms of the Hinton-style KD loss BrewSLM uses?",
                 "options": [
-                  "CE on gold labels + KL(teacher ‖ student)",
                   "CE on gold + KL(student ‖ teacher)",
+                  "CE on gold labels + KL(teacher ‖ student)",
                   "Two cross-entropies on gold labels",
                   "CE on argmax tokens + L2 on hidden states"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "loss = α·CE(gold) + (1−α)·T²·KL(teacher_T ‖ student_T). PyTorch's kl_div(student_log_probs, teacher_probs) computes the forward KL, teacher ‖ student — the mode-covering direction from Hinton et al. Reverse KL (student ‖ teacher) is the mode-seeking choice used by on-policy methods such as MiniLLM."
               },
               {
@@ -407,12 +407,12 @@ def kd_loss(student_logits, teacher_logits, labels, alpha=0.5, T=2.0):
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What are the two terms of the Hinton-style KD loss BrewSLM uses?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>CE on gold labels + KL(teacher ‖ student)</li>
                   <li>CE on gold + KL(student ‖ teacher)</li>
+                  <li>CE on gold labels + KL(teacher ‖ student)</li>
                   <li>Two cross-entropies on gold labels</li>
                   <li>CE on argmax tokens + L2 on hidden states</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. CE on gold labels + KL(teacher ‖ student)</strong> loss = α·CE(gold) + (1−α)·T²·KL(teacher_T ‖ student_T). PyTorch's kl_div(student_log_probs, teacher_probs) computes the forward KL, teacher ‖ student — the mode-covering direction from Hinton et al. Reverse KL (student ‖ teacher) is the mode-seeking choice used by on-policy methods such as MiniLLM.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. CE on gold labels + KL(teacher ‖ student)</strong> loss = α·CE(gold) + (1−α)·T²·KL(teacher_T ‖ student_T). PyTorch's kl_div(student_log_probs, teacher_probs) computes the forward KL, teacher ‖ student — the mode-covering direction from Hinton et al. Reverse KL (student ‖ teacher) is the mode-seeking choice used by on-policy methods such as MiniLLM.</p></details></li>
               <li><p class="quiz__q-text">What does raising the temperature T do to the teacher's distribution?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Softens it, exposing secondary tokens</li>

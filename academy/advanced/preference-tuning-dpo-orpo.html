@@ -124,7 +124,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "It trains a reward model first, then runs PPO"
             },
             {
@@ -140,7 +140,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "No separate reward model or RL loop",
             "answerExplanation": {
               "@type": "Comment",
@@ -157,7 +157,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "DPO and a learned reward model in one stage"
             },
             {
@@ -173,7 +173,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "SFT and preference optimization in one stage",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,23 +190,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "When you have pairs but no single best answer"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "When the outputs are long free-form responses"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "When tone matters most"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "When there's a single correct answer",
             "answerExplanation": {
               "@type": "Comment",
@@ -365,34 +365,34 @@
               {
                 "q": "How does DPO differ from classic RLHF?",
                 "options": [
-                  "No separate reward model or RL loop",
                   "It trains a reward model first, then runs PPO",
+                  "No separate reward model or RL loop",
                   "It needs no reference model to stay close to",
                   "It learns from single answers, not from pairs"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "DPO derives a classification-style loss directly from preference pairs, skipping the reward model and the RL loop. It still uses a frozen reference model; β sets how strongly the policy is held to it (higher β = smaller moves)."
               },
               {
                 "q": "What does ORPO fold together?",
                 "options": [
-                  "SFT and preference optimization in one stage",
                   "DPO and a learned reward model in one stage",
+                  "SFT and preference optimization in one stage",
                   "The policy and reference into one shared model",
                   "Distillation and preference tuning in one stage"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "ORPO adds an odds-ratio preference term (weighted by λ) to the SFT loss, so one stage from a base model does both and no reference model is needed."
               },
               {
                 "q": "When should you prefer SFT over DPO/ORPO?",
                 "options": [
-                  "When there's a single correct answer",
                   "When you have pairs but no single best answer",
                   "When the outputs are long free-form responses",
-                  "When tone matters most"
+                  "When tone matters most",
+                  "When there's a single correct answer"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Classification, extraction and fixed formats have one right answer, which SFT teaches directly. Preference tuning is for judgment qualities like tone and helpfulness."
               }
             ]
@@ -411,28 +411,28 @@
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. (prompt, chosen, rejected)</strong> DPO learns from chosen-over-rejected pairs for the same prompt. Unpaired thumbs-up/down data fits KTO instead, and a scalar score per answer is what a reward model or RL setup would use.</p></details></li>
               <li><p class="quiz__q-text">How does DPO differ from classic RLHF?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>No separate reward model or RL loop</li>
                   <li>It trains a reward model first, then runs PPO</li>
+                  <li>No separate reward model or RL loop</li>
                   <li>It needs no reference model to stay close to</li>
                   <li>It learns from single answers, not from pairs</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. No separate reward model or RL loop</strong> DPO derives a classification-style loss directly from preference pairs, skipping the reward model and the RL loop. It still uses a frozen reference model; β sets how strongly the policy is held to it (higher β = smaller moves).</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. No separate reward model or RL loop</strong> DPO derives a classification-style loss directly from preference pairs, skipping the reward model and the RL loop. It still uses a frozen reference model; β sets how strongly the policy is held to it (higher β = smaller moves).</p></details></li>
               <li><p class="quiz__q-text">What does ORPO fold together?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>SFT and preference optimization in one stage</li>
                   <li>DPO and a learned reward model in one stage</li>
+                  <li>SFT and preference optimization in one stage</li>
                   <li>The policy and reference into one shared model</li>
                   <li>Distillation and preference tuning in one stage</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. SFT and preference optimization in one stage</strong> ORPO adds an odds-ratio preference term (weighted by λ) to the SFT loss, so one stage from a base model does both and no reference model is needed.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. SFT and preference optimization in one stage</strong> ORPO adds an odds-ratio preference term (weighted by λ) to the SFT loss, so one stage from a base model does both and no reference model is needed.</p></details></li>
               <li><p class="quiz__q-text">When should you prefer SFT over DPO/ORPO?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>When there's a single correct answer</li>
                   <li>When you have pairs but no single best answer</li>
                   <li>When the outputs are long free-form responses</li>
                   <li>When tone matters most</li>
+                  <li>When there's a single correct answer</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. When there's a single correct answer</strong> Classification, extraction and fixed formats have one right answer, which SFT teaches directly. Preference tuning is for judgment qualities like tone and helpfulness.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. When there's a single correct answer</strong> Classification, extraction and fixed formats have one right answer, which SFT teaches directly. Preference tuning is for judgment qualities like tone and helpfulness.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

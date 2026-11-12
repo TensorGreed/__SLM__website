@@ -91,23 +91,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Training loss below a target value by the final epoch"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Accuracy on the training rows close to 100%"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "Eval loss lower than the base model's on the validation split"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Beats the base on held-out gold, in the right format",
             "answerExplanation": {
               "@type": "Comment",
@@ -124,7 +124,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "The merge step, since unmerged adapters are ignored at eval"
             },
             {
@@ -140,7 +140,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "The training data: size, labels, coverage",
             "answerExplanation": {
               "@type": "Comment",
@@ -190,7 +190,7 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Platforms train more accurate models than hand-written code"
             },
             {
@@ -206,7 +206,7 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 1,
             "text": "Repeating the loop by hand is toil worth automating",
             "answerExplanation": {
               "@type": "Comment",
@@ -396,23 +396,23 @@ tuned.merge_and_unload().save_pretrained("sft-out/merged"); tok.save_pretrained(
               {
                 "q": "What is the success criterion for this capstone?",
                 "options": [
-                  "Beats the base on held-out gold, in the right format",
                   "Training loss below a target value by the final epoch",
                   "Accuracy on the training rows close to 100%",
-                  "Eval loss lower than the base model's on the validation split"
+                  "Eval loss lower than the base model's on the validation split",
+                  "Beats the base on held-out gold, in the right format"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "Success is a real lift over the base on the held-out gold set, with output in the expected format. Loss values are proxies. A gate also needs enough gold rows to mean something: at n=100 and 90% accuracy the 95% interval is roughly ±6 points."
               },
               {
                 "q": "The tuned model shows no lift over the base, and you've confirmed the eval code is correct. Where do you look first?",
                 "options": [
-                  "The training data: size, labels, coverage",
                   "The merge step, since unmerged adapters are ignored at eval",
+                  "The training data: size, labels, coverage",
                   "The LoRA rank (raise r)",
                   "The epoch count: train until the training loss reaches zero"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "With the eval verified, no lift almost always traces to data: too few rows, wrong labels, or examples unlike the gold set (Tracks 1.7–1.8). Rank is second-order, and driving training loss to zero just memorises."
               },
               {
@@ -429,12 +429,12 @@ tuned.merge_and_unload().save_pretrained("sft-out/merged"); tok.save_pretrained(
               {
                 "q": "Why move on to a platform (Track 3) after doing this by hand?",
                 "options": [
-                  "Repeating the loop by hand is toil worth automating",
                   "Platforms train more accurate models than hand-written code",
+                  "Repeating the loop by hand is toil worth automating",
                   "Hand-written Trainer loops stop working past a few hundred rows",
                   "To skip learning the internals"
                 ],
-                "answer": 0,
+                "answer": 1,
                 "explanation": "The core training is what you just did by hand. A platform automates the repeated work around it: imports, gates, eval, deployment. It doesn't train inherently better models, and the internals still matter when something breaks."
               }
             ]
@@ -445,20 +445,20 @@ tuned.merge_and_unload().save_pretrained("sft-out/merged"); tok.save_pretrained(
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What is the success criterion for this capstone?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Beats the base on held-out gold, in the right format</li>
                   <li>Training loss below a target value by the final epoch</li>
                   <li>Accuracy on the training rows close to 100%</li>
                   <li>Eval loss lower than the base model's on the validation split</li>
+                  <li>Beats the base on held-out gold, in the right format</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Beats the base on held-out gold, in the right format</strong> Success is a real lift over the base on the held-out gold set, with output in the expected format. Loss values are proxies. A gate also needs enough gold rows to mean something: at n=100 and 90% accuracy the 95% interval is roughly ±6 points.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Beats the base on held-out gold, in the right format</strong> Success is a real lift over the base on the held-out gold set, with output in the expected format. Loss values are proxies. A gate also needs enough gold rows to mean something: at n=100 and 90% accuracy the 95% interval is roughly ±6 points.</p></details></li>
               <li><p class="quiz__q-text">The tuned model shows no lift over the base, and you've confirmed the eval code is correct. Where do you look first?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The training data: size, labels, coverage</li>
                   <li>The merge step, since unmerged adapters are ignored at eval</li>
+                  <li>The training data: size, labels, coverage</li>
                   <li>The LoRA rank (raise r)</li>
                   <li>The epoch count: train until the training loss reaches zero</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The training data: size, labels, coverage</strong> With the eval verified, no lift almost always traces to data: too few rows, wrong labels, or examples unlike the gold set (Tracks 1.7–1.8). Rank is second-order, and driving training loss to zero just memorises.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The training data: size, labels, coverage</strong> With the eval verified, no lift almost always traces to data: too few rows, wrong labels, or examples unlike the gold set (Tracks 1.7–1.8). Rank is second-order, and driving training loss to zero just memorises.</p></details></li>
               <li><p class="quiz__q-text">The model rambles on instead of emitting just the label. Likely cause?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>A chat-template or loss-mask problem</li>
@@ -469,12 +469,12 @@ tuned.merge_and_unload().save_pretrained("sft-out/merged"); tok.save_pretrained(
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A chat-template or loss-mask problem</strong> A model that never learned to emit the end-of-turn token after the label keeps going. Check the template and that the supervised span includes the end-of-turn token (Tracks 1.3–1.4, 2.4). Lowering max_new_tokens only hides the symptom.</p></details></li>
               <li><p class="quiz__q-text">Why move on to a platform (Track 3) after doing this by hand?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Repeating the loop by hand is toil worth automating</li>
                   <li>Platforms train more accurate models than hand-written code</li>
+                  <li>Repeating the loop by hand is toil worth automating</li>
                   <li>Hand-written Trainer loops stop working past a few hundred rows</li>
                   <li>To skip learning the internals</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Repeating the loop by hand is toil worth automating</strong> The core training is what you just did by hand. A platform automates the repeated work around it: imports, gates, eval, deployment. It doesn't train inherently better models, and the internals still matter when something breaks.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Repeating the loop by hand is toil worth automating</strong> The core training is what you just did by hand. A platform automates the repeated work around it: imports, gates, eval, deployment. It doesn't train inherently better models, and the internals still matter when something breaks.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

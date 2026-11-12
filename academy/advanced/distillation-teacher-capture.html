@@ -157,12 +157,12 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "Tail tokens have zero probability"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "Top-k makes the KL term exact rather than approximate"
             },
             {
@@ -173,11 +173,11 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 2,
             "text": "Most probability mass sits on a few tokens",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The distribution is usually peaked, so top-k keeps most of the signal compactly; BrewSLM captures through an OpenAI-compatible endpoint whose top_logprobs is capped at 20 (default k = 10). The dropped tail is not zero, so high-entropy positions do lose information."
+              "text": "The distribution is usually peaked, so top-k keeps most of the signal compactly; BrewSLM captures through a chat-completions-style endpoint whose top_logprobs is capped at 20 (default k = 10). The dropped tail is not zero, so high-entropy positions do lose information."
             }
           }
         },
@@ -190,23 +190,23 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 1,
+              "position": 0,
               "text": "The captured ids point at wrong tokens, so soft targets become gibberish"
             },
             {
               "@type": "Answer",
-              "position": 2,
+              "position": 1,
               "text": "The student's vocab grows to fit the teacher's"
             },
             {
               "@type": "Answer",
-              "position": 3,
+              "position": 2,
               "text": "The capture step refuses to run until you pick a same-family teacher"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 0,
+            "position": 3,
             "text": "Unmappable tokens drop; the map rate is reported",
             "answerExplanation": {
               "@type": "Comment",
@@ -375,23 +375,23 @@
               {
                 "q": "Why store only the top-k logprobs instead of the full distribution?",
                 "options": [
-                  "Most probability mass sits on a few tokens",
                   "Tail tokens have zero probability",
                   "Top-k makes the KL term exact rather than approximate",
+                  "Most probability mass sits on a few tokens",
                   "The student only has k output tokens per position"
                 ],
-                "answer": 0,
-                "explanation": "The distribution is usually peaked, so top-k keeps most of the signal compactly; BrewSLM captures through an OpenAI-compatible endpoint whose top_logprobs is capped at 20 (default k = 10). The dropped tail is not zero, so high-entropy positions do lose information."
+                "answer": 2,
+                "explanation": "The distribution is usually peaked, so top-k keeps most of the signal compactly; BrewSLM captures through a chat-completions-style endpoint whose top_logprobs is capped at 20 (default k = 10). The dropped tail is not zero, so high-entropy positions do lose information."
               },
               {
                 "q": "The teacher and student use different tokenizers. What happens in BrewSLM's offline KD?",
                 "options": [
-                  "Unmappable tokens drop; the map rate is reported",
                   "The captured ids point at wrong tokens, so soft targets become gibberish",
                   "The student's vocab grows to fit the teacher's",
-                  "The capture step refuses to run until you pick a same-family teacher"
+                  "The capture step refuses to run until you pick a same-family teacher",
+                  "Unmappable tokens drop; the map rate is reported"
                 ],
-                "answer": 0,
+                "answer": 3,
                 "explanation": "BrewSLM stores the teacher's token strings, maps them onto student ids, drops the ones the student vocab lacks, and reports a map rate before training. A mismatch weakens the soft signal rather than corrupting it, and the student still learns the teacher's generated answer (sequence-level KD)."
               }
             ]
@@ -418,20 +418,20 @@
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The teacher runs once; students reuse it</strong> Offline capture amortizes the expensive teacher calls over many student runs. Online (on-policy) KD is possible and fixes the train/inference mismatch, but re-queries the teacher every run.</p></details></li>
               <li><p class="quiz__q-text">Why store only the top-k logprobs instead of the full distribution?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Most probability mass sits on a few tokens</li>
                   <li>Tail tokens have zero probability</li>
                   <li>Top-k makes the KL term exact rather than approximate</li>
+                  <li>Most probability mass sits on a few tokens</li>
                   <li>The student only has k output tokens per position</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Most probability mass sits on a few tokens</strong> The distribution is usually peaked, so top-k keeps most of the signal compactly; BrewSLM captures through an OpenAI-compatible endpoint whose top_logprobs is capped at 20 (default k = 10). The dropped tail is not zero, so high-entropy positions do lose information.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Most probability mass sits on a few tokens</strong> The distribution is usually peaked, so top-k keeps most of the signal compactly; BrewSLM captures through a chat-completions-style endpoint whose top_logprobs is capped at 20 (default k = 10). The dropped tail is not zero, so high-entropy positions do lose information.</p></details></li>
               <li><p class="quiz__q-text">The teacher and student use different tokenizers. What happens in BrewSLM's offline KD?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Unmappable tokens drop; the map rate is reported</li>
                   <li>The captured ids point at wrong tokens, so soft targets become gibberish</li>
                   <li>The student's vocab grows to fit the teacher's</li>
                   <li>The capture step refuses to run until you pick a same-family teacher</li>
+                  <li>Unmappable tokens drop; the map rate is reported</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Unmappable tokens drop; the map rate is reported</strong> BrewSLM stores the teacher's token strings, maps them onto student ids, drops the ones the student vocab lacks, and reports a map rate before training. A mismatch weakens the soft signal rather than corrupting it, and the student still learns the teacher's generated answer (sequence-level KD).</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Unmappable tokens drop; the map rate is reported</strong> BrewSLM stores the teacher's token strings, maps them onto student ids, drops the ones the student vocab lacks, and reports a map rate before training. A mismatch weakens the soft signal rather than corrupting it, and the student still learns the teacher's generated answer (sequence-level KD).</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->
