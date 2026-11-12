@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Every parameter"
+              "position": 1,
+              "text": "Every parameter, but at a lower learning rate than full fine-tuning"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Only the tokenizer"
+              "text": "Only the final output layer"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The learning rate"
+              "text": "A compressed copy of the base weights that replaces the original"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Small added low-rank matrices, with the base model frozen",
+            "position": 0,
+            "text": "Small low-rank matrices added to a frozen base",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "LoRA freezes the base and trains tiny low-rank adapter matrices — often under 1% of parameters."
+              "text": "LoRA freezes the base and trains low-rank matrices B·A added to chosen layers, often well under 1% of the parameters. B starts at zero, so training begins exactly at the base model."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why does LoRA slash memory versus full fine-tuning?",
-          "text": "Why does LoRA slash memory versus full fine-tuning?",
+          "name": "Why does LoRA need far less memory than full fine-tuning?",
+          "text": "Why does LoRA need far less memory than full fine-tuning?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "It uses a smaller vocabulary"
+              "position": 1,
+              "text": "It skips the backward pass through the frozen layers entirely"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It skips the forward pass"
+              "text": "It stores fewer activations, since frozen layers keep none"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It removes attention"
+              "text": "It loads only the layers that carry an adapter into memory"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Gradients/optimizer state are stored only for the tiny adapter, not the whole model",
+            "position": 0,
+            "text": "Gradients and optimizer state exist only for the adapter",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The frozen base needs no gradients/optimizer state; only the small adapter does."
+              "text": "The frozen base needs no gradients or AdamW state. Backprop still flows through every frozen layer, so activation memory is about the same as full fine-tuning."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What does 'merging' a LoRA adapter do?",
-          "text": "What does 'merging' a LoRA adapter do?",
+          "name": "What does merging a LoRA adapter do?",
+          "text": "What does merging a LoRA adapter do?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
+              "text": "Averages two adapters into one"
+            },
+            {
+              "@type": "Answer",
+              "position": 2,
               "text": "Deletes the adapter"
             },
             {
               "@type": "Answer",
-              "position": 2,
-              "text": "Doubles the parameters"
-            },
-            {
-              "@type": "Answer",
               "position": 3,
-              "text": "Retrains from scratch"
+              "text": "Saves the adapter next to the base so both load together"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Folds its learned change into the base weights to make a standalone model",
+            "position": 0,
+            "text": "Folds the adapter's update into the base weights",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Merging produces a single deployable model with no adapter overhead at inference."
+              "text": "Merging computes W + (α/r)·B·A once, giving a standalone model with no adapter overhead at inference. Merge a QLoRA adapter into a dequantised bf16 base, not into the 4-bit weights."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Fails to learn"
+              "position": 1,
+              "text": "Fails to learn narrow tasks"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Requires more GPUs than full FT"
+              "text": "Needs more GPUs than full fine-tuning, because it adds parameters"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Changes the task shape"
+              "text": "Beats full fine-tuning on quality, because it cannot overfit"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Matches full fine-tuning closely at a fraction of the cost",
+            "position": 0,
+            "text": "Comes close to full fine-tuning at a fraction of the cost",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "On narrow tasks LoRA is close to full FT in quality while far cheaper — hence the default."
+              "text": "On narrow tasks LoRA is close to full fine-tuning in quality while far cheaper, which is why it is the default. It can still overfit."
             }
           }
         }
@@ -332,52 +332,52 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "What does LoRA train?",
-    "options": [
-      "Every parameter",
-      "Small added low-rank matrices, with the base model frozen",
-      "Only the tokenizer",
-      "The learning rate"
-    ],
-    "answer": 1,
-    "explanation": "LoRA freezes the base and trains tiny low-rank adapter matrices \u2014 often under 1% of parameters."
-  },
-  {
-    "q": "Why does LoRA slash memory versus full fine-tuning?",
-    "options": [
-      "It uses a smaller vocabulary",
-      "Gradients/optimizer state are stored only for the tiny adapter, not the whole model",
-      "It skips the forward pass",
-      "It removes attention"
-    ],
-    "answer": 1,
-    "explanation": "The frozen base needs no gradients/optimizer state; only the small adapter does."
-  },
-  {
-    "q": "What does 'merging' a LoRA adapter do?",
-    "options": [
-      "Deletes the adapter",
-      "Folds its learned change into the base weights to make a standalone model",
-      "Doubles the parameters",
-      "Retrains from scratch"
-    ],
-    "answer": 1,
-    "explanation": "Merging produces a single deployable model with no adapter overhead at inference."
-  },
-  {
-    "q": "For the narrow SFT tasks in this course, LoRA usually\u2026",
-    "options": [
-      "Fails to learn",
-      "Matches full fine-tuning closely at a fraction of the cost",
-      "Requires more GPUs than full FT",
-      "Changes the task shape"
-    ],
-    "answer": 1,
-    "explanation": "On narrow tasks LoRA is close to full FT in quality while far cheaper \u2014 hence the default."
-  }
-]
+            [
+              {
+                "q": "What does LoRA train?",
+                "options": [
+                  "Small low-rank matrices added to a frozen base",
+                  "Every parameter, but at a lower learning rate than full fine-tuning",
+                  "Only the final output layer",
+                  "A compressed copy of the base weights that replaces the original"
+                ],
+                "answer": 0,
+                "explanation": "LoRA freezes the base and trains low-rank matrices B·A added to chosen layers, often well under 1% of the parameters. B starts at zero, so training begins exactly at the base model."
+              },
+              {
+                "q": "Why does LoRA need far less memory than full fine-tuning?",
+                "options": [
+                  "Gradients and optimizer state exist only for the adapter",
+                  "It skips the backward pass through the frozen layers entirely",
+                  "It stores fewer activations, since frozen layers keep none",
+                  "It loads only the layers that carry an adapter into memory"
+                ],
+                "answer": 0,
+                "explanation": "The frozen base needs no gradients or AdamW state. Backprop still flows through every frozen layer, so activation memory is about the same as full fine-tuning."
+              },
+              {
+                "q": "What does merging a LoRA adapter do?",
+                "options": [
+                  "Folds the adapter's update into the base weights",
+                  "Averages two adapters into one",
+                  "Deletes the adapter",
+                  "Saves the adapter next to the base so both load together"
+                ],
+                "answer": 0,
+                "explanation": "Merging computes W + (α/r)·B·A once, giving a standalone model with no adapter overhead at inference. Merge a QLoRA adapter into a dequantised bf16 base, not into the 4-bit weights."
+              },
+              {
+                "q": "For the narrow SFT tasks in this course, LoRA usually…",
+                "options": [
+                  "Comes close to full fine-tuning at a fraction of the cost",
+                  "Fails to learn narrow tasks",
+                  "Needs more GPUs than full fine-tuning, because it adds parameters",
+                  "Beats full fine-tuning on quality, because it cannot overfit"
+                ],
+                "answer": 0,
+                "explanation": "On narrow tasks LoRA is close to full fine-tuning in quality while far cheaper, which is why it is the default. It can still overfit."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -385,36 +385,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does LoRA train?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Every parameter</li>
-                  <li>Small added low-rank matrices, with the base model frozen</li>
-                  <li>Only the tokenizer</li>
-                  <li>The learning rate</li>
+                  <li>Small low-rank matrices added to a frozen base</li>
+                  <li>Every parameter, but at a lower learning rate than full fine-tuning</li>
+                  <li>Only the final output layer</li>
+                  <li>A compressed copy of the base weights that replaces the original</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Small added low-rank matrices, with the base model frozen</strong> LoRA freezes the base and trains tiny low-rank adapter matrices — often under 1% of parameters.</p></details></li>
-              <li><p class="quiz__q-text">Why does LoRA slash memory versus full fine-tuning?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Small low-rank matrices added to a frozen base</strong> LoRA freezes the base and trains low-rank matrices B·A added to chosen layers, often well under 1% of the parameters. B starts at zero, so training begins exactly at the base model.</p></details></li>
+              <li><p class="quiz__q-text">Why does LoRA need far less memory than full fine-tuning?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It uses a smaller vocabulary</li>
-                  <li>Gradients/optimizer state are stored only for the tiny adapter, not the whole model</li>
-                  <li>It skips the forward pass</li>
-                  <li>It removes attention</li>
+                  <li>Gradients and optimizer state exist only for the adapter</li>
+                  <li>It skips the backward pass through the frozen layers entirely</li>
+                  <li>It stores fewer activations, since frozen layers keep none</li>
+                  <li>It loads only the layers that carry an adapter into memory</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Gradients/optimizer state are stored only for the tiny adapter, not the whole model</strong> The frozen base needs no gradients/optimizer state; only the small adapter does.</p></details></li>
-              <li><p class="quiz__q-text">What does 'merging' a LoRA adapter do?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Gradients and optimizer state exist only for the adapter</strong> The frozen base needs no gradients or AdamW state. Backprop still flows through every frozen layer, so activation memory is about the same as full fine-tuning.</p></details></li>
+              <li><p class="quiz__q-text">What does merging a LoRA adapter do?</p>
                 <ol class="quiz__static-options" type="A">
+                  <li>Folds the adapter's update into the base weights</li>
+                  <li>Averages two adapters into one</li>
                   <li>Deletes the adapter</li>
-                  <li>Folds its learned change into the base weights to make a standalone model</li>
-                  <li>Doubles the parameters</li>
-                  <li>Retrains from scratch</li>
+                  <li>Saves the adapter next to the base so both load together</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Folds its learned change into the base weights to make a standalone model</strong> Merging produces a single deployable model with no adapter overhead at inference.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Folds the adapter's update into the base weights</strong> Merging computes W + (α/r)·B·A once, giving a standalone model with no adapter overhead at inference. Merge a QLoRA adapter into a dequantised bf16 base, not into the 4-bit weights.</p></details></li>
               <li><p class="quiz__q-text">For the narrow SFT tasks in this course, LoRA usually…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Fails to learn</li>
-                  <li>Matches full fine-tuning closely at a fraction of the cost</li>
-                  <li>Requires more GPUs than full FT</li>
-                  <li>Changes the task shape</li>
+                  <li>Comes close to full fine-tuning at a fraction of the cost</li>
+                  <li>Fails to learn narrow tasks</li>
+                  <li>Needs more GPUs than full fine-tuning, because it adds parameters</li>
+                  <li>Beats full fine-tuning on quality, because it cannot overfit</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Matches full fine-tuning closely at a fraction of the cost</strong> On narrow tasks LoRA is close to full FT in quality while far cheaper — hence the default.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Comes close to full fine-tuning at a fraction of the cost</strong> On narrow tasks LoRA is close to full fine-tuning in quality while far cheaper, which is why it is the default. It can still overfit.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

@@ -91,8 +91,8 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "A specific dataset schema with required fields"
+              "position": 1,
+              "text": "A prompt/completion schema"
             },
             {
               "@type": "Answer",
@@ -102,16 +102,16 @@
             {
               "@type": "Answer",
               "position": 3,
-              "text": "A streaming protocol"
+              "text": "A chat schema that requires a messages list on each line"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "A container: one JSON object per line, with whatever fields you put inside",
+            "position": 0,
+            "text": "One JSON object per line, with any fields",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "JSONL just stores one JSON object per line — the schema is whatever fields you put inside. That's why JSONL alone doesn't say 'completion' or 'chat messages'; those are inner schemas."
+              "text": "JSONL is only a container. Whether a file is completion-style, chat messages or classification rows depends on the inner schema."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "You're fine-tuning a chat instruct model on multi-turn customer support data. Which format?",
-          "text": "You're fine-tuning a chat instruct model on multi-turn customer support data. Which format?",
+          "name": "You're fine-tuning a chat instruct model on multi-turn customer support data. Which format fits?",
+          "text": "You're fine-tuning a chat instruct model on multi-turn customer support data. Which format fits?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Alpaca"
+              "position": 1,
+              "text": "Alpaca instruction/input/output"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "ShareGPT, kept as-is"
+              "position": 2,
+              "text": "ShareGPT, kept as-is with its from/value field names"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Completion — just concatenate everything"
+              "text": "Completion, with every turn concatenated into one text field"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "Chat messages — apply_chat_template will render the role markers",
+            "position": 0,
+            "text": "Chat messages rendered with apply_chat_template",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Chat models eat chat-messages format and let apply_chat_template handle the special tokens. Multi-turn role data is its native shape."
+              "text": "Multi-turn role data is the native shape for a chat model, and the tokenizer's template adds the special tokens. Check the loss mask too: under TRL defaults a messages dataset also trains on the user turns."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Converting Alpaca → chat messages, the user content should be…",
-          "text": "Converting Alpaca → chat messages, the user content should be…",
+          "name": "Converting an Alpaca row to chat messages, the user message should contain…",
+          "text": "Converting an Alpaca row to chat messages, the user message should contain…",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Only the instruction field"
+              "position": 1,
+              "text": "Only the instruction field; the input goes in the system message"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "Only the input field"
+              "position": 2,
+              "text": "Only the input field, since the instruction is the same for every row"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The output field"
+              "text": "The instruction, input and output, so the model sees the full example"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "The instruction and input joined (with a blank line between them when input is non-empty)",
+            "position": 0,
+            "text": "The instruction and input, separated by a blank line",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Instruction + input form the user side; output is the assistant side. The blank line preserves the boundary so the model sees the structure consistently."
+              "text": "Instruction plus input form the user side and output is the assistant side. The blank line (when input is non-empty) keeps the boundary visible."
             }
           }
         },
@@ -191,7 +191,7 @@
             {
               "@type": "Answer",
               "position": 1,
-              "text": "Whenever the dataset is small"
+              "text": "When the dataset is small"
             },
             {
               "@type": "Answer",
@@ -201,16 +201,16 @@
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Never — every model needs chat format"
+              "text": "Whenever the model is an instruct model rather than a base model"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 0,
-            "text": "When the task is classification or extraction and you're training a dedicated head (or the trainer wraps it for you)",
+            "text": "When training a dedicated classification head",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Classification (text, label) and extraction (text, spans/fields) have native shapes that classifier/extraction handlers ingest directly. SFT-on-chat-model versions of those tasks still need a chat wrap; pure classification heads don't."
+              "text": "A classifier head consumes (text, label) directly. If you instead fine-tune a chat model to emit the label, the rows still need the chat wrap."
             }
           }
         }
@@ -401,24 +401,52 @@ def sharegpt_to_chat(row):
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "JSONL is…",
-   "options": ["A specific dataset schema with required fields", "A container: one JSON object per line, with whatever fields you put inside", "A binary tensor format", "A streaming protocol"],
-   "answer": 1,
-   "explanation": "JSONL just stores one JSON object per line — the schema is whatever fields you put inside. That's why JSONL alone doesn't say 'completion' or 'chat messages'; those are inner schemas."},
-  {"q": "You're fine-tuning a chat instruct model on multi-turn customer support data. Which format?",
-   "options": ["Alpaca", "ShareGPT, kept as-is", "Chat messages — apply_chat_template will render the role markers", "Completion — just concatenate everything"],
-   "answer": 2,
-   "explanation": "Chat models eat chat-messages format and let apply_chat_template handle the special tokens. Multi-turn role data is its native shape."},
-  {"q": "Converting Alpaca → chat messages, the user content should be…",
-   "options": ["Only the instruction field", "Only the input field", "The instruction and input joined (with a blank line between them when input is non-empty)", "The output field"],
-   "answer": 2,
-   "explanation": "Instruction + input form the user side; output is the assistant side. The blank line preserves the boundary so the model sees the structure consistently."},
-  {"q": "When can you skip the chat format entirely?",
-   "options": ["When the task is classification or extraction and you're training a dedicated head (or the trainer wraps it for you)", "Whenever the dataset is small", "When using QLoRA", "Never — every model needs chat format"],
-   "answer": 0,
-   "explanation": "Classification (text, label) and extraction (text, spans/fields) have native shapes that classifier/extraction handlers ingest directly. SFT-on-chat-model versions of those tasks still need a chat wrap; pure classification heads don't."}
-]
+            [
+              {
+                "q": "JSONL is…",
+                "options": [
+                  "One JSON object per line, with any fields",
+                  "A prompt/completion schema",
+                  "A binary tensor format",
+                  "A chat schema that requires a messages list on each line"
+                ],
+                "answer": 0,
+                "explanation": "JSONL is only a container. Whether a file is completion-style, chat messages or classification rows depends on the inner schema."
+              },
+              {
+                "q": "You're fine-tuning a chat instruct model on multi-turn customer support data. Which format fits?",
+                "options": [
+                  "Chat messages rendered with apply_chat_template",
+                  "Alpaca instruction/input/output",
+                  "ShareGPT, kept as-is with its from/value field names",
+                  "Completion, with every turn concatenated into one text field"
+                ],
+                "answer": 0,
+                "explanation": "Multi-turn role data is the native shape for a chat model, and the tokenizer's template adds the special tokens. Check the loss mask too: under TRL defaults a messages dataset also trains on the user turns."
+              },
+              {
+                "q": "Converting an Alpaca row to chat messages, the user message should contain…",
+                "options": [
+                  "The instruction and input, separated by a blank line",
+                  "Only the instruction field; the input goes in the system message",
+                  "Only the input field, since the instruction is the same for every row",
+                  "The instruction, input and output, so the model sees the full example"
+                ],
+                "answer": 0,
+                "explanation": "Instruction plus input form the user side and output is the assistant side. The blank line (when input is non-empty) keeps the boundary visible."
+              },
+              {
+                "q": "When can you skip the chat format entirely?",
+                "options": [
+                  "When training a dedicated classification head",
+                  "When the dataset is small",
+                  "When using QLoRA",
+                  "Whenever the model is an instruct model rather than a base model"
+                ],
+                "answer": 0,
+                "explanation": "A classifier head consumes (text, label) directly. If you instead fine-tune a chat model to emit the label, the rows still need the chat wrap."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -426,36 +454,36 @@ def sharegpt_to_chat(row):
             <ol class="quiz__static">
               <li><p class="quiz__q-text">JSONL is…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A specific dataset schema with required fields</li>
-                  <li>A container: one JSON object per line, with whatever fields you put inside</li>
+                  <li>One JSON object per line, with any fields</li>
+                  <li>A prompt/completion schema</li>
                   <li>A binary tensor format</li>
-                  <li>A streaming protocol</li>
+                  <li>A chat schema that requires a messages list on each line</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A container: one JSON object per line, with whatever fields you put inside</strong> JSONL just stores one JSON object per line — the schema is whatever fields you put inside. That's why JSONL alone doesn't say 'completion' or 'chat messages'; those are inner schemas.</p></details></li>
-              <li><p class="quiz__q-text">You're fine-tuning a chat instruct model on multi-turn customer support data. Which format?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. One JSON object per line, with any fields</strong> JSONL is only a container. Whether a file is completion-style, chat messages or classification rows depends on the inner schema.</p></details></li>
+              <li><p class="quiz__q-text">You're fine-tuning a chat instruct model on multi-turn customer support data. Which format fits?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Alpaca</li>
-                  <li>ShareGPT, kept as-is</li>
-                  <li>Chat messages — apply_chat_template will render the role markers</li>
-                  <li>Completion — just concatenate everything</li>
+                  <li>Chat messages rendered with apply_chat_template</li>
+                  <li>Alpaca instruction/input/output</li>
+                  <li>ShareGPT, kept as-is with its from/value field names</li>
+                  <li>Completion, with every turn concatenated into one text field</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Chat messages — apply_chat_template will render the role markers</strong> Chat models eat chat-messages format and let apply_chat_template handle the special tokens. Multi-turn role data is its native shape.</p></details></li>
-              <li><p class="quiz__q-text">Converting Alpaca → chat messages, the user content should be…</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Chat messages rendered with apply_chat_template</strong> Multi-turn role data is the native shape for a chat model, and the tokenizer's template adds the special tokens. Check the loss mask too: under TRL defaults a messages dataset also trains on the user turns.</p></details></li>
+              <li><p class="quiz__q-text">Converting an Alpaca row to chat messages, the user message should contain…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Only the instruction field</li>
-                  <li>Only the input field</li>
-                  <li>The instruction and input joined (with a blank line between them when input is non-empty)</li>
-                  <li>The output field</li>
+                  <li>The instruction and input, separated by a blank line</li>
+                  <li>Only the instruction field; the input goes in the system message</li>
+                  <li>Only the input field, since the instruction is the same for every row</li>
+                  <li>The instruction, input and output, so the model sees the full example</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The instruction and input joined (with a blank line between them when input is non-empty)</strong> Instruction + input form the user side; output is the assistant side. The blank line preserves the boundary so the model sees the structure consistently.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The instruction and input, separated by a blank line</strong> Instruction plus input form the user side and output is the assistant side. The blank line (when input is non-empty) keeps the boundary visible.</p></details></li>
               <li><p class="quiz__q-text">When can you skip the chat format entirely?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>When the task is classification or extraction and you're training a dedicated head (or the trainer wraps it for you)</li>
-                  <li>Whenever the dataset is small</li>
+                  <li>When training a dedicated classification head</li>
+                  <li>When the dataset is small</li>
                   <li>When using QLoRA</li>
-                  <li>Never — every model needs chat format</li>
+                  <li>Whenever the model is an instruct model rather than a base model</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. When the task is classification or extraction and you're training a dedicated head (or the trainer wraps it for you)</strong> Classification (text, label) and extraction (text, spans/fields) have native shapes that classifier/extraction handlers ingest directly. SFT-on-chat-model versions of those tasks still need a chat wrap; pure classification heads don't.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. When training a dedicated classification head</strong> A classifier head consumes (text, label) directly. If you instead fine-tune a chat model to emit the label, the rows still need the chat wrap.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

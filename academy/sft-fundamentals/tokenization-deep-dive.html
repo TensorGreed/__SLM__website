@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Choosing the next token"
+              "position": 1,
+              "text": "Choosing which token the model generates next"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Setting the learning rate"
+              "text": "Marking which tokens receive loss during training"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Merging LoRA weights"
+              "text": "Hiding the prompt from the model during generation"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "Telling the model to ignore padded positions",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The attention mask marks real (1) vs padded (0) tokens so padding is ignored."
+              "text": "The attention mask marks real (1) vs padded (0) tokens. Which tokens receive loss is the labels' job (-100 means ignored), a separate mask."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why can naive truncation be a silent bug?",
-          "text": "Why can naive truncation be a silent bug?",
+          "name": "Why is naive truncation a silent bug in SFT?",
+          "text": "Why is naive truncation a silent bug in SFT?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "It changes the vocabulary"
+              "position": 1,
+              "text": "It raises an error on every row longer than the limit"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It always crashes"
+              "text": "It cuts the prompt, which the loss doesn't depend on"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It doubles memory"
+              "text": "It changes the vocabulary of the tokenizer"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "It can clip the completion you train on, teaching partial/empty targets",
+            "position": 0,
+            "text": "It can cut off the completion being trained on",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "End-truncation can remove the completion; training proceeds but learns nothing useful from those rows."
+              "text": "Cutting from the end removes the completion, and training proceeds on partial or empty targets. TRL's defaults (max_length 1024, keep_start) do exactly this to long rows."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Sequence packing improves training by…",
-          "text": "Sequence packing improves training by…",
+          "name": "Sequence packing speeds up training by…",
+          "text": "Sequence packing speeds up training by…",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Increasing the learning rate"
+              "position": 1,
+              "text": "Raising the learning rate for short examples"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Removing the attention mask"
+              "text": "Dropping the attention mask to save memory"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Shrinking the model"
+              "text": "Shrinking the model's hidden size for short rows"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Concatenating short examples to avoid wasting compute on padding",
+            "position": 0,
+            "text": "Filling sequences with real tokens instead of padding",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Packing fills sequences with real tokens instead of padding, raising throughput on short-example data."
+              "text": "Packing concatenates short examples so compute isn't spent on padding. Good packers reset attention at example boundaries; naive concat-and-chunk lets examples attend across each other."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Always 2048"
+              "position": 1,
+              "text": "Always 512"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "The largest number your GPU allows"
+              "position": 2,
+              "text": "The largest value that fits in GPU memory at your batch size"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Equal to the vocabulary size"
+              "text": "Always 2048"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "From your data's length distribution — fit completions, avoid paying for empty context",
+            "position": 0,
+            "text": "From your data's length distribution",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Pick the smallest length that never clips completions; attention cost grows ~quadratically with length."
+              "text": "Pick a length that never clips completions (check the 99th percentile) without paying for empty context. A model's declared context (8k for SmolLM2-135M) is a ceiling, not a target."
             }
           }
         }
@@ -335,52 +335,52 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "What is the attention mask for?",
-    "options": [
-      "Choosing the next token",
-      "Telling the model to ignore padded positions",
-      "Setting the learning rate",
-      "Merging LoRA weights"
-    ],
-    "answer": 1,
-    "explanation": "The attention mask marks real (1) vs padded (0) tokens so padding is ignored."
-  },
-  {
-    "q": "Why can naive truncation be a silent bug?",
-    "options": [
-      "It changes the vocabulary",
-      "It can clip the completion you train on, teaching partial/empty targets",
-      "It always crashes",
-      "It doubles memory"
-    ],
-    "answer": 1,
-    "explanation": "End-truncation can remove the completion; training proceeds but learns nothing useful from those rows."
-  },
-  {
-    "q": "Sequence packing improves training by\u2026",
-    "options": [
-      "Increasing the learning rate",
-      "Concatenating short examples to avoid wasting compute on padding",
-      "Removing the attention mask",
-      "Shrinking the model"
-    ],
-    "answer": 1,
-    "explanation": "Packing fills sequences with real tokens instead of padding, raising throughput on short-example data."
-  },
-  {
-    "q": "How should you choose max_seq_length?",
-    "options": [
-      "Always 2048",
-      "The largest number your GPU allows",
-      "From your data's length distribution \u2014 fit completions, avoid paying for empty context",
-      "Equal to the vocabulary size"
-    ],
-    "answer": 2,
-    "explanation": "Pick the smallest length that never clips completions; attention cost grows ~quadratically with length."
-  }
-]
+            [
+              {
+                "q": "What is the attention mask for?",
+                "options": [
+                  "Telling the model to ignore padded positions",
+                  "Choosing which token the model generates next",
+                  "Marking which tokens receive loss during training",
+                  "Hiding the prompt from the model during generation"
+                ],
+                "answer": 0,
+                "explanation": "The attention mask marks real (1) vs padded (0) tokens. Which tokens receive loss is the labels' job (-100 means ignored), a separate mask."
+              },
+              {
+                "q": "Why is naive truncation a silent bug in SFT?",
+                "options": [
+                  "It can cut off the completion being trained on",
+                  "It raises an error on every row longer than the limit",
+                  "It cuts the prompt, which the loss doesn't depend on",
+                  "It changes the vocabulary of the tokenizer"
+                ],
+                "answer": 0,
+                "explanation": "Cutting from the end removes the completion, and training proceeds on partial or empty targets. TRL's defaults (max_length 1024, keep_start) do exactly this to long rows."
+              },
+              {
+                "q": "Sequence packing speeds up training by…",
+                "options": [
+                  "Filling sequences with real tokens instead of padding",
+                  "Raising the learning rate for short examples",
+                  "Dropping the attention mask to save memory",
+                  "Shrinking the model's hidden size for short rows"
+                ],
+                "answer": 0,
+                "explanation": "Packing concatenates short examples so compute isn't spent on padding. Good packers reset attention at example boundaries; naive concat-and-chunk lets examples attend across each other."
+              },
+              {
+                "q": "How should you choose max_seq_length?",
+                "options": [
+                  "From your data's length distribution",
+                  "Always 512",
+                  "The largest value that fits in GPU memory at your batch size",
+                  "Always 2048"
+                ],
+                "answer": 0,
+                "explanation": "Pick a length that never clips completions (check the 99th percentile) without paying for empty context. A model's declared context (8k for SmolLM2-135M) is a ceiling, not a target."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -388,36 +388,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What is the attention mask for?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Choosing the next token</li>
                   <li>Telling the model to ignore padded positions</li>
-                  <li>Setting the learning rate</li>
-                  <li>Merging LoRA weights</li>
+                  <li>Choosing which token the model generates next</li>
+                  <li>Marking which tokens receive loss during training</li>
+                  <li>Hiding the prompt from the model during generation</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Telling the model to ignore padded positions</strong> The attention mask marks real (1) vs padded (0) tokens so padding is ignored.</p></details></li>
-              <li><p class="quiz__q-text">Why can naive truncation be a silent bug?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Telling the model to ignore padded positions</strong> The attention mask marks real (1) vs padded (0) tokens. Which tokens receive loss is the labels' job (-100 means ignored), a separate mask.</p></details></li>
+              <li><p class="quiz__q-text">Why is naive truncation a silent bug in SFT?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It changes the vocabulary</li>
-                  <li>It can clip the completion you train on, teaching partial/empty targets</li>
-                  <li>It always crashes</li>
-                  <li>It doubles memory</li>
+                  <li>It can cut off the completion being trained on</li>
+                  <li>It raises an error on every row longer than the limit</li>
+                  <li>It cuts the prompt, which the loss doesn't depend on</li>
+                  <li>It changes the vocabulary of the tokenizer</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. It can clip the completion you train on, teaching partial/empty targets</strong> End-truncation can remove the completion; training proceeds but learns nothing useful from those rows.</p></details></li>
-              <li><p class="quiz__q-text">Sequence packing improves training by…</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. It can cut off the completion being trained on</strong> Cutting from the end removes the completion, and training proceeds on partial or empty targets. TRL's defaults (max_length 1024, keep_start) do exactly this to long rows.</p></details></li>
+              <li><p class="quiz__q-text">Sequence packing speeds up training by…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Increasing the learning rate</li>
-                  <li>Concatenating short examples to avoid wasting compute on padding</li>
-                  <li>Removing the attention mask</li>
-                  <li>Shrinking the model</li>
+                  <li>Filling sequences with real tokens instead of padding</li>
+                  <li>Raising the learning rate for short examples</li>
+                  <li>Dropping the attention mask to save memory</li>
+                  <li>Shrinking the model's hidden size for short rows</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Concatenating short examples to avoid wasting compute on padding</strong> Packing fills sequences with real tokens instead of padding, raising throughput on short-example data.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Filling sequences with real tokens instead of padding</strong> Packing concatenates short examples so compute isn't spent on padding. Good packers reset attention at example boundaries; naive concat-and-chunk lets examples attend across each other.</p></details></li>
               <li><p class="quiz__q-text">How should you choose max_seq_length?</p>
                 <ol class="quiz__static-options" type="A">
+                  <li>From your data's length distribution</li>
+                  <li>Always 512</li>
+                  <li>The largest value that fits in GPU memory at your batch size</li>
                   <li>Always 2048</li>
-                  <li>The largest number your GPU allows</li>
-                  <li>From your data's length distribution — fit completions, avoid paying for empty context</li>
-                  <li>Equal to the vocabulary size</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. From your data's length distribution — fit completions, avoid paying for empty context</strong> Pick the smallest length that never clips completions; attention cost grows ~quadratically with length.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. From your data's length distribution</strong> Pick a length that never clips completions (check the 99th percentile) without paying for empty context. A model's declared context (8k for SmolLM2-135M) is a ceiling, not a target.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

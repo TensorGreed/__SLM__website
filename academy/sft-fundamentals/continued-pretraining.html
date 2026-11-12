@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The model gives wrong answers on your task — needs better instructions"
+              "position": 1,
+              "text": "The model knows the domain but won't follow your output format"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "The model knows your domain but won't follow your output format"
+              "position": 2,
+              "text": "The model gives wrong answers on your task and needs clearer instructions"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "You want the model to refuse a class of prompts"
+              "text": "You want the model to refuse a class of prompts it currently answers"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "The base model literally doesn't speak your domain's language: surprising per-token loss, vocabulary split into long token streams",
+            "position": 0,
+            "text": "The base model reads your domain's text with unusually high per-token loss",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "CPT addresses token-level unfamiliarity with a domain's text. The other three are SFT or preference-tuning problems; CPT will not fix them and will burn compute trying."
+              "text": "CPT addresses token-level unfamiliarity with a domain's text. Format-following, task answers and refusals are SFT or preference-tuning problems; CPT will not fix them and burns compute trying."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What does CPT data look like?",
-          "text": "What does CPT data look like?",
+          "name": "What does CPT training data look like?",
+          "text": "What does CPT training data look like?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "JSONL with prompt and completion fields"
+              "position": 1,
+              "text": "JSONL rows with a prompt field and a completion field for each document"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "Chat-template messages with role markers"
+              "position": 2,
+              "text": "Chat-template messages with system, user and assistant role markers"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Preference pairs (chosen vs rejected)"
+              "text": "Preference pairs of a better and a worse continuation for each passage"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "Raw text — documents and paragraphs packed into long sequences, no labels, no mask",
+            "position": 0,
+            "text": "Raw documents packed into long sequences, with no labels or mask",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "CPT is the next-token objective on raw text — same shape as the original pretraining. Anything resembling an instruction format belongs in SFT."
+              "text": "CPT is the next-token objective on raw text, the same shape as the original pretraining. Separate documents with an EOS token when packing so the model doesn't learn that one document flows into the next."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "CPT loss dropped on the domain corpus"
+              "position": 1,
+              "text": "Check that training loss on the domain corpus went down during CPT"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "The model emits more domain jargon"
+              "position": 2,
+              "text": "Check that the model now uses more domain jargon in its free-text answers"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Perplexity dropped on a generic benchmark"
+              "text": "Check that perplexity dropped on a generic benchmark after CPT"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "Downstream-task SFT performance moved on a frozen gold set, compared head-to-head against SFT from the original base",
+            "position": 0,
+            "text": "Compare task metrics from the same SFT on the CPT'd and the original base",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "CPT loss always drops on in-distribution data — that's memorisation pressure, not progress. The honest signal is task-level performance from the same SFT recipe, base vs CPT'd."
+              "text": "Training loss on in-distribution text almost always falls, and held-out domain loss falling is fluency, not task usefulness. The honest signal is the frozen gold set: same SFT recipe, original base versus CPT'd base."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why is vocab extension a sharp trade-off, not a free win?",
-          "text": "Why is vocab extension a sharp trade-off, not a free win?",
+          "name": "You add 2,000 domain tokens to the vocabulary before CPT. Why is this a trade-off rather than a free win?",
+          "text": "You add 2,000 domain tokens to the vocabulary before CPT. Why is this a trade-off rather than a free win?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Extended vocabs can't be saved to disk"
+              "position": 1,
+              "text": "New rows start as random noise"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Hugging Face doesn't support it"
+              "text": "Extended vocabularies cannot be saved, so the model only works in the training process"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Vocab extension only works at inference"
+              "text": "New tokens are never updated by CPT"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The new embeddings start random; without enough CPT to train them, the model gets worse at those tokens, and extension breaks the same-tokenizer assumption distillation needs",
+            "position": 0,
+            "text": "The new embedding rows carry no specific meaning until enough CPT trains them",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "New tokens mean new embedding rows, initialised randomly. Short CPT leaves them nearly random — worse than the split-token baseline. And if you plan to distil later, you've broken the teacher/student tokenizer match."
+              "text": "Since transformers 4.46, resize_token_embeddings initialises new rows around the mean of the existing embeddings (better still: the mean of the sub-tokens they replace) — not random, but not meaningful either. With LoRA-CPT the embedding and lm_head rows must also be trained (modules_to_save), and a changed tokenizer breaks logit-level distillation from the original teacher."
             }
           }
         }
@@ -422,24 +422,52 @@ Evaluate task-model on the same gold set you would have used without stage 1.</c
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "Which problem is continued pretraining actually the right tool for?",
-   "options": ["The model gives wrong answers on your task — needs better instructions", "The model knows your domain but won't follow your output format", "The base model literally doesn't speak your domain's language: surprising per-token loss, vocabulary split into long token streams", "You want the model to refuse a class of prompts"],
-   "answer": 2,
-   "explanation": "CPT addresses token-level unfamiliarity with a domain's text. The other three are SFT or preference-tuning problems; CPT will not fix them and will burn compute trying."},
-  {"q": "What does CPT data look like?",
-   "options": ["JSONL with prompt and completion fields", "Chat-template messages with role markers", "Raw text — documents and paragraphs packed into long sequences, no labels, no mask", "Preference pairs (chosen vs rejected)"],
-   "answer": 2,
-   "explanation": "CPT is the next-token objective on raw text — same shape as the original pretraining. Anything resembling an instruction format belongs in SFT."},
-  {"q": "How should you decide whether a CPT run was worth doing?",
-   "options": ["CPT loss dropped on the domain corpus", "The model emits more domain jargon", "Downstream-task SFT performance moved on a frozen gold set, compared head-to-head against SFT from the original base", "Perplexity dropped on a generic benchmark"],
-   "answer": 2,
-   "explanation": "CPT loss always drops on in-distribution data — that's memorisation pressure, not progress. The honest signal is task-level performance from the same SFT recipe, base vs CPT'd."},
-  {"q": "Why is vocab extension a sharp trade-off, not a free win?",
-   "options": ["Extended vocabs can't be saved to disk", "The new embeddings start random; without enough CPT to train them, the model gets worse at those tokens, and extension breaks the same-tokenizer assumption distillation needs", "Hugging Face doesn't support it", "Vocab extension only works at inference"],
-   "answer": 1,
-   "explanation": "New tokens mean new embedding rows, initialised randomly. Short CPT leaves them nearly random — worse than the split-token baseline. And if you plan to distil later, you've broken the teacher/student tokenizer match."}
-]
+            [
+              {
+                "q": "Which problem is continued pretraining actually the right tool for?",
+                "options": [
+                  "The base model reads your domain's text with unusually high per-token loss",
+                  "The model knows the domain but won't follow your output format",
+                  "The model gives wrong answers on your task and needs clearer instructions",
+                  "You want the model to refuse a class of prompts it currently answers"
+                ],
+                "answer": 0,
+                "explanation": "CPT addresses token-level unfamiliarity with a domain's text. Format-following, task answers and refusals are SFT or preference-tuning problems; CPT will not fix them and burns compute trying."
+              },
+              {
+                "q": "What does CPT training data look like?",
+                "options": [
+                  "Raw documents packed into long sequences, with no labels or mask",
+                  "JSONL rows with a prompt field and a completion field for each document",
+                  "Chat-template messages with system, user and assistant role markers",
+                  "Preference pairs of a better and a worse continuation for each passage"
+                ],
+                "answer": 0,
+                "explanation": "CPT is the next-token objective on raw text, the same shape as the original pretraining. Separate documents with an EOS token when packing so the model doesn't learn that one document flows into the next."
+              },
+              {
+                "q": "How should you decide whether a CPT run was worth doing?",
+                "options": [
+                  "Compare task metrics from the same SFT on the CPT'd and the original base",
+                  "Check that training loss on the domain corpus went down during CPT",
+                  "Check that the model now uses more domain jargon in its free-text answers",
+                  "Check that perplexity dropped on a generic benchmark after CPT"
+                ],
+                "answer": 0,
+                "explanation": "Training loss on in-distribution text almost always falls, and held-out domain loss falling is fluency, not task usefulness. The honest signal is the frozen gold set: same SFT recipe, original base versus CPT'd base."
+              },
+              {
+                "q": "You add 2,000 domain tokens to the vocabulary before CPT. Why is this a trade-off rather than a free win?",
+                "options": [
+                  "The new embedding rows carry no specific meaning until enough CPT trains them",
+                  "New rows start as random noise",
+                  "Extended vocabularies cannot be saved, so the model only works in the training process",
+                  "New tokens are never updated by CPT"
+                ],
+                "answer": 0,
+                "explanation": "Since transformers 4.46, resize_token_embeddings initialises new rows around the mean of the existing embeddings (better still: the mean of the sub-tokens they replace) — not random, but not meaningful either. With LoRA-CPT the embedding and lm_head rows must also be trained (modules_to_save), and a changed tokenizer breaks logit-level distillation from the original teacher."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -447,36 +475,36 @@ Evaluate task-model on the same gold set you would have used without stage 1.</c
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Which problem is continued pretraining actually the right tool for?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The model gives wrong answers on your task — needs better instructions</li>
-                  <li>The model knows your domain but won't follow your output format</li>
-                  <li>The base model literally doesn't speak your domain's language: surprising per-token loss, vocabulary split into long token streams</li>
-                  <li>You want the model to refuse a class of prompts</li>
+                  <li>The base model reads your domain's text with unusually high per-token loss</li>
+                  <li>The model knows the domain but won't follow your output format</li>
+                  <li>The model gives wrong answers on your task and needs clearer instructions</li>
+                  <li>You want the model to refuse a class of prompts it currently answers</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The base model literally doesn't speak your domain's language: surprising per-token loss, vocabulary split into long token streams</strong> CPT addresses token-level unfamiliarity with a domain's text. The other three are SFT or preference-tuning problems; CPT will not fix them and will burn compute trying.</p></details></li>
-              <li><p class="quiz__q-text">What does CPT data look like?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The base model reads your domain's text with unusually high per-token loss</strong> CPT addresses token-level unfamiliarity with a domain's text. Format-following, task answers and refusals are SFT or preference-tuning problems; CPT will not fix them and burns compute trying.</p></details></li>
+              <li><p class="quiz__q-text">What does CPT training data look like?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>JSONL with prompt and completion fields</li>
-                  <li>Chat-template messages with role markers</li>
-                  <li>Raw text — documents and paragraphs packed into long sequences, no labels, no mask</li>
-                  <li>Preference pairs (chosen vs rejected)</li>
+                  <li>Raw documents packed into long sequences, with no labels or mask</li>
+                  <li>JSONL rows with a prompt field and a completion field for each document</li>
+                  <li>Chat-template messages with system, user and assistant role markers</li>
+                  <li>Preference pairs of a better and a worse continuation for each passage</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Raw text — documents and paragraphs packed into long sequences, no labels, no mask</strong> CPT is the next-token objective on raw text — same shape as the original pretraining. Anything resembling an instruction format belongs in SFT.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Raw documents packed into long sequences, with no labels or mask</strong> CPT is the next-token objective on raw text, the same shape as the original pretraining. Separate documents with an EOS token when packing so the model doesn't learn that one document flows into the next.</p></details></li>
               <li><p class="quiz__q-text">How should you decide whether a CPT run was worth doing?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>CPT loss dropped on the domain corpus</li>
-                  <li>The model emits more domain jargon</li>
-                  <li>Downstream-task SFT performance moved on a frozen gold set, compared head-to-head against SFT from the original base</li>
-                  <li>Perplexity dropped on a generic benchmark</li>
+                  <li>Compare task metrics from the same SFT on the CPT'd and the original base</li>
+                  <li>Check that training loss on the domain corpus went down during CPT</li>
+                  <li>Check that the model now uses more domain jargon in its free-text answers</li>
+                  <li>Check that perplexity dropped on a generic benchmark after CPT</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Downstream-task SFT performance moved on a frozen gold set, compared head-to-head against SFT from the original base</strong> CPT loss always drops on in-distribution data — that's memorisation pressure, not progress. The honest signal is task-level performance from the same SFT recipe, base vs CPT'd.</p></details></li>
-              <li><p class="quiz__q-text">Why is vocab extension a sharp trade-off, not a free win?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Compare task metrics from the same SFT on the CPT'd and the original base</strong> Training loss on in-distribution text almost always falls, and held-out domain loss falling is fluency, not task usefulness. The honest signal is the frozen gold set: same SFT recipe, original base versus CPT'd base.</p></details></li>
+              <li><p class="quiz__q-text">You add 2,000 domain tokens to the vocabulary before CPT. Why is this a trade-off rather than a free win?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Extended vocabs can't be saved to disk</li>
-                  <li>The new embeddings start random; without enough CPT to train them, the model gets worse at those tokens, and extension breaks the same-tokenizer assumption distillation needs</li>
-                  <li>Hugging Face doesn't support it</li>
-                  <li>Vocab extension only works at inference</li>
+                  <li>The new embedding rows carry no specific meaning until enough CPT trains them</li>
+                  <li>New rows start as random noise</li>
+                  <li>Extended vocabularies cannot be saved, so the model only works in the training process</li>
+                  <li>New tokens are never updated by CPT</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The new embeddings start random; without enough CPT to train them, the model gets worse at those tokens, and extension breaks the same-tokenizer assumption distillation needs</strong> New tokens mean new embedding rows, initialised randomly. Short CPT leaves them nearly random — worse than the split-token baseline. And if you plan to distil later, you've broken the teacher/student tokenizer match.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The new embedding rows carry no specific meaning until enough CPT trains them</strong> Since transformers 4.46, resize_token_embeddings initialises new rows around the mean of the existing embeddings (better still: the mean of the sub-tokens they replace) — not random, but not meaningful either. With LoRA-CPT the embedding and lm_head rows must also be trained (modules_to_save), and a changed tokenizer breaks logit-level distillation from the original teacher.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

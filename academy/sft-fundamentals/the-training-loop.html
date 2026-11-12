@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "backward → forward → step"
+              "position": 1,
+              "text": "forward → optimizer step → loss → backward"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "optimizer step → forward → loss"
+              "text": "backward → forward → loss → optimizer step"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "loss → forward → backward"
+              "text": "loss → forward → optimizer step → backward"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "forward → loss → backward → optimizer step",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Forward pass to logits, compute loss, backpropagate gradients, then the optimizer updates parameters."
+              "text": "The forward pass produces logits, the loss compares them with the labels, backprop computes gradients, then the optimizer updates the parameters."
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "It uses no memory"
+              "position": 1,
+              "text": "It needs no extra memory beyond the gradients"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It removes the loss mask"
+              "text": "It removes the need for a learning-rate schedule"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It enlarges the vocabulary"
+              "text": "It skips weight decay, which only matters for pretraining"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "It adapts the step per-parameter for faster, more stable training",
+            "position": 0,
+            "text": "It adapts the step size per parameter",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "AdamW adapts updates per-parameter (at the cost of extra memory), improving stability and speed."
+              "text": "AdamW keeps per-parameter moment estimates (at the cost of extra memory), which makes training faster and more stable. The W is decoupled weight decay."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Training loss"
+              "position": 1,
+              "text": "Final training loss"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The number of steps"
+              "text": "The step count"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "GPU temperature"
+              "text": "Whether the loss curve looks smooth"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Validation loss/metric on held-out data",
+            "position": 0,
+            "text": "A metric on held-out data",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Validation estimates generalization; training loss can keep dropping while the model overfits."
+              "text": "Held-out data estimates generalisation; training loss can keep dropping while the model overfits."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why save multiple checkpoints?",
-          "text": "Why save multiple checkpoints?",
+          "name": "Why save several checkpoints during a run?",
+          "text": "Why save several checkpoints during a run?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "To use more disk"
+              "position": 1,
+              "text": "The trainer needs them to compute the validation loss"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "To change the tokenizer"
+              "text": "AdamW reloads them to rebuild its moment estimates"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "They are required by AdamW"
+              "text": "Each holds a slice of the weights"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Because training may not end at its best point — keep the best by validation",
+            "position": 0,
+            "text": "The best point may come before the final step",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "You select the checkpoint with the best validation performance, which isn't always the final step."
+              "text": "Keep the checkpoint with the best held-out performance, which is often not the last one. With LoRA, a checkpoint is just the adapter."
             }
           }
         }
@@ -341,52 +341,52 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "What is the correct order within one training step?",
-    "options": [
-      "backward \u2192 forward \u2192 step",
-      "forward \u2192 loss \u2192 backward \u2192 optimizer step",
-      "optimizer step \u2192 forward \u2192 loss",
-      "loss \u2192 forward \u2192 backward"
-    ],
-    "answer": 1,
-    "explanation": "Forward pass to logits, compute loss, backpropagate gradients, then the optimizer updates parameters."
-  },
-  {
-    "q": "Why use AdamW instead of plain SGD?",
-    "options": [
-      "It uses no memory",
-      "It adapts the step per-parameter for faster, more stable training",
-      "It removes the loss mask",
-      "It enlarges the vocabulary"
-    ],
-    "answer": 1,
-    "explanation": "AdamW adapts updates per-parameter (at the cost of extra memory), improving stability and speed."
-  },
-  {
-    "q": "Which signal best answers 'is the model actually better?'",
-    "options": [
-      "Training loss",
-      "Validation loss/metric on held-out data",
-      "The number of steps",
-      "GPU temperature"
-    ],
-    "answer": 1,
-    "explanation": "Validation estimates generalization; training loss can keep dropping while the model overfits."
-  },
-  {
-    "q": "Why save multiple checkpoints?",
-    "options": [
-      "To use more disk",
-      "Because training may not end at its best point \u2014 keep the best by validation",
-      "To change the tokenizer",
-      "They are required by AdamW"
-    ],
-    "answer": 1,
-    "explanation": "You select the checkpoint with the best validation performance, which isn't always the final step."
-  }
-]
+            [
+              {
+                "q": "What is the correct order within one training step?",
+                "options": [
+                  "forward → loss → backward → optimizer step",
+                  "forward → optimizer step → loss → backward",
+                  "backward → forward → loss → optimizer step",
+                  "loss → forward → optimizer step → backward"
+                ],
+                "answer": 0,
+                "explanation": "The forward pass produces logits, the loss compares them with the labels, backprop computes gradients, then the optimizer updates the parameters."
+              },
+              {
+                "q": "Why use AdamW instead of plain SGD?",
+                "options": [
+                  "It adapts the step size per parameter",
+                  "It needs no extra memory beyond the gradients",
+                  "It removes the need for a learning-rate schedule",
+                  "It skips weight decay, which only matters for pretraining"
+                ],
+                "answer": 0,
+                "explanation": "AdamW keeps per-parameter moment estimates (at the cost of extra memory), which makes training faster and more stable. The W is decoupled weight decay."
+              },
+              {
+                "q": "Which signal best answers 'is the model actually better?'",
+                "options": [
+                  "A metric on held-out data",
+                  "Final training loss",
+                  "The step count",
+                  "Whether the loss curve looks smooth"
+                ],
+                "answer": 0,
+                "explanation": "Held-out data estimates generalisation; training loss can keep dropping while the model overfits."
+              },
+              {
+                "q": "Why save several checkpoints during a run?",
+                "options": [
+                  "The best point may come before the final step",
+                  "The trainer needs them to compute the validation loss",
+                  "AdamW reloads them to rebuild its moment estimates",
+                  "Each holds a slice of the weights"
+                ],
+                "answer": 0,
+                "explanation": "Keep the checkpoint with the best held-out performance, which is often not the last one. With LoRA, a checkpoint is just the adapter."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -394,36 +394,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What is the correct order within one training step?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>backward → forward → step</li>
                   <li>forward → loss → backward → optimizer step</li>
-                  <li>optimizer step → forward → loss</li>
-                  <li>loss → forward → backward</li>
+                  <li>forward → optimizer step → loss → backward</li>
+                  <li>backward → forward → loss → optimizer step</li>
+                  <li>loss → forward → optimizer step → backward</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. forward → loss → backward → optimizer step</strong> Forward pass to logits, compute loss, backpropagate gradients, then the optimizer updates parameters.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. forward → loss → backward → optimizer step</strong> The forward pass produces logits, the loss compares them with the labels, backprop computes gradients, then the optimizer updates the parameters.</p></details></li>
               <li><p class="quiz__q-text">Why use AdamW instead of plain SGD?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It uses no memory</li>
-                  <li>It adapts the step per-parameter for faster, more stable training</li>
-                  <li>It removes the loss mask</li>
-                  <li>It enlarges the vocabulary</li>
+                  <li>It adapts the step size per parameter</li>
+                  <li>It needs no extra memory beyond the gradients</li>
+                  <li>It removes the need for a learning-rate schedule</li>
+                  <li>It skips weight decay, which only matters for pretraining</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. It adapts the step per-parameter for faster, more stable training</strong> AdamW adapts updates per-parameter (at the cost of extra memory), improving stability and speed.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. It adapts the step size per parameter</strong> AdamW keeps per-parameter moment estimates (at the cost of extra memory), which makes training faster and more stable. The W is decoupled weight decay.</p></details></li>
               <li><p class="quiz__q-text">Which signal best answers 'is the model actually better?'</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Training loss</li>
-                  <li>Validation loss/metric on held-out data</li>
-                  <li>The number of steps</li>
-                  <li>GPU temperature</li>
+                  <li>A metric on held-out data</li>
+                  <li>Final training loss</li>
+                  <li>The step count</li>
+                  <li>Whether the loss curve looks smooth</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Validation loss/metric on held-out data</strong> Validation estimates generalization; training loss can keep dropping while the model overfits.</p></details></li>
-              <li><p class="quiz__q-text">Why save multiple checkpoints?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A metric on held-out data</strong> Held-out data estimates generalisation; training loss can keep dropping while the model overfits.</p></details></li>
+              <li><p class="quiz__q-text">Why save several checkpoints during a run?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>To use more disk</li>
-                  <li>Because training may not end at its best point — keep the best by validation</li>
-                  <li>To change the tokenizer</li>
-                  <li>They are required by AdamW</li>
+                  <li>The best point may come before the final step</li>
+                  <li>The trainer needs them to compute the validation loss</li>
+                  <li>AdamW reloads them to rebuild its moment estimates</li>
+                  <li>Each holds a slice of the weights</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Because training may not end at its best point — keep the best by validation</strong> You select the checkpoint with the best validation performance, which isn't always the final step.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The best point may come before the final step</strong> Keep the checkpoint with the best held-out performance, which is often not the last one. With LoRA, a checkpoint is just the adapter.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

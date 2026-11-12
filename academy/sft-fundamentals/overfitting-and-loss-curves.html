@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Both losses rise"
+              "position": 1,
+              "text": "Both training and validation loss rise together after warmup"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Both losses stay flat and high"
+              "text": "Validation loss falls faster than training loss throughout"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Validation loss is always zero"
+              "text": "Training loss spikes to NaN partway through the run"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Training loss falls while validation loss flattens then rises",
+            "position": 0,
+            "text": "Training loss falls while validation loss turns up",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Diverging curves — training improving, validation worsening — mean memorization, not generalization."
+              "text": "Diverging curves — training improving, validation worsening — mean memorisation rather than generalisation. A NaN spike is instability, usually a too-high LR."
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "Overfitting"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "A perfect run"
+              "text": "Train/test leakage"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Leakage"
+              "text": "A converged run"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "Underfitting",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Underfitting: train longer, raise LR carefully, add capacity, or check the data/loss mask."
+              "text": "Underfitting: train longer, raise the LR carefully, add capacity, or check the data and loss mask."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "The simplest response to overfitting is…",
-          "text": "The simplest response to overfitting is…",
+          "name": "Validation loss starts rising after epoch 1, but the task metric on the dev gold set keeps improving through epoch 3. Which checkpoint do you keep?",
+          "text": "Validation loss starts rising after epoch 1, but the task metric on the dev gold set keeps improving through epoch 3. Which checkpoint do you keep?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Train for more epochs"
+              "position": 1,
+              "text": "The val-loss minimum"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Remove the validation set"
+              "text": "The final checkpoint"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Increase the LoRA rank"
+              "text": "None — rising validation loss means the run must restart"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Early stopping — keep the checkpoint at the validation minimum",
+            "position": 0,
+            "text": "The one with the best dev-set task metric",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "You saved checkpoints; keep the one where validation was best."
+              "text": "In SFT, val loss often rises after about one epoch while task quality still improves (InstructGPT trained 16 epochs for this reason). Treat val loss as a warning and select on the task metric — on the dev split of the gold set, never the test split you report at the end."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "It always equals validation loss"
+              "position": 1,
+              "text": "Training loss is always identical to validation loss"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It measures speed"
+              "text": "Training loss measures speed, not quality"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It changes the tokenizer"
+              "text": "A low training loss means the learning rate was too low"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Training loss nearly always drops; the train/val relationship (and gold-set metric) is the real signal",
+            "position": 0,
+            "text": "Training loss falls even when the model is overfitting",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Training loss can fall while the model overfits; judge by validation and ultimately the gold-set metric."
+              "text": "Training loss nearly always drops; judge by the train/validation relationship and, ultimately, the gold-set metric. A suspiciously low loss can also mean a broken loss mask."
             }
           }
         }
@@ -353,52 +353,52 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "What is the classic signature of overfitting?",
-    "options": [
-      "Both losses rise",
-      "Training loss falls while validation loss flattens then rises",
-      "Both losses stay flat and high",
-      "Validation loss is always zero"
-    ],
-    "answer": 1,
-    "explanation": "Diverging curves \u2014 training improving, validation worsening \u2014 mean memorization, not generalization."
-  },
-  {
-    "q": "Both training and validation loss stay high and barely move. This is\u2026",
-    "options": [
-      "Overfitting",
-      "Underfitting",
-      "A perfect run",
-      "Leakage"
-    ],
-    "answer": 1,
-    "explanation": "Underfitting: train longer, raise LR carefully, add capacity, or check the data/loss mask."
-  },
-  {
-    "q": "The simplest response to overfitting is\u2026",
-    "options": [
-      "Train for more epochs",
-      "Early stopping \u2014 keep the checkpoint at the validation minimum",
-      "Remove the validation set",
-      "Increase the LoRA rank"
-    ],
-    "answer": 1,
-    "explanation": "You saved checkpoints; keep the one where validation was best."
-  },
-  {
-    "q": "Why isn't a low training loss enough to call a run good?",
-    "options": [
-      "It always equals validation loss",
-      "Training loss nearly always drops; the train/val relationship (and gold-set metric) is the real signal",
-      "It measures speed",
-      "It changes the tokenizer"
-    ],
-    "answer": 1,
-    "explanation": "Training loss can fall while the model overfits; judge by validation and ultimately the gold-set metric."
-  }
-]
+            [
+              {
+                "q": "What is the classic signature of overfitting?",
+                "options": [
+                  "Training loss falls while validation loss turns up",
+                  "Both training and validation loss rise together after warmup",
+                  "Validation loss falls faster than training loss throughout",
+                  "Training loss spikes to NaN partway through the run"
+                ],
+                "answer": 0,
+                "explanation": "Diverging curves — training improving, validation worsening — mean memorisation rather than generalisation. A NaN spike is instability, usually a too-high LR."
+              },
+              {
+                "q": "Both training and validation loss stay high and barely move. This is…",
+                "options": [
+                  "Underfitting",
+                  "Overfitting",
+                  "Train/test leakage",
+                  "A converged run"
+                ],
+                "answer": 0,
+                "explanation": "Underfitting: train longer, raise the LR carefully, add capacity, or check the data and loss mask."
+              },
+              {
+                "q": "Validation loss starts rising after epoch 1, but the task metric on the dev gold set keeps improving through epoch 3. Which checkpoint do you keep?",
+                "options": [
+                  "The one with the best dev-set task metric",
+                  "The val-loss minimum",
+                  "The final checkpoint",
+                  "None — rising validation loss means the run must restart"
+                ],
+                "answer": 0,
+                "explanation": "In SFT, val loss often rises after about one epoch while task quality still improves (InstructGPT trained 16 epochs for this reason). Treat val loss as a warning and select on the task metric — on the dev split of the gold set, never the test split you report at the end."
+              },
+              {
+                "q": "Why isn't a low training loss enough to call a run good?",
+                "options": [
+                  "Training loss falls even when the model is overfitting",
+                  "Training loss is always identical to validation loss",
+                  "Training loss measures speed, not quality",
+                  "A low training loss means the learning rate was too low"
+                ],
+                "answer": 0,
+                "explanation": "Training loss nearly always drops; judge by the train/validation relationship and, ultimately, the gold-set metric. A suspiciously low loss can also mean a broken loss mask."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -406,36 +406,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What is the classic signature of overfitting?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Both losses rise</li>
-                  <li>Training loss falls while validation loss flattens then rises</li>
-                  <li>Both losses stay flat and high</li>
-                  <li>Validation loss is always zero</li>
+                  <li>Training loss falls while validation loss turns up</li>
+                  <li>Both training and validation loss rise together after warmup</li>
+                  <li>Validation loss falls faster than training loss throughout</li>
+                  <li>Training loss spikes to NaN partway through the run</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Training loss falls while validation loss flattens then rises</strong> Diverging curves — training improving, validation worsening — mean memorization, not generalization.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Training loss falls while validation loss turns up</strong> Diverging curves — training improving, validation worsening — mean memorisation rather than generalisation. A NaN spike is instability, usually a too-high LR.</p></details></li>
               <li><p class="quiz__q-text">Both training and validation loss stay high and barely move. This is…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Overfitting</li>
                   <li>Underfitting</li>
-                  <li>A perfect run</li>
-                  <li>Leakage</li>
+                  <li>Overfitting</li>
+                  <li>Train/test leakage</li>
+                  <li>A converged run</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Underfitting</strong> Underfitting: train longer, raise LR carefully, add capacity, or check the data/loss mask.</p></details></li>
-              <li><p class="quiz__q-text">The simplest response to overfitting is…</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Underfitting</strong> Underfitting: train longer, raise the LR carefully, add capacity, or check the data and loss mask.</p></details></li>
+              <li><p class="quiz__q-text">Validation loss starts rising after epoch 1, but the task metric on the dev gold set keeps improving through epoch 3. Which checkpoint do you keep?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Train for more epochs</li>
-                  <li>Early stopping — keep the checkpoint at the validation minimum</li>
-                  <li>Remove the validation set</li>
-                  <li>Increase the LoRA rank</li>
+                  <li>The one with the best dev-set task metric</li>
+                  <li>The val-loss minimum</li>
+                  <li>The final checkpoint</li>
+                  <li>None — rising validation loss means the run must restart</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Early stopping — keep the checkpoint at the validation minimum</strong> You saved checkpoints; keep the one where validation was best.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The one with the best dev-set task metric</strong> In SFT, val loss often rises after about one epoch while task quality still improves (InstructGPT trained 16 epochs for this reason). Treat val loss as a warning and select on the task metric — on the dev split of the gold set, never the test split you report at the end.</p></details></li>
               <li><p class="quiz__q-text">Why isn't a low training loss enough to call a run good?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It always equals validation loss</li>
-                  <li>Training loss nearly always drops; the train/val relationship (and gold-set metric) is the real signal</li>
-                  <li>It measures speed</li>
-                  <li>It changes the tokenizer</li>
+                  <li>Training loss falls even when the model is overfitting</li>
+                  <li>Training loss is always identical to validation loss</li>
+                  <li>Training loss measures speed, not quality</li>
+                  <li>A low training loss means the learning rate was too low</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Training loss nearly always drops; the train/val relationship (and gold-set metric) is the real signal</strong> Training loss can fall while the model overfits; judge by validation and ultimately the gold-set metric.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Training loss falls even when the model is overfitting</strong> Training loss nearly always drops; judge by the train/validation relationship and, ultimately, the gold-set metric. A suspiciously low loss can also mean a broken loss mask.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

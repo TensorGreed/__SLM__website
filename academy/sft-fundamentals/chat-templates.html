@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "To save tokens"
+              "position": 1,
+              "text": "Because a different template changes the model's parameters at load time"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Because it changes the parameters"
+              "text": "Because the tokenizer raises an error when the template differs from training"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "To avoid padding"
+              "text": "Because the template sets the context window the model can use at inference"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Because a format mismatch pushes the model off its training distribution and silently wrecks quality",
+            "position": 0,
+            "text": "A format mismatch is out of distribution and silently degrades output",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Instruct models expect a precise format; mismatched formatting is out-of-distribution and degrades outputs without erroring."
+              "text": "Instruct models learn a precise layout of role markers and special tokens. Serving a different layout raises no error; quality just drops. If you SFT a base model, you choose the template — then train/serve consistency is what matters."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What is the right way to format chat data?",
-          "text": "What is the right way to format chat data?",
+          "name": "What is the right way to format chat data for a model?",
+          "text": "What is the right way to format chat data for a model?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Hand-write the strings"
+              "position": 1,
+              "text": "Hand-write the role markers"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Concatenate messages with spaces"
+              "text": "Join the messages with newlines and a 'User:' / 'Assistant:' prefix"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Use JSON only"
+              "text": "Paste the messages in as raw JSON"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "Use the tokenizer's own apply_chat_template",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Always use the model's own chat template so the special tokens and layout match what it was trained on."
+              "text": "The tokenizer ships the model's template, so the special tokens and layout match training. Note: with transformers v5 defaults it returns token IDs; pass tokenize=False for the string, and if you then call tokenizer(text) use add_special_tokens=False to avoid a double BOS."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Adds training labels"
+              "position": 1,
+              "text": "Adds the training labels for the assistant turn so loss masking works"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Removes special tokens"
+              "text": "Appends an end-of-turn token so the model knows the conversation is over"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Doubles the context window"
+              "text": "Prepends a default system prompt when the messages list has none"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Appends the assistant-turn opener so the model knows to start responding",
+            "position": 0,
+            "text": "Appends the assistant-turn opener so generation starts in the right place",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "It cues the assistant's turn at inference so generation begins in the right place."
+              "text": "At inference the rendered prompt should end where the assistant's reply begins; this flag appends that opener. It has nothing to do with labels or loss."
             }
           }
         },
@@ -185,13 +185,13 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "A fine-tuned model shows decent loss but emits garbled, mis-formatted text. First thing to check?",
-          "text": "A fine-tuned model shows decent loss but emits garbled, mis-formatted text. First thing to check?",
+          "name": "A fine-tuned model reached a decent loss but emits garbled, mis-formatted text at inference. What should you check first?",
+          "text": "A fine-tuned model reached a decent loss but emits garbled, mis-formatted text at inference. What should you check first?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The learning rate"
+              "position": 1,
+              "text": "The learning rate, since a low loss with bad output means it was set too high"
             },
             {
               "@type": "Answer",
@@ -201,16 +201,16 @@
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The vocabulary size"
+              "text": "The tokenizer's vocabulary size, since fine-tuning may have changed it"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The chat template / formatting",
+            "position": 0,
+            "text": "The chat template used at inference",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Template mismatch is the classic silent cause of good-loss-but-bad-output."
+              "text": "Good loss with bad output is the classic signature of a train/serve template mismatch: the model is fine, the prompt layout is not."
             }
           }
         }
@@ -342,52 +342,52 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "Why must training and inference use the same chat template?",
-    "options": [
-      "To save tokens",
-      "Because a format mismatch pushes the model off its training distribution and silently wrecks quality",
-      "Because it changes the parameters",
-      "To avoid padding"
-    ],
-    "answer": 1,
-    "explanation": "Instruct models expect a precise format; mismatched formatting is out-of-distribution and degrades outputs without erroring."
-  },
-  {
-    "q": "What is the right way to format chat data?",
-    "options": [
-      "Hand-write the strings",
-      "Use the tokenizer's own apply_chat_template",
-      "Concatenate messages with spaces",
-      "Use JSON only"
-    ],
-    "answer": 1,
-    "explanation": "Always use the model's own chat template so the special tokens and layout match what it was trained on."
-  },
-  {
-    "q": "What does add_generation_prompt=True do?",
-    "options": [
-      "Adds training labels",
-      "Appends the assistant-turn opener so the model knows to start responding",
-      "Removes special tokens",
-      "Doubles the context window"
-    ],
-    "answer": 1,
-    "explanation": "It cues the assistant's turn at inference so generation begins in the right place."
-  },
-  {
-    "q": "A fine-tuned model shows decent loss but emits garbled, mis-formatted text. First thing to check?",
-    "options": [
-      "The learning rate",
-      "The chat template / formatting",
-      "The GPU model",
-      "The vocabulary size"
-    ],
-    "answer": 1,
-    "explanation": "Template mismatch is the classic silent cause of good-loss-but-bad-output."
-  }
-]
+            [
+              {
+                "q": "Why must training and inference use the same chat template?",
+                "options": [
+                  "A format mismatch is out of distribution and silently degrades output",
+                  "Because a different template changes the model's parameters at load time",
+                  "Because the tokenizer raises an error when the template differs from training",
+                  "Because the template sets the context window the model can use at inference"
+                ],
+                "answer": 0,
+                "explanation": "Instruct models learn a precise layout of role markers and special tokens. Serving a different layout raises no error; quality just drops. If you SFT a base model, you choose the template — then train/serve consistency is what matters."
+              },
+              {
+                "q": "What is the right way to format chat data for a model?",
+                "options": [
+                  "Use the tokenizer's own apply_chat_template",
+                  "Hand-write the role markers",
+                  "Join the messages with newlines and a 'User:' / 'Assistant:' prefix",
+                  "Paste the messages in as raw JSON"
+                ],
+                "answer": 0,
+                "explanation": "The tokenizer ships the model's template, so the special tokens and layout match training. Note: with transformers v5 defaults it returns token IDs; pass tokenize=False for the string, and if you then call tokenizer(text) use add_special_tokens=False to avoid a double BOS."
+              },
+              {
+                "q": "What does add_generation_prompt=True do?",
+                "options": [
+                  "Appends the assistant-turn opener so generation starts in the right place",
+                  "Adds the training labels for the assistant turn so loss masking works",
+                  "Appends an end-of-turn token so the model knows the conversation is over",
+                  "Prepends a default system prompt when the messages list has none"
+                ],
+                "answer": 0,
+                "explanation": "At inference the rendered prompt should end where the assistant's reply begins; this flag appends that opener. It has nothing to do with labels or loss."
+              },
+              {
+                "q": "A fine-tuned model reached a decent loss but emits garbled, mis-formatted text at inference. What should you check first?",
+                "options": [
+                  "The chat template used at inference",
+                  "The learning rate, since a low loss with bad output means it was set too high",
+                  "The GPU model",
+                  "The tokenizer's vocabulary size, since fine-tuning may have changed it"
+                ],
+                "answer": 0,
+                "explanation": "Good loss with bad output is the classic signature of a train/serve template mismatch: the model is fine, the prompt layout is not."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -395,36 +395,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Why must training and inference use the same chat template?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>To save tokens</li>
-                  <li>Because a format mismatch pushes the model off its training distribution and silently wrecks quality</li>
-                  <li>Because it changes the parameters</li>
-                  <li>To avoid padding</li>
+                  <li>A format mismatch is out of distribution and silently degrades output</li>
+                  <li>Because a different template changes the model's parameters at load time</li>
+                  <li>Because the tokenizer raises an error when the template differs from training</li>
+                  <li>Because the template sets the context window the model can use at inference</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Because a format mismatch pushes the model off its training distribution and silently wrecks quality</strong> Instruct models expect a precise format; mismatched formatting is out-of-distribution and degrades outputs without erroring.</p></details></li>
-              <li><p class="quiz__q-text">What is the right way to format chat data?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A format mismatch is out of distribution and silently degrades output</strong> Instruct models learn a precise layout of role markers and special tokens. Serving a different layout raises no error; quality just drops. If you SFT a base model, you choose the template — then train/serve consistency is what matters.</p></details></li>
+              <li><p class="quiz__q-text">What is the right way to format chat data for a model?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Hand-write the strings</li>
                   <li>Use the tokenizer's own apply_chat_template</li>
-                  <li>Concatenate messages with spaces</li>
-                  <li>Use JSON only</li>
+                  <li>Hand-write the role markers</li>
+                  <li>Join the messages with newlines and a 'User:' / 'Assistant:' prefix</li>
+                  <li>Paste the messages in as raw JSON</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Use the tokenizer's own apply_chat_template</strong> Always use the model's own chat template so the special tokens and layout match what it was trained on.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Use the tokenizer's own apply_chat_template</strong> The tokenizer ships the model's template, so the special tokens and layout match training. Note: with transformers v5 defaults it returns token IDs; pass tokenize=False for the string, and if you then call tokenizer(text) use add_special_tokens=False to avoid a double BOS.</p></details></li>
               <li><p class="quiz__q-text">What does add_generation_prompt=True do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Adds training labels</li>
-                  <li>Appends the assistant-turn opener so the model knows to start responding</li>
-                  <li>Removes special tokens</li>
-                  <li>Doubles the context window</li>
+                  <li>Appends the assistant-turn opener so generation starts in the right place</li>
+                  <li>Adds the training labels for the assistant turn so loss masking works</li>
+                  <li>Appends an end-of-turn token so the model knows the conversation is over</li>
+                  <li>Prepends a default system prompt when the messages list has none</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Appends the assistant-turn opener so the model knows to start responding</strong> It cues the assistant's turn at inference so generation begins in the right place.</p></details></li>
-              <li><p class="quiz__q-text">A fine-tuned model shows decent loss but emits garbled, mis-formatted text. First thing to check?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Appends the assistant-turn opener so generation starts in the right place</strong> At inference the rendered prompt should end where the assistant's reply begins; this flag appends that opener. It has nothing to do with labels or loss.</p></details></li>
+              <li><p class="quiz__q-text">A fine-tuned model reached a decent loss but emits garbled, mis-formatted text at inference. What should you check first?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The learning rate</li>
-                  <li>The chat template / formatting</li>
+                  <li>The chat template used at inference</li>
+                  <li>The learning rate, since a low loss with bad output means it was set too high</li>
                   <li>The GPU model</li>
-                  <li>The vocabulary size</li>
+                  <li>The tokenizer's vocabulary size, since fine-tuning may have changed it</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The chat template / formatting</strong> Template mismatch is the classic silent cause of good-loss-but-bad-output.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The chat template used at inference</strong> Good loss with bad output is the classic signature of a train/serve template mismatch: the model is fine, the prompt layout is not.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The learning rate"
+              "position": 1,
+              "text": "The learning rate applied to the adapter weights"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The vocabulary size"
+              "text": "How many layers of the base model receive an adapter"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The number of epochs"
+              "text": "The numeric precision the frozen base is stored in"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The adapter's capacity (how much change it can express)",
+            "position": 0,
+            "text": "The adapter's capacity",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "r is the adapter's inner dimension; higher r = more capacity and more parameters/overfit risk."
+              "text": "r is the adapter's inner dimension: higher r means more parameters, more capacity and more overfitting risk. Which layers get adapters is target_modules."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "A common convention for alpha is…",
-          "text": "A common convention for alpha is…",
+          "name": "In PEFT the LoRA update is scaled by lora_alpha / r. You double r from 16 to 32 and keep alpha at 32. What happens to the scale?",
+          "text": "In PEFT the LoRA update is scaled by lora_alpha / r. You double r from 16 to 32 and keep alpha at 32. What happens to the scale?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "alpha = r / 2"
+              "position": 1,
+              "text": "It doubles, to 4"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "alpha = 0"
+              "text": "It stays at 2, because PEFT renormalises alpha automatically"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "alpha = vocabulary size"
+              "text": "It drops to zero"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "alpha = 2 × r",
+            "position": 0,
+            "text": "It halves, from 2 to 1",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "alpha is often set to about twice the rank; the effective scale is ~alpha/r."
+              "text": "The scale is exactly alpha / r (alpha / √r with use_rslora=True), so 32/16 = 2 becomes 32/32 = 1. That is why people often move alpha with r; 'alpha = 2 × r' is a community convention, not a rule."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "It trains the whole model"
+              "position": 1,
+              "text": "It quantises the adapter so the saved file is smaller"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It removes the adapter"
+              "text": "It trains the whole model at 4-bit precision"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It changes the task shape"
+              "text": "It removes the optimizer state for the adapter"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "It quantizes the frozen base (e.g. to 4-bit) to save memory",
+            "position": 0,
+            "text": "It quantises the frozen base, e.g. to 4-bit NF4",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "QLoRA quantizes the frozen base so fine-tuning fits in much less memory, with a small quality risk."
+              "text": "QLoRA stores the frozen base in 4-bit and trains a 16-bit adapter. Steps are noticeably slower (dequantising on every matmul), and embeddings and norms stay 16-bit, so small models save less than a quarter."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Which is a sensible minimal target-modules choice?",
-          "text": "Which is a sensible minimal target-modules choice?",
+          "name": "Which target-module choice did later work find closest to full fine-tuning?",
+          "text": "Which target-module choice did later work find closest to full fine-tuning?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The embedding table only"
+              "position": 1,
+              "text": "Only the attention query and value projections"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The tokenizer"
+              "text": "Only the embedding table and the output head"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The loss function"
+              "text": "Only the layer norms"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The attention query/value projections",
+            "position": 0,
+            "text": "All linear layers, including the MLP",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Adapting the attention q/v projections is a common minimal, effective choice; expand only if needed."
+              "text": "QLoRA (arXiv:2305.14314) and LoRA Without Regret (2025) found attention-only LoRA under-performs; target all linear layers. q/v was the original 2021 choice. BrewSLM's auto policy uses all-linear for models up to 2B and q/v above."
             }
           }
         }
@@ -335,52 +335,52 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "What does the LoRA rank r control?",
-    "options": [
-      "The learning rate",
-      "The adapter's capacity (how much change it can express)",
-      "The vocabulary size",
-      "The number of epochs"
-    ],
-    "answer": 1,
-    "explanation": "r is the adapter's inner dimension; higher r = more capacity and more parameters/overfit risk."
-  },
-  {
-    "q": "A common convention for alpha is\u2026",
-    "options": [
-      "alpha = r / 2",
-      "alpha = 2 \u00d7 r",
-      "alpha = 0",
-      "alpha = vocabulary size"
-    ],
-    "answer": 1,
-    "explanation": "alpha is often set to about twice the rank; the effective scale is ~alpha/r."
-  },
-  {
-    "q": "What does QLoRA add over plain LoRA?",
-    "options": [
-      "It trains the whole model",
-      "It quantizes the frozen base (e.g. to 4-bit) to save memory",
-      "It removes the adapter",
-      "It changes the task shape"
-    ],
-    "answer": 1,
-    "explanation": "QLoRA quantizes the frozen base so fine-tuning fits in much less memory, with a small quality risk."
-  },
-  {
-    "q": "Which is a sensible minimal target-modules choice?",
-    "options": [
-      "The embedding table only",
-      "The attention query/value projections",
-      "The tokenizer",
-      "The loss function"
-    ],
-    "answer": 1,
-    "explanation": "Adapting the attention q/v projections is a common minimal, effective choice; expand only if needed."
-  }
-]
+            [
+              {
+                "q": "What does the LoRA rank r control?",
+                "options": [
+                  "The adapter's capacity",
+                  "The learning rate applied to the adapter weights",
+                  "How many layers of the base model receive an adapter",
+                  "The numeric precision the frozen base is stored in"
+                ],
+                "answer": 0,
+                "explanation": "r is the adapter's inner dimension: higher r means more parameters, more capacity and more overfitting risk. Which layers get adapters is target_modules."
+              },
+              {
+                "q": "In PEFT the LoRA update is scaled by lora_alpha / r. You double r from 16 to 32 and keep alpha at 32. What happens to the scale?",
+                "options": [
+                  "It halves, from 2 to 1",
+                  "It doubles, to 4",
+                  "It stays at 2, because PEFT renormalises alpha automatically",
+                  "It drops to zero"
+                ],
+                "answer": 0,
+                "explanation": "The scale is exactly alpha / r (alpha / √r with use_rslora=True), so 32/16 = 2 becomes 32/32 = 1. That is why people often move alpha with r; 'alpha = 2 × r' is a community convention, not a rule."
+              },
+              {
+                "q": "What does QLoRA add over plain LoRA?",
+                "options": [
+                  "It quantises the frozen base, e.g. to 4-bit NF4",
+                  "It quantises the adapter so the saved file is smaller",
+                  "It trains the whole model at 4-bit precision",
+                  "It removes the optimizer state for the adapter"
+                ],
+                "answer": 0,
+                "explanation": "QLoRA stores the frozen base in 4-bit and trains a 16-bit adapter. Steps are noticeably slower (dequantising on every matmul), and embeddings and norms stay 16-bit, so small models save less than a quarter."
+              },
+              {
+                "q": "Which target-module choice did later work find closest to full fine-tuning?",
+                "options": [
+                  "All linear layers, including the MLP",
+                  "Only the attention query and value projections",
+                  "Only the embedding table and the output head",
+                  "Only the layer norms"
+                ],
+                "answer": 0,
+                "explanation": "QLoRA (arXiv:2305.14314) and LoRA Without Regret (2025) found attention-only LoRA under-performs; target all linear layers. q/v was the original 2021 choice. BrewSLM's auto policy uses all-linear for models up to 2B and q/v above."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -388,36 +388,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What does the LoRA rank r control?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The learning rate</li>
-                  <li>The adapter's capacity (how much change it can express)</li>
-                  <li>The vocabulary size</li>
-                  <li>The number of epochs</li>
+                  <li>The adapter's capacity</li>
+                  <li>The learning rate applied to the adapter weights</li>
+                  <li>How many layers of the base model receive an adapter</li>
+                  <li>The numeric precision the frozen base is stored in</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The adapter's capacity (how much change it can express)</strong> r is the adapter's inner dimension; higher r = more capacity and more parameters/overfit risk.</p></details></li>
-              <li><p class="quiz__q-text">A common convention for alpha is…</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The adapter's capacity</strong> r is the adapter's inner dimension: higher r means more parameters, more capacity and more overfitting risk. Which layers get adapters is target_modules.</p></details></li>
+              <li><p class="quiz__q-text">In PEFT the LoRA update is scaled by lora_alpha / r. You double r from 16 to 32 and keep alpha at 32. What happens to the scale?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>alpha = r / 2</li>
-                  <li>alpha = 2 × r</li>
-                  <li>alpha = 0</li>
-                  <li>alpha = vocabulary size</li>
+                  <li>It halves, from 2 to 1</li>
+                  <li>It doubles, to 4</li>
+                  <li>It stays at 2, because PEFT renormalises alpha automatically</li>
+                  <li>It drops to zero</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. alpha = 2 × r</strong> alpha is often set to about twice the rank; the effective scale is ~alpha/r.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. It halves, from 2 to 1</strong> The scale is exactly alpha / r (alpha / √r with use_rslora=True), so 32/16 = 2 becomes 32/32 = 1. That is why people often move alpha with r; 'alpha = 2 × r' is a community convention, not a rule.</p></details></li>
               <li><p class="quiz__q-text">What does QLoRA add over plain LoRA?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It trains the whole model</li>
-                  <li>It quantizes the frozen base (e.g. to 4-bit) to save memory</li>
-                  <li>It removes the adapter</li>
-                  <li>It changes the task shape</li>
+                  <li>It quantises the frozen base, e.g. to 4-bit NF4</li>
+                  <li>It quantises the adapter so the saved file is smaller</li>
+                  <li>It trains the whole model at 4-bit precision</li>
+                  <li>It removes the optimizer state for the adapter</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. It quantizes the frozen base (e.g. to 4-bit) to save memory</strong> QLoRA quantizes the frozen base so fine-tuning fits in much less memory, with a small quality risk.</p></details></li>
-              <li><p class="quiz__q-text">Which is a sensible minimal target-modules choice?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. It quantises the frozen base, e.g. to 4-bit NF4</strong> QLoRA stores the frozen base in 4-bit and trains a 16-bit adapter. Steps are noticeably slower (dequantising on every matmul), and embeddings and norms stay 16-bit, so small models save less than a quarter.</p></details></li>
+              <li><p class="quiz__q-text">Which target-module choice did later work find closest to full fine-tuning?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The embedding table only</li>
-                  <li>The attention query/value projections</li>
-                  <li>The tokenizer</li>
-                  <li>The loss function</li>
+                  <li>All linear layers, including the MLP</li>
+                  <li>Only the attention query and value projections</li>
+                  <li>Only the embedding table and the output head</li>
+                  <li>Only the layer norms</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The attention query/value projections</strong> Adapting the attention q/v projections is a common minimal, effective choice; expand only if needed.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. All linear layers, including the MLP</strong> QLoRA (arXiv:2305.14314) and LoRA Without Regret (2025) found attention-only LoRA under-performs; target all linear layers. q/v was the original 2021 choice. BrewSLM's auto policy uses all-linear for models up to 2B and q/v above.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

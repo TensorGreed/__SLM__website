@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "In full fine-tuning, which is often the LARGEST memory consumer?",
-          "text": "In full fine-tuning, which is often the LARGEST memory consumer?",
+          "name": "In standard mixed-precision full fine-tuning with AdamW, which is the single largest per-parameter memory consumer?",
+          "text": "In standard mixed-precision full fine-tuning with AdamW, which is the single largest per-parameter memory consumer?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The weights"
+              "position": 1,
+              "text": "The 16-bit model weights (~2 bytes/param)"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "The tokenizer"
+              "position": 2,
+              "text": "The fp32 gradients (~4 bytes/param)"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The vocabulary"
+              "text": "The tokenizer and its vocabulary table"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "AdamW optimizer state (~8 bytes/param)",
+            "position": 0,
+            "text": "AdamW's two moments (~8 bytes/param)",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "AdamW stores ~2 extra values per parameter, often dwarfing the weights themselves."
+              "text": "Adam keeps two fp32 moments per parameter (8 B). Add an fp32 master copy of the weights and fp32 gradients and the total is about 16–18 bytes per parameter before activations — about 16–18 GB for a 1B model (HF memory-anatomy docs; ZeRO, arXiv:1910.02054)."
             }
           }
         },
@@ -124,13 +124,13 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "It uses a bigger GPU"
+              "position": 1,
+              "text": "It keeps no activations for frozen layers"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It removes activations"
+              "text": "It loads the base model in 4-bit, so the weights take a quarter of the space"
             },
             {
               "@type": "Answer",
@@ -140,11 +140,11 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Gradients and optimizer state exist only for the tiny adapter, not the frozen base",
+            "position": 0,
+            "text": "Only the adapter has gradients and optimizer state",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Freezing the base eliminates its gradient and optimizer-state memory — usually the bulk."
+              "text": "Freezing the base removes its gradient and optimizer-state memory, usually the bulk. Activations stay about the same, since backprop still runs through every layer, and 4-bit loading is QLoRA, not plain LoRA."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Activation memory scales mainly with…",
-          "text": "Activation memory scales mainly with…",
+          "name": "For a given model, activation memory grows mainly with…",
+          "text": "For a given model, activation memory grows mainly with…",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Parameter count"
+              "position": 1,
+              "text": "The learning rate"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Vocabulary size"
+              "text": "The number of epochs"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Learning rate"
+              "text": "The LoRA rank"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Batch size × sequence length",
+            "position": 0,
+            "text": "How many tokens flow through per step (batch × sequence length)",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Activations grow with how much data flows through per step: batch × sequence length."
+              "text": "Activations scale with batch × sequence length × model width and depth, plus a batch × sequence × vocabulary logits tensor, often in fp32 — frequently the largest single allocation for small models with big vocabularies."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What does mixed precision (bf16) do?",
-          "text": "What does mixed precision (bf16) do?",
+          "name": "What does mixed-precision (bf16 autocast) training mainly save?",
+          "text": "What does mixed-precision (bf16 autocast) training mainly save?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Doubles memory"
+              "position": 1,
+              "text": "Half of the weight, gradient and activation memory across the board"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Removes the optimizer"
+              "text": "All of the optimizer state"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Changes the task shape"
+              "text": "The fp32 master weights, since every copy is kept in 16-bit instead"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Roughly halves weight/gradient/activation memory with stable training",
+            "position": 0,
+            "text": "Activation memory and matmul time",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "16-bit storage/compute halves much of the memory while staying numerically stable (bf16 preferred)."
+              "text": "Mixed precision keeps fp32 master weights and adds a 16-bit copy, so weight memory goes up to about 1.5×; the saving is in activations and speed. Halving weight memory comes from loading a frozen base in bf16, which is the usual LoRA setup."
             }
           }
         }
@@ -336,89 +336,89 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "In full fine-tuning, which is often the LARGEST memory consumer?",
-    "options": [
-      "The weights",
-      "The tokenizer",
-      "AdamW optimizer state (~8 bytes/param)",
-      "The vocabulary"
-    ],
-    "answer": 2,
-    "explanation": "AdamW stores ~2 extra values per parameter, often dwarfing the weights themselves."
-  },
-  {
-    "q": "Why does LoRA fit where full fine-tuning doesn't?",
-    "options": [
-      "It uses a bigger GPU",
-      "Gradients and optimizer state exist only for the tiny adapter, not the frozen base",
-      "It removes activations",
-      "It shrinks the vocabulary"
-    ],
-    "answer": 1,
-    "explanation": "Freezing the base eliminates its gradient and optimizer-state memory \u2014 usually the bulk."
-  },
-  {
-    "q": "Activation memory scales mainly with\u2026",
-    "options": [
-      "Parameter count",
-      "Batch size \u00d7 sequence length",
-      "Vocabulary size",
-      "Learning rate"
-    ],
-    "answer": 1,
-    "explanation": "Activations grow with how much data flows through per step: batch \u00d7 sequence length."
-  },
-  {
-    "q": "What does mixed precision (bf16) do?",
-    "options": [
-      "Doubles memory",
-      "Roughly halves weight/gradient/activation memory with stable training",
-      "Removes the optimizer",
-      "Changes the task shape"
-    ],
-    "answer": 1,
-    "explanation": "16-bit storage/compute halves much of the memory while staying numerically stable (bf16 preferred)."
-  }
-]
+            [
+              {
+                "q": "In standard mixed-precision full fine-tuning with AdamW, which is the single largest per-parameter memory consumer?",
+                "options": [
+                  "AdamW's two moments (~8 bytes/param)",
+                  "The 16-bit model weights (~2 bytes/param)",
+                  "The fp32 gradients (~4 bytes/param)",
+                  "The tokenizer and its vocabulary table"
+                ],
+                "answer": 0,
+                "explanation": "Adam keeps two fp32 moments per parameter (8 B). Add an fp32 master copy of the weights and fp32 gradients and the total is about 16–18 bytes per parameter before activations — about 16–18 GB for a 1B model (HF memory-anatomy docs; ZeRO, arXiv:1910.02054)."
+              },
+              {
+                "q": "Why does LoRA fit where full fine-tuning doesn't?",
+                "options": [
+                  "Only the adapter has gradients and optimizer state",
+                  "It keeps no activations for frozen layers",
+                  "It loads the base model in 4-bit, so the weights take a quarter of the space",
+                  "It shrinks the vocabulary"
+                ],
+                "answer": 0,
+                "explanation": "Freezing the base removes its gradient and optimizer-state memory, usually the bulk. Activations stay about the same, since backprop still runs through every layer, and 4-bit loading is QLoRA, not plain LoRA."
+              },
+              {
+                "q": "For a given model, activation memory grows mainly with…",
+                "options": [
+                  "How many tokens flow through per step (batch × sequence length)",
+                  "The learning rate",
+                  "The number of epochs",
+                  "The LoRA rank"
+                ],
+                "answer": 0,
+                "explanation": "Activations scale with batch × sequence length × model width and depth, plus a batch × sequence × vocabulary logits tensor, often in fp32 — frequently the largest single allocation for small models with big vocabularies."
+              },
+              {
+                "q": "What does mixed-precision (bf16 autocast) training mainly save?",
+                "options": [
+                  "Activation memory and matmul time",
+                  "Half of the weight, gradient and activation memory across the board",
+                  "All of the optimizer state",
+                  "The fp32 master weights, since every copy is kept in 16-bit instead"
+                ],
+                "answer": 0,
+                "explanation": "Mixed precision keeps fp32 master weights and adds a 16-bit copy, so weight memory goes up to about 1.5×; the saving is in activations and speed. Halving weight memory comes from loading a frozen base in bf16, which is the usual LoRA setup."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">In full fine-tuning, which is often the LARGEST memory consumer?</p>
+              <li><p class="quiz__q-text">In standard mixed-precision full fine-tuning with AdamW, which is the single largest per-parameter memory consumer?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The weights</li>
-                  <li>The tokenizer</li>
-                  <li>AdamW optimizer state (~8 bytes/param)</li>
-                  <li>The vocabulary</li>
+                  <li>AdamW's two moments (~8 bytes/param)</li>
+                  <li>The 16-bit model weights (~2 bytes/param)</li>
+                  <li>The fp32 gradients (~4 bytes/param)</li>
+                  <li>The tokenizer and its vocabulary table</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. AdamW optimizer state (~8 bytes/param)</strong> AdamW stores ~2 extra values per parameter, often dwarfing the weights themselves.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. AdamW's two moments (~8 bytes/param)</strong> Adam keeps two fp32 moments per parameter (8 B). Add an fp32 master copy of the weights and fp32 gradients and the total is about 16–18 bytes per parameter before activations — about 16–18 GB for a 1B model (HF memory-anatomy docs; ZeRO, arXiv:1910.02054).</p></details></li>
               <li><p class="quiz__q-text">Why does LoRA fit where full fine-tuning doesn't?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It uses a bigger GPU</li>
-                  <li>Gradients and optimizer state exist only for the tiny adapter, not the frozen base</li>
-                  <li>It removes activations</li>
+                  <li>Only the adapter has gradients and optimizer state</li>
+                  <li>It keeps no activations for frozen layers</li>
+                  <li>It loads the base model in 4-bit, so the weights take a quarter of the space</li>
                   <li>It shrinks the vocabulary</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Gradients and optimizer state exist only for the tiny adapter, not the frozen base</strong> Freezing the base eliminates its gradient and optimizer-state memory — usually the bulk.</p></details></li>
-              <li><p class="quiz__q-text">Activation memory scales mainly with…</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Only the adapter has gradients and optimizer state</strong> Freezing the base removes its gradient and optimizer-state memory, usually the bulk. Activations stay about the same, since backprop still runs through every layer, and 4-bit loading is QLoRA, not plain LoRA.</p></details></li>
+              <li><p class="quiz__q-text">For a given model, activation memory grows mainly with…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Parameter count</li>
-                  <li>Batch size × sequence length</li>
-                  <li>Vocabulary size</li>
-                  <li>Learning rate</li>
+                  <li>How many tokens flow through per step (batch × sequence length)</li>
+                  <li>The learning rate</li>
+                  <li>The number of epochs</li>
+                  <li>The LoRA rank</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Batch size × sequence length</strong> Activations grow with how much data flows through per step: batch × sequence length.</p></details></li>
-              <li><p class="quiz__q-text">What does mixed precision (bf16) do?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. How many tokens flow through per step (batch × sequence length)</strong> Activations scale with batch × sequence length × model width and depth, plus a batch × sequence × vocabulary logits tensor, often in fp32 — frequently the largest single allocation for small models with big vocabularies.</p></details></li>
+              <li><p class="quiz__q-text">What does mixed-precision (bf16 autocast) training mainly save?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Doubles memory</li>
-                  <li>Roughly halves weight/gradient/activation memory with stable training</li>
-                  <li>Removes the optimizer</li>
-                  <li>Changes the task shape</li>
+                  <li>Activation memory and matmul time</li>
+                  <li>Half of the weight, gradient and activation memory across the board</li>
+                  <li>All of the optimizer state</li>
+                  <li>The fp32 master weights, since every copy is kept in 16-bit instead</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Roughly halves weight/gradient/activation memory with stable training</strong> 16-bit storage/compute halves much of the memory while staying numerically stable (bf16 preferred).</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Activation memory and matmul time</strong> Mixed precision keeps fp32 master weights and adds a 16-bit copy, so weight memory goes up to about 1.5×; the saving is in activations and speed. Halving weight memory comes from loading a frozen base in bf16, which is the usual LoRA setup.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

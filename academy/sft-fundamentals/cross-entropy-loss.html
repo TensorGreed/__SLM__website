@@ -86,23 +86,23 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Cross-entropy loss for a position depends on…",
-          "text": "Cross-entropy loss for a position depends on…",
+          "name": "Cross-entropy loss at one position depends on…",
+          "text": "Cross-entropy loss at one position depends on…",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 1,
-              "text": "The total number of tokens"
+              "text": "How many tokens in the vocabulary had a probability above zero"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The learning rate"
+              "text": "The probability of the most likely token, whether right or wrong"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The batch size"
+              "text": "The numeric distance between token IDs"
             }
           ],
           "acceptedAnswer": {
@@ -111,7 +111,7 @@
             "text": "The probability assigned to the correct next token",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "It's the negative log of the probability the model gave the correct token."
+              "text": "It is the negative log of the probability the model gave the correct token: p = 0.5 costs 0.69 nats, p = 0.01 costs 4.6."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Being very confident in the WRONG token produces…",
-          "text": "Being very confident in the WRONG token produces…",
+          "name": "The model puts probability 0.001 on the correct token because it is confident in a wrong one. The loss at that position is…",
+          "text": "The model puts probability 0.001 on the correct token because it is confident in a wrong one. The loss at that position is…",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Zero loss"
+              "position": 1,
+              "text": "Small, because the model was confident"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "A small loss"
+              "position": 2,
+              "text": "Zero, because confidence is rewarded"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Negative loss"
+              "text": "Negative, because the guess was wrong"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "A very large loss",
+            "position": 0,
+            "text": "Very large (about 6.9 nats)",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The negative-log shape punishes confident mistakes harshly (loss → ∞ as the correct-token probability → 0)."
+              "text": "−ln(0.001) ≈ 6.9, and the loss goes to infinity as the correct token's probability goes to zero, so confident mistakes are punished hardest."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The number of parameters"
+              "position": 1,
+              "text": "The model's error rate"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The GPU memory"
+              "text": "The number of vocabulary entries the tokenizer can produce"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The vocabulary size"
+              "text": "The model's parameter count"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Roughly how many tokens the model is effectively choosing among",
+            "position": 0,
+            "text": "Roughly how many tokens the model is choosing among",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Perplexity = exp(cross-entropy); ~1 means certainty, higher means more confusion."
+              "text": "Perplexity = exp(cross-entropy): about 1 means near-certainty, higher means more confusion. It is not comparable across different tokenizers."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "For judging an SFT task, what ultimately matters most?",
-          "text": "For judging an SFT task, what ultimately matters most?",
+          "name": "For judging an SFT task, what matters most in the end?",
+          "text": "For judging an SFT task, what matters most in the end?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The training loss alone"
+              "position": 1,
+              "text": "The lowest training loss reached during the run"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "Perplexity alone"
+              "position": 2,
+              "text": "Generic-benchmark perplexity"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The number of epochs"
+              "text": "The number of epochs completed without divergence"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "The gold-set metric for the task",
+            "position": 0,
+            "text": "The task metric on the gold set",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Loss/perplexity guide training, but the task's gold-set metric is the real measure of success."
+              "text": "Loss and perplexity guide training, but the task's gold-set metric is the real measure of success."
             }
           }
         }
@@ -337,89 +337,89 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "Cross-entropy loss for a position depends on\u2026",
-    "options": [
-      "The probability assigned to the correct next token",
-      "The total number of tokens",
-      "The learning rate",
-      "The batch size"
-    ],
-    "answer": 0,
-    "explanation": "It's the negative log of the probability the model gave the correct token."
-  },
-  {
-    "q": "Being very confident in the WRONG token produces\u2026",
-    "options": [
-      "Zero loss",
-      "A small loss",
-      "A very large loss",
-      "Negative loss"
-    ],
-    "answer": 2,
-    "explanation": "The negative-log shape punishes confident mistakes harshly (loss \u2192 \u221e as the correct-token probability \u2192 0)."
-  },
-  {
-    "q": "What does perplexity represent?",
-    "options": [
-      "The number of parameters",
-      "Roughly how many tokens the model is effectively choosing among",
-      "The GPU memory",
-      "The vocabulary size"
-    ],
-    "answer": 1,
-    "explanation": "Perplexity = exp(cross-entropy); ~1 means certainty, higher means more confusion."
-  },
-  {
-    "q": "For judging an SFT task, what ultimately matters most?",
-    "options": [
-      "The training loss alone",
-      "Perplexity alone",
-      "The gold-set metric for the task",
-      "The number of epochs"
-    ],
-    "answer": 2,
-    "explanation": "Loss/perplexity guide training, but the task's gold-set metric is the real measure of success."
-  }
-]
+            [
+              {
+                "q": "Cross-entropy loss at one position depends on…",
+                "options": [
+                  "The probability assigned to the correct next token",
+                  "How many tokens in the vocabulary had a probability above zero",
+                  "The probability of the most likely token, whether right or wrong",
+                  "The numeric distance between token IDs"
+                ],
+                "answer": 0,
+                "explanation": "It is the negative log of the probability the model gave the correct token: p = 0.5 costs 0.69 nats, p = 0.01 costs 4.6."
+              },
+              {
+                "q": "The model puts probability 0.001 on the correct token because it is confident in a wrong one. The loss at that position is…",
+                "options": [
+                  "Very large (about 6.9 nats)",
+                  "Small, because the model was confident",
+                  "Zero, because confidence is rewarded",
+                  "Negative, because the guess was wrong"
+                ],
+                "answer": 0,
+                "explanation": "−ln(0.001) ≈ 6.9, and the loss goes to infinity as the correct token's probability goes to zero, so confident mistakes are punished hardest."
+              },
+              {
+                "q": "What does perplexity represent?",
+                "options": [
+                  "Roughly how many tokens the model is choosing among",
+                  "The model's error rate",
+                  "The number of vocabulary entries the tokenizer can produce",
+                  "The model's parameter count"
+                ],
+                "answer": 0,
+                "explanation": "Perplexity = exp(cross-entropy): about 1 means near-certainty, higher means more confusion. It is not comparable across different tokenizers."
+              },
+              {
+                "q": "For judging an SFT task, what matters most in the end?",
+                "options": [
+                  "The task metric on the gold set",
+                  "The lowest training loss reached during the run",
+                  "Generic-benchmark perplexity",
+                  "The number of epochs completed without divergence"
+                ],
+                "answer": 0,
+                "explanation": "Loss and perplexity guide training, but the task's gold-set metric is the real measure of success."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">Cross-entropy loss for a position depends on…</p>
+              <li><p class="quiz__q-text">Cross-entropy loss at one position depends on…</p>
                 <ol class="quiz__static-options" type="A">
                   <li>The probability assigned to the correct next token</li>
-                  <li>The total number of tokens</li>
-                  <li>The learning rate</li>
-                  <li>The batch size</li>
+                  <li>How many tokens in the vocabulary had a probability above zero</li>
+                  <li>The probability of the most likely token, whether right or wrong</li>
+                  <li>The numeric distance between token IDs</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The probability assigned to the correct next token</strong> It's the negative log of the probability the model gave the correct token.</p></details></li>
-              <li><p class="quiz__q-text">Being very confident in the WRONG token produces…</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The probability assigned to the correct next token</strong> It is the negative log of the probability the model gave the correct token: p = 0.5 costs 0.69 nats, p = 0.01 costs 4.6.</p></details></li>
+              <li><p class="quiz__q-text">The model puts probability 0.001 on the correct token because it is confident in a wrong one. The loss at that position is…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Zero loss</li>
-                  <li>A small loss</li>
-                  <li>A very large loss</li>
-                  <li>Negative loss</li>
+                  <li>Very large (about 6.9 nats)</li>
+                  <li>Small, because the model was confident</li>
+                  <li>Zero, because confidence is rewarded</li>
+                  <li>Negative, because the guess was wrong</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. A very large loss</strong> The negative-log shape punishes confident mistakes harshly (loss → ∞ as the correct-token probability → 0).</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Very large (about 6.9 nats)</strong> −ln(0.001) ≈ 6.9, and the loss goes to infinity as the correct token's probability goes to zero, so confident mistakes are punished hardest.</p></details></li>
               <li><p class="quiz__q-text">What does perplexity represent?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The number of parameters</li>
-                  <li>Roughly how many tokens the model is effectively choosing among</li>
-                  <li>The GPU memory</li>
-                  <li>The vocabulary size</li>
+                  <li>Roughly how many tokens the model is choosing among</li>
+                  <li>The model's error rate</li>
+                  <li>The number of vocabulary entries the tokenizer can produce</li>
+                  <li>The model's parameter count</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Roughly how many tokens the model is effectively choosing among</strong> Perplexity = exp(cross-entropy); ~1 means certainty, higher means more confusion.</p></details></li>
-              <li><p class="quiz__q-text">For judging an SFT task, what ultimately matters most?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Roughly how many tokens the model is choosing among</strong> Perplexity = exp(cross-entropy): about 1 means near-certainty, higher means more confusion. It is not comparable across different tokenizers.</p></details></li>
+              <li><p class="quiz__q-text">For judging an SFT task, what matters most in the end?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The training loss alone</li>
-                  <li>Perplexity alone</li>
-                  <li>The gold-set metric for the task</li>
-                  <li>The number of epochs</li>
+                  <li>The task metric on the gold set</li>
+                  <li>The lowest training loss reached during the run</li>
+                  <li>Generic-benchmark perplexity</li>
+                  <li>The number of epochs completed without divergence</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The gold-set metric for the task</strong> Loss/perplexity guide training, but the task's gold-set metric is the real measure of success.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The task metric on the gold set</strong> Loss and perplexity guide training, but the task's gold-set metric is the real measure of success.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

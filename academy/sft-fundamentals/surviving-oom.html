@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What is usually the first, cheapest lever against OOM?",
-          "text": "What is usually the first, cheapest lever against OOM?",
+          "name": "What is usually the first, cheapest lever against out-of-memory errors?",
+          "text": "What is usually the first, cheapest lever against out-of-memory errors?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Buy a bigger GPU"
+              "position": 1,
+              "text": "Raise the learning rate"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Truncate completions"
+              "text": "Truncate long completions so every row fits the limit"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Increase the learning rate"
+              "text": "Switch from bf16 to fp32 for more numerical headroom"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Lower per-device batch size + gradient accumulation",
+            "position": 0,
+            "text": "Lower per-device batch, raise gradient accumulation",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Smaller per-device batch (with accumulation to keep the effective batch) cuts activation memory with no change to dynamics."
+              "text": "A smaller per-device batch cuts activation memory, and accumulation keeps the effective batch, so the dynamics barely change."
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Storing all activations"
+              "position": 1,
+              "text": "Saving model checkpoints to disk more often to free GPU memory"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Removing the optimizer"
+              "text": "Storing gradients in 8-bit instead of fp32"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Quantizing the base"
+              "text": "Skipping the backward pass for every other layer"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Re-computing activations during backprop instead of storing them",
+            "position": 0,
+            "text": "Recomputing activations during backprop instead of storing them",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "It trades ~20–30% extra compute for a large reduction in activation memory."
+              "text": "It trades roughly one extra forward pass (~33% compute) for a large cut in activation memory. On small models the slowdown can outweigh the benefit; BrewSLM's auto policy turns it off at 2B and below."
             }
           }
         },
@@ -152,51 +152,51 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Switching from full fine-tuning to LoRA helps OOM because it…",
-          "text": "Switching from full fine-tuning to LoRA helps OOM because it…",
+          "name": "A run trains fine for 1,800 steps, then hits OOM. What is the most likely cause?",
+          "text": "A run trains fine for 1,800 steps, then hits OOM. What is the most likely cause?",
           "suggestedAnswer": [
-            {
-              "@type": "Answer",
-              "position": 0,
-              "text": "Shrinks the dataset"
-            },
-            {
-              "@type": "Answer",
-              "position": 2,
-              "text": "Disables attention"
-            },
-            {
-              "@type": "Answer",
-              "position": 3,
-              "text": "Reduces the vocabulary"
-            }
-          ],
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "position": 1,
-            "text": "Removes the base model's gradients and optimizer state",
-            "answerExplanation": {
-              "@type": "Comment",
-              "text": "Freezing the base removes its (large) gradient + optimizer-state memory."
-            }
-          }
-        },
-        {
-          "@type": "Question",
-          "eduQuestionType": "Multiple choice",
-          "learningResourceType": "Practice problem",
-          "name": "Which is the WRONG way to fix OOM?",
-          "text": "Which is the WRONG way to fix OOM?",
-          "suggestedAnswer": [
-            {
-              "@type": "Answer",
-              "position": 0,
-              "text": "Gradient checkpointing"
-            },
             {
               "@type": "Answer",
               "position": 1,
-              "text": "Lower batch size with accumulation"
+              "text": "Memory leaks a little every step until it runs out"
+            },
+            {
+              "@type": "Answer",
+              "position": 2,
+              "text": "Optimizer state grows as training goes on"
+            },
+            {
+              "@type": "Answer",
+              "position": 3,
+              "text": "The learning-rate schedule raised memory use at that step"
+            }
+          ],
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "position": 0,
+            "text": "That step's batch held the longest sequences",
+            "answerExplanation": {
+              "@type": "Comment",
+              "text": "Activation memory follows the tokens in each batch, so the longest batch sets the peak. Optimizer state is allocated once, at the first step. Smoke-test with the longest batch first."
+            }
+          }
+        },
+        {
+          "@type": "Question",
+          "eduQuestionType": "Multiple choice",
+          "learningResourceType": "Practice problem",
+          "name": "Which is the WRONG way to fix an out-of-memory error?",
+          "text": "Which is the WRONG way to fix an out-of-memory error?",
+          "suggestedAnswer": [
+            {
+              "@type": "Answer",
+              "position": 1,
+              "text": "Turning on gradient checkpointing"
+            },
+            {
+              "@type": "Answer",
+              "position": 2,
+              "text": "Lowering batch size and raising accumulation"
             },
             {
               "@type": "Answer",
@@ -206,11 +206,11 @@
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "Silently truncating completions / dropping hard examples",
+            "position": 0,
+            "text": "Silently truncating completions or dropping hard examples",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "That trades a crash for a silent data/quality bug; use the memory levers that don't corrupt data."
+              "text": "That trades a crash for a silent data and quality bug. If an automatic retry shrinks max_seq_length (BrewSLM's OOM ladder can), check the run report for truncated rows."
             }
           }
         }
@@ -337,89 +337,89 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "What is usually the first, cheapest lever against OOM?",
-    "options": [
-      "Buy a bigger GPU",
-      "Lower per-device batch size + gradient accumulation",
-      "Truncate completions",
-      "Increase the learning rate"
-    ],
-    "answer": 1,
-    "explanation": "Smaller per-device batch (with accumulation to keep the effective batch) cuts activation memory with no change to dynamics."
-  },
-  {
-    "q": "Gradient checkpointing saves memory by\u2026",
-    "options": [
-      "Storing all activations",
-      "Re-computing activations during backprop instead of storing them",
-      "Removing the optimizer",
-      "Quantizing the base"
-    ],
-    "answer": 1,
-    "explanation": "It trades ~20\u201330% extra compute for a large reduction in activation memory."
-  },
-  {
-    "q": "Switching from full fine-tuning to LoRA helps OOM because it\u2026",
-    "options": [
-      "Shrinks the dataset",
-      "Removes the base model's gradients and optimizer state",
-      "Disables attention",
-      "Reduces the vocabulary"
-    ],
-    "answer": 1,
-    "explanation": "Freezing the base removes its (large) gradient + optimizer-state memory."
-  },
-  {
-    "q": "Which is the WRONG way to fix OOM?",
-    "options": [
-      "Gradient checkpointing",
-      "Lower batch size with accumulation",
-      "Silently truncating completions / dropping hard examples",
-      "Switching to QLoRA"
-    ],
-    "answer": 2,
-    "explanation": "That trades a crash for a silent data/quality bug; use the memory levers that don't corrupt data."
-  }
-]
+            [
+              {
+                "q": "What is usually the first, cheapest lever against out-of-memory errors?",
+                "options": [
+                  "Lower per-device batch, raise gradient accumulation",
+                  "Raise the learning rate",
+                  "Truncate long completions so every row fits the limit",
+                  "Switch from bf16 to fp32 for more numerical headroom"
+                ],
+                "answer": 0,
+                "explanation": "A smaller per-device batch cuts activation memory, and accumulation keeps the effective batch, so the dynamics barely change."
+              },
+              {
+                "q": "Gradient checkpointing saves memory by…",
+                "options": [
+                  "Recomputing activations during backprop instead of storing them",
+                  "Saving model checkpoints to disk more often to free GPU memory",
+                  "Storing gradients in 8-bit instead of fp32",
+                  "Skipping the backward pass for every other layer"
+                ],
+                "answer": 0,
+                "explanation": "It trades roughly one extra forward pass (~33% compute) for a large cut in activation memory. On small models the slowdown can outweigh the benefit; BrewSLM's auto policy turns it off at 2B and below."
+              },
+              {
+                "q": "A run trains fine for 1,800 steps, then hits OOM. What is the most likely cause?",
+                "options": [
+                  "That step's batch held the longest sequences",
+                  "Memory leaks a little every step until it runs out",
+                  "Optimizer state grows as training goes on",
+                  "The learning-rate schedule raised memory use at that step"
+                ],
+                "answer": 0,
+                "explanation": "Activation memory follows the tokens in each batch, so the longest batch sets the peak. Optimizer state is allocated once, at the first step. Smoke-test with the longest batch first."
+              },
+              {
+                "q": "Which is the WRONG way to fix an out-of-memory error?",
+                "options": [
+                  "Silently truncating completions or dropping hard examples",
+                  "Turning on gradient checkpointing",
+                  "Lowering batch size and raising accumulation",
+                  "Switching to QLoRA"
+                ],
+                "answer": 0,
+                "explanation": "That trades a crash for a silent data and quality bug. If an automatic retry shrinks max_seq_length (BrewSLM's OOM ladder can), check the run report for truncated rows."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">What is usually the first, cheapest lever against OOM?</p>
+              <li><p class="quiz__q-text">What is usually the first, cheapest lever against out-of-memory errors?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Buy a bigger GPU</li>
-                  <li>Lower per-device batch size + gradient accumulation</li>
-                  <li>Truncate completions</li>
-                  <li>Increase the learning rate</li>
+                  <li>Lower per-device batch, raise gradient accumulation</li>
+                  <li>Raise the learning rate</li>
+                  <li>Truncate long completions so every row fits the limit</li>
+                  <li>Switch from bf16 to fp32 for more numerical headroom</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Lower per-device batch size + gradient accumulation</strong> Smaller per-device batch (with accumulation to keep the effective batch) cuts activation memory with no change to dynamics.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Lower per-device batch, raise gradient accumulation</strong> A smaller per-device batch cuts activation memory, and accumulation keeps the effective batch, so the dynamics barely change.</p></details></li>
               <li><p class="quiz__q-text">Gradient checkpointing saves memory by…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Storing all activations</li>
-                  <li>Re-computing activations during backprop instead of storing them</li>
-                  <li>Removing the optimizer</li>
-                  <li>Quantizing the base</li>
+                  <li>Recomputing activations during backprop instead of storing them</li>
+                  <li>Saving model checkpoints to disk more often to free GPU memory</li>
+                  <li>Storing gradients in 8-bit instead of fp32</li>
+                  <li>Skipping the backward pass for every other layer</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Re-computing activations during backprop instead of storing them</strong> It trades ~20–30% extra compute for a large reduction in activation memory.</p></details></li>
-              <li><p class="quiz__q-text">Switching from full fine-tuning to LoRA helps OOM because it…</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Recomputing activations during backprop instead of storing them</strong> It trades roughly one extra forward pass (~33% compute) for a large cut in activation memory. On small models the slowdown can outweigh the benefit; BrewSLM's auto policy turns it off at 2B and below.</p></details></li>
+              <li><p class="quiz__q-text">A run trains fine for 1,800 steps, then hits OOM. What is the most likely cause?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Shrinks the dataset</li>
-                  <li>Removes the base model's gradients and optimizer state</li>
-                  <li>Disables attention</li>
-                  <li>Reduces the vocabulary</li>
+                  <li>That step's batch held the longest sequences</li>
+                  <li>Memory leaks a little every step until it runs out</li>
+                  <li>Optimizer state grows as training goes on</li>
+                  <li>The learning-rate schedule raised memory use at that step</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Removes the base model's gradients and optimizer state</strong> Freezing the base removes its (large) gradient + optimizer-state memory.</p></details></li>
-              <li><p class="quiz__q-text">Which is the WRONG way to fix OOM?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. That step's batch held the longest sequences</strong> Activation memory follows the tokens in each batch, so the longest batch sets the peak. Optimizer state is allocated once, at the first step. Smoke-test with the longest batch first.</p></details></li>
+              <li><p class="quiz__q-text">Which is the WRONG way to fix an out-of-memory error?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Gradient checkpointing</li>
-                  <li>Lower batch size with accumulation</li>
-                  <li>Silently truncating completions / dropping hard examples</li>
+                  <li>Silently truncating completions or dropping hard examples</li>
+                  <li>Turning on gradient checkpointing</li>
+                  <li>Lowering batch size and raising accumulation</li>
                   <li>Switching to QLoRA</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Silently truncating completions / dropping hard examples</strong> That trades a crash for a silent data/quality bug; use the memory levers that don't corrupt data.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Silently truncating completions or dropping hard examples</strong> That trades a crash for a silent data and quality bug. If an automatic retry shrinks max_seq_length (BrewSLM's OOM ladder can), check the run report for truncated rows.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

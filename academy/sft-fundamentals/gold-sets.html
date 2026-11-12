@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The largest split"
+              "position": 1,
+              "text": "The largest split, so the score has the most statistical power"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The training data"
+              "text": "The training rows that a reviewer has double-checked"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The validation set used to pick checkpoints"
+              "text": "Rows the model answered correctly on its first eval run"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "A curated, verified set the model never trains on, used to measure quality",
+            "position": 0,
+            "text": "Verified examples the model never trains on",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "A gold set is hand-curated ground truth, held out from training, used as the source of truth for quality."
+              "text": "A gold set is hand-checked ground truth, held out from training, used as the source of truth for quality."
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "To save space"
+              "position": 1,
+              "text": "To save storage space"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "To speed up training"
+              "text": "So evals run faster"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Because it is small"
+              "text": "Because regenerating it would change the training data too"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "So results are comparable run-to-run",
+            "position": 0,
+            "text": "So scores are comparable run to run",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "A stable gold set makes 'is this version better?' a fair, comparable question."
+              "text": "A stable gold set makes 'is this version better?' a fair question; changing it between runs changes the yardstick."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "100 impeccable gold examples vs 1,000 sloppy ones — which is better?",
-          "text": "100 impeccable gold examples vs 1,000 sloppy ones — which is better?",
+          "name": "Model A scores 82% and model B 86% on a 50-row gold set. What can you conclude?",
+          "text": "Model A scores 82% and model B 86% on a 50-row gold set. What can you conclude?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "1,000 sloppy"
+              "position": 1,
+              "text": "Model B is clearly better, since four points is a large difference"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "They're equal"
+              "text": "Model A is better, since smaller differences favour the simpler model"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Neither is usable"
+              "text": "Both are overfitting"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "100 impeccable",
+            "position": 0,
+            "text": "Not much: at 50 rows the gap is within the noise",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Label quality is paramount; wrong gold labels give confidently wrong guidance."
+              "text": "At around 80% accuracy the 95% confidence interval on 50 rows is about ±11 points (about ±8 at 100 rows, ±4.5 at 300). Use more rows or a paired comparison on the same rows before calling a winner."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Train on it last"
+              "position": 1,
+              "text": "Train on it last, after the main training data"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Keep it as large as the train set"
+              "text": "Keep it as large as the training set"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Regenerate it every run"
+              "text": "Regenerate it from the model at every run"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "Never train on it",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Training on the gold set turns your metrics into fiction (memorization)."
+              "text": "Training on the gold set turns the metric into a memorisation score. Looking at it repeatedly also leaks: BrewSLM splits a practice answer key you can inspect from a final one held back."
             }
           }
         }
@@ -336,52 +336,52 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "What defines a gold set?",
-    "options": [
-      "The largest split",
-      "A curated, verified set the model never trains on, used to measure quality",
-      "The training data",
-      "The validation set used to pick checkpoints"
-    ],
-    "answer": 1,
-    "explanation": "A gold set is hand-curated ground truth, held out from training, used as the source of truth for quality."
-  },
-  {
-    "q": "Why must the gold set stay fixed across experiments?",
-    "options": [
-      "To save space",
-      "So results are comparable run-to-run",
-      "To speed up training",
-      "Because it is small"
-    ],
-    "answer": 1,
-    "explanation": "A stable gold set makes 'is this version better?' a fair, comparable question."
-  },
-  {
-    "q": "100 impeccable gold examples vs 1,000 sloppy ones \u2014 which is better?",
-    "options": [
-      "1,000 sloppy",
-      "100 impeccable",
-      "They're equal",
-      "Neither is usable"
-    ],
-    "answer": 1,
-    "explanation": "Label quality is paramount; wrong gold labels give confidently wrong guidance."
-  },
-  {
-    "q": "What is the cardinal rule of a gold set?",
-    "options": [
-      "Train on it last",
-      "Never train on it",
-      "Keep it as large as the train set",
-      "Regenerate it every run"
-    ],
-    "answer": 1,
-    "explanation": "Training on the gold set turns your metrics into fiction (memorization)."
-  }
-]
+            [
+              {
+                "q": "What defines a gold set?",
+                "options": [
+                  "Verified examples the model never trains on",
+                  "The largest split, so the score has the most statistical power",
+                  "The training rows that a reviewer has double-checked",
+                  "Rows the model answered correctly on its first eval run"
+                ],
+                "answer": 0,
+                "explanation": "A gold set is hand-checked ground truth, held out from training, used as the source of truth for quality."
+              },
+              {
+                "q": "Why must the gold set stay fixed across experiments?",
+                "options": [
+                  "So scores are comparable run to run",
+                  "To save storage space",
+                  "So evals run faster",
+                  "Because regenerating it would change the training data too"
+                ],
+                "answer": 0,
+                "explanation": "A stable gold set makes 'is this version better?' a fair question; changing it between runs changes the yardstick."
+              },
+              {
+                "q": "Model A scores 82% and model B 86% on a 50-row gold set. What can you conclude?",
+                "options": [
+                  "Not much: at 50 rows the gap is within the noise",
+                  "Model B is clearly better, since four points is a large difference",
+                  "Model A is better, since smaller differences favour the simpler model",
+                  "Both are overfitting"
+                ],
+                "answer": 0,
+                "explanation": "At around 80% accuracy the 95% confidence interval on 50 rows is about ±11 points (about ±8 at 100 rows, ±4.5 at 300). Use more rows or a paired comparison on the same rows before calling a winner."
+              },
+              {
+                "q": "What is the cardinal rule of a gold set?",
+                "options": [
+                  "Never train on it",
+                  "Train on it last, after the main training data",
+                  "Keep it as large as the training set",
+                  "Regenerate it from the model at every run"
+                ],
+                "answer": 0,
+                "explanation": "Training on the gold set turns the metric into a memorisation score. Looking at it repeatedly also leaks: BrewSLM splits a practice answer key you can inspect from a final one held back."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -389,36 +389,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What defines a gold set?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The largest split</li>
-                  <li>A curated, verified set the model never trains on, used to measure quality</li>
-                  <li>The training data</li>
-                  <li>The validation set used to pick checkpoints</li>
+                  <li>Verified examples the model never trains on</li>
+                  <li>The largest split, so the score has the most statistical power</li>
+                  <li>The training rows that a reviewer has double-checked</li>
+                  <li>Rows the model answered correctly on its first eval run</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A curated, verified set the model never trains on, used to measure quality</strong> A gold set is hand-curated ground truth, held out from training, used as the source of truth for quality.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Verified examples the model never trains on</strong> A gold set is hand-checked ground truth, held out from training, used as the source of truth for quality.</p></details></li>
               <li><p class="quiz__q-text">Why must the gold set stay fixed across experiments?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>To save space</li>
-                  <li>So results are comparable run-to-run</li>
-                  <li>To speed up training</li>
-                  <li>Because it is small</li>
+                  <li>So scores are comparable run to run</li>
+                  <li>To save storage space</li>
+                  <li>So evals run faster</li>
+                  <li>Because regenerating it would change the training data too</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. So results are comparable run-to-run</strong> A stable gold set makes 'is this version better?' a fair, comparable question.</p></details></li>
-              <li><p class="quiz__q-text">100 impeccable gold examples vs 1,000 sloppy ones — which is better?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. So scores are comparable run to run</strong> A stable gold set makes 'is this version better?' a fair question; changing it between runs changes the yardstick.</p></details></li>
+              <li><p class="quiz__q-text">Model A scores 82% and model B 86% on a 50-row gold set. What can you conclude?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>1,000 sloppy</li>
-                  <li>100 impeccable</li>
-                  <li>They're equal</li>
-                  <li>Neither is usable</li>
+                  <li>Not much: at 50 rows the gap is within the noise</li>
+                  <li>Model B is clearly better, since four points is a large difference</li>
+                  <li>Model A is better, since smaller differences favour the simpler model</li>
+                  <li>Both are overfitting</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. 100 impeccable</strong> Label quality is paramount; wrong gold labels give confidently wrong guidance.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Not much: at 50 rows the gap is within the noise</strong> At around 80% accuracy the 95% confidence interval on 50 rows is about ±11 points (about ±8 at 100 rows, ±4.5 at 300). Use more rows or a paired comparison on the same rows before calling a winner.</p></details></li>
               <li><p class="quiz__q-text">What is the cardinal rule of a gold set?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Train on it last</li>
                   <li>Never train on it</li>
-                  <li>Keep it as large as the train set</li>
-                  <li>Regenerate it every run</li>
+                  <li>Train on it last, after the main training data</li>
+                  <li>Keep it as large as the training set</li>
+                  <li>Regenerate it from the model at every run</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Never train on it</strong> Training on the gold set turns your metrics into fiction (memorization).</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Never train on it</strong> Training on the gold set turns the metric into a memorisation score. Looking at it repeatedly also leaks: BrewSLM splits a practice answer key you can inspect from a final one held back.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

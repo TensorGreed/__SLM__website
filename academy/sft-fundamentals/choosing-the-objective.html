@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "When there is no single correct output"
+              "position": 1,
+              "text": "When there is no single correct output, only better and worse ones"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Only for chat"
+              "text": "Only for chat models; classifiers and extractors need another objective"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "When you have a reward model"
+              "text": "When you already have a reward model that scores each response"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "When each input has a clear target output",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "SFT imitates a target, so it fits inputs with a clear correct output (label, extraction, answer, format)."
+              "text": "SFT imitates a target, so it fits inputs with a clear correct output: a label, an extraction, an answer, a format. Ranked better/worse outputs are preference data."
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "A single target per input"
+              "position": 1,
+              "text": "One target per input"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Raw web text"
+              "text": "Raw domain text"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "A reward model trained with PPO"
+              "text": "A separate reward model plus PPO updates"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "(chosen, rejected) preference pairs",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "DPO optimizes directly on preference pairs, making chosen responses more likely than rejected ones."
+              "text": "DPO optimises directly on preference pairs, raising the likelihood of the chosen response relative to the rejected one, with an implicit reward and no separate reward model."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why has DPO largely displaced RLHF for fine-tuning small models?",
-          "text": "Why has DPO largely displaced RLHF for fine-tuning small models?",
+          "name": "Why has DPO largely displaced RLHF for preference-tuning small models?",
+          "text": "Why has DPO largely displaced RLHF for preference-tuning small models?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "It needs more GPUs"
+              "position": 1,
+              "text": "It needs no preference data, only a single target per input"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It changes the tokenizer"
+              "text": "It trains a larger reward model, so its preference signal is stronger"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It is a form of prompting"
+              "text": "It uses a higher learning rate"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "It achieves similar ends with far less machinery (no separate reward model + RL)",
+            "position": 0,
+            "text": "It skips the separate reward model and RL loop",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "DPO skips the reward-model + RL complexity of RLHF while reaching comparable results."
+              "text": "DPO reaches comparable results with far less machinery. For tasks with a programmatic checker (tests, schema-valid JSON), RL with verifiable rewards (GRPO-style) is now the main RL branch after SFT."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "You need a model to speak a brand-new technical domain it has never seen. Best first move?",
-          "text": "You need a model to speak a brand-new technical domain it has never seen. Best first move?",
+          "name": "Your base model may not handle a specialised domain's text well. What is the best first move?",
+          "text": "Your base model may not handle a specialised domain's text well. What is the best first move?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "DPO"
+              "position": 1,
+              "text": "Start continued pretraining on whatever domain text you can collect"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "RLHF"
+              "position": 2,
+              "text": "Run DPO with domain experts ranking pairs of the model's answers"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Lower the learning rate"
+              "text": "Go straight to SFT, raising the learning rate to force in the new vocabulary"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "Continued pretraining on a domain corpus, then SFT",
+            "position": 0,
+            "text": "Measure held-out per-token loss on domain text versus generic text",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Building base domain ability calls for continued pretraining before task-specific SFT."
+              "text": "Continued pretraining is the most over-prescribed step (lesson 1.21). Only if domain loss is far above generic text and you have tens of millions of tokens is CPT-then-SFT worth it; otherwise SFT from the base is the cheaper first move."
             }
           }
         }
@@ -333,52 +333,52 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "When is SFT the right objective?",
-    "options": [
-      "When there is no single correct output",
-      "When each input has a clear target output",
-      "Only for chat",
-      "When you have a reward model"
-    ],
-    "answer": 1,
-    "explanation": "SFT imitates a target, so it fits inputs with a clear correct output (label, extraction, answer, format)."
-  },
-  {
-    "q": "DPO learns from\u2026",
-    "options": [
-      "A single target per input",
-      "(chosen, rejected) preference pairs",
-      "Raw web text",
-      "A reward model trained with PPO"
-    ],
-    "answer": 1,
-    "explanation": "DPO optimizes directly on preference pairs, making chosen responses more likely than rejected ones."
-  },
-  {
-    "q": "Why has DPO largely displaced RLHF for fine-tuning small models?",
-    "options": [
-      "It needs more GPUs",
-      "It achieves similar ends with far less machinery (no separate reward model + RL)",
-      "It changes the tokenizer",
-      "It is a form of prompting"
-    ],
-    "answer": 1,
-    "explanation": "DPO skips the reward-model + RL complexity of RLHF while reaching comparable results."
-  },
-  {
-    "q": "You need a model to speak a brand-new technical domain it has never seen. Best first move?",
-    "options": [
-      "DPO",
-      "RLHF",
-      "Continued pretraining on a domain corpus, then SFT",
-      "Lower the learning rate"
-    ],
-    "answer": 2,
-    "explanation": "Building base domain ability calls for continued pretraining before task-specific SFT."
-  }
-]
+            [
+              {
+                "q": "When is SFT the right objective?",
+                "options": [
+                  "When each input has a clear target output",
+                  "When there is no single correct output, only better and worse ones",
+                  "Only for chat models; classifiers and extractors need another objective",
+                  "When you already have a reward model that scores each response"
+                ],
+                "answer": 0,
+                "explanation": "SFT imitates a target, so it fits inputs with a clear correct output: a label, an extraction, an answer, a format. Ranked better/worse outputs are preference data."
+              },
+              {
+                "q": "DPO learns from…",
+                "options": [
+                  "(chosen, rejected) preference pairs",
+                  "One target per input",
+                  "Raw domain text",
+                  "A separate reward model plus PPO updates"
+                ],
+                "answer": 0,
+                "explanation": "DPO optimises directly on preference pairs, raising the likelihood of the chosen response relative to the rejected one, with an implicit reward and no separate reward model."
+              },
+              {
+                "q": "Why has DPO largely displaced RLHF for preference-tuning small models?",
+                "options": [
+                  "It skips the separate reward model and RL loop",
+                  "It needs no preference data, only a single target per input",
+                  "It trains a larger reward model, so its preference signal is stronger",
+                  "It uses a higher learning rate"
+                ],
+                "answer": 0,
+                "explanation": "DPO reaches comparable results with far less machinery. For tasks with a programmatic checker (tests, schema-valid JSON), RL with verifiable rewards (GRPO-style) is now the main RL branch after SFT."
+              },
+              {
+                "q": "Your base model may not handle a specialised domain's text well. What is the best first move?",
+                "options": [
+                  "Measure held-out per-token loss on domain text versus generic text",
+                  "Start continued pretraining on whatever domain text you can collect",
+                  "Run DPO with domain experts ranking pairs of the model's answers",
+                  "Go straight to SFT, raising the learning rate to force in the new vocabulary"
+                ],
+                "answer": 0,
+                "explanation": "Continued pretraining is the most over-prescribed step (lesson 1.21). Only if domain loss is far above generic text and you have tens of millions of tokens is CPT-then-SFT worth it; otherwise SFT from the base is the cheaper first move."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -386,36 +386,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">When is SFT the right objective?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>When there is no single correct output</li>
                   <li>When each input has a clear target output</li>
-                  <li>Only for chat</li>
-                  <li>When you have a reward model</li>
+                  <li>When there is no single correct output, only better and worse ones</li>
+                  <li>Only for chat models; classifiers and extractors need another objective</li>
+                  <li>When you already have a reward model that scores each response</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. When each input has a clear target output</strong> SFT imitates a target, so it fits inputs with a clear correct output (label, extraction, answer, format).</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. When each input has a clear target output</strong> SFT imitates a target, so it fits inputs with a clear correct output: a label, an extraction, an answer, a format. Ranked better/worse outputs are preference data.</p></details></li>
               <li><p class="quiz__q-text">DPO learns from…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A single target per input</li>
                   <li>(chosen, rejected) preference pairs</li>
-                  <li>Raw web text</li>
-                  <li>A reward model trained with PPO</li>
+                  <li>One target per input</li>
+                  <li>Raw domain text</li>
+                  <li>A separate reward model plus PPO updates</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. (chosen, rejected) preference pairs</strong> DPO optimizes directly on preference pairs, making chosen responses more likely than rejected ones.</p></details></li>
-              <li><p class="quiz__q-text">Why has DPO largely displaced RLHF for fine-tuning small models?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. (chosen, rejected) preference pairs</strong> DPO optimises directly on preference pairs, raising the likelihood of the chosen response relative to the rejected one, with an implicit reward and no separate reward model.</p></details></li>
+              <li><p class="quiz__q-text">Why has DPO largely displaced RLHF for preference-tuning small models?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It needs more GPUs</li>
-                  <li>It achieves similar ends with far less machinery (no separate reward model + RL)</li>
-                  <li>It changes the tokenizer</li>
-                  <li>It is a form of prompting</li>
+                  <li>It skips the separate reward model and RL loop</li>
+                  <li>It needs no preference data, only a single target per input</li>
+                  <li>It trains a larger reward model, so its preference signal is stronger</li>
+                  <li>It uses a higher learning rate</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. It achieves similar ends with far less machinery (no separate reward model + RL)</strong> DPO skips the reward-model + RL complexity of RLHF while reaching comparable results.</p></details></li>
-              <li><p class="quiz__q-text">You need a model to speak a brand-new technical domain it has never seen. Best first move?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. It skips the separate reward model and RL loop</strong> DPO reaches comparable results with far less machinery. For tasks with a programmatic checker (tests, schema-valid JSON), RL with verifiable rewards (GRPO-style) is now the main RL branch after SFT.</p></details></li>
+              <li><p class="quiz__q-text">Your base model may not handle a specialised domain's text well. What is the best first move?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>DPO</li>
-                  <li>RLHF</li>
-                  <li>Continued pretraining on a domain corpus, then SFT</li>
-                  <li>Lower the learning rate</li>
+                  <li>Measure held-out per-token loss on domain text versus generic text</li>
+                  <li>Start continued pretraining on whatever domain text you can collect</li>
+                  <li>Run DPO with domain experts ranking pairs of the model's answers</li>
+                  <li>Go straight to SFT, raising the learning rate to force in the new vocabulary</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Continued pretraining on a domain corpus, then SFT</strong> Building base domain ability calls for continued pretraining before task-specific SFT.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Measure held-out per-token loss on domain text versus generic text</strong> Continued pretraining is the most over-prescribed step (lesson 1.21). Only if domain loss is far above generic text and you have tens of millions of tokens is CPT-then-SFT worth it; otherwise SFT from the base is the cheaper first move.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

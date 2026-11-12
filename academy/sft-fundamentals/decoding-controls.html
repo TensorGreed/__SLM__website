@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "High temperature (T = 1.0) with top_p = 0.9"
+              "position": 1,
+              "text": "Temperature 1.0 with top_p 0.9, to avoid always picking the majority label"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Sampling with top_k = 100"
+              "text": "Sampling with top_k 100, so rare labels still get a chance"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Random sampling with no constraints"
+              "text": "High temperature (T = 1.5)"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Greedy (do_sample = False, T = 0)",
+            "position": 0,
+            "text": "Greedy decoding (do_sample=False)",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Classification needs determinism and a low risk of off-format output. Greedy + max_new_tokens just big enough for the label is the standard."
+              "text": "Classification needs determinism and a low risk of off-format output. With do_sample=False the temperature is ignored; cap max_new_tokens at the longest label plus the stop token."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Your chat model produces repetitive loops. What is the cheapest thing to try first?",
-          "text": "Your chat model produces repetitive loops. What is the cheapest thing to try first?",
+          "name": "Your chat assistant falls into repetitive loops in open-ended answers. What is the cheapest thing to try first?",
+          "text": "Your chat assistant falls into repetitive loops in open-ended answers. What is the cheapest thing to try first?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Retrain on more diverse data"
+              "position": 1,
+              "text": "Retrain on a larger, more diverse dataset before changing any decoding setting"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Increase max_new_tokens"
+              "text": "Raise max_new_tokens so the model has room to finish the loop"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Lower the temperature"
+              "text": "Lower the temperature further, so the model is even more deterministic"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Set repetition_penalty around 1.1 (or switch from greedy to top_p sampling)",
+            "position": 0,
+            "text": "A mild repetition_penalty (~1.1), or top_p sampling",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Loops are often a greedy-decoding trap, not a training problem. A small repetition penalty (or nucleus sampling) breaks the loop in five minutes; only retrain if the loop survives healthy decoding."
+              "text": "Loops are often a greedy-decoding trap. For open-ended chat a small penalty or nucleus sampling usually breaks them; verify on the gold set. Do not carry the penalty over to extraction or structured output: it covers prompt tokens too."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What does top-p = 0.9 do?",
-          "text": "What does top-p = 0.9 do?",
+          "name": "What does top_p = 0.9 do?",
+          "text": "What does top_p = 0.9 do?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Forces the model to output exactly 90% of the time"
+              "position": 1,
+              "text": "Keeps the top 90% of the vocabulary and samples uniformly from it"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Limits the output to 90 tokens"
+              "text": "Limits the response to 90% of the max_new_tokens budget"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Multiplies all probabilities by 0.9"
+              "text": "Multiplies every token's probability by 0.9 before sampling"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Keeps the smallest set of tokens whose cumulative probability ≥ 0.9, then samples from that set",
+            "position": 0,
+            "text": "Samples from the smallest set of tokens whose probabilities sum to ≥ 0.9",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Nucleus sampling truncates the tail dynamically: peaky distributions yield few candidates, flat ones yield many."
+              "text": "Nucleus sampling truncates the tail dynamically: a peaked distribution leaves few candidates, a flat one leaves many."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why is setting max_new_tokens always recommended?",
-          "text": "Why is setting max_new_tokens always recommended?",
+          "name": "An extraction model starts returning nulls for fields that appear verbatim in the input after repetition_penalty 1.1 is set. Why?",
+          "text": "An extraction model starts returning nulls for fields that appear verbatim in the input after repetition_penalty 1.1 is set. Why?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "It improves the model's accuracy"
+              "position": 1,
+              "text": "The penalty raises the temperature"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It makes TTFT lower"
+              "text": "The penalty truncates the JSON output"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It changes the temperature"
+              "text": "The penalty only affects the output, so the nulls must come from training"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "It prevents a forgotten stop token from letting the model fill its context window with hallucinated conversation",
+            "position": 0,
+            "text": "The penalty also down-weights tokens already in the prompt",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "max_new_tokens is the hard cap. Without it, a missing stop token can let the model ramble until OOM or context-window exhaustion."
+              "text": "The HF repetition penalty applies to every token in input_ids, prompt included, so it pushes the model away from copying the input. BrewSLM hit exactly this and now pins repetition_penalty=1.0 for evals. Use 1.0 for extraction, classification and structured output, and check generation_config.json, which can apply a penalty silently."
             }
           }
         }
@@ -364,24 +364,52 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "Which decoding setting is the right default for a classification task whose output is a single label?",
-   "options": ["High temperature (T = 1.0) with top_p = 0.9", "Greedy (do_sample = False, T = 0)", "Sampling with top_k = 100", "Random sampling with no constraints"],
-   "answer": 1,
-   "explanation": "Classification needs determinism and a low risk of off-format output. Greedy + max_new_tokens just big enough for the label is the standard."},
-  {"q": "Your chat model produces repetitive loops. What is the cheapest thing to try first?",
-   "options": ["Retrain on more diverse data", "Set repetition_penalty around 1.1 (or switch from greedy to top_p sampling)", "Increase max_new_tokens", "Lower the temperature"],
-   "answer": 1,
-   "explanation": "Loops are often a greedy-decoding trap, not a training problem. A small repetition penalty (or nucleus sampling) breaks the loop in five minutes; only retrain if the loop survives healthy decoding."},
-  {"q": "What does top-p = 0.9 do?",
-   "options": ["Forces the model to output exactly 90% of the time", "Keeps the smallest set of tokens whose cumulative probability ≥ 0.9, then samples from that set", "Limits the output to 90 tokens", "Multiplies all probabilities by 0.9"],
-   "answer": 1,
-   "explanation": "Nucleus sampling truncates the tail dynamically: peaky distributions yield few candidates, flat ones yield many."},
-  {"q": "Why is setting max_new_tokens always recommended?",
-   "options": ["It improves the model's accuracy", "It prevents a forgotten stop token from letting the model fill its context window with hallucinated conversation", "It makes TTFT lower", "It changes the temperature"],
-   "answer": 1,
-   "explanation": "max_new_tokens is the hard cap. Without it, a missing stop token can let the model ramble until OOM or context-window exhaustion."}
-]
+            [
+              {
+                "q": "Which decoding setting is the right default for a classification task whose output is a single label?",
+                "options": [
+                  "Greedy decoding (do_sample=False)",
+                  "Temperature 1.0 with top_p 0.9, to avoid always picking the majority label",
+                  "Sampling with top_k 100, so rare labels still get a chance",
+                  "High temperature (T = 1.5)"
+                ],
+                "answer": 0,
+                "explanation": "Classification needs determinism and a low risk of off-format output. With do_sample=False the temperature is ignored; cap max_new_tokens at the longest label plus the stop token."
+              },
+              {
+                "q": "Your chat assistant falls into repetitive loops in open-ended answers. What is the cheapest thing to try first?",
+                "options": [
+                  "A mild repetition_penalty (~1.1), or top_p sampling",
+                  "Retrain on a larger, more diverse dataset before changing any decoding setting",
+                  "Raise max_new_tokens so the model has room to finish the loop",
+                  "Lower the temperature further, so the model is even more deterministic"
+                ],
+                "answer": 0,
+                "explanation": "Loops are often a greedy-decoding trap. For open-ended chat a small penalty or nucleus sampling usually breaks them; verify on the gold set. Do not carry the penalty over to extraction or structured output: it covers prompt tokens too."
+              },
+              {
+                "q": "What does top_p = 0.9 do?",
+                "options": [
+                  "Samples from the smallest set of tokens whose probabilities sum to ≥ 0.9",
+                  "Keeps the top 90% of the vocabulary and samples uniformly from it",
+                  "Limits the response to 90% of the max_new_tokens budget",
+                  "Multiplies every token's probability by 0.9 before sampling"
+                ],
+                "answer": 0,
+                "explanation": "Nucleus sampling truncates the tail dynamically: a peaked distribution leaves few candidates, a flat one leaves many."
+              },
+              {
+                "q": "An extraction model starts returning nulls for fields that appear verbatim in the input after repetition_penalty 1.1 is set. Why?",
+                "options": [
+                  "The penalty also down-weights tokens already in the prompt",
+                  "The penalty raises the temperature",
+                  "The penalty truncates the JSON output",
+                  "The penalty only affects the output, so the nulls must come from training"
+                ],
+                "answer": 0,
+                "explanation": "The HF repetition penalty applies to every token in input_ids, prompt included, so it pushes the model away from copying the input. BrewSLM hit exactly this and now pins repetition_penalty=1.0 for evals. Use 1.0 for extraction, classification and structured output, and check generation_config.json, which can apply a penalty silently."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -389,36 +417,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Which decoding setting is the right default for a classification task whose output is a single label?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>High temperature (T = 1.0) with top_p = 0.9</li>
-                  <li>Greedy (do_sample = False, T = 0)</li>
-                  <li>Sampling with top_k = 100</li>
-                  <li>Random sampling with no constraints</li>
+                  <li>Greedy decoding (do_sample=False)</li>
+                  <li>Temperature 1.0 with top_p 0.9, to avoid always picking the majority label</li>
+                  <li>Sampling with top_k 100, so rare labels still get a chance</li>
+                  <li>High temperature (T = 1.5)</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Greedy (do_sample = False, T = 0)</strong> Classification needs determinism and a low risk of off-format output. Greedy + max_new_tokens just big enough for the label is the standard.</p></details></li>
-              <li><p class="quiz__q-text">Your chat model produces repetitive loops. What is the cheapest thing to try first?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Greedy decoding (do_sample=False)</strong> Classification needs determinism and a low risk of off-format output. With do_sample=False the temperature is ignored; cap max_new_tokens at the longest label plus the stop token.</p></details></li>
+              <li><p class="quiz__q-text">Your chat assistant falls into repetitive loops in open-ended answers. What is the cheapest thing to try first?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Retrain on more diverse data</li>
-                  <li>Set repetition_penalty around 1.1 (or switch from greedy to top_p sampling)</li>
-                  <li>Increase max_new_tokens</li>
-                  <li>Lower the temperature</li>
+                  <li>A mild repetition_penalty (~1.1), or top_p sampling</li>
+                  <li>Retrain on a larger, more diverse dataset before changing any decoding setting</li>
+                  <li>Raise max_new_tokens so the model has room to finish the loop</li>
+                  <li>Lower the temperature further, so the model is even more deterministic</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Set repetition_penalty around 1.1 (or switch from greedy to top_p sampling)</strong> Loops are often a greedy-decoding trap, not a training problem. A small repetition penalty (or nucleus sampling) breaks the loop in five minutes; only retrain if the loop survives healthy decoding.</p></details></li>
-              <li><p class="quiz__q-text">What does top-p = 0.9 do?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A mild repetition_penalty (~1.1), or top_p sampling</strong> Loops are often a greedy-decoding trap. For open-ended chat a small penalty or nucleus sampling usually breaks them; verify on the gold set. Do not carry the penalty over to extraction or structured output: it covers prompt tokens too.</p></details></li>
+              <li><p class="quiz__q-text">What does top_p = 0.9 do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Forces the model to output exactly 90% of the time</li>
-                  <li>Keeps the smallest set of tokens whose cumulative probability ≥ 0.9, then samples from that set</li>
-                  <li>Limits the output to 90 tokens</li>
-                  <li>Multiplies all probabilities by 0.9</li>
+                  <li>Samples from the smallest set of tokens whose probabilities sum to ≥ 0.9</li>
+                  <li>Keeps the top 90% of the vocabulary and samples uniformly from it</li>
+                  <li>Limits the response to 90% of the max_new_tokens budget</li>
+                  <li>Multiplies every token's probability by 0.9 before sampling</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Keeps the smallest set of tokens whose cumulative probability ≥ 0.9, then samples from that set</strong> Nucleus sampling truncates the tail dynamically: peaky distributions yield few candidates, flat ones yield many.</p></details></li>
-              <li><p class="quiz__q-text">Why is setting max_new_tokens always recommended?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Samples from the smallest set of tokens whose probabilities sum to ≥ 0.9</strong> Nucleus sampling truncates the tail dynamically: a peaked distribution leaves few candidates, a flat one leaves many.</p></details></li>
+              <li><p class="quiz__q-text">An extraction model starts returning nulls for fields that appear verbatim in the input after repetition_penalty 1.1 is set. Why?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It improves the model's accuracy</li>
-                  <li>It prevents a forgotten stop token from letting the model fill its context window with hallucinated conversation</li>
-                  <li>It makes TTFT lower</li>
-                  <li>It changes the temperature</li>
+                  <li>The penalty also down-weights tokens already in the prompt</li>
+                  <li>The penalty raises the temperature</li>
+                  <li>The penalty truncates the JSON output</li>
+                  <li>The penalty only affects the output, so the nulls must come from training</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. It prevents a forgotten stop token from letting the model fill its context window with hallucinated conversation</strong> max_new_tokens is the hard cap. Without it, a missing stop token can let the model ramble until OOM or context-window exhaustion.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The penalty also down-weights tokens already in the prompt</strong> The HF repetition penalty applies to every token in input_ids, prompt included, so it pushes the model away from copying the input. BrewSLM hit exactly this and now pins repetition_penalty=1.0 for evals. Use 1.0 for extraction, classification and structured output, and check generation_config.json, which can apply a penalty silently.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->
