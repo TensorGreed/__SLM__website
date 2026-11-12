@@ -205,7 +205,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#gold-set",
           "name": "Gold set",
-          "description": "Curated, known-correct examples a model never trains on; the source of truth for quality. In the BrewSLM UI this is the answer key, kept under Data → Labels. See The SLM project lifecycle.",
+          "description": "Curated, known-correct examples a model never trains on; the source of truth for quality. Keep a practice part you iterate against and a final part you score rarely: a set you consult on every decision slowly overfits to your choices. In the BrewSLM UI this is the answer key (practice rows GOLD_DEV, final rows GOLD_TEST), kept under Data → Labels. See The SLM project lifecycle.",
           "url": "https://brewslm.com/academy/glossary.html#gold-set",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -285,7 +285,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#llm",
           "name": "LLM",
-          "description": "Large language model — tens to hundreds of billions of parameters.",
+          "description": "Large language model — billions to hundreds of billions of parameters; frontier models reach hundreds of billions to over a trillion in total, often as mixture-of-experts.",
           "url": "https://brewslm.com/academy/glossary.html#llm",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -395,7 +395,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#rag",
           "name": "RAG (retrieval-augmented generation)",
-          "description": "Retrieving relevant documents at inference and adding them to the prompt; supplies knowledge, not behavior. See The four levers.",
+          "description": "Retrieving relevant documents at inference and adding them to the prompt; supplies knowledge, not behavior. See Pretraining vs fine-tuning vs prompting vs RAG.",
           "url": "https://brewslm.com/academy/glossary.html#rag",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -435,7 +435,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#slm",
           "name": "SLM",
-          "description": "Small language model — relatively few parameters (millions to a few billion); cheaper and faster. See LLMs vs SLMs.",
+          "description": "Small language model — up to ~10B parameters; this course uses a 135M model (SmolLM2-135M) for speed. Cheaper and faster to train and serve. See LLMs vs SLMs.",
           "url": "https://brewslm.com/academy/glossary.html#slm",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -535,7 +535,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#vram",
           "name": "VRAM",
-          "description": "GPU memory; weights need ≈ params × bytes-per-param, training needs several times more.",
+          "description": "GPU memory; weights need ≈ params × bytes-per-param (2 bytes in bf16). Full fine-tuning with mixed-precision AdamW needs about 16–18 bytes per parameter before activations; LoRA and QLoRA need far less. See GPU memory math.",
           "url": "https://brewslm.com/academy/glossary.html#vram",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -545,7 +545,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#base-model",
           "name": "Base model",
-          "description": "A model straight from pretraining: a next-token continuer over raw text. No chat template, no roles, no refusals. See Base vs instruct models.",
+          "description": "A model straight from pretraining: a next-token continuer over raw text. It may ship a chat template, but it was not aligned to follow one, so don't expect assistant behaviour or refusals. See Base vs instruct models.",
           "url": "https://brewslm.com/academy/glossary.html#base-model",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -575,7 +575,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#alignment-tax",
           "name": "Alignment tax",
-          "description": "The cost of the instruct model's baked-in choices (refusals, hedges, style) when they don't match your task.",
+          "description": "The capability lost on some benchmarks as a side effect of alignment training (Ouyang et al. 2022; Askell et al. 2021). Separate from inherited behaviour: the instruct model's baked-in refusals, hedges and style, which can also fight your task.",
           "url": "https://brewslm.com/academy/glossary.html#alignment-tax",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -595,7 +595,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#tokenizer-family",
           "name": "Tokenizer family",
-          "description": "A shared vocabulary and special-token set across a model family; a hard constraint for offline distillation (teacher and student must share it).",
+          "description": "A shared vocabulary and special-token set across a model family. Logit-level distillation (matching the teacher's token probabilities) needs teacher and student to share it; sequence-level distillation, and top-k capture that maps tokens by their text, work across tokenizers.",
           "url": "https://brewslm.com/academy/glossary.html#tokenizer-family",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -605,7 +605,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#n-gram",
           "name": "n-gram model",
-          "description": "A pre-neural language model that estimates the next token from raw counts over the previous n−1 tokens. Fast, interpretable, and sparse beyond trigrams. Still used in BM25, kenLM, and on-device autocomplete. See From n-grams to Transformers.",
+          "description": "A pre-neural language model that estimates the next token from raw counts over the previous n−1 tokens. Fast, interpretable, and sparse beyond trigrams. n-gram counts survive in tools such as KenLM and on-device autocomplete. (BM25 is a different thing: a bag-of-words retrieval score, not a language model.) See From n-grams to Transformers.",
           "url": "https://brewslm.com/academy/glossary.html#n-gram",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -665,7 +665,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#transformer-architecture",
           "name": "Transformer",
-          "description": "The 2017 architecture (\"Attention is all you need\") that replaced recurrence with self-attention and parallel position embeddings. Every modern LM — encoder, encoder-decoder, decoder-only — is a Transformer variant. See Attention & the Transformer.",
+          "description": "The 2017 architecture (\"Attention is all you need\") that replaced recurrence with self-attention, adding positional encodings so the model knows token order. Every modern LM — encoder, encoder-decoder, decoder-only — is a Transformer variant. See Attention & the Transformer.",
           "url": "https://brewslm.com/academy/glossary.html#transformer-architecture",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -685,7 +685,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#encoder-only",
           "name": "Encoder-only model",
-          "description": "A Transformer that sees the whole input at once (bidirectional attention) and emits one vector per token. Pretrained with masked-language-modelling. Used for classification and embeddings (BERT, BGE, E5). See Architecture taxonomy.",
+          "description": "A Transformer that sees the whole input at once (bidirectional attention) and emits one vector per token. Pretrained with masked-language-modelling. Used for classification and, after further contrastive tuning, for embeddings (BERT; BGE and E5 are contrastively tuned encoders). See Architecture taxonomy.",
           "url": "https://brewslm.com/academy/glossary.html#encoder-only",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -735,7 +735,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#causal-attention",
           "name": "Causal (autoregressive) attention",
-          "description": "An attention mask that prevents each position from looking at later positions. Makes a Transformer next-token predictable, which is what decoder-only chat models do.",
+          "description": "An attention mask that prevents each position from looking at later positions. Lets a Transformer be trained to predict the next token at every position at once, which is how decoder-only chat models are trained.",
           "url": "https://brewslm.com/academy/glossary.html#causal-attention",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -815,7 +815,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#early-stopping",
           "name": "Early stopping",
-          "description": "Keeping the checkpoint at the validation-loss minimum rather than the final step.",
+          "description": "Stopping training once the validation metric stops improving for a set number of evaluations, and keeping the best checkpoint rather than the final step. Choose the checkpoint on a practice (dev) set, not on the final test set.",
           "url": "https://brewslm.com/academy/glossary.html#early-stopping",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -855,7 +855,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#grad-accum",
           "name": "Gradient accumulation",
-          "description": "Summing gradients over several micro-batches before one optimizer step, to simulate a larger batch on a small GPU.",
+          "description": "Accumulating (averaging) gradients over several micro-batches before one optimizer step, to simulate a larger batch on a small GPU.",
           "url": "https://brewslm.com/academy/glossary.html#grad-accum",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -885,7 +885,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#lora-alpha",
           "name": "LoRA alpha",
-          "description": "Scales the adapter's contribution (~alpha/r); often set to 2×r.",
+          "description": "Scales the adapter's contribution (scale = alpha/r). Setting alpha = 2×r is a community convention, not a rule (the QLoRA paper used r=64, alpha=16).",
           "url": "https://brewslm.com/academy/glossary.html#lora-alpha",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -904,8 +904,8 @@
         {
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#max-seq-length",
-          "name": "max_seq_length",
-          "description": "The per-example token cap; set it from the data's length distribution so completions are never clipped.",
+          "name": "max_length (formerly max_seq_length)",
+          "description": "The per-example token cap. Current TRL calls it max_length in SFTConfig (default 1024; the old max_seq_length name is gone) and truncates longer rows from the end by default. Set it from the data's length distribution so completions are never clipped.",
           "url": "https://brewslm.com/academy/glossary.html#max-seq-length",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -915,7 +915,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#mixed-precision",
           "name": "Mixed precision (bf16)",
-          "description": "Computing/storing in 16-bit to roughly halve memory with stable training.",
+          "description": "Running most matmuls in 16-bit (bf16/fp16) while keeping fp32 master weights. It saves activation memory and speeds up training; it does not halve weight memory. Loading a frozen base in bf16 (as LoRA does) is what halves the weights.",
           "url": "https://brewslm.com/academy/glossary.html#mixed-precision",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -925,7 +925,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#orpo",
           "name": "ORPO",
-          "description": "An objective that combines SFT and preference learning in a single stage.",
+          "description": "Odds Ratio Preference Optimization: one stage that combines SFT with a preference term, with no reference model.",
           "url": "https://brewslm.com/academy/glossary.html#orpo",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1025,7 +1025,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#target-modules",
           "name": "Target modules",
-          "description": "Which weight matrices get LoRA adapters (commonly the attention query/value projections).",
+          "description": "Which weight matrices get LoRA adapters. Start from all linear layers (target_modules=\"all-linear\"; QLoRA found this needed to match full fine-tuning); query/value only is the original 2021 choice and a cheaper option for large models. BrewSLM's default auto picks all linear layers up to ~2B parameters and query/value above.",
           "url": "https://brewslm.com/academy/glossary.html#target-modules",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1095,7 +1095,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#t1-rep-penalty",
           "name": "Repetition penalty",
-          "description": "A scalar reducing probability of tokens already in the output. Small values (1.05–1.15) break greedy loops without quality loss.",
+          "description": "A scalar that down-weights tokens already seen. The Hugging Face implementation counts the prompt too, so it pushes the model away from copying its input. Keep it at 1.0 for extraction, classification, QA over a context, and JSON; use a mild value only for open-ended generation, and check it on the gold set. A model's generation_config.json can apply one silently, even under greedy decoding.",
           "url": "https://brewslm.com/academy/glossary.html#t1-rep-penalty",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1245,7 +1245,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#t1-dapt",
           "name": "Domain-adaptive pretraining (DAPT)",
-          "description": "The research name for CPT applied to a specific domain (medical, legal, code, finance). Same mechanic — the \"domain-adaptive\" label emphasises the purpose.",
+          "description": "The research name for CPT applied to a specific domain (medical, legal, code, finance; Gururangan et al. 2020). Same mechanic — the \"domain-adaptive\" label emphasises the purpose.",
           "url": "https://brewslm.com/academy/glossary.html#t1-dapt",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1255,7 +1255,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#t1-vocab-extension",
           "name": "Vocab extension",
-          "description": "Adding new tokens to the tokenizer for domain-specific vocabulary before CPT, so those terms become single tokens. Sharp trade-off: cheaper at inference, but the new embeddings start random and need enough CPT to learn — and it breaks the same-tokenizer assumption distillation needs.",
+          "description": "Adding new tokens to the tokenizer for domain-specific vocabulary before CPT, so those terms become single tokens. Sharp trade-off: cheaper at inference, but the new embedding rows carry no specific meaning until enough CPT trains them (recent transformers initialise them to the mean of the existing ones, not randomly), and a changed vocabulary rules out logit-level distillation from the original teacher.",
           "url": "https://brewslm.com/academy/glossary.html#t1-vocab-extension",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1355,7 +1355,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#dtype",
           "name": "dtype (bf16)",
-          "description": "The weight/compute precision passed to from_pretrained (older API: torch_dtype); bf16 roughly halves memory.",
+          "description": "The weight/compute precision passed to from_pretrained as dtype= (older name: torch_dtype); bf16 roughly halves weight memory versus fp32.",
           "url": "https://brewslm.com/academy/glossary.html#dtype",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1445,7 +1445,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#peftmodel",
           "name": "PeftModel.from_pretrained",
-          "description": "Attaches a trained LoRA adapter onto a fresh base model for inference. See Evaluate by hand.",
+          "description": "Attaches a trained LoRA adapter onto a base model for inference. It modifies the base model object in place, so score the base first (or use with model.disable_adapter():) when you compare them. See Evaluate by hand.",
           "url": "https://brewslm.com/academy/glossary.html#peftmodel",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1505,7 +1505,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#trl",
           "name": "TRL",
-          "description": "Hugging Face's SFT- and preference-training library. Provides SFTTrainer, DPOTrainer, ORPOTrainer. See SFT with TRL's SFTTrainer.",
+          "description": "Hugging Face's SFT- and preference-training library. Its stable trainers include SFTTrainer, DPOTrainer, GRPOTrainer, KTOTrainer, RLOOTrainer and RewardTrainer; ORPO now lives under trl.experimental. See SFT with TRL's SFTTrainer.",
           "url": "https://brewslm.com/academy/glossary.html#trl",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1515,7 +1515,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#sfttrainer",
           "name": "SFTTrainer",
-          "description": "TRL wrapper around HF Trainer that handles chat-template, loss mask, padding, and PEFT for SFT. The 20-line version of Lesson 2.5.",
+          "description": "TRL wrapper around HF Trainer that handles the chat template, padding, PEFT and, on prompt-completion data, the prompt mask. On a plain messages dataset it trains on every token unless you set assistant_only_loss. The 20-line version of Lessons 2.4–2.5.",
           "url": "https://brewslm.com/academy/glossary.html#sfttrainer",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1525,7 +1525,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#sftconfig",
           "name": "SFTConfig",
-          "description": "SFTTrainer's args object; superset of TrainingArguments with SFT-specific fields like max_seq_length, completion_only_loss, packing.",
+          "description": "SFTTrainer's args object; superset of TrainingArguments with SFT-specific fields like max_length, completion_only_loss, assistant_only_loss, packing.",
           "url": "https://brewslm.com/academy/glossary.html#sftconfig",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1535,8 +1535,18 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#completion-only-loss",
           "name": "completion_only_loss",
-          "description": "SFTConfig field; when True, builds the loss mask so cross-entropy ignores everything except assistant tokens.",
+          "description": "SFTConfig field for prompt-completion datasets: masks the prompt so the loss covers only the completion. Default None means on for prompt-completion data. It does nothing on a messages dataset; use assistant_only_loss there.",
           "url": "https://brewslm.com/academy/glossary.html#completion-only-loss",
+          "inDefinedTermSet": {
+            "@id": "https://brewslm.com/academy/glossary.html#terms"
+          }
+        },
+        {
+          "@type": "DefinedTerm",
+          "@id": "https://brewslm.com/academy/glossary.html#assistant-only-loss",
+          "name": "assistant_only_loss",
+          "description": "SFTConfig field for conversational (messages) data: computes the loss only on assistant turns. It needs a chat template that marks assistant content with {% generation %} tags; templates without them (SmolLM2's, for one) need a patched template or a manual per-turn mask. Default False.",
+          "url": "https://brewslm.com/academy/glossary.html#assistant-only-loss",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
           }
@@ -1555,7 +1565,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#packing-t2",
           "name": "packing (SFT)",
-          "description": "SFTConfig field; concatenates short examples to max_seq_length to save compute on padding.",
+          "description": "SFTConfig field; concatenates short examples up to max_length to save compute on padding.",
           "url": "https://brewslm.com/academy/glossary.html#packing-t2",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1605,7 +1615,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#prep-kbit",
           "name": "prepare_model_for_kbit_training",
-          "description": "peft helper that enables gradient checkpointing and stable-dtype casts on a quantized base before LoRA is attached. Forgetting it is the most common \"my QLoRA isn't training\" bug.",
+          "description": "peft helper run on a quantized base before LoRA is attached: it freezes the base, casts the remaining 16-bit parameters to fp32 (which costs memory), enables input gradients and turns on gradient checkpointing. Forgetting it is a common \"my QLoRA isn't training\" bug.",
           "url": "https://brewslm.com/academy/glossary.html#prep-kbit",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1644,9 +1654,19 @@
         {
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#weighted-f1",
-          "name": "Weighted / micro F1",
-          "description": "F1 averaged by class support; dominated by the majority class.",
+          "name": "Weighted F1",
+          "description": "Per-class F1 averaged with each class weighted by its support (row count); dominated by the majority class.",
           "url": "https://brewslm.com/academy/glossary.html#weighted-f1",
+          "inDefinedTermSet": {
+            "@id": "https://brewslm.com/academy/glossary.html#terms"
+          }
+        },
+        {
+          "@type": "DefinedTerm",
+          "@id": "https://brewslm.com/academy/glossary.html#micro-f1",
+          "name": "Micro F1",
+          "description": "F1 from the true positives, false positives and false negatives pooled over all classes. For single-label multiclass it equals accuracy; it is not the same as weighted F1.",
+          "url": "https://brewslm.com/academy/glossary.html#micro-f1",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
           }
@@ -1795,7 +1815,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#t2-mmlu",
           "name": "MMLU",
-          "description": "Massive Multitask Language Understanding: ~14k multiple-choice questions across 57 subjects. Usually reported 5-shot. The closest thing to a general \"what does this model know?\" substrate score.",
+          "description": "Massive Multitask Language Understanding: ~14k multiple-choice questions across 57 subjects. Usually reported 5-shot. Saturated for frontier models; MMLU-Pro is the harder successor.",
           "url": "https://brewslm.com/academy/glossary.html#t2-mmlu",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1815,7 +1835,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#t2-mlflow",
           "name": "MLflow",
-          "description": "Open-source experiment-tracking platform; self-hosted; tracks runs, parameters, metrics, artefacts, and a model registry. The BSD-licensed standard. See Experiment tracking with MLflow & W&B.",
+          "description": "Open-source experiment-tracking platform; self-hosted; tracks runs, parameters, metrics, artefacts, and a model registry. Apache-2.0 licensed. See Experiment tracking with MLflow & W&B.",
           "url": "https://brewslm.com/academy/glossary.html#t2-mlflow",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1845,7 +1865,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#t2-replicable",
           "name": "Reproducible vs replicable",
-          "description": "Reproducible = same inputs → bit-for-bit identical outputs. Replicable = same recipe → equivalent outcome within noise. Experiment tracking targets replicability; chasing bit-equivalence in ML usually isn't worth the cost.",
+          "description": "Usage varies between fields. ACM's badging terms: repeatable = same team, same setup; reproducible = a different team, same setup; replicable = a different team, a different setup. The practical bar for ML: pin seeds always, and expect a rerun to land within noise of the original, not bit-identical outputs.",
           "url": "https://brewslm.com/academy/glossary.html#t2-replicable",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1905,7 +1925,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#pass-fail-rules",
           "name": "Pass/fail rules (rule set)",
-          "description": "The UI name for the eval pack's gates: scalar thresholds a run must clear to be promotable. The scorecard on Results → Verdict shows which passed; the schema is unchanged (see Gate).",
+          "description": "The UI name for the eval pack's gates: scalar thresholds a run is checked against. The scorecard on Results → Verdict shows PASS / FAIL per rule. They block an export only when the project's gate policy is switched on (off by default); deployment promotion doesn't check them. The schema is unchanged (see Gate).",
           "url": "https://brewslm.com/academy/glossary.html#pass-fail-rules",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1935,7 +1955,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#auto-rag",
           "name": "Auto-RAG",
-          "description": "Builds a BM25 index at training completion and prepends top-K retrieved passages to the prompt at inference. The comparison lives on Results → Compare. See Auto-RAG & reroute.",
+          "description": "Builds a BM25 index over the project's training rows (never the answer key) at training completion and prepends the top-K retrieved rows (default 3) to the prompt at inference. The comparison lives on Results → Compare. See Auto-RAG & reroute.",
           "url": "https://brewslm.com/academy/glossary.html#auto-rag",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1965,7 +1985,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#decision-engine",
           "name": "Decision engine (post-eval)",
-          "description": "Reads eval results + failure clusters and recommends the next move — including retrieval over more fine-tuning when failures are knowledge-bound.",
+          "description": "A heuristic recommender that runs after an eval. It reads the project brief (retrieval phrases), the diversity of the answer key's answers and the output/input length ratio, and returns stay_the_course, try_rag, try_prompt_engineering or expand_data. It does not read failure clusters. The measured signal is separate: the Coach notice eval:passages-beat-finetune fires when the base model plus passages scores higher than the fine-tune under the same judge.",
           "url": "https://brewslm.com/academy/glossary.html#decision-engine",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1985,7 +2005,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#drift-check",
           "name": "Drift check",
-          "description": "A re-run of the answer key against the deployed model (paste its predictions in the form; the API / CLI can also call an endpoint URL), compared with the training-time baseline; run from a served version on Ship → Deploy. See Export, deploy & Coach.",
+          "description": "An on-demand re-score of the answer key against a deployed model: paste its predictions in the form (the API and CLI can also call an endpoint URL). Rows are scored by exact match, and the pass rate is compared with the latest eval of the run behind the export; a change of more than 0.05 either way is flagged. It catches serving regressions, not input drift. Run it from a served version on Ship → Deploy. See Export, deploy & Coach.",
           "url": "https://brewslm.com/academy/glossary.html#drift-check",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1995,7 +2015,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#eval-pack",
           "name": "Eval pack",
-          "description": "The declared set of metrics and promotion gates evaluated against the held-out eval set; the gates decide promotability. In the UI the gates are the pass/fail rules. See Eval packs & failure clusters.",
+          "description": "The declared set of metrics and gates evaluated against the held-out eval set; the gates turn metrics into PASS / FAIL on Results → Verdict. In the UI the gates are the pass/fail rules. See Eval packs & failure clusters.",
           "url": "https://brewslm.com/academy/glossary.html#eval-pack",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2005,7 +2025,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#failure-cluster",
           "name": "Failure cluster",
-          "description": "A bucket of evaluation misses that share a pattern, surfaced instead of a flat list so the data gap is obvious. Shown on Results → Failures and, for run-log errors, Ship → Monitor.",
+          "description": "A bucket of misses that share a pattern, surfaced instead of a flat list. Two different features use the name: eval-miss clusters on Results → Failures, keyed by root-cause reason × output pattern and usable as a generation source; and RunEvent clusters on Ship → Monitor, which group error events by signature.",
           "url": "https://brewslm.com/academy/glossary.html#failure-cluster",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2025,7 +2045,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#lifecycle",
           "name": "Lifecycle (11 stages)",
-          "description": "Ingest → Introspect → Map (dry-run / commit) → Clean → Prepare → Preflight → Train → Evaluate → Export → Deploy; each has a contract and emits a RunEvent.",
+          "description": "Ingest → Introspect → Map (dry-run / commit) → Clean → Prepare → Preflight → Train → Evaluate → Export → Deploy: a teaching model of the BrewSLM flow, each stage with a contract. Import, training, evaluation, export and deploy emit RunEvents; the other stages emit none today.",
           "url": "https://brewslm.com/academy/glossary.html#lifecycle",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2035,7 +2055,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#manifest-t3",
           "name": "Manifest",
-          "description": "prepared/manifest.json — the source of truth for downstream stages: counts, schema, task_profile, scoring_mode, paths, hashes. See Clean & prepare.",
+          "description": "prepared/manifest.json, written by Data → Split: the record of a split — row counts, schema, task_profile, scoring_mode and file hashes. Training reads the split files it lists; evaluation reads its task profile and scoring mode from it; the hashes tell you whether two runs saw the same data. Not to be confused with brewslm.yaml or an export's own manifest. See Clean & prepare.",
           "url": "https://brewslm.com/academy/glossary.html#manifest-t3",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2055,7 +2075,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#preflight",
           "name": "Preflight",
-          "description": "Pre-run dependency, memory-fit, capability, and gate-policy checks returning pass/fail + blockers + a train plan; surfaced as the readiness line on Train and in Train → More options → Checks.",
+          "description": "Pre-run dependency and capability checks that return errors (which block the launch) and warnings (which don't), plus a heuristic low / medium / high VRAM-risk estimate that never blocks. A train plan is a separate call. Surfaced as the readiness line on Train and in Train → More options → Checks.",
           "url": "https://brewslm.com/academy/glossary.html#preflight",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2065,7 +2085,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#promotability",
           "name": "Promotability gate",
-          "description": "A pass threshold in the eval pack a model must clear to be shippable (the platform form of the quality gate); in the UI, a pass/fail rule.",
+          "description": "A pass threshold in the eval pack (the platform form of the quality gate); in the UI, a pass/fail rule. It shows PASS / FAIL on Results → Verdict and blocks an export only when the project's gate policy is on.",
           "url": "https://brewslm.com/academy/glossary.html#promotability",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2075,7 +2095,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#recipe",
           "name": "Recipe",
-          "description": "Declarative training config — base model, method, LoRA knobs, optimizer/schedule, batch, precision, checkpoint cadence (your TrainingArguments + LoraConfig as reusable config). Picked under Train → More options → Task type / Pipeline presets. See Recipes & handlers.",
+          "description": "A word with three meanings in BrewSLM: a task type (qa-sft, classification, span-extraction, …; no hyperparameters; Train → More options → Task type), a training preset (a config patch such as recipe.sft.safe; Training presets) and a pipeline preset (Pipeline presets). The hyperparameters themselves live in TrainingConfig. See Recipes & handlers.",
           "url": "https://brewslm.com/academy/glossary.html#recipe",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2095,7 +2115,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#rejectedrow",
           "name": "RejectedRow / reason code",
-          "description": "An input row that failed mapping, tagged with a stable reason code so rejections are grouped and selectable, never silently dropped.",
+          "description": "An input row that failed mapping, tagged with a reason code (e.g. missing_text, label_not_allowed, parse_error) and counted by reason in the import preview, with sample rows. Rejected rows are not written; fix the source or the mapping and re-run. Accepted imported rows skip the review queue.",
           "url": "https://brewslm.com/academy/glossary.html#rejectedrow",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2115,7 +2135,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#runevent",
           "name": "RunEvent",
-          "description": "An audit row a stage emits via emit_event() (reason code + severity) that feeds the observability timeline, failure clusters, and audit explorer. See The lifecycle.",
+          "description": "An audit row written via emit_event() (severity, plus a reason code on errors) by import, training, evaluation, export and deploy. It feeds the run timeline and failure clusters on Ship → Monitor and the support bundle. See The lifecycle.",
           "url": "https://brewslm.com/academy/glossary.html#runevent",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2135,7 +2155,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#task-handler",
           "name": "Task handler / dispatcher",
-          "description": "A general, task-shape-named component (Classification, QA, StructuredExtraction, RAG, Alignment, Seq2Seq, …) that owns tokenization, masking, and score(); the dispatcher routes the manifest's task_profile to it.",
+          "description": "A general, task-shape-named evaluation component (Classification, QA, StructuredExtraction, RAG, Alignment, Seq2Seq, ToolCall, a Generic fallback, …) that builds the eval prompts and scores outputs with score(); the dispatcher routes the manifest's task_profile to it. Tokenization and the loss mask happen in the trainer (scripts/train.py), not here.",
           "url": "https://brewslm.com/academy/glossary.html#task-handler",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2155,7 +2175,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#plan-profile-t3",
           "name": "Plan profile",
-          "description": "training_plan.plan_profile on the manifest: safe / balanced (default) / max_quality. Resolves to a concrete TrainingConfig at apply time.",
+          "description": "safe / balanced (default) / max_quality. Manifest apply uses workflow.training_preferred_plan_profile; training_plan.plan_profile is carried in the file but not applied.",
           "url": "https://brewslm.com/academy/glossary.html#plan-profile-t3",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2165,7 +2185,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#training-mode-t3",
           "name": "Training mode",
-          "description": "training_plan.training_mode: sft for supervised fine-tuning, kd for knowledge distillation.",
+          "description": "The kind of training run: sft, domain_pretrain, dpo or orpo, and distillation for knowledge distillation (there is no kd value). training_plan.training_mode in brewslm.yaml is carried, not applied.",
           "url": "https://brewslm.com/academy/glossary.html#training-mode-t3",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2175,7 +2195,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#manifest-apply",
           "name": "Manifest apply",
-          "description": "The service that diffs a parsed brewslm.yaml against project state and emits a ManifestApplyPlan with explicit create/update/noop/delete actions.",
+          "description": "The service that diffs a parsed brewslm.yaml against project state and emits a ManifestApplyPlan with create / update / noop actions. Deletes are not part of the apply contract, and some carried fields (training_plan.training_mode, plan_profile, preferred_runtime_id, spec.export, spec.deployment) are not applied.",
           "url": "https://brewslm.com/academy/glossary.html#manifest-apply",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2205,7 +2225,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#reason-code",
           "name": "Reason code",
-          "description": "Lint-gated string from the canonical taxonomy that names a failure mode (e.g. training_oom, deployment_drift_detected); unknown codes are rejected at emit time.",
+          "description": "A string from the canonical taxonomy that names a failure mode (e.g. training_timeout, export_run_failed). emit_event() checks it at runtime: an error or critical event without one raises reason_code_required, an unknown one raises invalid_reason_code, and callers drop the event and log it. Some declared codes are not emitted today.",
           "url": "https://brewslm.com/academy/glossary.html#reason-code",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2245,7 +2265,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#gate-schema",
           "name": "Gate (eval pack)",
-          "description": "A scalar comparison: {gate_id, metric_id, operator: gte|lte, threshold, required, source?, weight?}. required: true gates block promotion.",
+          "description": "A scalar comparison: {gate_id, metric_id, operator: gte|lte, threshold, required, source?, weight?}. Only metric_id is needed: gate_id defaults to min_\u003cmetric_id>, operator to gte, required to true, and a null threshold makes the gate not enforced. A failed required gate blocks an export only when the project's gate policy is on.",
           "url": "https://brewslm.com/academy/glossary.html#gate-schema",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2255,7 +2275,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#failure-cluster-row",
           "name": "FailureCluster row",
-          "description": "Row in failure_clusters uniquely keyed on (project_id, stage, reason_code, signature); carries failure_count, timestamps, and capped exemplar lists.",
+          "description": "Row in failure_clusters (the RunEvent clusters on Ship → Monitor) uniquely keyed on (project_id, stage, reason_code, signature); carries failure_count, timestamps, and up to 5 exemplars. Eval-miss clusters on Results → Failures are computed per eval and are not stored here.",
           "url": "https://brewslm.com/academy/glossary.html#failure-cluster-row",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2265,7 +2285,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#signature-failure",
           "name": "Cluster signature",
-          "description": "Hash of the canonical failure shape (model id + batch + seq length, for OOM; etc.); same signature = same cluster.",
+          "description": "sha1(stage | reason_code | normalised summary), first 12 hex characters. Normalising strips digits, hex tokens, timestamps and extra whitespace, so errors that differ only in numbers (step, batch size, line) land in the same cluster.",
           "url": "https://brewslm.com/academy/glossary.html#signature-failure",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2335,8 +2355,18 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#dpo-advanced",
           "name": "DPO",
-          "description": "Direct Preference Optimization — learns from (chosen, rejected) pairs directly, no separate reward model. See Preference tuning.",
+          "description": "Direct Preference Optimization — learns from (chosen, rejected) pairs directly, no separate reward model; a frozen reference model anchors it, with strength set by β. See Preference tuning.",
           "url": "https://brewslm.com/academy/glossary.html#dpo-advanced",
+          "inDefinedTermSet": {
+            "@id": "https://brewslm.com/academy/glossary.html#terms"
+          }
+        },
+        {
+          "@type": "DefinedTerm",
+          "@id": "https://brewslm.com/academy/glossary.html#dpo-beta",
+          "name": "β (beta, DPO)",
+          "description": "The strength of DPO's KL anchor to the reference model. A higher β keeps the policy closer to the reference; a lower β lets it move further toward the preferences, which is where over-optimisation and degeneration risk sits (Rafailov et al. 2023; TRL DPOConfig.beta, default 0.1).",
+          "url": "https://brewslm.com/academy/glossary.html#dpo-beta",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
           }
@@ -2345,7 +2375,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#drift-detection",
           "name": "Drift / drift detection",
-          "description": "Production quality decay as inputs change over time; detected by re-running the gold set (in BrewSLM, the answer key — Ship → Deploy → Run drift check) against the deployed model and comparing with the training baseline. See Observability & drift.",
+          "description": "Production quality decay as live inputs change over time. Detecting it needs the live inputs: compare their distribution with the training data, and label a sample of them. Re-scoring a frozen answer key against the deployed model (BrewSLM's Ship → Deploy → Run drift check) can't see input drift — same model, same rows, same score — but it does catch serving regressions such as a wrong artifact, template or decoding setting. See Observability & drift.",
           "url": "https://brewslm.com/academy/glossary.html#drift-detection",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2365,7 +2395,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#kd-loss",
           "name": "KD loss",
-          "description": "alpha·CE + (1−alpha)·T²·KL — hard-label cross-entropy blended with a temperature-softened KL to the teacher. See The KD loss.",
+          "description": "alpha·CE + (1−alpha)·T²·KL(teacher ‖ student) — hard-label cross-entropy blended with a temperature-softened KL from the teacher to the student. See The KD loss.",
           "url": "https://brewslm.com/academy/glossary.html#kd-loss",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2435,7 +2465,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#q4km",
           "name": "Q4_K_M",
-          "description": "A 4-bit mixed-precision k-quant (llama.cpp / GGUF); the common CPU/edge sweet spot.",
+          "description": "A llama.cpp / GGUF quantization type: 4-bit \"k-quant\" (block-wise quantization with per-block scales), in the M (medium) mix that keeps some tensors at higher precision. The common CPU/edge sweet spot.",
           "url": "https://brewslm.com/academy/glossary.html#q4km",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2455,7 +2485,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#reference-model",
           "name": "Reference model",
-          "description": "A frozen copy of the starting model that DPO anchors to, so the policy doesn't drift arbitrarily.",
+          "description": "A frozen copy of the starting model that DPO anchors to, so the policy doesn't drift arbitrarily; β sets how tightly.",
           "url": "https://brewslm.com/academy/glossary.html#reference-model",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2535,7 +2565,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#pii-redaction-t4",
           "name": "PII redaction (logs)",
-          "description": "Replacing personal identifiers in logged text with tokens like [EMAIL] before disk; hashing user ids.",
+          "description": "Replacing personal identifiers in logged text (prompt and response) with tokens like [EMAIL] before disk, and replacing user ids with a keyed hash (HMAC), since a plain hash of an id can be reversed by guessing.",
           "url": "https://brewslm.com/academy/glossary.html#pii-redaction-t4",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2595,7 +2625,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#function-calling",
           "name": "Function calling",
-          "description": "Synonym for tool-use; the vendor term (OpenAI etc.) for structured-JSON output mode.",
+          "description": "Synonym for tool use; the term many model APIs use for their structured-JSON tool-call mode.",
           "url": "https://brewslm.com/academy/glossary.html#function-calling",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2675,7 +2705,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#t4-unstructured-pruning",
           "name": "Unstructured pruning",
-          "description": "Zeroing out individual weights without shrinking matrix shape. Saves theoretical FLOPs but rarely real wall-clock on commodity GPUs because sparse-matmul kernels aren't standard. Contrast with structured pruning.",
+          "description": "Zeroing out individual weights without shrinking matrix shape. Saves theoretical FLOPs but rarely real wall-clock, because general sparse-matmul kernels are uncommon; the exception is 2:4 semi-structured sparsity on recent NVIDIA GPUs. Contrast with structured pruning.",
           "url": "https://brewslm.com/academy/glossary.html#t4-unstructured-pruning",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2685,7 +2715,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#t4-recovery-training",
           "name": "Recovery training",
-          "description": "The short SFT or distillation pass run after pruning to recover the quality the prune cost. Not optional — aggressive pruning without recovery training typically loses 10–30 points on substrate benchmarks.",
+          "description": "The short SFT or distillation pass run after pruning to recover the quality the prune cost. Treat it as part of pruning: measure the pruned model before and after recovery on your own eval.",
           "url": "https://brewslm.com/academy/glossary.html#t4-recovery-training",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2715,7 +2745,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#t4-draft-model",
           "name": "Draft model",
-          "description": "The smaller model in speculative decoding that proposes candidate tokens. Must share a tokenizer with the target and ideally come from the same model family to maximise the acceptance rate.",
+          "description": "The smaller model in speculative decoding that proposes candidate tokens. The simple form needs the same tokenizer as the target, ideally from the same model family to maximise the acceptance rate; cross-tokenizer drafting (Universal Assisted Generation) and draft-free methods such as prompt-lookup decoding exist.",
           "url": "https://brewslm.com/academy/glossary.html#t4-draft-model",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2725,7 +2755,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#t4-acceptance-rate",
           "name": "Acceptance rate (α)",
-          "description": "Probability the target accepts a draft-model token in speculative decoding. The single biggest lever on the achievable speed-up; α near 1 with K=4 yields ~3× throughput, α near 0.5 yields ~1.4× at best.",
+          "description": "Probability the target accepts a draft-model token in speculative decoding. The single biggest lever on the achievable speed-up: with K=4 drafted tokens, the expected tokens per verify step is (1−α^(K+1))/(1−α), so ~1.9× is the ceiling at α=0.5 if drafting were free, and ~1.4–1.6× is typical once the draft's cost is counted (Leviathan et al. 2023).",
           "url": "https://brewslm.com/academy/glossary.html#t4-acceptance-rate",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2765,7 +2795,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#t4-process-supervision",
           "name": "Process supervision",
-          "description": "Scoring each step of a reasoning trace with a separately-trained reward model (PRM). Higher fidelity than outcome reward; expensive because the labels are step-level human judgments.",
+          "description": "Scoring each step of a reasoning trace with a separately-trained reward model (PRM). Higher fidelity than outcome reward; the step labels come from human judges (PRM800K) or are generated automatically from rollouts (Math-Shepherd).",
           "url": "https://brewslm.com/academy/glossary.html#t4-process-supervision",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2805,7 +2835,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#t4-grpo",
           "name": "GRPO (Group Relative Policy Optimisation)",
-          "description": "RL fine-tuning algorithm used by DeepSeek-R1 and similar recipes. Drops PPO's value (critic) network; computes advantage group-relative across G samples per prompt — roughly half the memory and no critic to keep stable. The practical RL recipe at SLM scale.",
+          "description": "RL fine-tuning algorithm used by DeepSeek-R1 and similar recipes. Drops PPO's value (critic) network and computes the advantage relative to a group of G samples per prompt — one model fewer to hold in memory and no critic to keep stable. The practical RL recipe at SLM scale.",
           "url": "https://brewslm.com/academy/glossary.html#t4-grpo",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2866,7 +2896,7 @@
       <section class="academy-hero">
         <p class="eyebrow">BrewSLM Academy · reference</p>
         <h1>Glossary</h1>
-        <p>Plain-language definitions of the terms used across the Academy. New terms are added as tracks publish; today's set covers the Foundations track.</p>
+        <p>Plain-language definitions of the terms used across the Academy. The core terms come first, then one section per track (0–4).</p>
       </section>
 
       <section class="key-terms" style="margin-top:var(--space-2xl)">
@@ -2892,7 +2922,7 @@
         <dl>
           <dt id="fine-tuning">Fine-tuning</dt><dd>Continuing training on your examples to change a model's parameters; see Supervised Fine-Tuning.</dd>
           <dt id="forward-pass">Forward pass</dt><dd>Computing outputs from inputs, layer by layer.</dd>
-          <dt id="gold-set">Gold set</dt><dd>Curated, known-correct examples a model never trains on; the source of truth for quality. In the BrewSLM UI this is the <a class="inline-link" href="#answer-key">answer key</a>, kept under <strong>Data → Labels</strong>. See <a class="inline-link" href="foundations/slm-project-lifecycle.html">The SLM project lifecycle</a>.</dd>
+          <dt id="gold-set">Gold set</dt><dd>Curated, known-correct examples a model never trains on; the source of truth for quality. Keep a <em>practice</em> part you iterate against and a <em>final</em> part you score rarely: a set you consult on every decision slowly overfits to your choices. In the BrewSLM UI this is the <a class="inline-link" href="#answer-key">answer key</a> (practice rows GOLD_DEV, final rows GOLD_TEST), kept under <strong>Data → Labels</strong>. See <a class="inline-link" href="foundations/slm-project-lifecycle.html">The SLM project lifecycle</a>.</dd>
           <dt id="gradient">Gradient</dt><dd>The direction over all parameters in which the loss increases fastest; training steps the opposite way.</dd>
           <dt id="gradient-descent">Gradient descent</dt><dd>Repeatedly nudging parameters against the gradient to reduce loss. See <a class="inline-link" href="foundations/how-models-learn.html">How models learn</a>.</dd>
           <dt id="inference">Inference</dt><dd>Running a trained, frozen model on new inputs to get outputs.</dd>
@@ -2900,7 +2930,7 @@
           <dt id="latency">Latency</dt><dd>Time to produce output; rises with model size since each token runs the whole network.</dd>
           <dt id="layer">Layer / hidden layer</dt><dd>Many neurons in parallel; hidden layers sit between input and output.</dd>
           <dt id="learning-rate">Learning rate</dt><dd>The step-size multiplier in gradient descent; too high diverges, too low crawls.</dd>
-          <dt id="llm">LLM</dt><dd>Large language model — tens to hundreds of billions of parameters.</dd>
+          <dt id="llm">LLM</dt><dd>Large language model — billions to hundreds of billions of parameters; frontier models reach hundreds of billions to over a trillion in total, often as mixture-of-experts.</dd>
           <dt id="lm-head">LM head</dt><dd>The final layer producing a logit for every vocabulary token.</dd>
           <dt id="logits">Logits</dt><dd>Raw, unnormalized scores for each possible next token, before softmax.</dd>
           <dt id="lora">LoRA</dt><dd>Low-Rank Adaptation: fine-tuning by training small added matrices instead of all parameters, cutting memory and cost. Covered in depth in Track 1.</dd>
@@ -2915,11 +2945,11 @@
         <dl>
           <dt id="parameter">Parameter (weight)</dt><dd>A number inside a model, set by training rather than by hand.</dd>
           <dt id="prompting">Prompting</dt><dd>Steering a fixed model by writing a better input; no training.</dd>
-          <dt id="rag">RAG (retrieval-augmented generation)</dt><dd>Retrieving relevant documents at inference and adding them to the prompt; supplies knowledge, not behavior. See <a class="inline-link" href="foundations/pretraining-vs-finetuning-vs-rag.html">The four levers</a>.</dd>
+          <dt id="rag">RAG (retrieval-augmented generation)</dt><dd>Retrieving relevant documents at inference and adding them to the prompt; supplies knowledge, not behavior. See <a class="inline-link" href="foundations/pretraining-vs-finetuning-vs-rag.html">Pretraining vs fine-tuning vs prompting vs RAG</a>.</dd>
           <dt id="residual">Residual connection</dt><dd>Adding a sub-layer's input to its output so information and gradients flow through a deep stack.</dd>
           <dt id="self-attention">Self-attention</dt><dd>Attention where tokens attend to other tokens in the same sequence.</dd>
           <dt id="sft">Supervised Fine-Tuning (SFT)</dt><dd>Continuing training of a base model on input→output examples to change its parameters for a task.</dd>
-          <dt id="slm">SLM</dt><dd>Small language model — relatively few parameters (millions to a few billion); cheaper and faster. See <a class="inline-link" href="foundations/llms-vs-slms.html">LLMs vs SLMs</a>.</dd>
+          <dt id="slm">SLM</dt><dd>Small language model — up to ~10B parameters; this course uses a 135M model (SmolLM2-135M) for speed. Cheaper and faster to train and serve. See <a class="inline-link" href="foundations/llms-vs-slms.html">LLMs vs SLMs</a>.</dd>
           <dt id="softmax">Softmax</dt><dd>Turns logits into a probability distribution that sums to 1.</dd>
           <dt id="special-tokens">Special tokens</dt><dd>Non-text markers in the vocabulary (start/end, padding, chat roles).</dd>
           <dt id="temperature">Temperature / top-p</dt><dd>Decoding knobs that flatten/sharpen the distribution and trim the unlikely tail.</dd>
@@ -2929,31 +2959,31 @@
           <dt id="transformer">Transformer block</dt><dd>Self-attention + feed-forward network + residual connections + layer norm; stacked many times.</dd>
           <dt id="split">Train/validation/test split</dt><dd>Partitioning data so you train on one part and measure on data the model hasn't seen. In BrewSLM the split is made on <strong>Data → Split</strong>; the test part is shown as the <a class="inline-link" href="#test-examples">test examples</a>.</dd>
           <dt id="vocabulary">Vocabulary</dt><dd>The fixed set of tokens a tokenizer knows; each has an integer ID.</dd>
-          <dt id="vram">VRAM</dt><dd>GPU memory; weights need ≈ params × bytes-per-param, training needs several times more.</dd>
+          <dt id="vram">VRAM</dt><dd>GPU memory; weights need ≈ params × bytes-per-param (2 bytes in bf16). Full fine-tuning with mixed-precision AdamW needs about 16–18 bytes per parameter before activations; LoRA and QLoRA need far less. See <a class="inline-link" href="sft-fundamentals/gpu-memory-math.html">GPU memory math</a>.</dd>
         </dl>
 
         <h2>Track 0 — Foundations (extended)</h2>
         <dl>
-          <dt id="base-model">Base model</dt><dd>A model straight from pretraining: a next-token continuer over raw text. No chat template, no roles, no refusals. See <a class="inline-link" href="foundations/base-vs-instruct-models.html">Base vs instruct models</a>.</dd>
+          <dt id="base-model">Base model</dt><dd>A model straight from pretraining: a next-token continuer over raw text. It may ship a chat template, but it was not aligned to follow one, so don&#x27;t expect assistant behaviour or refusals. See <a class="inline-link" href="foundations/base-vs-instruct-models.html">Base vs instruct models</a>.</dd>
           <dt id="instruct-model">Instruct model</dt><dd>A base model further trained (SFT + often preference tuning) to follow instructions inside a chat template. Same architecture, different behaviour.</dd>
           <dt id="alignment-training">Alignment training</dt><dd>The post-pretraining training (SFT on instruction data plus optional DPO/RLHF) that turns a base into an instruct model.</dd>
-          <dt id="alignment-tax">Alignment tax</dt><dd>The cost of the instruct model's baked-in choices (refusals, hedges, style) when they don't match your task.</dd>
+          <dt id="alignment-tax">Alignment tax</dt><dd>The capability lost on some benchmarks as a side effect of alignment training (Ouyang et al. 2022; Askell et al. 2021). Separate from <em>inherited behaviour</em>: the instruct model&#x27;s baked-in refusals, hedges and style, which can also fight your task.</dd>
           <dt id="model-license">Model license</dt><dd>The licence attached to a base model that travels with every derivative — including your fine-tune. Check before training, not at deploy. See <a class="inline-link" href="foundations/picking-a-base-model.html">Picking a base model</a>.</dd>
-          <dt id="tokenizer-family">Tokenizer family</dt><dd>A shared vocabulary and special-token set across a model family; a hard constraint for offline distillation (teacher and student must share it).</dd>
-          <dt id="n-gram">n-gram model</dt><dd>A pre-neural language model that estimates the next token from raw counts over the previous n−1 tokens. Fast, interpretable, and sparse beyond trigrams. Still used in BM25, kenLM, and on-device autocomplete. See <a class="inline-link" href="foundations/from-n-grams-to-transformers.html">From n-grams to Transformers</a>.</dd>
+          <dt id="tokenizer-family">Tokenizer family</dt><dd>A shared vocabulary and special-token set across a model family. Logit-level distillation (matching the teacher&#x27;s token probabilities) needs teacher and student to share it; sequence-level distillation, and top-k capture that maps tokens by their text, work across tokenizers.</dd>
+          <dt id="n-gram">n-gram model</dt><dd>A pre-neural language model that estimates the next token from raw counts over the previous n−1 tokens. Fast, interpretable, and sparse beyond trigrams. n-gram counts survive in tools such as KenLM and on-device autocomplete. (BM25 is a different thing: a bag-of-words retrieval score, not a language model.) See <a class="inline-link" href="foundations/from-n-grams-to-transformers.html">From n-grams to Transformers</a>.</dd>
           <dt id="markov-assumption">Markov assumption</dt><dd>The simplifying assumption that the next token depends only on the previous n−1 tokens, not the full history. Necessary to make n-gram models tractable; broken (deliberately) by RNNs and Transformers.</dd>
           <dt id="ngram-sparsity">Sparsity (n-grams)</dt><dd>The problem that as n grows, most n-grams never appear in training data, so the count is zero and the model assigns zero probability. The wall n-gram models hit beyond trigrams.</dd>
           <dt id="neural-lm">Neural language model</dt><dd>A language model that predicts the next token from a learned dense embedding of the previous tokens (Bengio 2003). Solves n-gram sparsity by letting similar tokens share strength through their embeddings.</dd>
           <dt id="rnn">RNN / LSTM</dt><dd>Recurrent neural networks that consume tokens one at a time and carry a hidden state forward. LSTMs add gating to mitigate the vanishing-gradient problem. The dominant LM family from ~2014 until 2017.</dd>
           <dt id="vanishing-gradient">Vanishing gradient</dt><dd>The training failure where gradients shrink exponentially as they back-propagate through many time steps, so the network can&#x27;t learn long-range dependencies. LSTMs partially solve it; attention sidesteps it entirely.</dd>
-          <dt id="transformer-architecture">Transformer</dt><dd>The 2017 architecture (&quot;Attention is all you need&quot;) that replaced recurrence with self-attention and parallel position embeddings. Every modern LM — encoder, encoder-decoder, decoder-only — is a Transformer variant. See <a class="inline-link" href="foundations/attention-and-the-transformer.html">Attention &amp; the Transformer</a>.</dd>
+          <dt id="transformer-architecture">Transformer</dt><dd>The 2017 architecture (&quot;Attention is all you need&quot;) that replaced recurrence with self-attention, adding positional encodings so the model knows token order. Every modern LM — encoder, encoder-decoder, decoder-only — is a Transformer variant. See <a class="inline-link" href="foundations/attention-and-the-transformer.html">Attention &amp; the Transformer</a>.</dd>
           <dt id="scaling-laws">Scaling laws</dt><dd>Empirical findings (Kaplan 2020, Chinchilla 2022) that pretraining loss falls predictably with more data, more parameters, and more compute — together, not one alone. Why pretraining budgets are spent the way they are.</dd>
-          <dt id="encoder-only">Encoder-only model</dt><dd>A Transformer that sees the whole input at once (bidirectional attention) and emits one vector per token. Pretrained with masked-language-modelling. Used for classification and embeddings (BERT, BGE, E5). See <a class="inline-link" href="foundations/architecture-taxonomy.html">Architecture taxonomy</a>.</dd>
+          <dt id="encoder-only">Encoder-only model</dt><dd>A Transformer that sees the whole input at once (bidirectional attention) and emits one vector per token. Pretrained with masked-language-modelling. Used for classification and, after further contrastive tuning, for embeddings (BERT; BGE and E5 are contrastively tuned encoders). See <a class="inline-link" href="foundations/architecture-taxonomy.html">Architecture taxonomy</a>.</dd>
           <dt id="encoder-decoder">Encoder-decoder model</dt><dd>A Transformer with a bidirectional encoder and a causal decoder, pretrained on span corruption. Built for input-to-output transformation (T5, BART, FLAN-T5).</dd>
           <dt id="decoder-only">Decoder-only model</dt><dd>A Transformer with causal (left-to-right) attention, pretrained on next-token prediction. The architecture behind GPT, Llama, Qwen, SmolLM2 — and the one this Academy assumes when it says &quot;SLM&quot;.</dd>
           <dt id="mlm">Masked language modelling (MLM)</dt><dd>The encoder-only pretraining objective: randomly mask ~15% of input tokens and ask the model to predict them from the surrounding context. Drives bidirectional representations.</dd>
           <dt id="span-corruption">Span corruption / denoising</dt><dd>The encoder-decoder pretraining objective: drop random contiguous spans from the input, ask the decoder to regenerate them in order. T5&#x27;s objective.</dd>
-          <dt id="causal-attention">Causal (autoregressive) attention</dt><dd>An attention mask that prevents each position from looking at later positions. Makes a Transformer next-token predictable, which is what decoder-only chat models do.</dd>
+          <dt id="causal-attention">Causal (autoregressive) attention</dt><dd>An attention mask that prevents each position from looking at later positions. Lets a Transformer be trained to predict the next token at every position at once, which is how decoder-only chat models are trained.</dd>
           <dt id="in-context-learning-decoder-only">In-context learning</dt><dd>The decoder-only property where you can elicit new behaviour by putting examples in the prompt instead of fine-tuning. Why chat models are general-purpose without retraining.</dd>
         </dl>
 
@@ -2965,18 +2995,18 @@
           <dt id="checkpoint">Checkpoint</dt><dd>Saved parameters (or LoRA adapter) on disk, for resuming and keeping the best version by validation.</dd>
           <dt id="completion">Completion</dt><dd>The target output part of an SFT example (the part the loss is computed on).</dd>
           <dt id="dpo">DPO</dt><dd>Direct Preference Optimization: train on (chosen, rejected) pairs to prefer better responses, no reward model. See <a class="inline-link" href="sft-fundamentals/choosing-the-objective.html">Choosing the objective</a>.</dd>
-          <dt id="early-stopping">Early stopping</dt><dd>Keeping the checkpoint at the validation-loss minimum rather than the final step.</dd>
+          <dt id="early-stopping">Early stopping</dt><dd>Stopping training once the validation metric stops improving for a set number of evaluations, and keeping the best checkpoint rather than the final step. Choose the checkpoint on a practice (dev) set, not on the final test set.</dd>
           <dt id="effective-batch">Effective batch size</dt><dd>per_device_batch × gradient_accumulation × devices — the number that governs training dynamics.</dd>
           <dt id="f1">F1 (precision, recall)</dt><dd>Precision = right / flagged; recall = caught / should-have-found; F1 is their harmonic mean.</dd>
           <dt id="generalization-gap">Generalization gap</dt><dd>The distance between training and validation loss; a widening gap signals overfitting.</dd>
-          <dt id="grad-accum">Gradient accumulation</dt><dd>Summing gradients over several micro-batches before one optimizer step, to simulate a larger batch on a small GPU.</dd>
+          <dt id="grad-accum">Gradient accumulation</dt><dd>Accumulating (averaging) gradients over several micro-batches before one optimizer step, to simulate a larger batch on a small GPU.</dd>
           <dt id="grad-checkpointing">Gradient checkpointing</dt><dd>Re-computing activations during backprop instead of storing them — trades compute for large memory savings.</dd>
           <dt id="loss-mask">Loss mask</dt><dd>Computing the loss only on completion tokens so the model learns to produce the answer, not echo the prompt. See <a class="inline-link" href="sft-fundamentals/anatomy-of-an-sft-example.html">Anatomy of an SFT example</a>.</dd>
-          <dt id="lora-alpha">LoRA alpha</dt><dd>Scales the adapter's contribution (~alpha/r); often set to 2×r.</dd>
+          <dt id="lora-alpha">LoRA alpha</dt><dd>Scales the adapter&#x27;s contribution (scale = alpha/r). Setting alpha = 2×r is a community convention, not a rule (the QLoRA paper used r=64, alpha=16).</dd>
           <dt id="lora-rank">LoRA rank (r)</dt><dd>The adapter's inner dimension / capacity; higher = more room (and more overfit risk). Common: 16.</dd>
-          <dt id="max-seq-length">max_seq_length</dt><dd>The per-example token cap; set it from the data's length distribution so completions are never clipped.</dd>
-          <dt id="mixed-precision">Mixed precision (bf16)</dt><dd>Computing/storing in 16-bit to roughly halve memory with stable training.</dd>
-          <dt id="orpo">ORPO</dt><dd>An objective that combines SFT and preference learning in a single stage.</dd>
+          <dt id="max-seq-length">max_length (formerly max_seq_length)</dt><dd>The per-example token cap. Current TRL calls it <code>max_length</code> in <code>SFTConfig</code> (default 1024; the old <code>max_seq_length</code> name is gone) and truncates longer rows from the end by default. Set it from the data&#x27;s length distribution so completions are never clipped.</dd>
+          <dt id="mixed-precision">Mixed precision (bf16)</dt><dd>Running most matmuls in 16-bit (bf16/fp16) while keeping fp32 master weights. It saves activation memory and speeds up training; it does not halve weight memory. Loading a frozen base in bf16 (as LoRA does) is what halves the weights.</dd>
+          <dt id="orpo">ORPO</dt><dd>Odds Ratio Preference Optimization: one stage that combines SFT with a preference term, with no reference model.</dd>
           <dt id="overfitting">Overfitting / underfitting</dt><dd>Training loss falls while validation rises (memorizing) / both stay high (hasn't learned enough). See <a class="inline-link" href="sft-fundamentals/overfitting-and-loss-curves.html">Reading a loss curve</a>.</dd>
           <dt id="perplexity">Perplexity</dt><dd>The exponential of cross-entropy; roughly how many tokens the model is choosing among (1 = certain).</dd>
           <dt id="prompt">Prompt</dt><dd>The input part of an SFT example (instruction, optionally with context); masked from the loss.</dd>
@@ -2986,14 +3016,14 @@
           <dt id="rlhf">RLHF</dt><dd>Reinforcement Learning from Human Feedback: train a reward model, then optimize with RL; powerful but complex (DPO is the simpler modern alternative).</dd>
           <dt id="scheduler">Scheduler / warmup</dt><dd>Warmup ramps the LR up over the first steps; the scheduler (e.g. cosine) then decays it toward zero. See <a class="inline-link" href="sft-fundamentals/learning-rate-and-schedules.html">Learning rate &amp; schedules</a>.</dd>
           <dt id="sequence-packing">Sequence packing</dt><dd>Concatenating short examples into one full-length sequence to avoid wasting compute on padding.</dd>
-          <dt id="target-modules">Target modules</dt><dd>Which weight matrices get LoRA adapters (commonly the attention query/value projections).</dd>
+          <dt id="target-modules">Target modules</dt><dd>Which weight matrices get LoRA adapters. Start from all linear layers (<code>target_modules="all-linear"</code>; QLoRA found this needed to match full fine-tuning); query/value only is the original 2021 choice and a cheaper option for large models. BrewSLM&#x27;s default <code>auto</code> picks all linear layers up to ~2B parameters and query/value above.</dd>
           <dt id="t1-greedy">Greedy decoding (T1)</dt><dd>Always take the most-likely next token. Deterministic; the default for classification and evaluation. See <a class="inline-link" href="sft-fundamentals/decoding-controls.html">Decoding controls</a>.</dd>
           <dt id="t1-sampling">Sampling</dt><dd>Drawing the next token from the model's distribution (<code>do_sample=True</code>); adds variety, the default for chat/writing tasks.</dd>
           <dt id="t1-top-p">Top-p (nucleus sampling)</dt><dd>Keep the smallest set of tokens whose cumulative probability ≥ <code>p</code>, then sample. <code>p ≈ 0.9</code> is a sane default.</dd>
           <dt id="t1-top-k">Top-k</dt><dd>Keep only the <code>k</code> most likely tokens and sample from that subset.</dd>
           <dt id="t1-max-new">max_new_tokens</dt><dd>Hard cap on tokens emitted per generation call. Always set it; a missing stop token with no cap can fill the context window with hallucinated conversation.</dd>
           <dt id="t1-stop-tokens">Stop tokens</dt><dd>Tokens signalling end-of-generation. Instruct models bake one into the chat template; without it the model rambles.</dd>
-          <dt id="t1-rep-penalty">Repetition penalty</dt><dd>A scalar reducing probability of tokens already in the output. Small values (1.05–1.15) break greedy loops without quality loss.</dd>
+          <dt id="t1-rep-penalty">Repetition penalty</dt><dd>A scalar that down-weights tokens already seen. The Hugging Face implementation counts the prompt too, so it pushes the model away from copying its input. Keep it at 1.0 for extraction, classification, QA over a context, and JSON; use a mild value only for open-ended generation, and check it on the gold set. A model&#x27;s <code>generation_config.json</code> can apply one silently, even under greedy decoding.</dd>
           <dt id="t1-ttft">Time to first token (TTFT)</dt><dd>Latency from request send to first generated character; dominates perceived chat UX.</dd>
           <dt id="t1-jsonl">JSONL</dt><dd>One JSON object per line; the standard streamable container for SFT datasets. See <a class="inline-link" href="sft-fundamentals/dataset-formats-in-the-wild.html">Dataset formats in the wild</a>.</dd>
           <dt id="t1-completion-fmt">Completion format</dt><dd><code>{prompt, completion}</code>. Simplest SFT shape; what Track 2's by-hand SFT uses.</dd>
@@ -3008,8 +3038,8 @@
           <dt id="t1-refusal">Refusal data</dt><dd>Examples the model should <em>not</em> answer the usual way (out-of-scope, harmful, needing clarification), paired with the desired refusal phrasing.</dd>
           <dt id="t1-ood">OOD (out of distribution)</dt><dd>Inputs outside the trained scope, labelled with the desired "I don't know" so the model learns its limits.</dd>
           <dt id="t1-cpt">Continued pretraining (CPT)</dt><dd>Continuing the next-token objective on raw text from a new domain, before any task SFT. Same loss as pretraining, different data, smaller learning rate. The right tool when the base model doesn&#x27;t speak your domain&#x27;s language; the wrong tool when it does. See <a class="inline-link" href="sft-fundamentals/continued-pretraining.html">Continued pretraining</a>.</dd>
-          <dt id="t1-dapt">Domain-adaptive pretraining (DAPT)</dt><dd>The research name for CPT applied to a specific domain (medical, legal, code, finance). Same mechanic — the &quot;domain-adaptive&quot; label emphasises the purpose.</dd>
-          <dt id="t1-vocab-extension">Vocab extension</dt><dd>Adding new tokens to the tokenizer for domain-specific vocabulary before CPT, so those terms become single tokens. Sharp trade-off: cheaper at inference, but the new embeddings start random and need enough CPT to learn — and it breaks the same-tokenizer assumption distillation needs.</dd>
+          <dt id="t1-dapt">Domain-adaptive pretraining (DAPT)</dt><dd>The research name for CPT applied to a specific domain (medical, legal, code, finance; Gururangan et al. 2020). Same mechanic — the &quot;domain-adaptive&quot; label emphasises the purpose.</dd>
+          <dt id="t1-vocab-extension">Vocab extension</dt><dd>Adding new tokens to the tokenizer for domain-specific vocabulary before CPT, so those terms become single tokens. Sharp trade-off: cheaper at inference, but the new embedding rows carry no specific meaning until enough CPT trains them (recent transformers initialise them to the mean of the existing ones, not randomly), and a changed vocabulary rules out logit-level distillation from the original teacher.</dd>
           <dt id="t1-cpt-forgetting">Catastrophic forgetting (CPT view)</dt><dd>The same risk as in SFT, sharpened: a CPT&#x27;d model is already pulled toward the domain, and narrow SFT on top compounds the drift unless mix-back and broad eval are kept in.</dd>
           <dt id="t1-cpt-sft-pipeline">Two-stage CPT → SFT pipeline</dt><dd>The standard shape: stage 1 is CPT on raw domain text producing a CPT&#x27;d checkpoint, stage 2 is SFT on task instructions from that checkpoint. Evaluated end-to-end on the same gold set you&#x27;d use without CPT.</dd>
           <dt id="t1-downstream-probe">Downstream probe</dt><dd>A pinned SFT recipe + gold set used to compare a base checkpoint and a CPT&#x27;d checkpoint on the metric that actually matters — task performance, not CPT loss.</dd>
@@ -3023,7 +3053,7 @@
           <dt id="autotokenizer">AutoTokenizer</dt><dd>Loads the matching tokenizer and chat template for a model id.</dd>
           <dt id="datacollator">DataCollator</dt><dd>Pads a list of examples into a rectangular batch; <code>DataCollatorForSeq2Seq</code> pads labels with -100 so padding is ignored by the loss. See <a class="inline-link" href="hands-on/tokenize-and-collate.html">Tokenize &amp; collate</a>.</dd>
           <dt id="dataset">datasets.Dataset</dt><dd>A fast, memory-mapped table with <code>.map()</code>/<code>.filter()</code>/split that the Trainer consumes.</dd>
-          <dt id="dtype">dtype (bf16)</dt><dd>The weight/compute precision passed to <code>from_pretrained</code> (older API: <code>torch_dtype</code>); bf16 roughly halves memory.</dd>
+          <dt id="dtype">dtype (bf16)</dt><dd>The weight/compute precision passed to <code>from_pretrained</code> as <code>dtype=</code> (older name: <code>torch_dtype</code>); bf16 roughly halves weight memory versus fp32.</dd>
           <dt id="from-pretrained">from_pretrained / save_pretrained</dt><dd>Download/instantiate a model or tokenizer, and write a self-contained copy back to disk.</dd>
           <dt id="generate">generate()</dt><dd>Runs autoregressive decoding to produce output tokens; <code>do_sample=False</code> gives deterministic greedy decoding for evaluation.</dd>
           <dt id="get-peft-model">get_peft_model</dt><dd>Wraps a base model with LoRA adapters and freezes the base so only the adapter trains.</dd>
@@ -3032,27 +3062,29 @@
           <dt id="ignore-index">Ignore index (-100)</dt><dd>The label value PyTorch's cross-entropy skips; how the loss mask and padding are excluded from the loss in code.</dd>
           <dt id="input-ids-labels">input_ids / labels</dt><dd>The token IDs the model reads, and the targets it's scored against (a copy of input_ids with masked positions set to -100).</dd>
           <dt id="merge-and-unload">merge_and_unload</dt><dd>Folds a LoRA adapter into the base weights, returning a standalone model with no adapter overhead.</dd>
-          <dt id="peftmodel">PeftModel.from_pretrained</dt><dd>Attaches a trained LoRA adapter onto a fresh base model for inference. See <a class="inline-link" href="hands-on/evaluate-by-hand.html">Evaluate by hand</a>.</dd>
+          <dt id="peftmodel">PeftModel.from_pretrained</dt><dd>Attaches a trained LoRA adapter onto a base model for inference. It modifies the base model object in place, so score the base first (or use <code>with model.disable_adapter():</code>) when you compare them. See <a class="inline-link" href="hands-on/evaluate-by-hand.html">Evaluate by hand</a>.</dd>
           <dt id="print-trainable">print_trainable_parameters</dt><dd>Reports how few parameters LoRA actually trains (typically well under 1%).</dd>
           <dt id="safetensors">safetensors</dt><dd>The safe, fast default weight format <code>save_pretrained</code> writes.</dd>
           <dt id="trainer">Trainer</dt><dd>The Transformers class that runs the training loop (forward, loss, backward, optimizer step) for you. See <a class="inline-link" href="hands-on/minimal-lora-trainer.html">A minimal LoRA fine-tune</a>.</dd>
           <dt id="trainingarguments">TrainingArguments</dt><dd>Holds the run's hyperparameters: learning rate, epochs, batch size, precision, logging and saving cadence.</dd>
           <dt id="venv">venv</dt><dd>An isolated Python environment so a project's packages don't collide with the system. See <a class="inline-link" href="hands-on/environment-setup.html">Set up the environment</a>.</dd>
-          <dt id="trl">TRL</dt><dd>Hugging Face's SFT- and preference-training library. Provides <code>SFTTrainer</code>, <code>DPOTrainer</code>, <code>ORPOTrainer</code>. See <a class="inline-link" href="hands-on/sft-with-trl-trainer.html">SFT with TRL's SFTTrainer</a>.</dd>
-          <dt id="sfttrainer">SFTTrainer</dt><dd>TRL wrapper around HF <code>Trainer</code> that handles chat-template, loss mask, padding, and PEFT for SFT. The 20-line version of Lesson 2.5.</dd>
-          <dt id="sftconfig">SFTConfig</dt><dd>SFTTrainer's args object; superset of <code>TrainingArguments</code> with SFT-specific fields like <code>max_seq_length</code>, <code>completion_only_loss</code>, <code>packing</code>.</dd>
-          <dt id="completion-only-loss">completion_only_loss</dt><dd>SFTConfig field; when <code>True</code>, builds the loss mask so cross-entropy ignores everything except assistant tokens.</dd>
+          <dt id="trl">TRL</dt><dd>Hugging Face&#x27;s SFT- and preference-training library. Its stable trainers include <code>SFTTrainer</code>, <code>DPOTrainer</code>, <code>GRPOTrainer</code>, <code>KTOTrainer</code>, <code>RLOOTrainer</code> and <code>RewardTrainer</code>; ORPO now lives under <code>trl.experimental</code>. See <a class="inline-link" href="hands-on/sft-with-trl-trainer.html">SFT with TRL&#x27;s SFTTrainer</a>.</dd>
+          <dt id="sfttrainer">SFTTrainer</dt><dd>TRL wrapper around HF <code>Trainer</code> that handles the chat template, padding, PEFT and, on prompt-completion data, the prompt mask. On a plain <code>messages</code> dataset it trains on every token unless you set <code>assistant_only_loss</code>. The 20-line version of Lessons 2.4–2.5.</dd>
+          <dt id="sftconfig">SFTConfig</dt><dd>SFTTrainer&#x27;s args object; superset of <code>TrainingArguments</code> with SFT-specific fields like <code>max_length</code>, <code>completion_only_loss</code>, <code>assistant_only_loss</code>, <code>packing</code>.</dd>
+          <dt id="completion-only-loss">completion_only_loss</dt><dd>SFTConfig field for prompt-completion datasets: masks the prompt so the loss covers only the completion. Default <code>None</code> means on for prompt-completion data. It does nothing on a <code>messages</code> dataset; use <a class="inline-link" href="#assistant-only-loss"><code>assistant_only_loss</code></a> there.</dd>
+          <dt id="assistant-only-loss">assistant_only_loss</dt><dd>SFTConfig field for conversational (<code>messages</code>) data: computes the loss only on assistant turns. It needs a chat template that marks assistant content with <code>{% generation %}</code> tags; templates without them (SmolLM2&#x27;s, for one) need a patched template or a manual per-turn mask. Default <code>False</code>.</dd>
           <dt id="peft-config">peft_config</dt><dd>SFTTrainer argument; pass a <code>LoraConfig</code> and SFTTrainer attaches LoRA internally — no <code>get_peft_model</code> call needed.</dd>
-          <dt id="packing-t2">packing (SFT)</dt><dd>SFTConfig field; concatenates short examples to <code>max_seq_length</code> to save compute on padding.</dd>
+          <dt id="packing-t2">packing (SFT)</dt><dd>SFTConfig field; concatenates short examples up to <code>max_length</code> to save compute on padding.</dd>
           <dt id="bnb-t2">bitsandbytes</dt><dd>Library providing 4-bit/8-bit quantization kernels that HF Transformers loads via <code>BitsAndBytesConfig</code>. See <a class="inline-link" href="hands-on/qlora-hands-on.html">QLoRA hands-on</a>.</dd>
           <dt id="bnb-config">BitsAndBytesConfig</dt><dd>HF config object that tells <code>from_pretrained</code> to load weights in 4-bit (or 8-bit), with NF4 / double-quant / compute-dtype settings.</dd>
           <dt id="nf4">NF4 (4-bit Normal Float)</dt><dd>The QLoRA-default 4-bit quantization format, tuned for trained-Transformer weight distributions.</dd>
           <dt id="double-quant">Double quantization</dt><dd>Quantizing the quantization constants themselves to save additional memory in QLoRA.</dd>
-          <dt id="prep-kbit">prepare_model_for_kbit_training</dt><dd>peft helper that enables gradient checkpointing and stable-dtype casts on a quantized base before LoRA is attached. Forgetting it is the most common "my QLoRA isn't training" bug.</dd>
+          <dt id="prep-kbit">prepare_model_for_kbit_training</dt><dd>peft helper run on a quantized base before LoRA is attached: it freezes the base, casts the remaining 16-bit parameters to fp32 (which costs memory), enables input gradients and turns on gradient checkpointing. Forgetting it is a common &quot;my QLoRA isn&#x27;t training&quot; bug.</dd>
           <dt id="cls-report">classification_report</dt><dd>sklearn function returning per-class precision/recall/F1/support plus macro/weighted averages. The default classification eval.</dd>
           <dt id="cm-t2">Confusion matrix</dt><dd>True-vs-predicted matrix; off-diagonal cells show which classes get confused for which.</dd>
           <dt id="macro-f1">Macro F1</dt><dd>Mean of per-class F1s with equal weight per class; the honest default on imbalanced data.</dd>
-          <dt id="weighted-f1">Weighted / micro F1</dt><dd>F1 averaged by class support; dominated by the majority class.</dd>
+          <dt id="weighted-f1">Weighted F1</dt><dd>Per-class F1 averaged with each class weighted by its support (row count); dominated by the majority class.</dd>
+          <dt id="micro-f1">Micro F1</dt><dd>F1 from the true positives, false positives and false negatives pooled over all classes. For single-label multiclass it equals accuracy; it is not the same as weighted F1.</dd>
           <dt id="hf-evaluate">HF evaluate</dt><dd>Hugging Face library exposing standard metrics (F1, accuracy, ROUGE, BLEU, WER, seqeval) through one interface; aligns with shared standards used in papers.</dd>
           <dt id="pydantic-t2">Pydantic</dt><dd>Python library for type-validated data models; <code>BaseModel</code> + type hints become a schema and a parser in one. See <a class="inline-link" href="hands-on/structured-outputs-with-pydantic.html">Structured outputs with pydantic</a>.</dd>
           <dt id="valid-json-rate">Valid-JSON rate</dt><dd>Fraction of model outputs that both parse as JSON and match the Pydantic schema; the first half of the structured-output honest report.</dd>
@@ -3067,12 +3099,12 @@
           <dt id="t2-judge-bias">Judge bias</dt><dd>The three classic LLM-as-judge biases — <em>position</em> (favours first option), <em>length</em> (favours longer answer), <em>style/family</em> (favours own model family). Mitigated by order-swap, concision in the rubric, and judge selection.</dd>
           <dt id="t2-judge-calibration">Judge calibration</dt><dd>Comparing judge scores against a small human-rated set (50–200 pairs) and reporting Cohen&#x27;s κ or Spearman ρ. Required to interpret any aggregate judge metric — inter-judge agreement is not a substitute.</dd>
           <dt id="t2-lm-eval-harness">lm-evaluation-harness</dt><dd>EleutherAI&#x27;s open-source benchmark runner — the standard tool used to produce the MMLU / HellaSwag / ARC / GSM8K numbers in model cards. See <a class="inline-link" href="hands-on/public-benchmarks-and-lm-eval-harness.html">Public benchmarks &amp; lm-eval-harness</a>.</dd>
-          <dt id="t2-mmlu">MMLU</dt><dd>Massive Multitask Language Understanding: ~14k multiple-choice questions across 57 subjects. Usually reported 5-shot. The closest thing to a general &quot;what does this model know?&quot; substrate score.</dd>
+          <dt id="t2-mmlu">MMLU</dt><dd>Massive Multitask Language Understanding: ~14k multiple-choice questions across 57 subjects. Usually reported 5-shot. Saturated for frontier models; MMLU-Pro is the harder successor.</dd>
           <dt id="t2-contamination">Benchmark contamination</dt><dd>The benchmark&#x27;s questions or answers appeared in the model&#x27;s pretraining; the model memorised rather than reasoned. Detected by a canonical-vs-paraphrased gap. Why your private gold set matters more than any public number.</dd>
-          <dt id="t2-mlflow">MLflow</dt><dd>Open-source experiment-tracking platform; self-hosted; tracks runs, parameters, metrics, artefacts, and a model registry. The BSD-licensed standard. See <a class="inline-link" href="hands-on/experiment-tracking-mlflow-wandb.html">Experiment tracking with MLflow &amp; W&amp;B</a>.</dd>
+          <dt id="t2-mlflow">MLflow</dt><dd>Open-source experiment-tracking platform; self-hosted; tracks runs, parameters, metrics, artefacts, and a model registry. Apache-2.0 licensed. See <a class="inline-link" href="hands-on/experiment-tracking-mlflow-wandb.html">Experiment tracking with MLflow &amp; W&amp;B</a>.</dd>
           <dt id="t2-wandb">Weights &amp; Biases (W&amp;B)</dt><dd>Hosted experiment-tracking product with the most polished UI, sweeps for hyperparameter search, and team report-sharing. Free tier for individuals.</dd>
           <dt id="t2-run-metadata">Run metadata</dt><dd>The non-metric record of a training run: full config, git SHA, dataset hash, library versions, system info. The piece that makes runs joinable later — and the piece teams most often skip and most often regret.</dd>
-          <dt id="t2-replicable">Reproducible vs replicable</dt><dd>Reproducible = same inputs → bit-for-bit identical outputs. Replicable = same recipe → equivalent outcome within noise. Experiment tracking targets replicability; chasing bit-equivalence in ML usually isn&#x27;t worth the cost.</dd>
+          <dt id="t2-replicable">Reproducible vs replicable</dt><dd>Usage varies between fields. ACM&#x27;s badging terms: <em>repeatable</em> = same team, same setup; <em>reproducible</em> = a different team, same setup; <em>replicable</em> = a different team, a different setup. The practical bar for ML: pin seeds always, and expect a rerun to land within noise of the original, not bit-identical outputs.</dd>
         </dl>
 
         <h2>Track 3 — With BrewSLM</h2>
@@ -3083,43 +3115,43 @@
           <dt id="test-examples">Test examples</dt><dd>The UI name for the prepared TEST split written by <strong>Data → Split</strong> (<code>prepared/test.jsonl</code>). <strong>Results → Verdict</strong> → <em>Evaluate on test examples</em> scores a run on them; the split form's "Keep the current test examples" keeps them fixed when you add data.</dd>
           <dt id="built-in-checks">Built-in checks</dt><dd>The UI name for the <em>probe pack</em>: platform-authored, property-based probes keyed by task profile (robustness, refusal, grounding, degenerate input, over-refusal) that complement your own answer key. Shown on <strong>Results → Failures</strong>; can be enforced as a pass/fail rule.</dd>
           <dt id="custom-checks">Custom checks</dt><dd>The UI name for <em>behavioral tests</em>: checks you write yourself (an input and what the model must or must not do) that run beside the metrics. Shown on <strong>Results → Failures</strong>.</dd>
-          <dt id="pass-fail-rules">Pass/fail rules (rule set)</dt><dd>The UI name for the <a class="inline-link" href="#eval-pack">eval pack</a>'s gates: scalar thresholds a run must clear to be promotable. The scorecard on <strong>Results → Verdict</strong> shows which passed; the schema is unchanged (see <a class="inline-link" href="#gate-schema">Gate</a>).</dd>
+          <dt id="pass-fail-rules">Pass/fail rules (rule set)</dt><dd>The UI name for the <a class="inline-link" href="#eval-pack">eval pack</a>&#x27;s gates: scalar thresholds a run is checked against. The scorecard on <strong>Results → Verdict</strong> shows PASS / FAIL per rule. They block an export only when the project&#x27;s gate policy is switched on (off by default); deployment promotion doesn&#x27;t check them. The schema is unchanged (see <a class="inline-link" href="#gate-schema">Gate</a>).</dd>
           <dt id="suggested-answer-key-rows">Suggested answer-key rows</dt><dd>The UI name for <em>drift traps</em>: rows the platform proposes adding to the answer key after a run, reviewed on <strong>Results → Failures</strong>.</dd>
           <dt id="coach-notices">Coach notices</dt><dd>The inline stage suggestions (formerly the Coach bar / Coach Mode): one list per destination — Data per step, Train, Results, Ship — plus up to three under "Worth a look" on the Overview. Each carries an action and a "why?" trace; an × dismisses it. Switched off with <strong>Settings → Show inline tips</strong>.</dd>
-          <dt id="auto-rag">Auto-RAG</dt><dd>Builds a BM25 index at training completion and prepends top-K retrieved passages to the prompt at inference. The comparison lives on <strong>Results → Compare</strong>. See <a class="inline-link" href="with-brewslm/auto-rag-and-reroute.html">Auto-RAG &amp; reroute</a>.</dd>
+          <dt id="auto-rag">Auto-RAG</dt><dd>Builds a BM25 index over the project&#x27;s training rows (never the answer key) at training completion and prepends the top-K retrieved rows (default 3) to the prompt at inference. The comparison lives on <strong>Results → Compare</strong>. See <a class="inline-link" href="with-brewslm/auto-rag-and-reroute.html">Auto-RAG &amp; reroute</a>.</dd>
           <dt id="bm25">BM25</dt><dd>Keyword (lexical) retrieval — fast, dependency-light; the retrieval baseline auto-RAG uses.</dd>
           <dt id="coach-mode">Coach Mode</dt><dd>The backend service that emits stage suggestions (data / cleaning / gold_set / synthetic / dataprep / training / eval / export) and actions (navigate, run_playbook, augment_from_cluster, reroute_to_rag, start_flow). In the UI they appear as <a class="inline-link" href="#coach-notices">Coach notices</a>.</dd>
-          <dt id="decision-engine">Decision engine (post-eval)</dt><dd>Reads eval results + failure clusters and recommends the next move — including retrieval over more fine-tuning when failures are knowledge-bound.</dd>
+          <dt id="decision-engine">Decision engine (post-eval)</dt><dd>A heuristic recommender that runs after an eval. It reads the project brief (retrieval phrases), the diversity of the answer key&#x27;s answers and the output/input length ratio, and returns <code>stay_the_course</code>, <code>try_rag</code>, <code>try_prompt_engineering</code> or <code>expand_data</code>. It does not read failure clusters. The measured signal is separate: the Coach notice <code>eval:passages-beat-finetune</code> fires when the base model plus passages scores higher than the fine-tune under the same judge.</dd>
           <dt id="deployment-version">DeploymentVersion</dt><dd>A versioned deployment with promote / reject / rollback / drift-check actions, listed under <strong>Ship → Deploy</strong> ("Served versions").</dd>
-          <dt id="drift-check">Drift check</dt><dd>A re-run of the answer key against the deployed model (paste its predictions in the form; the API / CLI can also call an endpoint URL), compared with the training-time baseline; run from a served version on <strong>Ship → Deploy</strong>. See <a class="inline-link" href="with-brewslm/export-deploy-coach.html">Export, deploy &amp; Coach</a>.</dd>
-          <dt id="eval-pack">Eval pack</dt><dd>The declared set of metrics and promotion gates evaluated against the held-out eval set; the gates decide promotability. In the UI the gates are the <a class="inline-link" href="#pass-fail-rules">pass/fail rules</a>. See <a class="inline-link" href="with-brewslm/eval-packs-and-failure-clusters.html">Eval packs &amp; failure clusters</a>.</dd>
-          <dt id="failure-cluster">Failure cluster</dt><dd>A bucket of evaluation misses that share a pattern, surfaced instead of a flat list so the data gap is obvious. Shown on <strong>Results → Failures</strong> and, for run-log errors, <strong>Ship → Monitor</strong>.</dd>
+          <dt id="drift-check">Drift check</dt><dd>An on-demand re-score of the answer key against a deployed model: paste its predictions in the form (the API and CLI can also call an endpoint URL). Rows are scored by exact match, and the pass rate is compared with the latest eval of the run behind the export; a change of more than 0.05 either way is flagged. It catches serving regressions, not input drift. Run it from a served version on <strong>Ship → Deploy</strong>. See <a class="inline-link" href="with-brewslm/export-deploy-coach.html">Export, deploy &amp; Coach</a>.</dd>
+          <dt id="eval-pack">Eval pack</dt><dd>The declared set of metrics and gates evaluated against the held-out eval set; the gates turn metrics into PASS / FAIL on <strong>Results → Verdict</strong>. In the UI the gates are the <a class="inline-link" href="#pass-fail-rules">pass/fail rules</a>. See <a class="inline-link" href="with-brewslm/eval-packs-and-failure-clusters.html">Eval packs &amp; failure clusters</a>.</dd>
+          <dt id="failure-cluster">Failure cluster</dt><dd>A bucket of misses that share a pattern, surfaced instead of a flat list. Two different features use the name: eval-miss clusters on <strong>Results → Failures</strong>, keyed by root-cause reason × output pattern and usable as a generation source; and RunEvent clusters on <strong>Ship → Monitor</strong>, which group error events by <a class="inline-link" href="#signature-failure">signature</a>.</dd>
           <dt id="introspect">Introspect</dt><dd>Sampling ~20 rows to propose a task mapping (ranked ShapeHypothesis + a ProposedMapping); never auto-picks below 0.80 confidence.</dd>
-          <dt id="lifecycle">Lifecycle (11 stages)</dt><dd>Ingest → Introspect → Map (dry-run / commit) → Clean → Prepare → Preflight → Train → Evaluate → Export → Deploy; each has a contract and emits a RunEvent.</dd>
-          <dt id="manifest-t3">Manifest</dt><dd><code>prepared/manifest.json</code> — the source of truth for downstream stages: counts, schema, task_profile, scoring_mode, paths, hashes. See <a class="inline-link" href="with-brewslm/clean-prepare-manifest.html">Clean &amp; prepare</a>.</dd>
+          <dt id="lifecycle">Lifecycle (11 stages)</dt><dd>Ingest → Introspect → Map (dry-run / commit) → Clean → Prepare → Preflight → Train → Evaluate → Export → Deploy: a teaching model of the BrewSLM flow, each stage with a contract. Import, training, evaluation, export and deploy emit RunEvents; the other stages emit none today.</dd>
+          <dt id="manifest-t3">Manifest</dt><dd><code>prepared/manifest.json</code>, written by <strong>Data → Split</strong>: the record of a split — row counts, schema, task_profile, scoring_mode and file hashes. Training reads the split files it lists; evaluation reads its task profile and scoring mode from it; the hashes tell you whether two runs saw the same data. Not to be confused with <a class="inline-link" href="#brewslm-yaml">brewslm.yaml</a> or an export&#x27;s own manifest. See <a class="inline-link" href="with-brewslm/clean-prepare-manifest.html">Clean &amp; prepare</a>.</dd>
           <dt id="job">Job / Notification bell</dt><dd>Long-running work runs as a persisted background Job; the top-bar bell polls <code>/api/jobs/active</code> for progress and outcome. See <a class="inline-link" href="with-brewslm/training-jobs-and-monitoring.html">Training jobs</a>.</dd>
-          <dt id="preflight">Preflight</dt><dd>Pre-run dependency, memory-fit, capability, and gate-policy checks returning pass/fail + blockers + a train plan; surfaced as the readiness line on <strong>Train</strong> and in <strong>Train → More options → Checks</strong>.</dd>
-          <dt id="promotability">Promotability gate</dt><dd>A pass threshold in the eval pack a model must clear to be shippable (the platform form of the <a class="inline-link" href="#quality-gate">quality gate</a>); in the UI, a <a class="inline-link" href="#pass-fail-rules">pass/fail rule</a>.</dd>
-          <dt id="recipe">Recipe</dt><dd>Declarative training config — base model, method, LoRA knobs, optimizer/schedule, batch, precision, checkpoint cadence (your TrainingArguments + LoraConfig as reusable config). Picked under <strong>Train → More options → Task type</strong> / <strong>Pipeline presets</strong>. See <a class="inline-link" href="with-brewslm/recipes-and-handlers.html">Recipes &amp; handlers</a>.</dd>
+          <dt id="preflight">Preflight</dt><dd>Pre-run dependency and capability checks that return errors (which block the launch) and warnings (which don&#x27;t), plus a heuristic low / medium / high VRAM-risk estimate that never blocks. A train plan is a separate call. Surfaced as the readiness line on <strong>Train</strong> and in <strong>Train → More options → Checks</strong>.</dd>
+          <dt id="promotability">Promotability gate</dt><dd>A pass threshold in the eval pack (the platform form of the <a class="inline-link" href="#quality-gate">quality gate</a>); in the UI, a <a class="inline-link" href="#pass-fail-rules">pass/fail rule</a>. It shows PASS / FAIL on Results → Verdict and blocks an export only when the project&#x27;s gate policy is on.</dd>
+          <dt id="recipe">Recipe</dt><dd>A word with three meanings in BrewSLM: a <em>task type</em> (qa-sft, classification, span-extraction, …; no hyperparameters; <strong>Train → More options → Task type</strong>), a <em>training preset</em> (a config patch such as <code>recipe.sft.safe</code>; <strong>Training presets</strong>) and a <em>pipeline preset</em> (<strong>Pipeline presets</strong>). The hyperparameters themselves live in <code>TrainingConfig</code>. See <a class="inline-link" href="with-brewslm/recipes-and-handlers.html">Recipes &amp; handlers</a>.</dd>
           <dt id="reroute-to-rag">Reroute-to-RAG</dt><dd>Clones a project into a retrieval-first sibling (<code>rag_first=True</code>) that uses the base model plus retrieval — no LoRA adapter.</dd>
-          <dt id="rejectedrow">RejectedRow / reason code</dt><dd>An input row that failed mapping, tagged with a stable reason code so rejections are grouped and selectable, never silently dropped.</dd>
+          <dt id="rejectedrow">RejectedRow / reason code</dt><dd>An input row that failed mapping, tagged with a reason code (e.g. <code>missing_text</code>, <code>label_not_allowed</code>, <code>parse_error</code>) and counted by reason in the import preview, with sample rows. Rejected rows are not written; fix the source or the mapping and re-run. Accepted imported rows skip the review queue.</dd>
           <dt id="remediation">Remediation plan</dt><dd>The recommended fix for a failure cluster — often <code>augment_from_cluster</code>: add similar rows, review, re-prepare, re-train.</dd>
-          <dt id="runevent">RunEvent</dt><dd>An audit row a stage emits via <code>emit_event()</code> (reason code + severity) that feeds the observability timeline, failure clusters, and audit explorer. See <a class="inline-link" href="with-brewslm/from-script-to-platform.html">The lifecycle</a>.</dd>
+          <dt id="runevent">RunEvent</dt><dd>An audit row written via <code>emit_event()</code> (severity, plus a reason code on errors) by import, training, evaluation, export and deploy. It feeds the run timeline and failure clusters on <strong>Ship → Monitor</strong> and the support bundle. See <a class="inline-link" href="with-brewslm/from-script-to-platform.html">The lifecycle</a>.</dd>
           <dt id="source-locator">Source locator</dt><dd>A string naming where rows live for ingest: <code>hf:id:split</code>, <code>jsonl:/path</code>, <code>kaggle:...</code>.</dd>
-          <dt id="task-handler">Task handler / dispatcher</dt><dd>A general, task-shape-named component (Classification, QA, StructuredExtraction, RAG, Alignment, Seq2Seq, …) that owns tokenization, masking, and <code>score()</code>; the dispatcher routes the manifest's task_profile to it.</dd>
+          <dt id="task-handler">Task handler / dispatcher</dt><dd>A general, task-shape-named evaluation component (Classification, QA, StructuredExtraction, RAG, Alignment, Seq2Seq, ToolCall, a Generic fallback, …) that builds the eval prompts and scores outputs with <code>score()</code>; the dispatcher routes the manifest&#x27;s task_profile to it. Tokenization and the loss mask happen in the trainer (<code>scripts/train.py</code>), not here.</dd>
           <dt id="brewslm-yaml">brewslm.yaml manifest</dt><dd>The project-as-code schema. <code>api_version: brewslm/v1</code>, <code>kind: Project</code>, strict-extra-forbid. See <a class="inline-link" href="with-brewslm/training-config-reference.html">Training config reference</a>.</dd>
-          <dt id="plan-profile-t3">Plan profile</dt><dd><code>training_plan.plan_profile</code> on the manifest: <code>safe</code> / <code>balanced</code> (default) / <code>max_quality</code>. Resolves to a concrete <code>TrainingConfig</code> at apply time.</dd>
-          <dt id="training-mode-t3">Training mode</dt><dd><code>training_plan.training_mode</code>: <code>sft</code> for supervised fine-tuning, <code>kd</code> for knowledge distillation.</dd>
-          <dt id="manifest-apply">Manifest apply</dt><dd>The service that diffs a parsed <code>brewslm.yaml</code> against project state and emits a <code>ManifestApplyPlan</code> with explicit create/update/noop/delete actions.</dd>
+          <dt id="plan-profile-t3">Plan profile</dt><dd><code>safe</code> / <code>balanced</code> (default) / <code>max_quality</code>. Manifest apply uses <code>workflow.training_preferred_plan_profile</code>; <code>training_plan.plan_profile</code> is carried in the file but not applied.</dd>
+          <dt id="training-mode-t3">Training mode</dt><dd>The kind of training run: <code>sft</code>, <code>domain_pretrain</code>, <code>dpo</code> or <code>orpo</code>, and <code>distillation</code> for knowledge distillation (there is no <code>kd</code> value). <code>training_plan.training_mode</code> in brewslm.yaml is carried, not applied.</dd>
+          <dt id="manifest-apply">Manifest apply</dt><dd>The service that diffs a parsed <code>brewslm.yaml</code> against project state and emits a <code>ManifestApplyPlan</code> with create / update / noop actions. Deletes are not part of the apply contract, and some carried fields (<code>training_plan.training_mode</code>, <code>plan_profile</code>, <code>preferred_runtime_id</code>, <code>spec.export</code>, <code>spec.deployment</code>) are not applied.</dd>
           <dt id="runevent-stage">RunEvent stage</dt><dd>One of nine canonical strings: <code>ingestion</code>, <code>cleaning</code>, <code>adapter</code>, <code>training</code>, <code>eval</code>, <code>export</code>, <code>deployment</code>, <code>autopilot</code>, <code>system</code>. See <a class="inline-link" href="with-brewslm/runevent-and-coach-catalogue.html">RunEvent &amp; Coach catalogue</a>.</dd>
           <dt id="runevent-severity">RunEvent severity</dt><dd><code>info</code> / <code>warning</code> / <code>error</code> / <code>critical</code>. Error and critical must carry a reason code.</dd>
-          <dt id="reason-code">Reason code</dt><dd>Lint-gated string from the canonical taxonomy that names a failure mode (e.g. <code>training_oom</code>, <code>deployment_drift_detected</code>); unknown codes are rejected at emit time.</dd>
+          <dt id="reason-code">Reason code</dt><dd>A string from the canonical taxonomy that names a failure mode (e.g. <code>training_timeout</code>, <code>export_run_failed</code>). <code>emit_event()</code> checks it at runtime: an error or critical event without one raises <code>reason_code_required</code>, an unknown one raises <code>invalid_reason_code</code>, and callers drop the event and log it. Some declared codes are not emitted today.</dd>
           <dt id="coach-stage">Coach stage</dt><dd>One of eight stages a Coach notice speaks at: <code>data</code>, <code>cleaning</code>, <code>gold_set</code>, <code>synthetic</code>, <code>dataprep</code> (the five Data steps), <code>training</code> (Train), <code>eval</code> (Results), <code>export</code> (Ship).</dd>
           <dt id="coach-action-kind">Coach action kind</dt><dd>One of five: <code>navigate</code> (route to a destination), <code>run_playbook</code> (trigger generation), <code>augment_from_cluster</code> (open a failure cluster as a generation source), <code>reroute_to_rag</code> (clone into a retrieval-first sibling), <code>start_flow</code> (start the documents → Q&amp;A flow).</dd>
           <dt id="eval-contract-v2">Evaluation Contract v2</dt><dd><code>slm.evaluation-pack/v2</code> — eval-pack schema with per-task specs, each carrying its own gates and metric schema. See <a class="inline-link" href="with-brewslm/eval-pack-and-failure-cluster-reference.html">Eval pack schema reference</a>.</dd>
-          <dt id="gate-schema">Gate (eval pack)</dt><dd>A scalar comparison: <code>{gate_id, metric_id, operator: gte|lte, threshold, required, source?, weight?}</code>. <code>required: true</code> gates block promotion.</dd>
-          <dt id="failure-cluster-row">FailureCluster row</dt><dd>Row in <code>failure_clusters</code> uniquely keyed on <code>(project_id, stage, reason_code, signature)</code>; carries <code>failure_count</code>, timestamps, and capped exemplar lists.</dd>
-          <dt id="signature-failure">Cluster signature</dt><dd>Hash of the canonical failure shape (model id + batch + seq length, for OOM; etc.); same signature = same cluster.</dd>
+          <dt id="gate-schema">Gate (eval pack)</dt><dd>A scalar comparison: <code>{gate_id, metric_id, operator: gte|lte, threshold, required, source?, weight?}</code>. Only <code>metric_id</code> is needed: <code>gate_id</code> defaults to <code>min_&lt;metric_id&gt;</code>, <code>operator</code> to <code>gte</code>, <code>required</code> to true, and a null threshold makes the gate not enforced. A failed required gate blocks an export only when the project&#x27;s gate policy is on.</dd>
+          <dt id="failure-cluster-row">FailureCluster row</dt><dd>Row in <code>failure_clusters</code> (the RunEvent clusters on <strong>Ship → Monitor</strong>) uniquely keyed on <code>(project_id, stage, reason_code, signature)</code>; carries <code>failure_count</code>, timestamps, and up to 5 exemplars. Eval-miss clusters on Results → Failures are computed per eval and are not stored here.</dd>
+          <dt id="signature-failure">Cluster signature</dt><dd><code>sha1(stage | reason_code | normalised summary)</code>, first 12 hex characters. Normalising strips digits, hex tokens, timestamps and extra whitespace, so errors that differ only in numbers (step, batch size, line) land in the same cluster.</dd>
         </dl>
 
         <h2>Track 4 — Advanced</h2>
@@ -3130,19 +3162,20 @@
           <dt id="curriculum">Curriculum learning</dt><dd>Ordering training data (often easy→hard) to improve convergence and final quality. See <a class="inline-link" href="advanced/multi-task-and-curriculum.html">Multi-task &amp; curriculum</a>.</dd>
           <dt id="dark-knowledge">Dark knowledge</dt><dd>The relational signal in a soft distribution (which wrong answers are plausible) that one-hot labels discard.</dd>
           <dt id="distillation">Distillation (KD)</dt><dd>Training a small student to reproduce a larger teacher's outputs, to shrink at near-equal quality. See <a class="inline-link" href="advanced/distillation-teacher-capture.html">Distillation I</a>.</dd>
-          <dt id="dpo-advanced">DPO</dt><dd>Direct Preference Optimization — learns from (chosen, rejected) pairs directly, no separate reward model. See <a class="inline-link" href="advanced/preference-tuning-dpo-orpo.html">Preference tuning</a>.</dd>
-          <dt id="drift-detection">Drift / drift detection</dt><dd>Production quality decay as inputs change over time; detected by re-running the gold set (in BrewSLM, the answer key — <strong>Ship → Deploy</strong> → <em>Run drift check</em>) against the deployed model and comparing with the training baseline. See <a class="inline-link" href="advanced/observability-and-drift.html">Observability &amp; drift</a>.</dd>
+          <dt id="dpo-advanced">DPO</dt><dd>Direct Preference Optimization — learns from (chosen, rejected) pairs directly, no separate reward model; a frozen <a class="inline-link" href="#reference-model">reference model</a> anchors it, with strength set by <a class="inline-link" href="#dpo-beta">β</a>. See <a class="inline-link" href="advanced/preference-tuning-dpo-orpo.html">Preference tuning</a>.</dd>
+          <dt id="dpo-beta">β (beta, DPO)</dt><dd>The strength of DPO&#x27;s KL anchor to the reference model. A higher β keeps the policy closer to the reference; a lower β lets it move further toward the preferences, which is where over-optimisation and degeneration risk sits (Rafailov et al. 2023; TRL <code>DPOConfig.beta</code>, default 0.1).</dd>
+          <dt id="drift-detection">Drift / drift detection</dt><dd>Production quality decay as live inputs change over time. Detecting it needs the live inputs: compare their distribution with the training data, and label a sample of them. Re-scoring a frozen answer key against the deployed model (BrewSLM&#x27;s <strong>Ship → Deploy</strong> → <em>Run drift check</em>) can&#x27;t see input drift — same model, same rows, same score — but it does catch serving regressions such as a wrong artifact, template or decoding setting. See <a class="inline-link" href="advanced/observability-and-drift.html">Observability &amp; drift</a>.</dd>
           <dt id="gptq">GPTQ</dt><dd>One-shot, layer-wise post-training quantization that minimizes introduced error; GPU-oriented.</dd>
-          <dt id="kd-loss">KD loss</dt><dd><code>alpha·CE + (1−alpha)·T²·KL</code> — hard-label cross-entropy blended with a temperature-softened KL to the teacher. See <a class="inline-link" href="advanced/distillation-kd-loss.html">The KD loss</a>.</dd>
+          <dt id="kd-loss">KD loss</dt><dd><code>alpha·CE + (1−alpha)·T²·KL(teacher ‖ student)</code> — hard-label cross-entropy blended with a temperature-softened KL from the teacher to the student. See <a class="inline-link" href="advanced/distillation-kd-loss.html">The KD loss</a>.</dd>
           <dt id="kl-divergence">KL divergence</dt><dd>A measure of how far the student's distribution is from the teacher's; minimized to transfer knowledge.</dd>
           <dt id="kv-cache">KV cache</dt><dd>Stored attention keys/values for prior tokens so each generation step only computes the new token's. See <a class="inline-link" href="advanced/serving-and-inference.html">Serving &amp; inference</a>.</dd>
           <dt id="latency-throughput">Latency vs throughput</dt><dd>Per-request speed vs total tokens/second; larger batches favor throughput over latency.</dd>
           <dt id="multi-task">Multi-task training</dt><dd>Training one model on several tasks at once; positive transfer if they share structure, interference if not.</dd>
           <dt id="orpo-advanced">ORPO</dt><dd>Odds Ratio Preference Optimization — adds a preference term to the SFT loss for single-stage alignment, no reference model.</dd>
           <dt id="post-training-quant">Post-training quantization</dt><dd>Quantizing a finished model by conversion, with no retraining.</dd>
-          <dt id="q4km">Q4_K_M</dt><dd>A 4-bit mixed-precision k-quant (llama.cpp / GGUF); the common CPU/edge sweet spot.</dd>
+          <dt id="q4km">Q4_K_M</dt><dd>A llama.cpp / GGUF quantization type: 4-bit &quot;k-quant&quot; (block-wise quantization with per-block scales), in the M (medium) mix that keeps some tensors at higher precision. The common CPU/edge sweet spot.</dd>
           <dt id="quality-retained">Quality retained</dt><dd><code>student_score / teacher_score</code> on the same eval — the fraction of the teacher's quality a distilled student kept. See <a class="inline-link" href="advanced/distillation-quality-retained.html">Quality retained</a>.</dd>
-          <dt id="reference-model">Reference model</dt><dd>A frozen copy of the starting model that DPO anchors to, so the policy doesn't drift arbitrarily.</dd>
+          <dt id="reference-model">Reference model</dt><dd>A frozen copy of the starting model that DPO anchors to, so the policy doesn&#x27;t drift arbitrarily; <a class="inline-link" href="#dpo-beta">β</a> sets how tightly.</dd>
           <dt id="soft-targets">Soft targets</dt><dd>A teacher's full probability distribution over tokens — a richer training signal than a hard label.</dd>
           <dt id="task-interference">Task interference</dt><dd>Negative transfer — unrelated or imbalanced tasks degrading each other in multi-task training.</dd>
           <dt id="teacher-student">Teacher / student</dt><dd>The large source model and the small model trained to mimic it in distillation.</dd>
@@ -3150,13 +3183,13 @@
           <dt id="topk-logprobs">Top-k logprobs</dt><dd>The k most likely tokens and their log-probabilities per position; a compact offline capture of the teacher's distribution.</dd>
           <dt id="vllm">vLLM</dt><dd>A high-throughput inference server using paged attention to manage the KV cache.</dd>
           <dt id="prod-logging">Production logging</dt><dd>Recording request/response pairs at the inference endpoint into an append-only log (commonly JSONL). See <a class="inline-link" href="advanced/production-feedback-loop.html">Production feedback loop</a>.</dd>
-          <dt id="pii-redaction-t4">PII redaction (logs)</dt><dd>Replacing personal identifiers in logged text with tokens like <code>[EMAIL]</code> before disk; hashing user ids.</dd>
+          <dt id="pii-redaction-t4">PII redaction (logs)</dt><dd>Replacing personal identifiers in logged text (prompt and response) with tokens like <code>[EMAIL]</code> before disk, and replacing user ids with a keyed hash (HMAC), since a plain hash of an id can be reversed by guessing.</dd>
           <dt id="sampling-budget">Sampling budget</dt><dd>The rule deciding which inference rows get logged; full logging is too expensive at scale, so keep all interesting rows (low-confidence, flagged, drift-window) and sample the rest.</dd>
           <dt id="log-tag">Log tag</dt><dd>Opaque string on a log row marking it as candidate training data (<code>drift_window</code>, <code>user_negative</code>, <code>operator_review</code>).</dd>
           <dt id="operator-correction">Operator correction</dt><dd>The corrected completion an operator (or stronger model) wrote for a tagged bad row; source of the SFT example in the feedback loop.</dd>
           <dt id="retrain-cadence">Retrain cadence</dt><dd>Trigger for retraining: on drift signal, on schedule, or on a failure-cluster count threshold.</dd>
           <dt id="tool-call">Tool call</dt><dd>A structured JSON output naming a tool (function) from a fixed catalogue with validated arguments. See <a class="inline-link" href="advanced/tool-use-fine-tuning.html">Tool-use fine-tuning</a>.</dd>
-          <dt id="function-calling">Function calling</dt><dd>Synonym for tool-use; the vendor term (OpenAI etc.) for structured-JSON output mode.</dd>
+          <dt id="function-calling">Function calling</dt><dd>Synonym for tool use; the term many model APIs use for their structured-JSON tool-call mode.</dd>
           <dt id="tool-schema">Tool schema</dt><dd>A description (name + argument schema) of a callable function the model can target; Pydantic models declare them cleanly.</dd>
           <dt id="no-tool-path">No-tool path</dt><dd>Explicit assistant output (<code>{"tool":"no_tool","reason":"..."}</code>) for when no available tool fits; trained on negative examples.</dd>
           <dt id="valid-tool-call-rate">Valid-tool-call rate</dt><dd>Fraction of outputs that parse as JSON, name a real tool, and have arguments matching that tool's schema.</dd>
@@ -3164,20 +3197,20 @@
           <dt id="false-tool-call-rate">False-tool-call rate</dt><dd>Fraction of inputs where the gold is no_tool but the model called a real tool; the most damaging routing failure mode.</dd>
           <dt id="t4-structured-pruning">Structured pruning</dt><dd>Physically removing whole attention heads, transformer layers, or MLP channels from a trained model so matrix shapes shrink and wall-clock latency drops. See <a class="inline-link" href="advanced/structured-pruning.html">Structured pruning</a>.</dd>
           <dt id="t4-head-layer-channel-pruning">Head / layer / channel pruning</dt><dd>The three granularities of structured pruning: drop a whole attention head, drop a whole transformer block, or drop output channels from an MLP. Head and layer pruning are the simplest; channel pruning gives finer control.</dd>
-          <dt id="t4-unstructured-pruning">Unstructured pruning</dt><dd>Zeroing out individual weights without shrinking matrix shape. Saves theoretical FLOPs but rarely real wall-clock on commodity GPUs because sparse-matmul kernels aren&#x27;t standard. Contrast with structured pruning.</dd>
-          <dt id="t4-recovery-training">Recovery training</dt><dd>The short SFT or distillation pass run after pruning to recover the quality the prune cost. Not optional — aggressive pruning without recovery training typically loses 10–30 points on substrate benchmarks.</dd>
+          <dt id="t4-unstructured-pruning">Unstructured pruning</dt><dd>Zeroing out individual weights without shrinking matrix shape. Saves theoretical FLOPs but rarely real wall-clock, because general sparse-matmul kernels are uncommon; the exception is 2:4 semi-structured sparsity on recent NVIDIA GPUs. Contrast with structured pruning.</dd>
+          <dt id="t4-recovery-training">Recovery training</dt><dd>The short SFT or distillation pass run after pruning to recover the quality the prune cost. Treat it as part of pruning: measure the pruned model before and after recovery on your own eval.</dd>
           <dt id="t4-importance-scoring">Importance scoring</dt><dd>How structured pruning decides what to cut. Three families: magnitude (cheap, misleading), gradient × weight / SNIP-style (practical sweet spot), Hessian-based / OBD / WoodFisher (accurate but expensive).</dd>
           <dt id="t4-speculative-decoding">Speculative decoding</dt><dd>Inference-time speed-up where a small draft model proposes K tokens and the target verifies them in a single forward pass; accepted tokens commit. Wall-clock win depends on acceptance rate and draft-vs-target cost ratio. See <a class="inline-link" href="advanced/speculative-decoding.html">Speculative decoding</a>.</dd>
-          <dt id="t4-draft-model">Draft model</dt><dd>The smaller model in speculative decoding that proposes candidate tokens. Must share a tokenizer with the target and ideally come from the same model family to maximise the acceptance rate.</dd>
-          <dt id="t4-acceptance-rate">Acceptance rate (α)</dt><dd>Probability the target accepts a draft-model token in speculative decoding. The single biggest lever on the achievable speed-up; α near 1 with K=4 yields ~3× throughput, α near 0.5 yields ~1.4× at best.</dd>
+          <dt id="t4-draft-model">Draft model</dt><dd>The smaller model in speculative decoding that proposes candidate tokens. The simple form needs the same tokenizer as the target, ideally from the same model family to maximise the acceptance rate; cross-tokenizer drafting (Universal Assisted Generation) and draft-free methods such as prompt-lookup decoding exist.</dd>
+          <dt id="t4-acceptance-rate">Acceptance rate (α)</dt><dd>Probability the target accepts a draft-model token in speculative decoding. The single biggest lever on the achievable speed-up: with K=4 drafted tokens, the expected tokens per verify step is (1−α^(K+1))/(1−α), so ~1.9× is the ceiling at α=0.5 if drafting were free, and ~1.4–1.6× is typical once the draft&#x27;s cost is counted (Leviathan et al. 2023).</dd>
           <dt id="t4-eagle-medusa">EAGLE / Medusa</dt><dd>Variants of speculative decoding that raise α without a separate draft model. EAGLE trains a tiny auxiliary head that predicts target embeddings; Medusa adds parallel decoding heads to the target itself and verifies via tree attention. Both ship in vLLM.</dd>
           <dt id="t4-reasoning-training">Reasoning training</dt><dd>Umbrella term for techniques that produce multi-step traces a verifier can score, not just final answers. Covers chain-of-thought SFT, process supervision via a step-level reward model, and outcome-supervised RL. See <a class="inline-link" href="advanced/reasoning-training.html">Reasoning training</a>.</dd>
           <dt id="t4-cot-sft">Chain-of-thought SFT</dt><dd>Supervised fine-tuning where each example is <code>prompt → reasoning trace → final answer</code>, with the loss covering both the trace and the answer. The standard warm-start before any reasoning-flavoured RL step.</dd>
-          <dt id="t4-process-supervision">Process supervision</dt><dd>Scoring each step of a reasoning trace with a separately-trained reward model (PRM). Higher fidelity than outcome reward; expensive because the labels are step-level human judgments.</dd>
+          <dt id="t4-process-supervision">Process supervision</dt><dd>Scoring each step of a reasoning trace with a separately-trained reward model (PRM). Higher fidelity than outcome reward; the step labels come from human judges (PRM800K) or are generated automatically from rollouts (Math-Shepherd).</dd>
           <dt id="t4-outcome-supervision">Outcome supervision</dt><dd>Scoring only the final answer with a verifier (math executor, code runner, string-match). Cheap data, harder optimisation; the recipe behind R1-style training.</dd>
           <dt id="t4-prm">PRM (Process Reward Model)</dt><dd>A reward model trained on step-level labels. Scores each step of a candidate reasoning trace at RL training time.</dd>
           <dt id="t4-orm">ORM (Outcome Reward Model)</dt><dd>A reward signal derived from a final-answer verifier — often a deterministic checker rather than a trained model. Reward = 1 if the verifier passes, 0 otherwise.</dd>
-          <dt id="t4-grpo">GRPO (Group Relative Policy Optimisation)</dt><dd>RL fine-tuning algorithm used by DeepSeek-R1 and similar recipes. Drops PPO&#x27;s value (critic) network; computes advantage group-relative across G samples per prompt — roughly half the memory and no critic to keep stable. The practical RL recipe at SLM scale.</dd>
+          <dt id="t4-grpo">GRPO (Group Relative Policy Optimisation)</dt><dd>RL fine-tuning algorithm used by DeepSeek-R1 and similar recipes. Drops PPO&#x27;s value (critic) network and computes the advantage relative to a group of G samples per prompt — one model fewer to hold in memory and no critic to keep stable. The practical RL recipe at SLM scale.</dd>
         </dl>
       </section>
 
