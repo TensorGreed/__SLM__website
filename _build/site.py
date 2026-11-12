@@ -1024,6 +1024,19 @@ def check_jsonld(rel: str, text: str, facts: dict, pages: set[str], texts: dict)
             for i, v in enumerate(o):
                 walk_urls(v, f"{path}[{i}]")
 
+    def dup_at_ids(o, path):
+        """@ids must be unique among top-level nodes and among the members of any list."""
+        if isinstance(o, dict):
+            for k, v in o.items():
+                dup_at_ids(v, f"{path}.{k}")
+        elif isinstance(o, list):
+            seen = [x["@id"] for x in o if isinstance(x, dict) and "@id" in x]
+            for d in sorted({i for i in seen if seen.count(i) > 1}):
+                err(f"{path}: @id {d} used by {seen.count(d)} nodes")
+            for i, v in enumerate(o):
+                dup_at_ids(v, f"{path}[{i}]")
+    dup_at_ids(nodes, "nodes")
+
     found: list[str] = []
     for n in nodes:
         types = ld_types(n)
@@ -1250,6 +1263,10 @@ def cmd_check(args) -> int:
             errors.append(f"{rel}: missing meta description")
         elif len(d) > 160:
             long_d.append(f"{rel} ({len(d)})")
+        all_ids = re.findall(r'\bid="([^"]+)"', text)
+        dup_ids = sorted({i for i in all_ids if all_ids.count(i) > 1})
+        if dup_ids:
+            errors.append(f"{rel}: duplicate HTML id(s): {', '.join(dup_ids)}")
         if s.headings.count(1) != 1:
             errors.append(f"{rel}: {s.headings.count(1)} <h1> elements (want 1)")
         for a, b in zip(s.headings, s.headings[1:]):
