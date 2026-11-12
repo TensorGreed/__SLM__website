@@ -92,7 +92,7 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "completion_only_loss=True, which masks the user and system turns"
+              "text": "completion_only_loss=True"
             },
             {
               "@type": "Answer",
@@ -141,7 +141,7 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 3,
-            "text": "The loss mask leaks into the user turns",
+            "text": "The loss mask leaks into the user turns, so it learns user text",
             "answerExplanation": {
               "@type": "Comment",
               "text": "That is role bleed: the model was trained to produce user text. Decode the unmasked label positions of one batch; if you see user-voice text, the mask is wrong (completion_only_loss on messages data does exactly this)."
@@ -174,7 +174,7 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Not directly; it mainly teaches your turn structure",
+            "text": "Not directly; it mainly teaches turn structure",
             "answerExplanation": {
               "@type": "Comment",
               "text": "Don't oversell multi-turn training. It makes the model better at your turn structure on conversations like yours; long-range coherence and context length are mostly base-model properties."
@@ -429,7 +429,7 @@ trainer.train()   # only once the mask is right</code></pre>
               {
                 "q": "On a messages (conversational) dataset in current TRL, which setting supervises only the assistant turns?",
                 "options": [
-                  "completion_only_loss=True, which masks the user and system turns",
+                  "completion_only_loss=True",
                   "assistant_only_loss with generation markers",
                   "The default; SFTTrainer always masks non-assistant tokens",
                   "Packing"
@@ -443,7 +443,7 @@ trainer.train()   # only once the mask is right</code></pre>
                   "The learning rate is too low to shift the base's voice",
                   "The tokenizer is missing the user-role special tokens",
                   "Too many epochs",
-                  "The loss mask leaks into the user turns"
+                  "The loss mask leaks into the user turns, so it learns user text"
                 ],
                 "answer": 3,
                 "explanation": "That is role bleed: the model was trained to produce user text. Decode the unmasked label positions of one batch; if you see user-voice text, the mask is wrong (completion_only_loss on messages data does exactly this)."
@@ -452,7 +452,7 @@ trainer.train()   # only once the mask is right</code></pre>
                 "q": "Does training on multi-turn data make the model 'better at long conversations'?",
                 "options": [
                   "Yes, multi-turn SFT extends the model's usable context window",
-                  "Not directly; it mainly teaches your turn structure",
+                  "Not directly; it mainly teaches turn structure",
                   "Only if every conversation is packed to max_length",
                   "Only with full fine-tuning; LoRA can't learn long context"
                 ],
@@ -478,7 +478,7 @@ trainer.train()   # only once the mask is right</code></pre>
             <ol class="quiz__static">
               <li><p class="quiz__q-text">On a messages (conversational) dataset in current TRL, which setting supervises only the assistant turns?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>completion_only_loss=True, which masks the user and system turns</li>
+                  <li>completion_only_loss=True</li>
                   <li>assistant_only_loss with generation markers</li>
                   <li>The default; SFTTrainer always masks non-assistant tokens</li>
                   <li>Packing</li>
@@ -489,17 +489,17 @@ trainer.train()   # only once the mask is right</code></pre>
                   <li>The learning rate is too low to shift the base's voice</li>
                   <li>The tokenizer is missing the user-role special tokens</li>
                   <li>Too many epochs</li>
-                  <li>The loss mask leaks into the user turns</li>
+                  <li>The loss mask leaks into the user turns, so it learns user text</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. The loss mask leaks into the user turns</strong> That is role bleed: the model was trained to produce user text. Decode the unmasked label positions of one batch; if you see user-voice text, the mask is wrong (completion_only_loss on messages data does exactly this).</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. The loss mask leaks into the user turns, so it learns user text</strong> That is role bleed: the model was trained to produce user text. Decode the unmasked label positions of one batch; if you see user-voice text, the mask is wrong (completion_only_loss on messages data does exactly this).</p></details></li>
               <li><p class="quiz__q-text">Does training on multi-turn data make the model 'better at long conversations'?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Yes, multi-turn SFT extends the model's usable context window</li>
-                  <li>Not directly; it mainly teaches your turn structure</li>
+                  <li>Not directly; it mainly teaches turn structure</li>
                   <li>Only if every conversation is packed to max_length</li>
                   <li>Only with full fine-tuning; LoRA can't learn long context</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Not directly; it mainly teaches your turn structure</strong> Don't oversell multi-turn training. It makes the model better at your turn structure on conversations like yours; long-range coherence and context length are mostly base-model properties.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Not directly; it mainly teaches turn structure</strong> Don't oversell multi-turn training. It makes the model better at your turn structure on conversations like yours; long-range coherence and context length are mostly base-model properties.</p></details></li>
               <li><p class="quiz__q-text">Why does multi-turn SFT usually need a larger max_length than single-turn?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Multi-turn templates repeat the system prompt before every turn</li>

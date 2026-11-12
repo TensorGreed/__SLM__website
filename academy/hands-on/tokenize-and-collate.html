@@ -141,7 +141,7 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 0,
-            "text": "So loss falls only on the completion",
+            "text": "So loss falls only on the completion tokens, not the prompt",
             "answerExplanation": {
               "@type": "Comment",
               "text": "It implements completion-only supervision: the model learns to produce the answer, not echo the prompt. Labels don't change the input; the model still reads the full prompt."
@@ -163,7 +163,7 @@
             {
               "@type": "Answer",
               "position": 2,
-              "text": "0"
+              "text": "0 (zero)"
             },
             {
               "@type": "Answer",
@@ -191,7 +191,7 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Every label equals its input id, including the prompt"
+              "text": "Every label equals its input id"
             },
             {
               "@type": "Answer",
@@ -382,7 +382,7 @@ print({k: tuple(v.shape) for k, v in batch.items()})</code></pre>
               {
                 "q": "Why copy input_ids into labels and then overwrite the prompt span with -100?",
                 "options": [
-                  "So loss falls only on the completion",
+                  "So loss falls only on the completion tokens, not the prompt",
                   "So the model sees the prompt only once during attention",
                   "To pad the batch",
                   "So the prompt tokens are hidden from the model's input"
@@ -395,7 +395,7 @@ print({k: tuple(v.shape) for k, v in batch.items()})</code></pre>
                 "options": [
                   "-100",
                   "The pad token id",
-                  "0",
+                  "0 (zero)",
                   "The EOS token id"
                 ],
                 "answer": 0,
@@ -404,7 +404,7 @@ print({k: tuple(v.shape) for k, v in batch.items()})</code></pre>
               {
                 "q": "Before training, you should inspect a tokenized example to confirm…",
                 "options": [
-                  "Every label equals its input id, including the prompt",
+                  "Every label equals its input id",
                   "Completion tokens are unmasked and not truncated",
                   "The attention mask is 0 on the prompt tokens",
                   "The labels are shifted one position right of input_ids"
@@ -428,23 +428,23 @@ print({k: tuple(v.shape) for k, v in batch.items()})</code></pre>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Excludes that position from the loss</strong> -100 is PyTorch cross-entropy's ignore index: those positions contribute no loss. Attention is controlled separately by attention_mask.</p></details></li>
               <li><p class="quiz__q-text">Why copy input_ids into labels and then overwrite the prompt span with -100?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>So loss falls only on the completion</li>
+                  <li>So loss falls only on the completion tokens, not the prompt</li>
                   <li>So the model sees the prompt only once during attention</li>
                   <li>To pad the batch</li>
                   <li>So the prompt tokens are hidden from the model's input</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. So loss falls only on the completion</strong> It implements completion-only supervision: the model learns to produce the answer, not echo the prompt. Labels don't change the input; the model still reads the full prompt.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. So loss falls only on the completion tokens, not the prompt</strong> It implements completion-only supervision: the model learns to produce the answer, not echo the prompt. Labels don't change the input; the model still reads the full prompt.</p></details></li>
               <li><p class="quiz__q-text">What does DataCollatorForSeq2Seq pad labels with?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>-100</li>
                   <li>The pad token id</li>
-                  <li>0</li>
+                  <li>0 (zero)</li>
                   <li>The EOS token id</li>
                 </ol>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. -100</strong> It pads labels with label_pad_token_id, -100 by default, so padded positions are ignored by the loss too. Padding labels with the pad token id would train the model on padding.</p></details></li>
               <li><p class="quiz__q-text">Before training, you should inspect a tokenized example to confirm…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Every label equals its input id, including the prompt</li>
+                  <li>Every label equals its input id</li>
                   <li>Completion tokens are unmasked and not truncated</li>
                   <li>The attention mask is 0 on the prompt tokens</li>
                   <li>The labels are shifted one position right of input_ids</li>

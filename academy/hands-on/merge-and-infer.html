@@ -108,7 +108,7 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 2,
-            "text": "A plain model with the adapter folded in",
+            "text": "A plain model with the adapter folded into the base weights",
             "answerExplanation": {
               "@type": "Comment",
               "text": "It adds the LoRA delta into the base weights and removes the PEFT wrapper. unload() alone strips the adapter without merging. Merging into a bf16 base rounds the merged weights to bf16; merge in fp32 for maximum fidelity."
@@ -130,7 +130,7 @@
             {
               "@type": "Answer",
               "position": 1,
-              "text": "When the base is large"
+              "text": "When the base model is too large to load twice"
             },
             {
               "@type": "Answer",
@@ -361,7 +361,7 @@ print(t.decode(m.generate(**ids, max_new_tokens=8, do_sample=False)[0][ids["inpu
                 "options": [
                   "The base model with the adapter detached and discarded",
                   "A PeftModel whose adapter can still be toggled off",
-                  "A plain model with the adapter folded in",
+                  "A plain model with the adapter folded into the base weights",
                   "A 4-bit GGUF copy"
                 ],
                 "answer": 2,
@@ -371,7 +371,7 @@ print(t.decode(m.generate(**ids, max_new_tokens=8, do_sample=False)[0][ids["inpu
                 "q": "When should you KEEP the adapter separate instead of merging?",
                 "options": [
                   "When serving on CPU, where merged weights run slower",
-                  "When the base is large",
+                  "When the base model is too large to load twice",
                   "When many tasks share one base model",
                   "Never; unmerged adapters can't be loaded for serving"
                 ],
@@ -410,14 +410,14 @@ print(t.decode(m.generate(**ids, max_new_tokens=8, do_sample=False)[0][ids["inpu
                 <ol class="quiz__static-options" type="A">
                   <li>The base model with the adapter detached and discarded</li>
                   <li>A PeftModel whose adapter can still be toggled off</li>
-                  <li>A plain model with the adapter folded in</li>
+                  <li>A plain model with the adapter folded into the base weights</li>
                   <li>A 4-bit GGUF copy</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. A plain model with the adapter folded in</strong> It adds the LoRA delta into the base weights and removes the PEFT wrapper. unload() alone strips the adapter without merging. Merging into a bf16 base rounds the merged weights to bf16; merge in fp32 for maximum fidelity.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. A plain model with the adapter folded into the base weights</strong> It adds the LoRA delta into the base weights and removes the PEFT wrapper. unload() alone strips the adapter without merging. Merging into a bf16 base rounds the merged weights to bf16; merge in fp32 for maximum fidelity.</p></details></li>
               <li><p class="quiz__q-text">When should you KEEP the adapter separate instead of merging?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>When serving on CPU, where merged weights run slower</li>
-                  <li>When the base is large</li>
+                  <li>When the base model is too large to load twice</li>
                   <li>When many tasks share one base model</li>
                   <li>Never; unmerged adapters can't be loaded for serving</li>
                 </ol>

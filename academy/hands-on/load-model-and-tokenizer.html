@@ -108,7 +108,7 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "To halve weight memory versus fp32",
+            "text": "To halve the memory the weights take compared with fp32",
             "answerExplanation": {
               "@type": "Comment",
               "text": "Loading in bf16 stores the weights in 16 bits, half of fp32. That is plain bf16 storage, not mixed precision (autocast compute with fp32 master weights); LoRA keeps its adapter in fp32. Older GPUs such as the T4 lack native bf16 (torch only emulates it), so the code loads fp16 there and fp32 on CPU."
@@ -135,7 +135,7 @@
             {
               "@type": "Answer",
               "position": 2,
-              "text": "To shrink the vocabulary"
+              "text": "To shrink the vocabulary so batches use less memory"
             }
           ],
           "acceptedAnswer": {
@@ -163,7 +163,7 @@
             {
               "@type": "Answer",
               "position": 1,
-              "text": "To warm the CUDA kernels so training runs faster"
+              "text": "To warm up the CUDA kernels"
             },
             {
               "@type": "Answer",
@@ -370,7 +370,7 @@ print(tok.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True
                 "q": "Why load the model with dtype=torch.bfloat16?",
                 "options": [
                   "To switch on mixed precision with fp32 master weights",
-                  "To halve weight memory versus fp32",
+                  "To halve the memory the weights take compared with fp32",
                   "To speed up tokenization",
                   "Because every CPU and GPU computes fastest in bf16"
                 ],
@@ -382,7 +382,7 @@ print(tok.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True
                 "options": [
                   "So the model learns to stop by training on the pad tokens",
                   "Generation refuses to run on any model without a pad token",
-                  "To shrink the vocabulary",
+                  "To shrink the vocabulary so batches use less memory",
                   "Batches need a pad token to make rows equal length"
                 ],
                 "answer": 3,
@@ -392,7 +392,7 @@ print(tok.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True
                 "q": "Why run a generation on the base model BEFORE fine-tuning?",
                 "options": [
                   "To cache the weights",
-                  "To warm the CUDA kernels so training runs faster",
+                  "To warm up the CUDA kernels",
                   "To get a baseline to measure the lift against",
                   "Because peft refuses to attach LoRA to an unused model"
                 ],
@@ -419,23 +419,23 @@ print(tok.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True
               <li><p class="quiz__q-text">Why load the model with dtype=torch.bfloat16?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>To switch on mixed precision with fp32 master weights</li>
-                  <li>To halve weight memory versus fp32</li>
+                  <li>To halve the memory the weights take compared with fp32</li>
                   <li>To speed up tokenization</li>
                   <li>Because every CPU and GPU computes fastest in bf16</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. To halve weight memory versus fp32</strong> Loading in bf16 stores the weights in 16 bits, half of fp32. That is plain bf16 storage, not mixed precision (autocast compute with fp32 master weights); LoRA keeps its adapter in fp32. Older GPUs such as the T4 lack native bf16 (torch only emulates it), so the code loads fp16 there and fp32 on CPU.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. To halve the memory the weights take compared with fp32</strong> Loading in bf16 stores the weights in 16 bits, half of fp32. That is plain bf16 storage, not mixed precision (autocast compute with fp32 master weights); LoRA keeps its adapter in fp32. Older GPUs such as the T4 lack native bf16 (torch only emulates it), so the code loads fp16 there and fp32 on CPU.</p></details></li>
               <li><p class="quiz__q-text">Why set tok.pad_token = tok.eos_token when pad_token is None?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>So the model learns to stop by training on the pad tokens</li>
                   <li>Generation refuses to run on any model without a pad token</li>
-                  <li>To shrink the vocabulary</li>
+                  <li>To shrink the vocabulary so batches use less memory</li>
                   <li>Batches need a pad token to make rows equal length</li>
                 </ol>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Batches need a pad token to make rows equal length</strong> Rectangular batches need a pad token, and reusing EOS is the common fix. It's safe because pad positions are excluded by the attention mask and set to -100 in the labels, so the model never trains on them. SmolLM2-Instruct already defines one, so the branch doesn't fire there.</p></details></li>
               <li><p class="quiz__q-text">Why run a generation on the base model BEFORE fine-tuning?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>To cache the weights</li>
-                  <li>To warm the CUDA kernels so training runs faster</li>
+                  <li>To warm up the CUDA kernels</li>
                   <li>To get a baseline to measure the lift against</li>
                   <li>Because peft refuses to attach LoRA to an unused model</li>
                 </ol>

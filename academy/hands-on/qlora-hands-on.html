@@ -141,7 +141,7 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 3,
-            "text": "Freezes the base, upcasts 16-bit params, enables checkpointing",
+            "text": "Freezes the base, upcasts 16-bit params to fp32, enables checkpointing",
             "answerExplanation": {
               "@type": "Comment",
               "text": "It freezes the base, casts every non-quantized fp16/bf16 param (norms, embeddings) to fp32, which costs memory, enables input gradients, and turns on gradient checkpointing. It does nothing to optimizer states; quantization happens at load time via BitsAndBytesConfig."
@@ -174,7 +174,7 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 2,
-            "text": "bf16 (or fp16)",
+            "text": "bf16 (fp16 on GPUs older than Ampere)",
             "answerExplanation": {
               "@type": "Comment",
               "text": "Weights are stored in 4-bit (NF4) and dequantized to the compute dtype for each matmul. bf16 is standard on Ampere and newer, fp16 on older GPUs. 4-bit is the storage format, never the compute dtype; the fp32 default works but is slower."
@@ -441,7 +441,7 @@ trainer.save_model("qlora-out/adapter")</code></pre>
                   "Disables optimizer states the 4-bit base can't carry, saving memory",
                   "Quantizes the base to 4-bit NF4 and attaches the LoRA adapters",
                   "Merges earlier adapters so the quantized base trains cleanly",
-                  "Freezes the base, upcasts 16-bit params, enables checkpointing"
+                  "Freezes the base, upcasts 16-bit params to fp32, enables checkpointing"
                 ],
                 "answer": 3,
                 "explanation": "It freezes the base, casts every non-quantized fp16/bf16 param (norms, embeddings) to fp32, which costs memory, enables input gradients, and turns on gradient checkpointing. It does nothing to optimizer states; quantization happens at load time via BitsAndBytesConfig."
@@ -451,7 +451,7 @@ trainer.save_model("qlora-out/adapter")</code></pre>
                 "options": [
                   "int4",
                   "int8, for faster 8-bit matmuls",
-                  "bf16 (or fp16)",
+                  "bf16 (fp16 on GPUs older than Ampere)",
                   "fp32, the only dtype bitsandbytes computes in"
                 ],
                 "answer": 2,
@@ -487,17 +487,17 @@ trainer.save_model("qlora-out/adapter")</code></pre>
                   <li>Disables optimizer states the 4-bit base can't carry, saving memory</li>
                   <li>Quantizes the base to 4-bit NF4 and attaches the LoRA adapters</li>
                   <li>Merges earlier adapters so the quantized base trains cleanly</li>
-                  <li>Freezes the base, upcasts 16-bit params, enables checkpointing</li>
+                  <li>Freezes the base, upcasts 16-bit params to fp32, enables checkpointing</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Freezes the base, upcasts 16-bit params, enables checkpointing</strong> It freezes the base, casts every non-quantized fp16/bf16 param (norms, embeddings) to fp32, which costs memory, enables input gradients, and turns on gradient checkpointing. It does nothing to optimizer states; quantization happens at load time via BitsAndBytesConfig.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Freezes the base, upcasts 16-bit params to fp32, enables checkpointing</strong> It freezes the base, casts every non-quantized fp16/bf16 param (norms, embeddings) to fp32, which costs memory, enables input gradients, and turns on gradient checkpointing. It does nothing to optimizer states; quantization happens at load time via BitsAndBytesConfig.</p></details></li>
               <li><p class="quiz__q-text">On a modern GPU, what do you usually set bnb_4bit_compute_dtype to?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>int4</li>
                   <li>int8, for faster 8-bit matmuls</li>
-                  <li>bf16 (or fp16)</li>
+                  <li>bf16 (fp16 on GPUs older than Ampere)</li>
                   <li>fp32, the only dtype bitsandbytes computes in</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. bf16 (or fp16)</strong> Weights are stored in 4-bit (NF4) and dequantized to the compute dtype for each matmul. bf16 is standard on Ampere and newer, fp16 on older GPUs. 4-bit is the storage format, never the compute dtype; the fp32 default works but is slower.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. bf16 (fp16 on GPUs older than Ampere)</strong> Weights are stored in 4-bit (NF4) and dequantized to the compute dtype for each matmul. bf16 is standard on Ampere and newer, fp16 on older GPUs. 4-bit is the storage format, never the compute dtype; the fp32 default works but is slower.</p></details></li>
               <li><p class="quiz__q-text">After a QLoRA run, you should…</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Ship it; NF4 is lossless</li>

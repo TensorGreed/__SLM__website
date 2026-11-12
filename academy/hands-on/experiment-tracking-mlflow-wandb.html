@@ -108,7 +108,7 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 0,
-            "text": "You can't reconstruct an old run's config, code or data",
+            "text": "You can't rebuild an old run's config, code or data",
             "answerExplanation": {
               "@type": "Comment",
               "text": "When eval regresses weeks later, tracking turns 'why?' into a join over config, code SHA and data. Without it every comparison restarts from scratch. Tracking doesn't change speed, checkpointing or whether eval runs."
@@ -141,7 +141,7 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 3,
-            "text": "A rerun lands within noise of the original result",
+            "text": "A rerun lands within noise of the original result, with seeds pinned",
             "answerExplanation": {
               "@type": "Comment",
               "text": "Bit-identity is hard in ML (GPU kernels, library versions) and rarely needed; the practical bar is that the same recipe gives an equivalent result within noise. Still pin seeds: it's cheap and reduces variance between compared runs. Terms vary; ACM's badging calls same-team, same-setup reruns 'repeatability'."
@@ -168,7 +168,7 @@
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The command line used, since it fully determines the run"
+              "text": "The command line, which fully determines the run"
             }
           ],
           "acceptedAnswer": {
@@ -409,7 +409,7 @@ with mlflow.start_run(run_name="sft-v3-lora-r16"):   # the Trainer's MLflow call
               {
                 "q": "Why does ad-hoc training without tracking lose to bookkeeping?",
                 "options": [
-                  "You can't reconstruct an old run's config, code or data",
+                  "You can't rebuild an old run's config, code or data",
                   "Untracked runs train slower because nothing is cached",
                   "Trainer only saves checkpoints when a tracker is attached",
                   "Without a tracker, eval metrics aren't computed during training at all"
@@ -423,7 +423,7 @@ with mlflow.start_run(run_name="sft-v3-lora-r16"):   # the Trainer's MLflow call
                   "A rerun gives bit-for-bit identical weights and outputs",
                   "Identical eval score on any GPU",
                   "Seeds don't matter once the config and data hash are logged",
-                  "A rerun lands within noise of the original result"
+                  "A rerun lands within noise of the original result, with seeds pinned"
                 ],
                 "answer": 3,
                 "explanation": "Bit-identity is hard in ML (GPU kernels, library versions) and rarely needed; the practical bar is that the same recipe gives an equivalent result within noise. Still pin seeds: it's cheap and reduces variance between compared runs. Terms vary; ACM's badging calls same-team, same-setup reruns 'repeatability'."
@@ -434,7 +434,7 @@ with mlflow.start_run(run_name="sft-v3-lora-r16"):   # the Trainer's MLflow call
                   "The final eval number",
                   "Per-step loss curves and the GPU type, which explain most regressions",
                   "Config, git SHA, data hash, metrics and artefacts",
-                  "The command line used, since it fully determines the run"
+                  "The command line, which fully determines the run"
                 ],
                 "answer": 2,
                 "explanation": "Anything less and you can't reliably compare two runs later. Metrics means per-step loss, eval and system metrics (the MLflow callback needs enable_system_metrics_logging for those). Library versions and a hash of the tokenized data catch preprocessing changes the raw-file hash misses."
@@ -458,26 +458,26 @@ with mlflow.start_run(run_name="sft-v3-lora-r16"):   # the Trainer's MLflow call
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Why does ad-hoc training without tracking lose to bookkeeping?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>You can't reconstruct an old run's config, code or data</li>
+                  <li>You can't rebuild an old run's config, code or data</li>
                   <li>Untracked runs train slower because nothing is cached</li>
                   <li>Trainer only saves checkpoints when a tracker is attached</li>
                   <li>Without a tracker, eval metrics aren't computed during training at all</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. You can't reconstruct an old run's config, code or data</strong> When eval regresses weeks later, tracking turns 'why?' into a join over config, code SHA and data. Without it every comparison restarts from scratch. Tracking doesn't change speed, checkpointing or whether eval runs.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. You can't rebuild an old run's config, code or data</strong> When eval regresses weeks later, tracking turns 'why?' into a join over config, code SHA and data. Without it every comparison restarts from scratch. Tracking doesn't change speed, checkpointing or whether eval runs.</p></details></li>
               <li><p class="quiz__q-text">What is the practical reproducibility bar a tracking setup should target?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>A rerun gives bit-for-bit identical weights and outputs</li>
                   <li>Identical eval score on any GPU</li>
                   <li>Seeds don't matter once the config and data hash are logged</li>
-                  <li>A rerun lands within noise of the original result</li>
+                  <li>A rerun lands within noise of the original result, with seeds pinned</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. A rerun lands within noise of the original result</strong> Bit-identity is hard in ML (GPU kernels, library versions) and rarely needed; the practical bar is that the same recipe gives an equivalent result within noise. Still pin seeds: it's cheap and reduces variance between compared runs. Terms vary; ACM's badging calls same-team, same-setup reruns 'repeatability'.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. A rerun lands within noise of the original result, with seeds pinned</strong> Bit-identity is hard in ML (GPU kernels, library versions) and rarely needed; the practical bar is that the same recipe gives an equivalent result within noise. Still pin seeds: it's cheap and reduces variance between compared runs. Terms vary; ACM's badging calls same-team, same-setup reruns 'repeatability'.</p></details></li>
               <li><p class="quiz__q-text">What is the minimum useful set of things to log on every run?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>The final eval number</li>
                   <li>Per-step loss curves and the GPU type, which explain most regressions</li>
                   <li>Config, git SHA, data hash, metrics and artefacts</li>
-                  <li>The command line used, since it fully determines the run</li>
+                  <li>The command line, which fully determines the run</li>
                 </ol>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Config, git SHA, data hash, metrics and artefacts</strong> Anything less and you can't reliably compare two runs later. Metrics means per-step loss, eval and system metrics (the MLflow callback needs enable_system_metrics_logging for those). Library versions and a hash of the tokenized data catch preprocessing changes the raw-file hash misses.</p></details></li>
               <li><p class="quiz__q-text">When would you pick MLflow over Weights &amp; Biases?</p>

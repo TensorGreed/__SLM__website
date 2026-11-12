@@ -108,7 +108,7 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 0,
-            "text": "No — field values can still be wrong",
+            "text": "No — field values can still be wrong even when the JSON parses",
             "answerExplanation": {
               "@type": "Comment",
               "text": "A model with 95% valid JSON and 60% accuracy on a critical field is broken in production. Report parse rate, schema-valid rate, and per-field accuracy."
@@ -135,7 +135,7 @@
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It's faster"
+              "text": "It's faster than json.loads at parsing"
             }
           ],
           "acceptedAnswer": {
@@ -163,7 +163,7 @@
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Switch to QLoRA so the model can fit longer outputs"
+              "text": "Switch to QLoRA to fit longer outputs"
             },
             {
               "@type": "Answer",
@@ -437,7 +437,7 @@ per-field accuracy (over 95 valid parses):
               {
                 "q": "Your structured-output model reports a 95% valid-JSON rate. Is that enough to ship?",
                 "options": [
-                  "No — field values can still be wrong",
+                  "No — field values can still be wrong even when the JSON parses",
                   "Yes — valid JSON means the extraction works",
                   "Yes, above 90%",
                   "No — it needs a 99% parse rate before anything else"
@@ -451,7 +451,7 @@ per-field accuracy (over 95 valid parses):
                   "It parses malformed JSON that json.loads rejects",
                   "It checks types and required fields",
                   "It repairs wrong field values using the schema",
-                  "It's faster"
+                  "It's faster than json.loads at parsing"
                 ],
                 "answer": 1,
                 "explanation": "Parsing isn't matching the schema: json.loads accepts {\"total\": \"not a number\"}, Pydantic flags it. Note lax mode coerces \"12.50\" to a float; use strict mode if that matters. model_validate_json also rejects valid JSON that isn't an object."
@@ -461,7 +461,7 @@ per-field accuracy (over 95 valid parses):
                 "options": [
                   "Decoding: stop tokens, max_new_tokens, repair",
                   "More training data",
-                  "Switch to QLoRA so the model can fit longer outputs",
+                  "Switch to QLoRA to fit longer outputs",
                   "Train more epochs until the parse rate stops rising"
                 ],
                 "answer": 0,
@@ -486,25 +486,25 @@ per-field accuracy (over 95 valid parses):
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Your structured-output model reports a 95% valid-JSON rate. Is that enough to ship?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>No — field values can still be wrong</li>
+                  <li>No — field values can still be wrong even when the JSON parses</li>
                   <li>Yes — valid JSON means the extraction works</li>
                   <li>Yes, above 90%</li>
                   <li>No — it needs a 99% parse rate before anything else</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. No — field values can still be wrong</strong> A model with 95% valid JSON and 60% accuracy on a critical field is broken in production. Report parse rate, schema-valid rate, and per-field accuracy.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. No — field values can still be wrong even when the JSON parses</strong> A model with 95% valid JSON and 60% accuracy on a critical field is broken in production. Report parse rate, schema-valid rate, and per-field accuracy.</p></details></li>
               <li><p class="quiz__q-text">Why use Pydantic over a plain json.loads?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>It parses malformed JSON that json.loads rejects</li>
                   <li>It checks types and required fields</li>
                   <li>It repairs wrong field values using the schema</li>
-                  <li>It's faster</li>
+                  <li>It's faster than json.loads at parsing</li>
                 </ol>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. It checks types and required fields</strong> Parsing isn't matching the schema: json.loads accepts {"total": "not a number"}, Pydantic flags it. Note lax mode coerces "12.50" to a float; use strict mode if that matters. model_validate_json also rejects valid JSON that isn't an object.</p></details></li>
               <li><p class="quiz__q-text">Lots of 'json' failures (not parseable). The cheapest first check is…</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Decoding: stop tokens, max_new_tokens, repair</li>
                   <li>More training data</li>
-                  <li>Switch to QLoRA so the model can fit longer outputs</li>
+                  <li>Switch to QLoRA to fit longer outputs</li>
                   <li>Train more epochs until the parse rate stops rising</li>
                 </ol>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Decoding: stop tokens, max_new_tokens, repair</strong> Parse failures are often decoding artefacts: prose after the JSON, a missing stop, or a max_new_tokens too small for the object (Lesson 2.7's 8 tokens truncates every invoice). Fix those in minutes; retrain only if they don't help (Lesson 1.19 honest beat).</p></details></li>

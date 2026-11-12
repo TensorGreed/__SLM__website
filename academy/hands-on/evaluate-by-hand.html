@@ -102,7 +102,7 @@
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Load only the optimizer state"
+              "text": "Load only the optimizer state saved at the last step"
             }
           ],
           "acceptedAnswer": {
@@ -135,7 +135,7 @@
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It makes the outputs bit-identical across every GPU model"
+              "text": "It makes outputs identical on every GPU model"
             }
           ],
           "acceptedAnswer": {
@@ -174,7 +174,7 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "PEFT injected the adapter into base in place",
+            "text": "PEFT injected the adapter into base in place, so the baseline was tuned",
             "answerExplanation": {
               "@type": "Comment",
               "text": "PEFT modifies the model you pass in: after PeftModel.from_pretrained(base, …), base carries the LoRA layers, so the \"baseline\" is the tuned model and the lift reads about 0. Score the base before attaching, or inside `with tuned.disable_adapter():`."
@@ -381,7 +381,7 @@ print("lift:", tuned_acc - base_acc)</code></pre>
                   "Load the base and attach the adapter with PeftModel",
                   "Load the base alone; training already updated its weights",
                   "Load only the adapter file, since it holds a full model copy",
-                  "Load only the optimizer state"
+                  "Load only the optimizer state saved at the last step"
                 ],
                 "answer": 0,
                 "explanation": "LoRA trains a small separate adapter while the base stays frozen, so inference is base + adapter (PeftModel.from_pretrained). The base's own weights are unchanged, and the adapter file holds only the low-rank matrices."
@@ -392,7 +392,7 @@ print("lift:", tuned_acc - base_acc)</code></pre>
                   "Repeatable outputs on the same hardware and batch",
                   "It always gives higher accuracy than sampling at any temperature",
                   "It removes the need for a held-out gold set",
-                  "It makes the outputs bit-identical across every GPU model"
+                  "It makes outputs identical on every GPU model"
                 ],
                 "answer": 0,
                 "explanation": "Greedy picks the top token each step, so reruns match on the same hardware and batch size. Different kernels or padding can still flip near-ties, so results are not bit-identical across setups."
@@ -401,7 +401,7 @@ print("lift:", tuned_acc - base_acc)</code></pre>
                 "q": "Your script prints the same base and tuned accuracy on every run. It scored the base after calling PeftModel.from_pretrained(base, …). What happened?",
                 "options": [
                   "Greedy decoding hid the difference",
-                  "PEFT injected the adapter into base in place",
+                  "PEFT injected the adapter into base in place, so the baseline was tuned",
                   "Accuracy needs a merged model; generate skips unmerged adapters",
                   "from_pretrained reset the adapter to zero, so it does nothing"
                 ],
@@ -430,7 +430,7 @@ print("lift:", tuned_acc - base_acc)</code></pre>
                   <li>Load the base and attach the adapter with PeftModel</li>
                   <li>Load the base alone; training already updated its weights</li>
                   <li>Load only the adapter file, since it holds a full model copy</li>
-                  <li>Load only the optimizer state</li>
+                  <li>Load only the optimizer state saved at the last step</li>
                 </ol>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Load the base and attach the adapter with PeftModel</strong> LoRA trains a small separate adapter while the base stays frozen, so inference is base + adapter (PeftModel.from_pretrained). The base's own weights are unchanged, and the adapter file holds only the low-rank matrices.</p></details></li>
               <li><p class="quiz__q-text">Why use do_sample=False (greedy) for evaluation?</p>
@@ -438,17 +438,17 @@ print("lift:", tuned_acc - base_acc)</code></pre>
                   <li>Repeatable outputs on the same hardware and batch</li>
                   <li>It always gives higher accuracy than sampling at any temperature</li>
                   <li>It removes the need for a held-out gold set</li>
-                  <li>It makes the outputs bit-identical across every GPU model</li>
+                  <li>It makes outputs identical on every GPU model</li>
                 </ol>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Repeatable outputs on the same hardware and batch</strong> Greedy picks the top token each step, so reruns match on the same hardware and batch size. Different kernels or padding can still flip near-ties, so results are not bit-identical across setups.</p></details></li>
               <li><p class="quiz__q-text">Your script prints the same base and tuned accuracy on every run. It scored the base after calling PeftModel.from_pretrained(base, …). What happened?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Greedy decoding hid the difference</li>
-                  <li>PEFT injected the adapter into base in place</li>
+                  <li>PEFT injected the adapter into base in place, so the baseline was tuned</li>
                   <li>Accuracy needs a merged model; generate skips unmerged adapters</li>
                   <li>from_pretrained reset the adapter to zero, so it does nothing</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. PEFT injected the adapter into base in place</strong> PEFT modifies the model you pass in: after PeftModel.from_pretrained(base, …), base carries the LoRA layers, so the "baseline" is the tuned model and the lift reads about 0. Score the base before attaching, or inside `with tuned.disable_adapter():`.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. PEFT injected the adapter into base in place, so the baseline was tuned</strong> PEFT modifies the model you pass in: after PeftModel.from_pretrained(base, …), base carries the LoRA layers, so the "baseline" is the tuned model and the lift reads about 0. Score the base before attaching, or inside `with tuned.disable_adapter():`.</p></details></li>
               <li><p class="quiz__q-text">What should you do with the gold-set misses?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Add those gold rows to training and re-score the same gold set</li>
