@@ -297,17 +297,18 @@
           </div>
         </header>
 
-        <p>A model's weights are numbers. Storing each in 16 bits (bf16) is the training default; storing them in 4 bits makes the model ~4× smaller and often faster, for a small quality cost. That's <strong>quantization</strong>, and it's how a model that needed a server ends up running on a laptop.</p>
+        <p>A model's weights are numbers. Storing each in 16 bits (bf16) is the training default; storing them in about 4 bits makes the model roughly 3.3–4× smaller and often faster, for a quality cost you have to measure. That's <strong>quantization</strong>, and it's how a model that needed a server ends up running on a laptop.</p>
 
         <h2>Post-training quantization</h2>
         <p>You already met QLoRA (Track 1) — training <em>on</em> a quantized base. Here we quantize <strong>after</strong> training: take the finished model and convert its weights to a lower-bit format. No retraining, just a conversion. The art is doing it without wrecking quality — naive rounding loses too much, so the methods below are smarter about <em>which</em> values get how many bits.</p>
 
         <h2>The methods</h2>
         <ul>
-          <li><strong>Q4_K_M</strong> — a 4-bit "k-quant" from the llama.cpp family. The <code>K</code> means mixed precision within the model (more bits for the sensitive layers); <code>M</code> is the medium-size variant. The default sweet spot for CPU/edge: ~4× smaller, small quality loss.</li>
-          <li><strong>AWQ</strong> (Activation-aware Weight Quantization) — protects the weights that matter most to activations; strong for GPU inference.</li>
-          <li><strong>GPTQ</strong> — a one-shot, layer-by-layer quantization that minimizes the error introduced; also GPU-oriented.</li>
+          <li><strong>Q4_K_M</strong> — a 4-bit "k-quant" from the llama.cpp family. The <code>_K</code> is the <strong>k-quant block format</strong>: weights are grouped into super-blocks of 8 blocks × 32 weights, with the block scales and mins themselves quantized to 6 bits, so Q4_K costs about 4.5 bits per weight. The <code>_M</code> (medium) is the <strong>mix</strong>: Q4_K_M stores half of the attention <code>wv</code> and feed-forward <code>w2</code> tensors as Q6_K and the rest as Q4_K, which lands near 4.8–4.9 bits per weight — about 3.3× smaller than bf16 (llama.cpp PR #1684). The common default for CPU/edge. On sub-1B models 4-bit costs more quality than on 7B+, so try Q5_K_M, Q6_K or Q8_0 too and measure.</li>
+          <li><strong>AWQ</strong> (Activation-aware Weight Quantization, Lin et al., 2023) — uses activation statistics from calibration data to find the salient weight channels and scales them before uniform 4-bit quantization; strong for GPU inference.</li>
+          <li><strong>GPTQ</strong> (Frantar et al., 2022) — a one-shot, layer-by-layer quantization that uses calibration data to minimize the error introduced; also GPU-oriented.</li>
         </ul>
+        <p>Tools move fast here. AutoAWQ is deprecated (its README points to the vLLM project's llm-compressor), and Transformers no longer supports AutoGPTQ; GPTQModel is its maintained successor.</p>
 
         <h2>The formats (the container, not the method)</h2>
         <p>Don't confuse the quantization <em>method</em> with the file <em>format</em>:</p>
@@ -318,12 +319,13 @@
         </ul>
 
         <h2>On the platform</h2>
-        <p>This is Track 3's Export stage (10), with quantization as a first-class choice. The export emits the artifact plus a smoke-check trace, and the variant is tracked so BrewSLM knows what exists (compression itself is under Ship → Package → Options → Compress):</p>
-        <pre class="code-block"><code>export → format: gguf,  quant: Q4_K_M        # CPU / edge
-       → format: safetensors                  # full precision, GPU
-       → format: onnx                          # cross-runtime
-# tracked variants: Q4_K_M | AWQ | GPTQ   (listed under Ship → Package → Options → Compress)
-# RunEvent: export (info) — or export_quantization_failed on the named failure</code></pre>
+        <p>This is Track 3's Export stage (10). Quantization happens first, in the <strong>Compress first</strong> section under <strong>Ship → Package → Options</strong>, which offers two paths; GGUF and ONNX exports need a compressed model from it. BrewSLM has no AWQ or GPTQ path.</p>
+        <pre class="code-block"><code># Ship → Package → Options → "Compress first"
+GGUF bits:  2 → Q2_K   3 → Q3_K_M   4 → Q4_K_M   5 → Q5_K_M
+            6 → Q6_K   8 → Q8_0    16 → F16          # llama.cpp, CPU / edge
+ONNX:       dynamic INT8                              # cross-runtime
+# export formats: gguf | onnx | tensorrt | huggingface | docker
+# RunEvent per export: info on success, export_run_failed on failure</code></pre>
         <div class="callout callout--warning">
           <p class="callout__label">Always re-evaluate after quantizing</p>
           <p>Quantization changes the model's numbers, so it can change its outputs. Re-run your gold set on the quantized artifact — a 4-bit model that's 0.5% worse may be a great trade, but you only know if you measure. The export's smoke check is a floor, not a substitute for your eval.</p>
@@ -332,7 +334,7 @@
         <h2>Picking a target</h2>
         <ul>
           <li><strong>Laptop / phone / CPU</strong> → GGUF + Q4_K_M.</li>
-          <li><strong>GPU server, throughput-first</strong> → AWQ or GPTQ in the vLLM stack.</li>
+          <li><strong>GPU server, throughput-first</strong> → AWQ or GPTQ (or FP8 on recent GPUs) in the vLLM stack — produced outside BrewSLM, e.g. with llm-compressor or GPTQModel.</li>
           <li><strong>Portability across runtimes</strong> → ONNX.</li>
           <li><strong>Quality-critical, room to spare</strong> → keep safetensors at bf16.</li>
         </ul>
@@ -347,11 +349,11 @@
           <dl>
             <dt>quantization</dt><dd>Storing model weights in fewer bits (e.g. 4) to shrink and speed up inference.</dd>
             <dt>post-training quantization</dt><dd>Quantizing a finished model by conversion, with no retraining.</dd>
-            <dt>Q4_K_M</dt><dd>A 4-bit mixed-precision k-quant (llama.cpp/GGUF); the common CPU/edge sweet spot.</dd>
-            <dt>AWQ</dt><dd>Activation-aware Weight Quantization; protects activation-critical weights, GPU-oriented.</dd>
+            <dt>Q4_K_M</dt><dd>A llama.cpp/GGUF k-quant: Q4_K blocks (≈4.5 bits/weight) with some tensors kept at Q6_K (the "M" mix), ≈4.8–4.9 bits/weight overall; the common CPU/edge default.</dd>
+            <dt>AWQ</dt><dd>Activation-aware Weight Quantization; scales activation-salient channels before uniform 4-bit quantization, GPU-oriented.</dd>
             <dt>GPTQ</dt><dd>One-shot, layer-wise quantization minimizing introduced error; GPU-oriented.</dd>
             <dt>GGUF / ONNX</dt><dd>Container formats — GGUF for llama.cpp/edge, ONNX for cross-runtime portability.</dd>
-            <dt>Compress (Ship → Package → Options)</dt><dd>The BrewSLM section for merging LoRA and quantizing a model, tracking which quantized variants exist.</dd>
+            <dt>Compress first (Ship → Package → Options)</dt><dd>The BrewSLM section that quantizes a model before export: GGUF at 2–16 bits (Q4_K_M at 4) or ONNX dynamic INT8.</dd>
           </dl>
         </section>
 

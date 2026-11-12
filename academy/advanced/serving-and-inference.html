@@ -310,7 +310,7 @@
 
         <h2>Latency vs throughput: the core trade</h2>
         <ul>
-          <li><strong>Latency</strong> — time to first/!last token for one request. What an interactive user feels.</li>
+          <li><strong>Latency</strong> — how long one request waits: time to first token (TTFT), time per output token after that, and end-to-end time. What an interactive user feels.</li>
           <li><strong>Throughput</strong> — total tokens/second across all requests. What sets your cost per million tokens.</li>
         </ul>
         <p>They pull against each other: bigger batches raise throughput (cheaper) but can raise per-request latency. Tune to the use case — a chat UI optimizes latency; a nightly batch job optimizes throughput.</p>
@@ -318,11 +318,12 @@
 chat UI (interactive)  -&gt;  small batches, low latency      (fast first token)
 batch job (offline)    -&gt;  large batches, high throughput  (cheap per token)
 
-# quantized weights (AWQ / GPTQ) use less memory
-#   -&gt; a bigger KV cache + larger batches fit -&gt; more throughput</code></pre>
+# quantized weights (AWQ / GPTQ / FP8) use less memory
+#   -&gt; a bigger KV cache + larger batches fit -&gt; often more throughput
+#   (measure at your batch size: at large batch, int4 dequant can eat the gain)</code></pre>
         <div class="callout callout--note">
           <p class="callout__label">From 4.6</p>
-          <p>Quantized serving compounds these wins: a 4-bit model (AWQ/GPTQ on GPU) uses less memory, which means a <em>bigger KV cache and larger batches</em> fit — so quantization buys throughput, not just disk size. Serving and compression are one decision.</p>
+          <p>Quantized serving compounds these wins: a 4-bit model (AWQ/GPTQ on GPU) uses less memory, which means a <em>bigger KV cache and larger batches</em> fit, and at batch 1 fewer bytes are read per token, which cuts latency. At large batch sizes weight-only int4 can become dequantization- or compute-bound and may not raise throughput, so measure at your batch size. Serving and compression are one decision.</p>
         </div>
 
         <div class="callout callout--key">
