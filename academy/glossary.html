@@ -865,7 +865,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#grad-checkpointing",
           "name": "Gradient checkpointing",
-          "description": "Re-computing activations during backprop instead of storing them — trades compute for large memory savings.",
+          "description": "Re-computing activations during backprop instead of storing them — trades roughly a third more compute for large activation-memory savings. BrewSLM's default auto leaves it off up to ~2B parameters and turns it on above that, or when the longest training row exceeds 1,024 tokens.",
           "url": "https://brewslm.com/academy/glossary.html#grad-checkpointing",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -1235,7 +1235,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#t1-cpt",
           "name": "Continued pretraining (CPT)",
-          "description": "Continuing the next-token objective on raw text from a new domain, before any task SFT. Same loss as pretraining, different data, smaller learning rate. The right tool when the base model doesn't speak your domain's language; the wrong tool when it does. See Continued pretraining.",
+          "description": "Continuing the next-token objective on raw text from a new domain, before any task SFT. Same loss as pretraining, different data; full CPT uses a learning rate around 1e-5–5e-5 (as for full SFT), LoRA-CPT around 1e-4, with a fresh warmup and decay. The right tool when the base model doesn't speak your domain's language; the wrong tool when it does. See Continued pretraining.",
           "url": "https://brewslm.com/academy/glossary.html#t1-cpt",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -3000,7 +3000,7 @@
           <dt id="f1">F1 (precision, recall)</dt><dd>Precision = right / flagged; recall = caught / should-have-found; F1 is their harmonic mean.</dd>
           <dt id="generalization-gap">Generalization gap</dt><dd>The distance between training and validation loss; a widening gap signals overfitting.</dd>
           <dt id="grad-accum">Gradient accumulation</dt><dd>Accumulating (averaging) gradients over several micro-batches before one optimizer step, to simulate a larger batch on a small GPU.</dd>
-          <dt id="grad-checkpointing">Gradient checkpointing</dt><dd>Re-computing activations during backprop instead of storing them — trades compute for large memory savings.</dd>
+          <dt id="grad-checkpointing">Gradient checkpointing</dt><dd>Re-computing activations during backprop instead of storing them — trades roughly a third more compute for large activation-memory savings. BrewSLM&#x27;s default <code>auto</code> leaves it off up to ~2B parameters and turns it on above that, or when the longest training row exceeds 1,024 tokens.</dd>
           <dt id="loss-mask">Loss mask</dt><dd>Computing the loss only on completion tokens so the model learns to produce the answer, not echo the prompt. See <a class="inline-link" href="sft-fundamentals/anatomy-of-an-sft-example.html">Anatomy of an SFT example</a>.</dd>
           <dt id="lora-alpha">LoRA alpha</dt><dd>Scales the adapter&#x27;s contribution (scale = alpha/r). Setting alpha = 2×r is a community convention, not a rule (the QLoRA paper used r=64, alpha=16).</dd>
           <dt id="lora-rank">LoRA rank (r)</dt><dd>The adapter's inner dimension / capacity; higher = more room (and more overfit risk). Common: 16.</dd>
@@ -3037,7 +3037,7 @@
           <dt id="t1-ambig">Ambiguous case</dt><dd>An example a thoughtful human would have to pause on; labelled per a stated rule so the model learns the rule.</dd>
           <dt id="t1-refusal">Refusal data</dt><dd>Examples the model should <em>not</em> answer the usual way (out-of-scope, harmful, needing clarification), paired with the desired refusal phrasing.</dd>
           <dt id="t1-ood">OOD (out of distribution)</dt><dd>Inputs outside the trained scope, labelled with the desired "I don't know" so the model learns its limits.</dd>
-          <dt id="t1-cpt">Continued pretraining (CPT)</dt><dd>Continuing the next-token objective on raw text from a new domain, before any task SFT. Same loss as pretraining, different data, smaller learning rate. The right tool when the base model doesn&#x27;t speak your domain&#x27;s language; the wrong tool when it does. See <a class="inline-link" href="sft-fundamentals/continued-pretraining.html">Continued pretraining</a>.</dd>
+          <dt id="t1-cpt">Continued pretraining (CPT)</dt><dd>Continuing the next-token objective on raw text from a new domain, before any task SFT. Same loss as pretraining, different data; full CPT uses a learning rate around 1e-5–5e-5 (as for full SFT), LoRA-CPT around 1e-4, with a fresh warmup and decay. The right tool when the base model doesn&#x27;t speak your domain&#x27;s language; the wrong tool when it does. See <a class="inline-link" href="sft-fundamentals/continued-pretraining.html">Continued pretraining</a>.</dd>
           <dt id="t1-dapt">Domain-adaptive pretraining (DAPT)</dt><dd>The research name for CPT applied to a specific domain (medical, legal, code, finance; Gururangan et al. 2020). Same mechanic — the &quot;domain-adaptive&quot; label emphasises the purpose.</dd>
           <dt id="t1-vocab-extension">Vocab extension</dt><dd>Adding new tokens to the tokenizer for domain-specific vocabulary before CPT, so those terms become single tokens. Sharp trade-off: cheaper at inference, but the new embedding rows carry no specific meaning until enough CPT trains them (recent transformers initialise them to the mean of the existing ones, not randomly), and a changed vocabulary rules out logit-level distillation from the original teacher.</dd>
           <dt id="t1-cpt-forgetting">Catastrophic forgetting (CPT view)</dt><dd>The same risk as in SFT, sharpened: a CPT&#x27;d model is already pulled toward the domain, and narrow SFT on top compounds the drift unless mix-back and broad eval are kept in.</dd>
