@@ -144,7 +144,7 @@
             "text": "Exact-match scores answer-key rows against the deployment",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "It runs on demand: answer-key rows are scored by exact match against predictions you paste (or an endpoint the API calls) and compared with the promote-time baseline, with a 0.05 tolerance. Nothing runs on a schedule."
+              "text": "It runs on demand: answer-key rows are scored by exact match against predictions you paste (or an endpoint the API calls) and compared with the latest evaluation of the run behind the export, with a 0.05 tolerance. Nothing runs on a schedule."
             }
           }
         },
@@ -327,13 +327,16 @@ RunEvent: export (info)   payload: { format, output_path, file_size_bytes }
         <pre class="code-block"><code>1. + New Project: a name and the problem statement (base model SmolLM2-135M-Instruct under
    Advanced options, or pick it later on the Train form); it lands on the Overview.
 2. Data → Sources: Import dataset (your file, or hf:imdb) → Source → Task type → Map → Preview &amp; Confirm.
-3. Data → Generate: top up with a synthetic playbook; clear the review queue (Details).
+3. Data → Generate: top up with a synthetic playbook; clear the review queue
+   (Data → Labels → Details → Review queue).
 4. Data → Labels: confirm the task shape = classification; Data → Split: build the splits.
 5. Train → More options → LoRA and advanced training (r=16, lr=2e-4, 3 epochs, bf16).
    Typing an epoch count turns auto-epochs off; leave it untouched and epochs scale to your row count.
 6. Train: the readiness line must read "Ready to train" — clear any blocking issues (More options → Checks).
 7. Train → press Train → Launch; follow the run in the bell and the runs list below the form.
-8. Results → Verdict: evaluate on the test examples (rule: accuracy &gt;= 0.90); Results → Failures: read the clusters.
+8. Results → Verdict: evaluate on the test examples (default rule set evalpack.general.default:
+   accuracy &gt;= 0.5 and macro-F1 &gt;= 0.5; add a stricter rule if you want one);
+   Results → Failures: read the clusters.
 9. If the reroute panel says try_rag → measure it on Results → Compare (auto-RAG) before switching.
 10. Ship → Package → Options → Compress first: GGUF, 4-bit (Q4_K_M); then New export → GGUF (CPU)
     (its smoke tests run here) → Ship → Deploy: record a version, promote it, run a drift check.</code></pre>
@@ -380,7 +383,7 @@ RunEvent: export (info)   payload: { format, output_path, file_size_bytes }
                   "Compares the export's file hash with the promoted version"
                 ],
                 "answer": 1,
-                "explanation": "It runs on demand: answer-key rows are scored by exact match against predictions you paste (or an endpoint the API calls) and compared with the promote-time baseline, with a 0.05 tolerance. Nothing runs on a schedule."
+                "explanation": "It runs on demand: answer-key rows are scored by exact match against predictions you paste (or an endpoint the API calls) and compared with the latest evaluation of the run behind the export, with a 0.05 tolerance. Nothing runs on a schedule."
               },
               {
                 "q": "What are the Coach notices?",
@@ -425,7 +428,7 @@ RunEvent: export (info)   payload: { format, output_path, file_size_bytes }
                   <li>Retrains the model when the eval score drops by 5 points</li>
                   <li>Compares the export's file hash with the promoted version</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Exact-match scores answer-key rows against the deployment</strong> It runs on demand: answer-key rows are scored by exact match against predictions you paste (or an endpoint the API calls) and compared with the promote-time baseline, with a 0.05 tolerance. Nothing runs on a schedule.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Exact-match scores answer-key rows against the deployment</strong> It runs on demand: answer-key rows are scored by exact match against predictions you paste (or an endpoint the API calls) and compared with the latest evaluation of the run behind the export, with a 0.05 tolerance. Nothing runs on a schedule.</p></details></li>
               <li><p class="quiz__q-text">What are the Coach notices?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Inline suggestions with action buttons</li>

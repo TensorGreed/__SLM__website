@@ -316,12 +316,17 @@ kaggle:competition:slug</code></pre>
         <pre class="code-block"><code>$ cd backend &amp;&amp; python -m app.cli.dataset_import preview \
     --locator hf:imdb:train --auto --limit 5000
 
+--auto picked mapper 'label_to_classification': detected text column 'text' + categorical column 'label' with 2 distinct values (0, 1)
 source=hf  mapper=label_to_classification  target_task_profile=classification
-accepted=4812  rejected=188  dry_run=True
+accepted=5  rejected=188  dry_run=True
 rejection breakdown:
   missing_text             121
   label_not_allowed        54
-  parse_error              13</code></pre>
+  parse_error              13
+first 5 accepted rows:
+  [1] {"text": "I rented I AM CURIOUS-YELLOW from my video store …", "label": "0"}
+  ...</code></pre>
+        <p>Read <code>accepted=</code> with care: in a preview it is the number of sample rows kept, capped at <code>--sample-cap</code> (default 5), not the number of rows that would be accepted. The rejected count and its breakdown do cover every row read (here up to <code>--limit</code>), so the would-be accepted count is the rows read minus the rejections.</p>
         <p>The <code>run</code> subcommand takes the same flags but has no dry-run mode: it <em>writes</em> the accepted rows (and needs <code>--project</code>). Preview first, then run.</p>
         <div class="callout callout--note">
           <p class="callout__label">A pattern you'll see everywhere</p>

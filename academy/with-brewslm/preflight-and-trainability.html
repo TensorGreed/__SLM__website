@@ -141,10 +141,10 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "A low / medium / high VRAM-risk heuristic that never blocks",
+            "text": "A low / medium / high (or cpu) VRAM-risk heuristic that never blocks",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Memory is a heuristic risk score per plan profile. It does not compare GB against VRAM and never blocks the launch."
+              "text": "Memory is a heuristic risk score per plan profile (cpu when no CUDA device is detected). It does not compare GB against VRAM and never blocks the launch."
             }
           }
         },
@@ -322,7 +322,7 @@
   ],
   "capability_summary": { "model": {...}, "dependencies": {...}, "runtime_environment": {...}, "dataset": {...} }
 }</code></pre>
-        <p>Memory is a separate call. <code>POST …/training/experiments/preflight/plan</code> builds three suggested configs — <code>safe</code>, <code>balanced</code>, <code>max_quality</code> — runs preflight on each, attaches a <strong>VRAM-risk</strong> level (low / medium / high, scored from batch size, sequence length, LoRA vs full fine-tune, gradient checkpointing and accumulation), and names a <code>recommended_profile</code>. The risk is a heuristic: it does not compare gigabytes against your GPU, and it never blocks a launch.</p>
+        <p>Memory is a separate call. <code>POST …/training/experiments/preflight/plan</code> builds three suggested configs — <code>safe</code>, <code>balanced</code>, <code>max_quality</code> — runs preflight on each, attaches a <strong>VRAM-risk</strong> level (low / medium / high, scored from batch size, sequence length, LoRA vs full fine-tune, gradient checkpointing and accumulation; <code>cpu</code> when no CUDA device is detected, since VRAM pressure doesn't apply), and names a <code>recommended_profile</code>. The risk is a heuristic: it does not compare gigabytes against your GPU, and it never blocks a launch.</p>
         <h2>Where you see it, and the trainability forecast</h2>
         <p>Surfaced in the UI, preflight is the <strong>readiness line</strong> on the <strong>Train</strong> form — "Checking the data, the model and the runtime…", then "Ready to train, 1 warning." or "2 blocking issues." with a <em>Fix</em> button and a <em>Check again</em> link; it re-runs when you change the base model. The full preflight result and its plan live under <strong>Train → More options → Checks</strong>. Instead of "start training, wait, watch it crash at step 1, fix, repeat," you get the list in seconds — and the confirm dialog the Train button opens shows the resolved config one last time before <em>Launch</em>.</p>
         <p>The <strong>trainability forecast</strong>, under <strong>Train → More options → Plan and gaps</strong> (next to the config-gap scan and the archetype comparison), is a different check. It does not ask "will this run start?" but "is this run likely to pass the default gates?". It reads data signals — row count against the recipe's minimum, gold-set diversity, and per-task ones such as class imbalance — and gives likely pass / borderline / likely fail. It is advice: a likely-fail forecast relabels the button "Train anyway", it doesn't block.</p>
@@ -345,7 +345,7 @@
           <dl>
             <dt>Preflight</dt><dd>Stage 07: pre-run checks returning <code>ok</code>, errors, warnings and hints; shown as the readiness line on the Train form.</dd>
             <dt>trainability forecast</dt><dd>A separate, advisory check under Train → More options → Plan and gaps: from data signals, is the run likely to pass the default gates (likely pass / borderline / likely fail)?</dd>
-            <dt>VRAM risk</dt><dd>A low / medium / high heuristic the preflight plan attaches to each suggested config. It does not compare GB with VRAM and never blocks.</dd>
+            <dt>VRAM risk</dt><dd>A low / medium / high heuristic (<code>cpu</code> when no CUDA device is detected) the preflight plan attaches to each suggested config. It does not compare GB with VRAM and never blocks.</dd>
             <dt>errors vs warnings</dt><dd>Preflight errors block the launch; warnings never do. There are no strict / fail-open modes.</dd>
             <dt>preflight plan</dt><dd>A separate call that returns safe / balanced / max_quality suggested configs, each with its own preflight and VRAM risk, plus a <code>recommended_profile</code>.</dd>
           </dl>
@@ -371,12 +371,12 @@
                 "q": "How does preflight treat GPU memory (the Track 1 memory math)?",
                 "options": [
                   "It compares the estimated GB with free VRAM and blocks the launch if over",
-                  "A low / medium / high VRAM-risk heuristic that never blocks",
+                  "A low / medium / high (or cpu) VRAM-risk heuristic that never blocks",
                   "It loads the model once on the GPU to measure peak memory",
                   "It checks memory only for full fine-tunes, not for LoRA"
                 ],
                 "answer": 1,
-                "explanation": "Memory is a heuristic risk score per plan profile. It does not compare GB against VRAM and never blocks the launch."
+                "explanation": "Memory is a heuristic risk score per plan profile (cpu when no CUDA device is detected). It does not compare GB against VRAM and never blocks the launch."
               },
               {
                 "q": "Preflight returns one error and two warnings. What happens on Train?",
@@ -417,11 +417,11 @@
               <li><p class="quiz__q-text">How does preflight treat GPU memory (the Track 1 memory math)?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>It compares the estimated GB with free VRAM and blocks the launch if over</li>
-                  <li>A low / medium / high VRAM-risk heuristic that never blocks</li>
+                  <li>A low / medium / high (or cpu) VRAM-risk heuristic that never blocks</li>
                   <li>It loads the model once on the GPU to measure peak memory</li>
                   <li>It checks memory only for full fine-tunes, not for LoRA</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A low / medium / high VRAM-risk heuristic that never blocks</strong> Memory is a heuristic risk score per plan profile. It does not compare GB against VRAM and never blocks the launch.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A low / medium / high (or cpu) VRAM-risk heuristic that never blocks</strong> Memory is a heuristic risk score per plan profile (cpu when no CUDA device is detected). It does not compare GB against VRAM and never blocks the launch.</p></details></li>
               <li><p class="quiz__q-text">Preflight returns one error and two warnings. What happens on Train?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>All three block the launch until strict mode is switched off in Settings</li>

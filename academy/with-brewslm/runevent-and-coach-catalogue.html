@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Coach suggestions can call the backend on render. True or false?",
-          "text": "Coach suggestions can call the backend on render. True or false?",
+          "name": "Can rendering a Coach suggestion change project state?",
+          "text": "Can rendering a Coach suggestion change project state?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "True — generators refresh project state on each render"
+              "text": "Yes — generators refresh project state on each render"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "True, but only for run_playbook and start_flow actions"
+              "text": "Yes, but only for run_playbook and start_flow actions"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "False, except when inline tips are turned off in Settings"
+              "text": "No, except when inline tips are turned off in Settings"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "False — side effects run only when you click the action",
+            "text": "No — side effects run only when you click the action",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Generators are read-only. The action payload tells the frontend what to call on click; that is where any side effect happens."
+              "text": "Rendering does call GET /coach/{stage}, but generators are read-only. The action payload tells the frontend what to call on click; that is where any side effect happens."
             }
           }
         },
@@ -365,7 +365,7 @@ training_runtime_error     [emitted] generic runtime failure (today only from th
 training_oom               [declared, not emitted today] GPU out-of-memory during training
 training_timeout           [emitted] run exceeded its wallclock budget
 training_cancelled         [declared, not emitted today] operator (or upstream signal) cancelled the run</code></pre>
-        <p>A real (external) training failure is recorded on the run itself, and its RunEvent is named <code>training_&lt;failure code&gt;</code>. Only <code>training_timeout</code> of those names is in the taxonomy, so the other failure events (process exit, signal, monitor error, including most out-of-memory kills) are rejected by the check above and never reach the timeline. Read the run's own failure message on <strong>Train</strong> for those.</p>
+        <p>A real (external) training failure is recorded on the run itself, and its RunEvent is named <code>training_&lt;failure code&gt;</code>. Only <code>training_timeout</code> of those names is in the taxonomy, so the other failure events (<code>training_exit</code>, <code>training_signal</code>, <code>training_error</code>, including most out-of-memory kills) are rejected by the check above and never reach the timeline. On main today, then, a real run's failure reaches the timeline only as <code>training_timeout</code> or <code>training_dispatch_error</code> (the run could not be handed to the worker). Read the run's failure banner on <strong>Train</strong> for the rest.</p>
 
         <h3>eval</h3>
         <pre class="code-block"><code>eval_runtime_error      [declared, not emitted today] generic failure inside the evaluation runner
@@ -438,7 +438,7 @@ export       export-vs-base verdict                                         → 
         <p>Every action carries a <code>kind</code>, a <code>label</code>, and a <code>params</code> dict. The frontend routes the click on <code>kind</code> alone.</p>
         <pre class="code-block"><code>{
   "kind":   "navigate",
-  "label":  "Pick a recipe first",
+  "label":  "Choose a task type first",
   "params": { "target": "recipe-picker" }
 }</code></pre>
         <ul>
@@ -505,15 +505,15 @@ SUGGESTED_TOPUP_CEILING       500   # don't suggest above this</code></pre>
                 "explanation": "export_run_failed is the export code actually emitted. export_quantization_failed and export_artifact_missing are declared in the taxonomy but nothing emits them yet, and deployment emits info events only."
               },
               {
-                "q": "Coach suggestions can call the backend on render. True or false?",
+                "q": "Can rendering a Coach suggestion change project state?",
                 "options": [
-                  "True — generators refresh project state on each render",
-                  "False — side effects run only when you click the action",
-                  "True, but only for run_playbook and start_flow actions",
-                  "False, except when inline tips are turned off in Settings"
+                  "Yes — generators refresh project state on each render",
+                  "No — side effects run only when you click the action",
+                  "Yes, but only for run_playbook and start_flow actions",
+                  "No, except when inline tips are turned off in Settings"
                 ],
                 "answer": 1,
-                "explanation": "Generators are read-only. The action payload tells the frontend what to call on click; that is where any side effect happens."
+                "explanation": "Rendering does call GET /coach/{stage}, but generators are read-only. The action payload tells the frontend what to call on click; that is where any side effect happens."
               },
               {
                 "q": "After an eval surfaces a failure cluster of similar errors, the natural Coach action kind is…",
@@ -548,14 +548,14 @@ SUGGESTED_TOPUP_CEILING       500   # don't suggest above this</code></pre>
                   <li>export / export_artifact_missing</li>
                 </ol>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. export / export_run_failed</strong> export_run_failed is the export code actually emitted. export_quantization_failed and export_artifact_missing are declared in the taxonomy but nothing emits them yet, and deployment emits info events only.</p></details></li>
-              <li><p class="quiz__q-text">Coach suggestions can call the backend on render. True or false?</p>
+              <li><p class="quiz__q-text">Can rendering a Coach suggestion change project state?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>True — generators refresh project state on each render</li>
-                  <li>False — side effects run only when you click the action</li>
-                  <li>True, but only for run_playbook and start_flow actions</li>
-                  <li>False, except when inline tips are turned off in Settings</li>
+                  <li>Yes — generators refresh project state on each render</li>
+                  <li>No — side effects run only when you click the action</li>
+                  <li>Yes, but only for run_playbook and start_flow actions</li>
+                  <li>No, except when inline tips are turned off in Settings</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. False — side effects run only when you click the action</strong> Generators are read-only. The action payload tells the frontend what to call on click; that is where any side effect happens.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. No — side effects run only when you click the action</strong> Rendering does call GET /coach/{stage}, but generators are read-only. The action payload tells the frontend what to call on click; that is where any side effect happens.</p></details></li>
               <li><p class="quiz__q-text">After an eval surfaces a failure cluster of similar errors, the natural Coach action kind is…</p>
                 <ol class="quiz__static-options" type="A">
                   <li>augment_from_cluster</li>

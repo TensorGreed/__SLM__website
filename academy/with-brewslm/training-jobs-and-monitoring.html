@@ -177,7 +177,7 @@
             "text": "The failure banner (code signal) and log tail",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Real runs record a failure code — timeout, signal, exit or error — and the banner says 'killed by a signal … often the system running out of memory'. training_oom and training_cancelled are declared but never emitted."
+              "text": "Real runs record a failure code — timeout, signal, exit or error — and the banner says 'the process was stopped by SIGKILL (often the system running out of memory)'. training_oom and training_cancelled are declared but never emitted, and the training_signal event doesn't reach the timeline today."
             }
           }
         },
@@ -301,13 +301,18 @@
 
         <h2>Launch — one click or one call</h2>
         <p>In the workspace the launch is the <strong>Train</strong> page (<code>/project/&lt;id&gt;/train</code>): one form — base model, task, one run or three seeds, an optional run name, the readiness line — and the <strong>Train</strong> button, which opens a confirm dialog with the resolved config and an estimate before <em>Launch</em>. Everything else (epochs, LoRA, presets, cloud burst) waits under <em>More options</em>. Scripted, the same thing is two calls — create the experiment, then start it:</p>
-        <pre class="code-block"><code>$ curl -X POST localhost:8000/api/projects/1/training/experiments \
+        <pre class="code-block"><code># X-API-Key: your API key (sk-mock-admin-key is the local bootstrap admin)
+$ curl -X POST localhost:8000/api/projects/1/training/experiments \
+    -H 'X-API-Key: sk-mock-admin-key' \
     -H 'Content-Type: application/json' \
-    -d '{"name": "run-2026-10-18", "config": {}}'      # → {"id": 42, ...}
-$ curl -X POST localhost:8000/api/projects/1/training/experiments/42/start
+    -d '{"name": "run-2026-10-18",
+         "config": {"base_model": "HuggingFaceTB/SmolLM2-135M-Instruct"}}'   # → {"id": 42, ...}
+$ curl -X POST localhost:8000/api/projects/1/training/experiments/42/start \
+    -H 'X-API-Key: sk-mock-admin-key'
 
 # or let the Autopilot pick the plan from plain-language intent:
 $ curl -X POST localhost:8000/api/projects/1/training/autopilot/one-click-run \
+    -H 'X-API-Key: sk-mock-admin-key' \
     -H 'Content-Type: application/json' \
     -d '{"intent": "classify support tickets by topic"}'</code></pre>
         <figure class="academy-figure"><img src="../../assets/screens/workspace/train.png" alt="The Train page: two inline Coach warning notices above a form with Base model, Task, Seeds (One run / Three seeds), Run name, a readiness line reading Ready to train, 1 warning, and a Train button" loading="lazy" width="1600" height="1000" /><figcaption>Train — the one form. The runs list and each run's live dashboard sit below it.</figcaption></figure>
@@ -334,7 +339,7 @@ error     # the run could not be monitored
 
 # e.g. "Stopped at step 1200 of 2000: the process was stopped by SIGKILL
 #       (often the system running out of memory). Last checkpoint: step 1000."</code></pre>
-        <p>When a resumable checkpoint exists, the banner offers <em>Continue from step N</em>: a new run that picks up that checkpoint's weights, optimizer and scheduler state, while the failed run stays as the record. Those codes map onto the failure modes you learned to diagnose by hand — an out-of-memory kill usually shows up as <code>signal</code>, since there is no separate OOM code. On the RunEvent timeline (<strong>Ship → Monitor</strong>) the real runtime emits a "Training started" info event and, on failure, a <code>training_&lt;code&gt;</code> error event; today only <code>training_timeout</code> is in the reason-code taxonomy, so the signal / exit / error events are dropped and the banner is the reliable place to look. The <code>training</code> / info "Training completed" event (with <code>final_train_loss</code>) and <code>training_runtime_error</code> come from the simulate runtime only. <code>training_oom</code> and <code>training_cancelled</code> are declared but not emitted today: cancelling a run from its row stops the training process and changes its status, with no event. With a trained adapter and its traces recorded, the next stage asks the real question: is it good enough to ship? That's evaluation — <strong>Results</strong>.</p>
+        <p>When a resumable checkpoint exists, the banner offers <em>Continue from step N</em>: a new run that picks up that checkpoint's weights, optimizer and scheduler state, while the failed run stays as the record. Those codes map onto the failure modes you learned to diagnose by hand — an out-of-memory kill usually shows up as <code>signal</code>, since there is no separate OOM code. On the RunEvent timeline (<strong>Ship → Monitor</strong>) a real run emits a "Training started" info event. Of its failures, only two reach the timeline today: <code>training_timeout</code> (the run hit its time limit) and <code>training_dispatch_error</code> (the run could not be handed to the worker). The runtime also tries to emit <code>training_signal</code>, <code>training_exit</code> and <code>training_error</code>, but those codes are not in the reason-code taxonomy, so the events are rejected and dropped: for those failures the run's failure banner is the place to look. The <code>training</code> / info "Training completed" event (with <code>final_train_loss</code>) and <code>training_runtime_error</code> come from the simulate runtime only. <code>training_oom</code> and <code>training_cancelled</code> are declared but not emitted today: cancelling a run from its row stops the training process and changes its status, with no event. With a trained adapter and its traces recorded, the next stage asks the real question: is it good enough to ship? That's evaluation — <strong>Results</strong>.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
@@ -348,7 +353,7 @@ error     # the run could not be monitored
             <dt>NotificationBell</dt><dd>Top-bar surface polling /api/jobs/active (~every 4s) for progress and outcome.</dd>
             <dt>delta-from-baseline curve</dt><dd>On a warm-started run's dashboard: the live loss plotted relative to the checkpoint's first recorded loss on your data as the zero line.</dd>
             <dt>failure record</dt><dd>Saved when a real run doesn't complete and shown as the run's failure banner: code timeout / signal / exit / error, the step it stopped at, and the last resumable checkpoint.</dd>
-            <dt>training RunEvents</dt><dd>Real runs: "Training started" (info) and training_&lt;code&gt; on failure (only training_timeout reaches the timeline today). The completion event and training_runtime_error are simulate-only; training_oom / training_cancelled are declared, not emitted.</dd>
+            <dt>training RunEvents</dt><dd>Real runs: "Training started" (info); on failure, only training_timeout and training_dispatch_error reach the timeline today (training_signal / training_exit / training_error are dropped, so read the failure banner). The completion event and training_runtime_error are simulate-only; training_oom / training_cancelled are declared, not emitted.</dd>
           </dl>
         </section>
 
@@ -388,7 +393,7 @@ error     # the run could not be monitored
                   "The preflight report, rerun after the failure"
                 ],
                 "answer": 0,
-                "explanation": "Real runs record a failure code — timeout, signal, exit or error — and the banner says 'killed by a signal … often the system running out of memory'. training_oom and training_cancelled are declared but never emitted."
+                "explanation": "Real runs record a failure code — timeout, signal, exit or error — and the banner says 'the process was stopped by SIGKILL (often the system running out of memory)'. training_oom and training_cancelled are declared but never emitted, and the training_signal event doesn't reach the timeline today."
               },
               {
                 "q": "Why hold a strong reference to the running task?",
@@ -430,7 +435,7 @@ error     # the run could not be monitored
                   <li>A training_cancelled entry in the notification bell</li>
                   <li>The preflight report, rerun after the failure</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The failure banner (code signal) and log tail</strong> Real runs record a failure code — timeout, signal, exit or error — and the banner says 'killed by a signal … often the system running out of memory'. training_oom and training_cancelled are declared but never emitted.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The failure banner (code signal) and log tail</strong> Real runs record a failure code — timeout, signal, exit or error — and the banner says 'the process was stopped by SIGKILL (often the system running out of memory)'. training_oom and training_cancelled are declared but never emitted, and the training_signal event doesn't reach the timeline today.</p></details></li>
               <li><p class="quiz__q-text">Why hold a strong reference to the running task?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>So the garbage collector can't silently kill it mid-run</li>
