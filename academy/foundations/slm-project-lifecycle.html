@@ -303,7 +303,7 @@
         <p>A fine-tuning project has six stages, and the last one usually sends you back to the start:</p>
         <ol>
           <li><strong>Data.</strong> Gather and prepare examples of your task: inputs paired with the outputs you want. Clean them, format them, split them. This is where most of your time goes and where most of your quality comes from.</li>
-          <li><strong>Train.</strong> Run supervised fine-tuning (usually with LoRA) on a base model. This is the gradient-descent loop from Lesson 2, now over a Transformer.</li>
+          <li><strong>Train.</strong> Run supervised fine-tuning (usually with LoRA) on a base model. This is the gradient-descent loop from Lesson 0.2, now over a Transformer.</li>
           <li><strong>Evaluate.</strong> Measure the trained model against held-out examples it never trained on, using a metric that fits the task. This tells you whether you actually improved.</li>
           <li><strong>Iterate.</strong> Look at where it fails, fix the <em>data</em> (add examples for weak cases, remove bad ones, rebalance), and retrain. Repeat until the metric clears your bar.</li>
           <li><strong>Export &amp; deploy.</strong> Package the model into a servable artifact and stand it up behind an endpoint, with a version you can roll back.</li>
@@ -333,7 +333,8 @@
         </figure>
 
         <h2>Your north star: the gold set</h2>
-        <p>The most important artifact in the whole loop is the <strong>gold set</strong> — a curated batch of examples, with known-correct answers, that the model <em>never trains on</em>. It exists solely to measure quality. Every decision ("is this version better?", "did this data change help?", "is it good enough to ship?") is answered against the gold set. If you train on your evaluation data, your numbers become fiction — the model can memorize the test. Keeping the gold set separate and trustworthy is the discipline that makes all your metrics meaningful. In BrewSLM the gold set is called the <strong>answer key</strong>, under Data → Labels.</p>
+        <p>The most important artifact in the whole loop is the <strong>gold set</strong> — a curated batch of examples, with known-correct answers, that the model <em>never trains on</em>. It exists solely to measure quality. Every decision ("is this version better?", "did this data change help?", "is it good enough to ship?") is answered against the gold set. If you train on your evaluation data, your numbers become fiction — the model can memorize the test. Keeping the gold set separate and trustworthy is the discipline that makes all your metrics meaningful.</p>
+        <p>There is a second, subtler leak. Even a set you never train on gets overfit by <em>your</em> choices if you consult it on every decision: each "keep this change" picks whatever happened to score well on those particular rows. So split the gold set in two. Iterate against a <strong>practice</strong> (dev) part as often as you like, and score the <strong>final</strong> (test) part rarely, to report the result. In BrewSLM the gold set is called the <strong>answer key</strong>, under Data → Labels, and its rows are marked as the practice answer key or the final answer key.</p>
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
           <p>Modern model-building is <strong>data-centric</strong>: you usually improve results far more by fixing data than by fiddling with the model. The loop's center of gravity is "evaluate → understand failures → improve data," not "tweak hyperparameters."</p>
@@ -353,15 +354,15 @@
           <li><strong>Track 1 — SFT fundamentals</strong>: the <em>why and what</em> of each stage — datasets, tokenization, the training loop, LoRA, evaluation — in detail.</li>
           <li><strong>Track 2 — Hands-on</strong>: you run the whole loop <em>by hand</em> in PyTorch and Transformers, with no platform, so nothing is magic.</li>
           <li><strong>Track 3 — With BrewSLM</strong>: the same loop, with the platform automating the tedious parts (import, gates, eval packs, deployment) so you can iterate faster.</li>
-          <li><strong>Track 4 — Graduating</strong>: advanced moves that bend the quality/cost curve — distillation, warm starts, hyperparameter bake-offs, and proving your SLM is good enough versus a frontier model.</li>
+          <li><strong>Track 4 — Advanced</strong>: advanced moves that bend the quality/cost curve — distillation, warm starts, hyperparameter bake-offs, and proving your SLM is good enough versus a frontier model.</li>
         </ul>
-        <p>That completes the foundations. You can now talk about what a model is, how it learns, how language models produce text, the levers for steering them, and the shape of a real project. Next, Track 1 makes Supervised Fine-Tuning precise — starting with what SFT actually is, and when not to use it.</p>
+        <p>You can now talk about what a model is, how it learns, how language models produce text, the levers for steering them, and the shape of a real project. Two practical lessons finish the core of Track 0: base vs instruct models, then how to pick a base model. Two optional context lessons follow (the history of language models, and the architecture families). Then Track 1 makes Supervised Fine-Tuning precise — starting with what SFT actually is, and when not to use it.</p>
 
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
             <dt>Project lifecycle</dt><dd>The loop: data → train → evaluate → iterate → export/deploy → monitor.</dd>
-            <dt>Gold set</dt><dd>Curated, known-correct examples the model never trains on; the source of truth for quality.</dd>
+            <dt>Gold set</dt><dd>Curated, known-correct examples the model never trains on; the source of truth for quality. Split into a practice (dev) part you iterate on and a final (test) part you score rarely.</dd>
             <dt>Train/validation/test split</dt><dd>Partitioning data so you train on one part and measure on data the model hasn't seen.</dd>
             <dt>Data-centric iteration</dt><dd>Improving results primarily by fixing data, guided by failure analysis.</dd>
             <dt>Deployment</dt><dd>Packaging and serving the model as a versioned, rollback-able artifact.</dd>

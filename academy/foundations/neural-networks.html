@@ -300,7 +300,7 @@
         <p>The house-price model was a straight line: <code>w × size + b</code>. Straight lines are limited — most real relationships bend. A <strong>neural network</strong> is how we build models that can bend arbitrarily, while still being trainable by the exact gradient-descent loop from the last lesson. The trick is to stack many simple pieces.</p>
 
         <h2>The piece: a neuron</h2>
-        <p>A single <strong>neuron</strong> does two things. First it takes a weighted sum of its inputs and adds a bias — that's just the linear model again: <code>z = w₁x₁ + w₂x₂ + … + b</code>. Then it passes that sum through a <strong>nonlinear activation function</strong>. The most common one is <strong>ReLU</strong> ("rectified linear unit"), which is almost insultingly simple: if the number is negative, output 0; otherwise output the number unchanged.</p>
+        <p>A single <strong>neuron</strong> does two things. First it takes a weighted sum of its inputs and adds a bias — that's just the linear model again: <code>z = w₁x₁ + w₂x₂ + … + b</code>. Then it passes that sum through a <strong>nonlinear activation function</strong>. The classic one, and the one we'll use for teaching, is <strong>ReLU</strong> ("rectified linear unit"), which is almost insultingly simple: if the number is negative, output 0; otherwise output the number unchanged. Transformers today mostly use smooth variants of the same idea (GELU, or SiLU inside a gated SwiGLU block; SmolLM2 uses SiLU), but the role is identical.</p>
         <p>The weights and bias are parameters — the knobs gradient descent will tune. A neuron, then, is a tiny learnable function with a kink in it.</p>
 
         <h2>Why the nonlinearity is the entire point</h2>
@@ -342,7 +342,7 @@
         <p>You will essentially never implement backpropagation by hand. Frameworks like PyTorch record the operations of the forward pass and differentiate them automatically ("autograd"). What matters for you: backprop produces the gradient, and gradient descent uses it. Same loop as before — now over a network instead of a line.</p>
         <div class="callout callout--note">
           <p class="callout__label">Heads up</p>
-          <p>People say a network has "billions of parameters." Those parameters are exactly these weights and biases, counted across every layer. Training sets all of them; inference reads all of them. There is nothing else inside.</p>
+          <p>People say a network has "billions of parameters." Those parameters are the learned weights, counted across every layer: weight matrices like these, plus (in a language model) embedding tables and normalisation scales, and biases where the architecture has them. Many modern language models, SmolLM2 included, have no biases in their linear layers at all. Training sets all of the parameters; inference reads all of them. The saved model adds only its configuration and a few fixed, non-learned values.</p>
         </div>
 
         <h2>Why this matters for language</h2>
@@ -352,7 +352,7 @@
           <h2>Key terms</h2>
           <dl>
             <dt>Neuron</dt><dd>A weighted sum of inputs plus a bias, passed through a nonlinear activation.</dd>
-            <dt>Weight / bias</dt><dd>The learnable parameters of a neuron.</dd>
+            <dt>Weight / bias</dt><dd>The learnable parameters of a neuron (many large models drop the bias).</dd>
             <dt>Activation function (ReLU)</dt><dd>The nonlinearity that lets stacked layers model non-linear patterns; ReLU outputs 0 for negatives, the input otherwise.</dd>
             <dt>Layer / hidden layer</dt><dd>Many neurons in parallel; hidden layers sit between input and output.</dd>
             <dt>Forward pass</dt><dd>Computing outputs from inputs, layer by layer.</dd>

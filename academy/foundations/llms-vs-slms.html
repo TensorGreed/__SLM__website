@@ -293,20 +293,20 @@
           <div class="lesson-meta">
             <span><strong>Level:</strong> beginner</span>
             <span><strong>Read time:</strong> ~9 min</span>
-            <span><strong>Prerequisites:</strong> <a class="inline-link" href="pretraining-vs-finetuning-vs-rag.html">The four levers</a></span>
+            <span><strong>Prerequisites:</strong> <a class="inline-link" href="pretraining-vs-finetuning-vs-rag.html">Pretraining vs fine-tuning vs prompting vs RAG</a></span>
           </div>
         </header>
 
         <p>"Large" and "small" language models run on the exact same machinery you've now seen — tokens, embeddings, Transformer blocks, next-token prediction. The difference is one number: the <strong>parameter count</strong>. That single number cascades into memory, speed, cost, and capability, and understanding the cascade tells you which model to reach for.</p>
 
         <h2>The one axis: parameters</h2>
-        <p>Model size is measured in parameters: a small model like SmolLM2 has ~135&nbsp;<strong>million</strong>; mid-size open models are 1–8&nbsp;<strong>billion</strong>; frontier models are tens to hundreds of billions. More parameters means more capacity to absorb patterns during pretraining, which is why the biggest models display the broadest knowledge and strongest general reasoning.</p>
+        <p>Model size is measured in parameters: a small model like SmolLM2 has ~135&nbsp;<strong>million</strong>, and this course calls anything up to roughly 10&nbsp;<strong>billion</strong> small; frontier models run from hundreds of billions to over a trillion total parameters, often as a mixture of experts that uses only a fraction of them for each token. More parameters means more capacity to absorb patterns during pretraining, which is why the biggest models display the broadest knowledge and strongest general reasoning.</p>
         <p>But every parameter has to be stored and multiplied on every token. So scale is not free.</p>
 
         <h2>What scale costs: memory, latency, money</h2>
         <ul>
-          <li><strong>Memory (VRAM).</strong> Parameters live in GPU memory. A rough rule: bytes ≈ parameters × bytes-per-parameter. At 2 bytes each (bf16), a 135M model needs ~0.27&nbsp;GB just for weights; a 70B model needs ~140&nbsp;GB — many GPUs. Training needs several times more (for gradients and optimizer state), which is why fine-tuning a giant model is a data-center activity and fine-tuning an SLM fits on one consumer GPU.</li>
-          <li><strong>Latency.</strong> Generating each token runs the whole network. More parameters → more arithmetic per token → slower responses. Small models reply faster, which matters for interactive and high-volume use.</li>
+          <li><strong>Memory (VRAM).</strong> Parameters live in GPU memory. A rough rule: bytes ≈ parameters × bytes-per-parameter. At 2 bytes each (bf16), a 135M model needs ~0.27&nbsp;GB just for weights; a 70B model needs ~140&nbsp;GB — many GPUs. Full fine-tuning needs several times more: about 16 bytes per parameter with the usual mixed-precision AdamW setup (weights, gradients and optimizer state), before activations. That is why fine-tuning a giant model is a data-center activity and fine-tuning an SLM fits on one consumer GPU.</li>
+          <li><strong>Latency.</strong> Generating each token runs the whole network. More parameters → more arithmetic per token → slower responses. Small models reply faster, which matters for interactive and high-volume use. A useful upper bound: generating one token at a time, a model must read all its weights from memory for each token, so tokens per second ≈ memory bandwidth ÷ bytes of weights read per token.</li>
           <li><strong>Cost.</strong> Whether you pay an API per token or rent a GPU per hour, cost tracks compute, which tracks size. A task served billions of times is dramatically cheaper on a small model.</li>
         </ul>
 
@@ -331,7 +331,7 @@
         <p>But most production work is not open-ended. It's one narrow, repeated task: classify this ticket, extract these fields, answer questions about <em>these</em> docs, rewrite in <em>this</em> format. For a narrow task, broad knowledge is mostly wasted — and this is the crux:</p>
         <div class="callout callout--key">
           <p class="callout__label">The thesis of this course</p>
-          <p>On a single, well-defined task, a <em>fine-tuned</em> small model can match — sometimes beat — a model hundreds of times larger, at a fraction of the cost and latency, running on hardware you control. Fine-tuning concentrates a small model's limited capacity onto your task.</p>
+          <p>On a single, well-defined task, a <em>fine-tuned</em> small model can match a model hundreds of times larger, at a fraction of the cost and latency, running on hardware you control. Fine-tuning concentrates a small model's limited capacity onto your task. "Can" is the honest word: it fails when the task needs broad knowledge, long multi-step reasoning or facts the model never saw, and you only find out by measuring. In <a class="inline-link" href="../../blog-irs-pub17-fine-tune-lost-retrieval-won.html">one of our own projects</a> the fine-tune lost to retrieval.</p>
         </div>
 
         <h2>When to pick which</h2>
@@ -344,15 +344,15 @@
           <p>Frame the decision as quality-per-dollar (or per-millisecond) <em>for your task</em>, not quality in the abstract. A model that's 95% as good at 2% of the cost is usually the better engineering choice — and you can only know those numbers by evaluating, which is why evaluation gets its own lessons.</p>
         </div>
 
-        <h2>End of the foundations</h2>
-        <p>You now have the whole mental model: what a model is, how it learns, how text becomes math, how the Transformer and next-token prediction produce language, the four levers for steering a model, and why small models are worth fine-tuning. The final Foundations lesson zooms all the way out to the shape of a real SLM project — the loop you'll execute for the rest of the course.</p>
+        <h2>Where we go next</h2>
+        <p>You now have the whole mental model: what a model is, how it learns, how text becomes math, how the Transformer and next-token prediction produce language, the four levers for steering a model, and why small models are worth fine-tuning. The next lesson zooms all the way out to the shape of a real SLM project — the loop you'll execute for the rest of the course.</p>
 
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
             <dt>Parameter count</dt><dd>The number of weights in a model; the primary axis of "size."</dd>
-            <dt>Small language model (SLM)</dt><dd>A model with relatively few parameters (millions to a few billion).</dd>
-            <dt>VRAM</dt><dd>GPU memory; weights need ≈ params × bytes-per-param, training needs several times more.</dd>
+            <dt>Small language model (SLM)</dt><dd>A model with relatively few parameters (up to roughly 10 billion; this course uses 135 million).</dd>
+            <dt>VRAM</dt><dd>GPU memory; weights need ≈ params × bytes-per-param, full fine-tuning about 16 bytes per parameter plus activations.</dd>
             <dt>Latency</dt><dd>Time to produce output; rises with model size since each token runs the whole network.</dd>
             <dt>Cost per token</dt><dd>The price of generating output, which tracks compute and therefore size.</dd>
             <dt>Narrow vs general task</dt><dd>A single repeatable job vs open-ended capability; narrow tasks favor fine-tuned SLMs.</dd>
@@ -466,7 +466,7 @@
         </div>
 
         <nav class="lesson-nav" aria-label="Lesson navigation">
-          <a href="pretraining-vs-finetuning-vs-rag.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">The four levers</span></a>
+          <a href="pretraining-vs-finetuning-vs-rag.html"><span class="lesson-nav__dir">← Previous</span><span class="lesson-nav__title">Pretraining vs fine-tuning vs prompting vs RAG</span></a>
           <a href="slm-project-lifecycle.html" class="lesson-nav__next"><span class="lesson-nav__dir">Next →</span><span class="lesson-nav__title">The mental model of an SLM project</span></a>
         </nav>
       </article>

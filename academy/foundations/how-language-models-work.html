@@ -325,7 +325,7 @@
         </figure>
 
         <h2>How it learns to do this: the training objective</h2>
-        <p>Pretraining is exactly the loop from Lesson 2, with one specific loss. Take an ocean of text, and at every position ask the model to predict the next token. The loss — <strong>cross-entropy</strong> — is large when the model assigned low probability to the token that actually came next, and small when it assigned high probability. Gradient descent then nudges the parameters to make the real next token more likely.</p>
+        <p>Pretraining is exactly the loop from Lesson 0.2, with one specific loss. Take an ocean of text, and at every position ask the model to predict the next token. The loss — <strong>cross-entropy</strong> — is large when the model assigned low probability to the token that actually came next, and small when it assigned high probability. Gradient descent then nudges the parameters to make the real next token more likely.</p>
         <p>The profound part: to get good at this one narrow game across trillions of tokens, the model is forced to internalize grammar, facts, styles, and reasoning patterns — because all of those help predict what comes next. "Just predicting the next token" is deceptively powerful. (We'll meet cross-entropy properly in Track 1; for now, "make the true next token more probable" is enough.)</p>
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
@@ -348,17 +348,18 @@
         <ul>
           <li><strong>Greedy</strong>: always take the single most probable token (argmax). Deterministic and safe, but can be repetitive and bland.</li>
           <li><strong>Sampling</strong>: randomly draw a token according to the probabilities — more varied, more creative, occasionally wrong.</li>
-          <li><strong>Temperature</strong>: a knob that sharpens or flattens the distribution before sampling. Low temperature (→0) approaches greedy and stays "safe"; high temperature spreads probability out and increases surprise.</li>
+          <li><strong>Temperature</strong>: a knob that sharpens or flattens the distribution before sampling. It divides the logits before the softmax, <code>softmax(logits / T)</code>. Low temperature (→0) approaches greedy and stays "safe"; high temperature spreads probability out and increases surprise. More variety is not more accuracy.</li>
           <li><strong>Top-p (nucleus)</strong>: only sample from the smallest set of tokens whose probabilities add up to <em>p</em> (e.g., 0.9), discarding the long tail of unlikely tokens. Curbs nonsense while keeping variety.</li>
         </ul>
         <div class="callout callout--note">
           <p class="callout__label">Heads up</p>
           <p>Decoding does not change the model's parameters — it only changes how you sample from a fixed distribution. For evaluation you usually want greedy (deterministic) decoding so results are reproducible; for creative generation you raise temperature/top-p.</p>
         </div>
+        <p>Greedy decoding on a small model can get stuck repeating a phrase. The usual patch is a <strong>repetition penalty</strong>, a decoding knob that lowers the scores of tokens already in the sequence. In the common Hugging Face implementation that sequence includes your prompt, so the penalty also pushes the model away from copying the input, which is exactly what extraction, classification and question answering over a passage need to do. Keep it at <code>1.0</code> (off) for those tasks, use it only for open-ended generation, and check the result on your evaluation set. Also check the model's own <code>generation_config.json</code>, which can switch a penalty on silently. BrewSLM's evaluations pin it to 1.0 for this reason. <a class="inline-link" href="../sft-fundamentals/decoding-controls.html">Decoding controls</a> in Track 1 covers the details.</p>
 
         <h2>What this means for fine-tuning</h2>
         <p>Fine-tuning, the subject of the rest of this course, works on exactly this machine. SFT shows the model examples of the inputs you care about and the outputs you want, and runs the same next-token training so that, for your task, the distribution it produces favors the responses you want. You are not bolting on a new ability; you are reshaping the next-token probabilities a base model already has.</p>
-        <p>That's the full Track-0 mechanism. The remaining two lessons zoom out: the different ways to steer a model (prompting, RAG, fine-tuning, pretraining), and why small models are worth the effort.</p>
+        <p>That's the full Track-0 mechanism. The next lessons zoom out: the ways to steer a model (prompting, RAG, fine-tuning, pretraining), why small models are worth the effort, what a project looks like, and how to choose a starting model.</p>
 
         <section class="key-terms">
           <h2>Key terms</h2>

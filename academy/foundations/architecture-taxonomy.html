@@ -299,7 +299,7 @@
 
       <article class="lesson-article">
         <header class="lesson-header">
-          <span class="lesson-header__badge">Track 0 · Foundations · Lesson 13</span>
+          <span class="lesson-header__badge">Track 0 · Foundations · Lesson 13 · Optional context</span>
           <h1>Architecture taxonomy: encoder, encoder-decoder, decoder-only</h1>
           <p class="lesson-header__outcome">
             After this lesson you can read a Hugging Face model card, identify which
@@ -315,12 +315,21 @@
         </header>
 
         <p>
-          Every modern language model is built from Transformer blocks, but the
+          Most modern language models are built from Transformer blocks, and the
           blocks can be wired together in three different ways. The difference is
           how attention flows. That single choice — set at pretraining time —
           decides what the model is good at, what training objective it learned,
           and what you should reach for it to do. Three families: encoder-only,
           encoder-decoder, decoder-only.
+        </p>
+        <p>
+          "Most", not "all": a growing number of small models are <strong>hybrids</strong>.
+          Qwen3.5-2B, for example, mixes 18 linear-attention layers with 6 full-attention
+          layers, and state-space models such as
+          <a class="inline-link" href="https://arxiv.org/abs/2312.00752" target="_blank" rel="noopener noreferrer">Mamba</a>
+          replace attention in some or all layers. They are still trained and used like
+          decoder-only models (next-token prediction, left to right), so everything below
+          about that family applies to them too.
         </p>
 
         <h2>Encoder-only: read the whole thing at once</h2>
@@ -385,18 +394,18 @@
         </p>
         <ul>
           <li><strong>Great at:</strong> chat, code, free-form generation, summarisation in conversational style — and a property that surprised everyone: <strong>in-context learning</strong>. Show the model a few examples in the prompt and it learns the pattern without any weight updates.</li>
-          <li><strong>Bad at, natively:</strong> producing a single fixed-size representation of input. You can extract one (mean-pool the last hidden states), but encoder-only models do it cleaner.</li>
+          <li><strong>Bad at, natively:</strong> producing a single fixed-size representation of input. You can extract one (mean-pool the last hidden states), but a raw chat model's pooled states make poor embeddings; you need a model trained for embedding, which can itself be decoder-based.</li>
         </ul>
 
         <h2>Why decoder-only won for chat</h2>
         <p>
-          Three factors made the decoder-only family dominate general-purpose chat
-          between 2020 and now:
+          A mix of factors made the decoder-only family dominate general-purpose chat
+          between 2020 and now. None of them is a law of nature:
         </p>
         <ul>
           <li><strong>Simplest objective.</strong> Next-token prediction needs nothing but raw text. No mask scheme to design, no encoder/decoder split, no auxiliary losses. Easy to scale to terabytes of web data.</li>
-          <li><strong>In-context learning emerged.</strong> The ability to follow few-shot examples in the prompt — to "learn" from context without training — appeared as a side effect of scale, and it's the basis of every modern prompt-engineering practice.</li>
-          <li><strong>Better scaling.</strong> Empirically, decoder-only models kept getting better with more parameters and more data, past the point where encoder-decoder gains flattened. The chinchilla-era scaling work and everything that followed used decoder-only as the substrate.</li>
+          <li><strong>Strong prompting ability.</strong> Large decoder-only models follow few-shot examples in the prompt — they "learn" from context without training — and that ability underpins modern prompt engineering. Encoder-decoder models show in-context learning too, and whether it "emerges" suddenly with scale is debated (<a class="inline-link" href="https://arxiv.org/abs/2304.15004" target="_blank" rel="noopener noreferrer">Schaeffer et al. 2023</a>).</li>
+          <li><strong>Where the field invested.</strong> The comparison is not one-sided: one large study found causal decoders best for zero-shot use straight after pretraining, but encoder-decoders best after multitask fine-tuning (<a class="inline-link" href="https://arxiv.org/abs/2204.05832" target="_blank" rel="noopener noreferrer">Wang et al. 2022</a>). The Chinchilla-era scaling work (<a class="inline-link" href="https://arxiv.org/abs/2203.15556" target="_blank" rel="noopener noreferrer">Hoffmann et al. 2022</a>) and most of what followed used decoder-only as the substrate, and the tooling followed the investment.</li>
         </ul>
 
         <h2>When to still pick the others</h2>
@@ -405,7 +414,7 @@
           task does not actually need generation.
         </p>
         <ul>
-          <li><strong>Need a sentence embedding for retrieval / clustering / search?</strong> Use an encoder-only model purpose-built for it (BGE, E5). It will be cheaper and produce better embeddings than mean-pooling a decoder-only LLM.</li>
+          <li><strong>Need a sentence embedding for retrieval / clustering / search?</strong> Use a purpose-trained embedding model, not a mean-pooled chat LLM. Small encoder-only ones (BGE, E5) are the cheapest; contrastively trained decoder-based embedders have topped the leaderboards since 2024 (<a class="inline-link" href="https://arxiv.org/abs/2401.00368" target="_blank" rel="noopener noreferrer">Wang et al. 2024</a>), at a higher cost per text.</li>
           <li><strong>Need a binary or multi-class classifier?</strong> A small encoder-only model with a classification head trained on your data is usually faster and as accurate as fine-tuning Llama for it. A 110M-parameter BERT is hard to beat on its home turf.</li>
           <li><strong>Need translation between two languages?</strong> Encoder-decoder models (NLLB, FLAN-T5) are the natural shape; their pretraining objective is closer to the task.</li>
         </ul>
@@ -430,6 +439,8 @@
           only loss) all live in that family. Most production SLM work uses
           decoder-only models, so this is the right default. But know the other
           two exist, know what they're for, and reach for them when the task fits.
+          BrewSLM itself also trains encoder-style sequence and token classifiers; the
+          <a class="inline-link" href="../tutorials/pii-span-tagging.html">PII span-tagging tutorial</a> is one.
         </p>
 
         <div class="callout callout--key">
@@ -464,7 +475,7 @@
             <dt>Masked language modelling (MLM)</dt><dd>Pretraining objective for encoder-only models — randomly mask tokens, predict them from bidirectional context.</dd>
             <dt>Span corruption / denoising</dt><dd>Encoder-decoder pretraining objectives — delete or corrupt spans of input, train the decoder to reconstruct them.</dd>
             <dt>Causal (autoregressive) attention</dt><dd>Attention masked so each token can only see previous tokens; the defining feature of decoder-only models.</dd>
-            <dt>In-context learning</dt><dd>The decoder-only property of learning a pattern from examples in the prompt without any weight updates; emergent at scale.</dd>
+            <dt>In-context learning</dt><dd>Learning a pattern from examples in the prompt without any weight updates; strongest in large decoder-only models, though encoder-decoders show it too.</dd>
           </dl>
         </section>
 

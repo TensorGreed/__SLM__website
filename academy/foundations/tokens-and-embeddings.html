@@ -300,18 +300,18 @@
         <p>A neural network multiplies and adds numbers. Text is a sequence of characters. Bridging that gap takes two steps that every language model performs before it can do anything: <strong>tokenize</strong> the text into pieces, then <strong>embed</strong> each piece as a vector of numbers.</p>
 
         <h2>Step 1: tokenization</h2>
-        <p>A <strong>tokenizer</strong> chops text into <strong>tokens</strong>. Tokens are usually <em>subwords</em>, not whole words and not single characters. For example, a tokenizer might split <code>"tokenization"</code> into <code>["token", "ization"]</code>, and <code>"BrewSLM"</code> into <code>["Brew", "SL", "M"]</code>. Common words are often a single token; rare or novel words break into smaller, reusable pieces.</p>
+        <p>A <strong>tokenizer</strong> chops text into <strong>tokens</strong>. Tokens are usually <em>subwords</em>, not whole words and not single characters. For example, SmolLM2's tokenizer splits <code>"tokenization"</code> into <code>["token", "ization"]</code>, and <code>"BrewSLM"</code> into <code>["B", "rew", "SL", "M"]</code> (GPT-2's tokenizer makes it <code>["Brew", "SL", "M"]</code>: tokenizers disagree). Common words are often a single token; rare or novel words break into smaller, reusable pieces.</p>
         <p>Why subwords rather than words? Two reasons. A whole-word vocabulary would be enormous and would still fail on any word it had never seen. Single characters, at the other extreme, make sequences painfully long. Subwords are the sweet spot: a fixed-size vocabulary that can spell out <em>any</em> string by combining pieces. The standard algorithm for building this vocabulary is <strong>Byte-Pair Encoding (BPE)</strong>, which greedily merges the most frequent character pairs until it has the desired number of tokens.</p>
 
         <h2>Step 2: tokens become IDs</h2>
         <p>The tokenizer holds a fixed <strong>vocabulary</strong> — a list of every token it knows, perhaps 32,000 or 150,000 entries — and each token has an integer <strong>token ID</strong> (its index in that list). So tokenizing produces a list of integers:</p>
         <div class="code-block">
-          <p>"the cat sat"  →  ["the", " cat", " sat"]  →  [578, 8415, 7937]</p>
+          <p>"the cat sat"  →  ["the", " cat", " sat"]  →  [1195, 2644, 2643]</p>
         </div>
-        <p>(The leading spaces are part of the tokens — most tokenizers attach the space before a word to the word.) Those integers are what actually enters the model. When the model later outputs an ID, the tokenizer maps it back to text. Two practical consequences: the model's "view" of your text is its token count, not its character count; and a model can only ever produce tokens that exist in its vocabulary.</p>
+        <p>(Those are SmolLM2's IDs. The IDs differ per tokenizer: GPT-2 gives <code>[1169, 3797, 3332]</code> for the same three tokens. The leading spaces are part of the tokens — most tokenizers attach the space before a word to the word.) Those integers are what actually enters the model. When the model later outputs an ID, the tokenizer maps it back to text. Two practical consequences: the model's "view" of your text is its token count, not its character count; and a model can only ever produce tokens that exist in its vocabulary.</p>
 
         <h2>Step 3: IDs become embeddings</h2>
-        <p>An integer ID still isn't useful for arithmetic — ID 8415 isn't "bigger" than ID 578 in any meaningful sense. So the model's first layer is an <strong>embedding table</strong>: a big lookup that maps each token ID to a learned vector of numbers (say 768 of them). That vector is the token's <strong>embedding</strong> — the model's numeric representation of it.</p>
+        <p>An integer ID still isn't useful for arithmetic — ID 2644 isn't "bigger" than ID 1195 in any meaningful sense. So the model's first layer is an <strong>embedding table</strong>: a big lookup that maps each token ID to a learned vector of numbers (say 768 of them). That vector is the token's <strong>embedding</strong> — the model's numeric representation of it.</p>
         <p>Crucially, the embedding table is made of parameters, so it is <em>learned</em> during training. Tokens that behave similarly end up with similar vectors. After training, the embeddings for "cat" and "dog" sit close together; "cat" and "thermodynamics" sit far apart. The model discovers this geometry on its own from the predict-next-token objective.</p>
 
         <figure class="diagram">
@@ -321,7 +321,7 @@
             <text x="20" y="60" font-family="Geist, sans-serif" font-size="11" fill="#a3a3a3">raw text</text>
             <text x="250" y="40" font-family="Geist Mono, monospace" font-size="12" fill="#171717">the · cat · sat</text>
             <text x="250" y="60" font-family="Geist, sans-serif" font-size="11" fill="#a3a3a3">tokens</text>
-            <text x="450" y="40" font-family="Geist Mono, monospace" font-size="12" fill="#171717">578, 8415, 7937</text>
+            <text x="450" y="40" font-family="Geist Mono, monospace" font-size="12" fill="#171717">1195, 2644, 2643</text>
             <text x="450" y="60" font-family="Geist, sans-serif" font-size="11" fill="#a3a3a3">token IDs</text>
             <line x1="150" y1="35" x2="244" y2="35" stroke="#525252" marker-end="url(#ar2)"></line>
             <line x1="360" y1="35" x2="444" y2="35" stroke="#525252" marker-end="url(#ar2)"></line>

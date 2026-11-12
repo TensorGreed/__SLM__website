@@ -360,11 +360,15 @@
               up sequence lengths.</li>
           <li><strong>Special-token expectations.</strong> Instruct models bake their chat
               template into specific special tokens — they aren't interchangeable across families.</li>
-          <li><strong>A hard constraint for distillation.</strong> Offline knowledge distillation
-              (Track 4, Lesson 4.2) captures the teacher's top-k token ids. If teacher and
-              student don't share a tokenizer, those ids mean different tokens to each model and
-              the soft targets are gibberish. Pick teacher and student from the same family if
-              distillation is on your roadmap.</li>
+          <li><strong>A hard constraint for <em>logit</em> distillation.</strong> Logit-level
+              knowledge distillation (Track 4, Lesson 4.2) trains the student to match the
+              teacher's probabilities over specific tokens. If teacher and student don't share a
+              tokenizer, the two vocabularies don't line up token for token, so those targets have
+              to be mapped across (some tokens won't map) or matched with a cross-tokenizer method
+              such as <a class="inline-link" href="https://arxiv.org/abs/2402.12030" target="_blank" rel="noopener noreferrer">Universal Logit Distillation</a>.
+              Sequence-level distillation, training the student on the teacher's generated text,
+              works across tokenizers. Picking teacher and student from the same family keeps
+              every option open.</li>
         </ul>
 
         <h2>Instruct quality: how aligned is the starting point?</h2>
@@ -378,10 +382,12 @@
 
         <h2>Context length: how long is your input?</h2>
         <p>
-          Modern SLMs ship with context windows from 2k up to 128k tokens. Match this to your
-          task's actual input length distribution, not the worst case from a paper. Long-context
-          models cost more compute per token and more memory per request; picking 32k when 2k
-          would have done is real overhead at scale.
+          Modern SLMs ship with context windows from 2k to 256k tokens and beyond. Match this to
+          your task's actual input length distribution, not the worst case from a paper. A
+          model's <em>maximum</em> context costs nothing until you use it: attention compute and
+          KV-cache memory scale with the tokens you actually send. Long-context capability
+          matters only if your inputs need it, and quality at long context is often worse than
+          the headline number, so check it on your data.
         </p>
 
         <h2>Size &amp; latency budget: small first, step up with reason</h2>
@@ -392,8 +398,9 @@
           bigger sounds safer.
         </p>
         <p>
-          The cost is not just GPU memory at training (Track 1, Lesson 1.15). A 7B model is
-          orders of magnitude more expensive at inference too, every request, forever. If a 1B
+          The cost is not just GPU memory at training (Track 1, Lesson 1.15). A 7B model needs
+          about 7× the memory and roughly 7× the per-token compute of a 1B model at inference
+          too (and about 50× a 135M model), every request, forever. If a 1B
           model gets you to your quality gate, ship the 1B.
         </p>
 
@@ -427,8 +434,8 @@
           <li><strong>License:</strong> Apache 2.0 — you can ship a commercial fine-tune.</li>
           <li><strong>Tokenizer:</strong> HF-native, shared across the SmolLM2 family — leaves the door open for distillation across sizes.</li>
           <li><strong>Instruct quality:</strong> usable baseline alignment; well-behaved chat template.</li>
-          <li><strong>Context length:</strong> 2k — sufficient for classification, extraction, short Q&amp;A; the Academy's running tasks fit.</li>
-          <li><strong>Size:</strong> 135M parameters — fits comfortably on a single consumer GPU (and even runs slowly on CPU), so every reader can follow along without a server.</li>
+          <li><strong>Context length:</strong> 8k positions in the shipped config (<code>max_position_embeddings: 8192</code>); quality at long context is unmeasured for the 135M model, so keep inputs short. In practice the limit is the training run's own maximum sequence length (BrewSLM's default is 2,048 tokens), which is plenty for classification, extraction and short Q&amp;A: the Academy's running tasks fit.</li>
+          <li><strong>Size:</strong> 135M parameters — fits comfortably on a single consumer GPU, and runs inference fast enough on a CPU (training on a CPU is slow), so every reader can follow along without a server.</li>
           <li><strong>Community:</strong> HF-native, broad tooling support; vLLM, llama.cpp / GGUF, peft / TRL all work day one.</li>
         </ul>
 
@@ -444,18 +451,19 @@
         </div>
 
         <p>
-          That ends the Foundations track. You now know what a model is, how it learns, how
+          That ends the core of the Foundations track. You now know what a model is, how it learns, how
           text becomes tokens, how attention and the Transformer work, how a language model
           predicts the next token, the four levers you can pull, the trade between large and
-          small, what an instruct model is, and how to pick a base. From here we go deep on
-          supervised fine-tuning itself — Track 1.
+          small, what an instruct model is, and how to pick a base. Two optional context lessons
+          follow: a brief history of language models, and the three architecture families. Read
+          them now or skip straight to Track 1, where we go deep on supervised fine-tuning itself.
         </p>
 
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
             <dt>Model license</dt><dd>The terms attached to a base model that travel with every derivative — including your fine-tune. Check before training, not at deploy.</dd>
-            <dt>Tokenizer family</dt><dd>A shared vocabulary and special-token set across a model family; required for cross-model distillation and shared chat templates.</dd>
+            <dt>Tokenizer family</dt><dd>A shared vocabulary and special-token set across a model family; needed for straightforward logit-level distillation and shared chat templates.</dd>
             <dt>Instruct quality</dt><dd>How well an instruct model already follows instructions and respects formats before any fine-tuning; the starting line a fine-tune lifts from.</dd>
             <dt>Context length</dt><dd>The maximum tokens the model can take in plus produce; pick to match your real input/output distribution, not the worst case.</dd>
             <dt>Small first</dt><dd>Default to the smallest model that plausibly works; step up only when the eval makes the case.</dd>
