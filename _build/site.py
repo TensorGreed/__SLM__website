@@ -619,10 +619,16 @@ def jsonld_blocks(rel: str, facts: dict[str, "Facts"], pages: list[str]) -> list
                        "publisher": org, "blogPost": posts})
     elif pt == "academy_index":
         tracks = [f"academy/{t}/index.html" for t in CFG["academy"]["course_tracks"]]
+        # Workload = the read times the lessons show, summed (not a guess).
+        workload = sum(duration_minutes(facts[k].time) or 0 for t in tracks
+                       for k in facts[t].child_pages(pages, lambda x, d=t[:-len("index.html")]:
+                                                     x.startswith(d) and page_type(x) == "lesson"))
         blocks.append({
             **academy_ref(), "description": f.description, "inLanguage": "en",
             "isAccessibleForFree": True, "provider": org,
             "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD", "category": "Free"},
+            "hasCourseInstance": {"@type": "CourseInstance", "courseMode": "Online",
+                                  "courseWorkload": iso_duration(workload)},
             "hasPart": [{**course_ref(url_of(t), facts[t].h1), "isAccessibleForFree": True} for t in tracks]})
     elif pt == "track_index":
         d = rel.rsplit("/", 1)[0] + "/"
@@ -1359,6 +1365,16 @@ def check_jsonld(rel: str, text: str, vis: dict, pages: set[str], texts: dict) -
                     [(vis[k].h1, url_of(k)) for k in kids]:
                 err("Course.hasPart differs from the lessons the track page lists")
         if types == {"Course"} and pt == "academy_index":
+            inst = n.get("hasCourseInstance") or {}
+            total = sum(duration_minutes(vis[k].time) or 0
+                        for t in CFG["academy"]["course_tracks"]
+                        for k in kids_of(f"academy/{t}/index.html",
+                                         lambda x, t=t: x.startswith(f"academy/{t}/") and page_type(x) == "lesson"))
+            if inst.get("courseMode") is None:
+                err("Course.hasCourseInstance: missing courseMode")
+            if duration_minutes(inst.get("courseWorkload")) != total:
+                err(f"Course.hasCourseInstance.courseWorkload {inst.get('courseWorkload')!r} is not the sum "
+                    f"of the visible lesson times ({iso_duration(total)})")
             linked = {url_of(t) for t in kids_of(rel, lambda t: page_type(t) == "track_index")}
             for p in n.get("hasPart", []):
                 if p.get("url") not in linked:
