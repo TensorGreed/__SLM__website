@@ -144,7 +144,7 @@
             "text": "The training data: size, labels, coverage",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "With the eval verified, no lift almost always traces to data: too few rows, wrong labels, or examples unlike the gold set (Tracks 1.7–1.8). Rank is second-order, and driving training loss to zero just memorises."
+              "text": "With the eval verified, no lift almost always traces to data: too few rows, wrong labels, or examples unlike the gold set (Lessons 1.7–1.8). Rank is second-order, and driving training loss to zero just memorises."
             }
           }
         },
@@ -177,7 +177,7 @@
             "text": "A chat-template or loss-mask problem",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "A model that never learned to emit the end-of-turn token after the label keeps going. Check the template and that the supervised span includes the end-of-turn token (Tracks 1.3–1.4, 2.4). Lowering max_new_tokens only hides the symptom."
+              "text": "A model that never learned to emit the end-of-turn token after the label keeps going. Check the template and that the supervised span includes the end-of-turn token (Lessons 1.3–1.4, 2.4). Lowering max_new_tokens only hides the symptom."
             }
           }
         },
@@ -308,8 +308,9 @@ from peft import LoraConfig, get_peft_model, PeftModel
 
 MODEL_ID, MAX_LEN = "HuggingFaceTB/SmolLM2-135M-Instruct", 256
 device = "cuda" if torch.cuda.is_available() else "cpu"
-use_bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()   # Lesson 2.1
+use_bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported(including_emulation=False)
 use_fp16 = torch.cuda.is_available() and not use_bf16
+dtype = torch.bfloat16 if use_bf16 else (torch.float16 if use_fp16 else torch.float32)   # Lesson 2.1
 
 # 1) data --------------------------------------------------------------
 raw = [  # in practice: hundreds of clean, balanced, deduplicated rows
@@ -322,7 +323,7 @@ ds = Dataset.from_list(raw).train_test_split(test_size=0.2, seed=42)
 # 2) model + tokenizer -------------------------------------------------
 tok = AutoTokenizer.from_pretrained(MODEL_ID)
 if tok.pad_token is None: tok.pad_token = tok.eos_token
-model = AutoModelForCausalLM.from_pretrained(MODEL_ID, dtype=torch.bfloat16).to(device)
+model = AutoModelForCausalLM.from_pretrained(MODEL_ID, dtype=dtype).to(device)
 model.config.pad_token_id = tok.pad_token_id
 
 # 3) tokenize with a loss mask ----------------------------------------
@@ -362,7 +363,7 @@ def predict(m, prompt):
     return tok.decode(m.generate(**ids, max_new_tokens=8, do_sample=False, pad_token_id=tok.pad_token_id)[0][ids["input_ids"].shape[1]:], skip_special_tokens=True).strip().lower()
 
 gold = [{"prompt":"Classify the sentiment as positive or negative: This made my week.","label":"positive"}]  # + more
-base = AutoModelForCausalLM.from_pretrained(MODEL_ID, dtype=torch.bfloat16).to(device)
+base = AutoModelForCausalLM.from_pretrained(MODEL_ID, dtype=dtype).to(device)
 tuned = PeftModel.from_pretrained(base, "sft-out/adapter").eval()   # modifies base in place (Lesson 2.7)
 acc = lambda m: sum(predict(m, g["prompt"]).startswith(g["label"]) for g in gold) / len(gold)
 with tuned.disable_adapter():
@@ -376,7 +377,7 @@ tuned.merge_and_unload().save_pretrained("sft-out/merged"); tok.save_pretrained(
         <p>You've succeeded when, on your held-out gold set, the <strong>tuned model clearly beats the base</strong> and produces the format you want (here: just the label, no rambling). If you set a gate in advance (Track 1) — say "≥ 90% gold accuracy" — the run passes only when it clears it. A gate needs enough gold rows to mean anything: at 100 rows, a 90% score has a 95% interval of roughly ±6 points.</p>
         <div class="callout callout--warning">
           <p class="callout__label">Run it on real data</p>
-          <p>The script runs as written, but on the two-row placeholder lists it takes one optimizer step per epoch (three in all) and the gold accuracy can only be 0% or 100%. You will not see learning or a lift until <code>raw</code> holds a few hundred real rows and <code>gold</code> a few dozen held-out ones. We ran it that way on CPU: it completes, and the base and tuned scores come out equal. That is the honest result for this much data, not a bug.</p>
+          <p>The script runs as written, but on the two-row placeholder lists it takes one optimizer step per epoch (three in all) and the gold accuracy can only be 0% or 100%. You will not see learning or a lift until <code>raw</code> holds a few hundred real rows and <code>gold</code> a few dozen held-out ones. We ran the script as written, with the placeholders, on CPU: it completes, and the base and tuned scores come out equal. That is the honest result for this much data, not a bug.</p>
         </div>
         <div class="callout callout--key">
           <p class="callout__label">If it falls short — where to look</p>
@@ -422,7 +423,7 @@ tuned.merge_and_unload().save_pretrained("sft-out/merged"); tok.save_pretrained(
                   "The epoch count: train until the training loss reaches zero"
                 ],
                 "answer": 1,
-                "explanation": "With the eval verified, no lift almost always traces to data: too few rows, wrong labels, or examples unlike the gold set (Tracks 1.7–1.8). Rank is second-order, and driving training loss to zero just memorises."
+                "explanation": "With the eval verified, no lift almost always traces to data: too few rows, wrong labels, or examples unlike the gold set (Lessons 1.7–1.8). Rank is second-order, and driving training loss to zero just memorises."
               },
               {
                 "q": "The model rambles on instead of emitting just the label. Likely cause?",
@@ -433,7 +434,7 @@ tuned.merge_and_unload().save_pretrained("sft-out/merged"); tok.save_pretrained(
                   "max_new_tokens set too high, so the model keeps writing"
                 ],
                 "answer": 0,
-                "explanation": "A model that never learned to emit the end-of-turn token after the label keeps going. Check the template and that the supervised span includes the end-of-turn token (Tracks 1.3–1.4, 2.4). Lowering max_new_tokens only hides the symptom."
+                "explanation": "A model that never learned to emit the end-of-turn token after the label keeps going. Check the template and that the supervised span includes the end-of-turn token (Lessons 1.3–1.4, 2.4). Lowering max_new_tokens only hides the symptom."
               },
               {
                 "q": "Why move on to a platform (Track 3) after doing this by hand?",
@@ -467,7 +468,7 @@ tuned.merge_and_unload().save_pretrained("sft-out/merged"); tok.save_pretrained(
                   <li>The LoRA rank (raise r)</li>
                   <li>The epoch count: train until the training loss reaches zero</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The training data: size, labels, coverage</strong> With the eval verified, no lift almost always traces to data: too few rows, wrong labels, or examples unlike the gold set (Tracks 1.7–1.8). Rank is second-order, and driving training loss to zero just memorises.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The training data: size, labels, coverage</strong> With the eval verified, no lift almost always traces to data: too few rows, wrong labels, or examples unlike the gold set (Lessons 1.7–1.8). Rank is second-order, and driving training loss to zero just memorises.</p></details></li>
               <li><p class="quiz__q-text">The model rambles on instead of emitting just the label. Likely cause?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>A chat-template or loss-mask problem</li>
@@ -475,7 +476,7 @@ tuned.merge_and_unload().save_pretrained("sft-out/merged"); tok.save_pretrained(
                   <li>The adapter was saved as safetensors instead of .bin</li>
                   <li>max_new_tokens set too high, so the model keeps writing</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A chat-template or loss-mask problem</strong> A model that never learned to emit the end-of-turn token after the label keeps going. Check the template and that the supervised span includes the end-of-turn token (Tracks 1.3–1.4, 2.4). Lowering max_new_tokens only hides the symptom.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A chat-template or loss-mask problem</strong> A model that never learned to emit the end-of-turn token after the label keeps going. Check the template and that the supervised span includes the end-of-turn token (Lessons 1.3–1.4, 2.4). Lowering max_new_tokens only hides the symptom.</p></details></li>
               <li><p class="quiz__q-text">Why move on to a platform (Track 3) after doing this by hand?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Platforms train more accurate models than hand-written code</li>
@@ -493,7 +494,7 @@ tuned.merge_and_unload().save_pretrained("sft-out/merged"); tok.save_pretrained(
           <h2>Related lessons</h2>
           <ul>
             <li><a class="inline-link" href="../with-brewslm/from-script-to-platform.html">From script to platform: the BrewSLM lifecycle</a><span class="related-lessons__track">With BrewSLM</span></li>
-            <li><a class="inline-link" href="../advanced/capstone-graduating.html">Capstone C: choosing the right technique, and graduating</a><span class="related-lessons__track">Advanced</span></li>
+            <li><a class="inline-link" href="../advanced/capstone-graduating.html">Capstone C: choosing the right technique</a><span class="related-lessons__track">Advanced</span></li>
             <li><a class="inline-link" href="../glossary.html">Glossary of terms</a><span class="related-lessons__track">Reference</span></li>
           </ul>
         </section>

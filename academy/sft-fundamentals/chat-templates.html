@@ -144,7 +144,7 @@
             "text": "Use the tokenizer's own apply_chat_template",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The tokenizer ships the model's template, so the special tokens and layout match training. Note: with transformers v5 defaults it returns token IDs; pass tokenize=False for the string, and if you then call tokenizer(text) use add_special_tokens=False to avoid a double BOS."
+              "text": "The tokenizer ships the model's template, so the special tokens and layout match training. Note: with transformers v5 defaults it returns a BatchEncoding (input_ids + attention_mask) for model.generate(**enc); pass tokenize=False for the string, and if you then call tokenizer(text) use add_special_tokens=False to avoid a double BOS."
             }
           }
         },
@@ -311,7 +311,7 @@
         </div>
 
         <h2>The chat template does this for you</h2>
-        <p>Every instruct tokenizer ships a <strong>chat template</strong> — a rule that turns a messages list into exactly the formatted string that model expects. <code>tokenizer.apply_chat_template(messages, tokenize=False)</code> returns that formatted string with the right special tokens; called with its defaults (transformers v5) it returns token IDs ready for the model instead. Either way, the template, not you, decides the format. The cardinal rule:</p>
+        <p>Every instruct tokenizer ships a <strong>chat template</strong> — a rule that turns a messages list into exactly the formatted string that model expects. <code>tokenizer.apply_chat_template(messages, tokenize=False)</code> returns that formatted string with the right special tokens; called with its defaults (transformers v5) it tokenizes too and returns a <code>BatchEncoding</code> (<code>input_ids</code> + <code>attention_mask</code>); add <code>return_tensors="pt"</code> and pass it as <code>model.generate(**enc)</code>. Either way, the template, not you, decides the format. The cardinal rule:</p>
         <div class="callout callout--warning">
           <p class="callout__label">The double-BOS trap</p>
           <p>Many templates already put the beginning-of-sequence token in the string. If you render with <code>tokenize=False</code> and then call <code>tokenizer(text)</code>, the tokenizer adds a second BOS (Mistral-7B-Instruct's tokenizer does exactly this). Pass <code>add_special_tokens=False</code> when you tokenize a rendered template, or let <code>apply_chat_template</code> tokenize for you.</p>
@@ -337,7 +337,7 @@
             <dt>Chat template</dt><dd>A tokenizer rule that converts a messages list into the exact formatted string the model expects.</dd>
             <dt>Role</dt><dd>Who is speaking: system, user, or assistant.</dd>
             <dt>Special/control tokens</dt><dd>Non-text tokens (e.g. turn delimiters) the model was trained with.</dd>
-            <dt>apply_chat_template</dt><dd>The function that renders messages with the model's template: a string with <code>tokenize=False</code>, token IDs by default.</dd>
+            <dt>apply_chat_template</dt><dd>The function that renders messages with the model's template: a string with <code>tokenize=False</code>, a <code>BatchEncoding</code> (<code>input_ids</code> + <code>attention_mask</code>) by default.</dd>
             <dt>add_generation_prompt</dt><dd>At inference, appends the assistant-turn opener so the model starts responding.</dd>
           </dl>
         </section>
@@ -367,7 +367,7 @@
                   "Use the tokenizer's own apply_chat_template"
                 ],
                 "answer": 3,
-                "explanation": "The tokenizer ships the model's template, so the special tokens and layout match training. Note: with transformers v5 defaults it returns token IDs; pass tokenize=False for the string, and if you then call tokenizer(text) use add_special_tokens=False to avoid a double BOS."
+                "explanation": "The tokenizer ships the model's template, so the special tokens and layout match training. Note: with transformers v5 defaults it returns a BatchEncoding (input_ids + attention_mask) for model.generate(**enc); pass tokenize=False for the string, and if you then call tokenizer(text) use add_special_tokens=False to avoid a double BOS."
               },
               {
                 "q": "What does add_generation_prompt=True do?",
@@ -412,7 +412,7 @@
                   <li>Paste the messages in as raw JSON</li>
                   <li>Use the tokenizer's own apply_chat_template</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Use the tokenizer's own apply_chat_template</strong> The tokenizer ships the model's template, so the special tokens and layout match training. Note: with transformers v5 defaults it returns token IDs; pass tokenize=False for the string, and if you then call tokenizer(text) use add_special_tokens=False to avoid a double BOS.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. Use the tokenizer's own apply_chat_template</strong> The tokenizer ships the model's template, so the special tokens and layout match training. Note: with transformers v5 defaults it returns a BatchEncoding (input_ids + attention_mask) for model.generate(**enc); pass tokenize=False for the string, and if you then call tokenizer(text) use add_special_tokens=False to avoid a double BOS.</p></details></li>
               <li><p class="quiz__q-text">What does add_generation_prompt=True do?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Adds the training labels for the assistant turn so loss masking works</li>

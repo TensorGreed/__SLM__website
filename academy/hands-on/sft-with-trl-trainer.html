@@ -313,7 +313,10 @@ from trl import SFTConfig, SFTTrainer
 MODEL_ID = "HuggingFaceTB/SmolLM2-135M-Instruct"
 tok = AutoTokenizer.from_pretrained(MODEL_ID)
 if tok.pad_token is None: tok.pad_token = tok.eos_token
-model = AutoModelForCausalLM.from_pretrained(MODEL_ID, dtype=torch.bfloat16)
+use_bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported(including_emulation=False)
+use_fp16 = torch.cuda.is_available() and not use_bf16
+dtype = torch.bfloat16 if use_bf16 else (torch.float16 if use_fp16 else torch.float32)   # Lesson 2.1
+model = AutoModelForCausalLM.from_pretrained(MODEL_ID, dtype=dtype)
 
 # data — conversational prompt-completion rows
 raw = [
@@ -334,10 +337,7 @@ lora = LoraConfig(
 
         <h2>The 20-line version</h2>
         <p>This is the SFT loop you wrote by hand, in twenty lines. Everything from Lesson 2.5 is in here — just expressed declaratively.</p>
-        <pre class="code-block"><code>use_bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()   # Lesson 2.1
-use_fp16 = torch.cuda.is_available() and not use_bf16
-
-trainer = SFTTrainer(
+        <pre class="code-block"><code>trainer = SFTTrainer(
     model=model,
     args=SFTConfig(
         output_dir="sft-out",
@@ -392,7 +392,7 @@ trainer.save_model("sft-out/adapter")</code></pre>
 
         <div class="callout callout--warning">
           <p class="callout__label">Honest beat — the wrapper has assumptions</p>
-          <p><code>completion_only_loss</code> only masks <strong>prompt-completion</strong> rows. Give the same config a dataset with a single <code>messages</code> column and, in current TRL, it raises no error and no warning, and trains on every token: SmolLM2's default system message, the user turn and the label alike. That is exactly the bug Lesson 2.4 taught you to avoid. The option meant for <code>messages</code> data, <code>assistant_only_loss=True</code>, only works when the chat template marks assistant turns with <code>{% generation %}</code> tags, and SmolLM2's template doesn't (TRL raises a <code>ValueError</code>). Hence the label dump in the code above: it is a required step, not an optional one. If it prints anything besides the answer, stop and fix the data shape.</p>
+          <p><code>completion_only_loss</code> only masks <strong>prompt-completion</strong> rows. Give the same config a dataset with a single <code>messages</code> column and, in current TRL, it raises no error and no warning, and trains on every token: SmolLM2's default system message, the user turn and the label alike. That is exactly the bug Lesson 2.4 taught you to avoid. The option meant for <code>messages</code> data, <code>assistant_only_loss=True</code>, only works when the chat template marks assistant turns with <code>{% generation %}</code> tags, and SmolLM2's template doesn't (TRL can't patch it, so it raises a <code>ValueError</code>). Hence the label dump in the code above: it is a required step, not an optional one. If it prints anything besides the answer, stop and fix the data shape.</p>
         </div>
 
         <div class="callout callout--key">

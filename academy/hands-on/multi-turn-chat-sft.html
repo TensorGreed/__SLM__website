@@ -316,7 +316,7 @@ ds = Dataset.from_list(raw)</code></pre>
 
         <h2>Loss on every assistant turn</h2>
         <p>The goal: mask <strong>every</strong> non-assistant token — system message, user turns, the chat-template role headers, and padding — and supervise each assistant turn's content, including the assistant's <em>earlier</em> replies in the same conversation, not just the final one. That is the usual choice for chat fine-tuning: the model learns how to handle every turn position it'll see in production.</p>
-        <p>Lesson 2.10's trick doesn't work here. <code>completion_only_loss</code> only masks prompt-completion rows; on a <code>messages</code> dataset it silently trains on every token, system and user turns included. The setting built for <code>messages</code> data is <code>assistant_only_loss=True</code>. It asks the chat template which tokens belong to the assistant, and the template answers through <code>{% generation %}…{% endgeneration %}</code> tags around each assistant reply. Most stock templates, SmolLM2's included, don't have those tags, and TRL raises a <code>ValueError</code> rather than guess. So we write a training copy of SmolLM2's template with the tags added, and check that it renders exactly the same text as the original:</p>
+        <p>Lesson 2.10's trick doesn't work here. <code>completion_only_loss</code> only masks prompt-completion rows; on a <code>messages</code> dataset it silently trains on every token, system and user turns included. The setting built for <code>messages</code> data is <code>assistant_only_loss=True</code>. It asks the chat template which tokens belong to the assistant, and the template answers through <code>{% generation %}…{% endgeneration %}</code> tags around each assistant reply. Most stock templates, SmolLM2's included, don't have those tags. TRL patches a few templates it knows; for templates it can't patch, such as SmolLM2's, it raises a <code>ValueError</code> rather than guess. So we write a training copy of SmolLM2's template with the tags added, and check that it renders exactly the same text as the original:</p>
         <pre class="code-block"><code># SmolLM2's chat template, plus {% generation %} tags around each assistant reply
 TRAIN_TEMPLATE = (
     "{% for message in messages %}"
@@ -343,7 +343,7 @@ tok.chat_template = TRAIN_TEMPLATE</code></pre>
 from trl import SFTConfig, SFTTrainer
 from peft import LoraConfig
 
-use_bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()   # Lesson 2.1
+use_bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported(including_emulation=False)   # Lesson 2.1
 use_fp16 = torch.cuda.is_available() and not use_bf16
 
 lora = LoraConfig(
@@ -372,8 +372,7 @@ trainer = SFTTrainer(
     train_dataset=ds,
     processing_class=tok,                     # carries TRAIN_TEMPLATE
     peft_config=lora,
-)
-trainer.train()</code></pre>
+)</code></pre>
 
         <h2>Verify the mask — the cheap check that catches the loud bug</h2>
         <p>Same check from Lesson 2.4 / 2.10, now more important — run it every time, before you train: pull a batch, decode the unmasked positions, confirm they correspond to assistant turns only.</p>
@@ -387,7 +386,9 @@ unmasked = [i for i, l in zip(ids, labels) if l != -100]
 print(tok.decode(unmasked))
 # Should be every assistant reply, each ending in &lt;|im_end|&gt;:
 # "I can help — what's the order number?&lt;|im_end|&gt;Thanks. I see the order. ..."
-# If you see user or system text in there, the mask is wrong.</code></pre>
+# If you see user or system text in there, the mask is wrong.
+
+trainer.train()   # only once the mask is right</code></pre>
 
         <h2>Pitfalls specific to multi-turn</h2>
         <ul>

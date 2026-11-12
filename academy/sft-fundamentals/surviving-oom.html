@@ -144,7 +144,7 @@
             "text": "Recomputing activations during backprop instead of storing them",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "It trades roughly one extra forward pass (~33% compute) for a large cut in activation memory. On small models the slowdown can outweigh the benefit; BrewSLM's auto policy turns it off at 2B and below."
+              "text": "It trades roughly one extra forward pass (~33% compute) for a large cut in activation memory. On small models the slowdown can outweigh the benefit; BrewSLM's auto policy turns it off at 2B and below, unless the longest row exceeds 1,024 tokens."
             }
           }
         },
@@ -318,7 +318,7 @@
         </div>
 
         <h2>Why "auto-retry on OOM" exists</h2>
-        <p>Because OOM is so common, mature training systems automate the levers. BrewSLM, for example, restarts the training <em>attempt</em> after an OOM, up to <code>max_oom_retries</code> times (2 by default, 3 in some recipes), changing one thing each time, in this order: halve the per-device batch and double gradient accumulation; once the batch is 1, shrink <code>max_seq_length</code> to 75%; then turn off packing; then turn off flash attention; then halve the LoRA rank. Knowing the manual levers means you understand exactly what such auto-retry is doing — and can configure it sensibly. Note that the sequence-length step can clip long rows, which is the very thing the caution below warns about: when a run needed a retry, check its log for what changed and how many rows were truncated.</p>
+        <p>Because OOM is so common, mature training systems automate the levers. BrewSLM, for example, restarts the training <em>attempt</em> after an OOM, up to <code>max_oom_retries</code> times (2 by default; recipes set 1–3), changing one thing each time, in this order: halve the per-device batch and double gradient accumulation; once the batch is 1, shrink <code>max_seq_length</code> to 75%; then turn off packing; then turn off flash attention; then halve the LoRA rank. Knowing the manual levers means you understand exactly what such auto-retry is doing — and can configure it sensibly. Note that the sequence-length step can clip long rows, which is the very thing the caution below warns about: when a run needed a retry, check its log for what changed and how many rows were truncated.</p>
 
         <h2>A caution</h2>
         <p>Don't fix OOM by silently truncating completions or dropping hard examples — that trades a crash for a quieter quality bug (recall the truncation warning from the tokenization lesson). The levers above shrink memory without corrupting your data; reach for those first. With memory under control, the next two lessons turn to reading the result: spotting overfitting, and evaluating properly.</p>
@@ -358,7 +358,7 @@
                   "Skipping the backward pass for every other layer"
                 ],
                 "answer": 2,
-                "explanation": "It trades roughly one extra forward pass (~33% compute) for a large cut in activation memory. On small models the slowdown can outweigh the benefit; BrewSLM's auto policy turns it off at 2B and below."
+                "explanation": "It trades roughly one extra forward pass (~33% compute) for a large cut in activation memory. On small models the slowdown can outweigh the benefit; BrewSLM's auto policy turns it off at 2B and below, unless the longest row exceeds 1,024 tokens."
               },
               {
                 "q": "A run trains fine for 1,800 steps, then hits OOM. What is the most likely cause?",
@@ -403,7 +403,7 @@
                   <li>Recomputing activations during backprop instead of storing them</li>
                   <li>Skipping the backward pass for every other layer</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Recomputing activations during backprop instead of storing them</strong> It trades roughly one extra forward pass (~33% compute) for a large cut in activation memory. On small models the slowdown can outweigh the benefit; BrewSLM's auto policy turns it off at 2B and below.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Recomputing activations during backprop instead of storing them</strong> It trades roughly one extra forward pass (~33% compute) for a large cut in activation memory. On small models the slowdown can outweigh the benefit; BrewSLM's auto policy turns it off at 2B and below, unless the longest row exceeds 1,024 tokens.</p></details></li>
               <li><p class="quiz__q-text">A run trains fine for 1,800 steps, then hits OOM. What is the most likely cause?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>That step's batch held the longest sequences</li>

@@ -210,7 +210,7 @@
             "text": "Greedy decoding",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Greedy decoding is deterministic, so runs are comparable (GPU kernels can still differ slightly). A repetition penalty changes the scores and also penalises copying tokens from the prompt, which hurts extraction and QA; BrewSLM's evals pin it to 1.0."
+              "text": "Greedy decoding is deterministic, so runs are comparable (GPU kernels can still differ slightly). A repetition penalty changes the scores and also penalises copying tokens from the prompt, which hurts extraction and QA; BrewSLM's evals pin it to 1.0 by default."
             }
           }
         }
@@ -355,7 +355,7 @@
           <p class="callout__label">Heads up</p>
           <p>Decoding does not change the model's parameters — it only changes how you sample from a fixed distribution. For evaluation you usually want greedy (deterministic) decoding so results are reproducible; for creative generation you raise temperature/top-p.</p>
         </div>
-        <p>Greedy decoding on a small model can get stuck repeating a phrase. The usual patch is a <strong>repetition penalty</strong>, a decoding knob that lowers the scores of tokens already in the sequence. In the common Hugging Face implementation that sequence includes your prompt, so the penalty also pushes the model away from copying the input, which is exactly what extraction, classification and question answering over a passage need to do. Keep it at <code>1.0</code> (off) for those tasks, use it only for open-ended generation, and check the result on your evaluation set. Also check the model's own <code>generation_config.json</code>, which can switch a penalty on silently. BrewSLM's evaluations pin it to 1.0 for this reason. <a class="inline-link" href="../sft-fundamentals/decoding-controls.html">Decoding controls</a> in Track 1 covers the details.</p>
+        <p>Greedy decoding on a small model can get stuck repeating a phrase. The usual patch is a <strong>repetition penalty</strong>, a decoding knob that lowers the scores of tokens already in the sequence. In the common Hugging Face implementation that sequence includes your prompt, so the penalty also pushes the model away from copying the input, which is exactly what extraction, classification and question answering over a passage need to do. Keep it at <code>1.0</code> (off) for those tasks, use it only for open-ended generation, and check the result on your evaluation set. Also check the model's own <code>generation_config.json</code>, which can switch a penalty on silently. BrewSLM's evaluations pin it to 1.0 by default for this reason. <a class="inline-link" href="../sft-fundamentals/decoding-controls.html">Decoding controls</a> in Track 1 covers the details.</p>
 
         <h2>What this means for fine-tuning</h2>
         <p>Fine-tuning, the subject of the rest of this course, works on exactly this machine. SFT shows the model examples of the inputs you care about and the outputs you want, and runs the same next-token training so that, for your task, the distribution it produces favors the responses you want. You are not bolting on a new ability; you are reshaping the next-token probabilities a base model already has.</p>
@@ -421,7 +421,7 @@
                   "A repetition penalty of 1.15 to stop loops"
                 ],
                 "answer": 0,
-                "explanation": "Greedy decoding is deterministic, so runs are comparable (GPU kernels can still differ slightly). A repetition penalty changes the scores and also penalises copying tokens from the prompt, which hurts extraction and QA; BrewSLM's evals pin it to 1.0."
+                "explanation": "Greedy decoding is deterministic, so runs are comparable (GPU kernels can still differ slightly). A repetition penalty changes the scores and also penalises copying tokens from the prompt, which hurts extraction and QA; BrewSLM's evals pin it to 1.0 by default."
               }
             ]
           </script>
@@ -460,7 +460,7 @@
                   <li>Nucleus sampling with top-p 0.95</li>
                   <li>A repetition penalty of 1.15 to stop loops</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Greedy decoding</strong> Greedy decoding is deterministic, so runs are comparable (GPU kernels can still differ slightly). A repetition penalty changes the scores and also penalises copying tokens from the prompt, which hurts extraction and QA; BrewSLM's evals pin it to 1.0.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Greedy decoding</strong> Greedy decoding is deterministic, so runs are comparable (GPU kernels can still differ slightly). A repetition penalty changes the scores and also penalises copying tokens from the prompt, which hurts extraction and QA; BrewSLM's evals pin it to 1.0 by default.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

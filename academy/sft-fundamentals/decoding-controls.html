@@ -210,7 +210,7 @@
             "text": "The penalty also down-weights tokens already in the prompt",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The HF repetition penalty applies to every token in input_ids, prompt included, so it pushes the model away from copying the input. BrewSLM hit exactly this and now pins repetition_penalty=1.0 for evals. Use 1.0 for extraction, classification and structured output, and check generation_config.json, which can apply a penalty silently."
+              "text": "The HF repetition penalty applies to every token in input_ids, prompt included, so it pushes the model away from copying the input. BrewSLM hit exactly this and now pins repetition_penalty=1.0 by default for evals. Use 1.0 for extraction, classification and structured output, and check generation_config.json, which can apply a penalty silently."
             }
           }
         }
@@ -328,7 +328,7 @@
         <p><strong>max_new_tokens</strong> is a hard cap. Always set it. A chat answer with a forgotten stop token and no cap will fill its context window with hallucinated conversation. For a classification task that emits one label, <code>max_new_tokens = 4</code> is fine; for a chat answer, 256–512.</p>
 
         <h2>Repetition penalty: a fix for loops, with a catch</h2>
-        <p>Sometimes a model loops: it generates a phrase, then re-generates it, then re-generates it. The <strong>repetition penalty</strong> reduces the probability of any token that has already appeared in the sequence — and in Hugging Face Transformers that sequence is all of <code>input_ids</code>, <strong>the prompt included</strong>. So the penalty pushes the model away from copying its input. For open-ended generation a small value (around <code>1.1</code>) can break a loop; check it on your gold set. For extraction, classification, QA over a supplied context and JSON output, copying the input is the job: keep it at <code>1.0</code> (off). BrewSLM learned this the hard way — evals inherited a model's shipped penalty of 1.1 and returned spurious nulls on an extraction task — and now pins <code>repetition_penalty=1.0</code> for every eval.</p>
+        <p>Sometimes a model loops: it generates a phrase, then re-generates it, then re-generates it. The <strong>repetition penalty</strong> reduces the probability of any token that has already appeared in the sequence — and in Hugging Face Transformers that sequence is all of <code>input_ids</code>, <strong>the prompt included</strong>. So the penalty pushes the model away from copying its input. For open-ended generation a small value (around <code>1.1</code>) can break a loop; check it on your gold set. For extraction, classification, QA over a supplied context and JSON output, copying the input is the job: keep it at <code>1.0</code> (off). BrewSLM learned this the hard way — evals inherited a model's shipped penalty of 1.1 and returned spurious nulls on an extraction task — and now scores evals with <code>repetition_penalty</code> pinned to <code>1.0</code> by default.</p>
         <p>Watch for penalties you didn't set: a model's <code>generation_config.json</code> can apply one silently, even under greedy decoding. Print the model's generation config before you trust an eval.</p>
 
         <div class="callout callout--warning">
@@ -408,7 +408,7 @@
                   "The penalty only affects the output, so the nulls must come from training"
                 ],
                 "answer": 2,
-                "explanation": "The HF repetition penalty applies to every token in input_ids, prompt included, so it pushes the model away from copying the input. BrewSLM hit exactly this and now pins repetition_penalty=1.0 for evals. Use 1.0 for extraction, classification and structured output, and check generation_config.json, which can apply a penalty silently."
+                "explanation": "The HF repetition penalty applies to every token in input_ids, prompt included, so it pushes the model away from copying the input. BrewSLM hit exactly this and now pins repetition_penalty=1.0 by default for evals. Use 1.0 for extraction, classification and structured output, and check generation_config.json, which can apply a penalty silently."
               }
             ]
           </script>
@@ -447,7 +447,7 @@
                   <li>The penalty also down-weights tokens already in the prompt</li>
                   <li>The penalty only affects the output, so the nulls must come from training</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The penalty also down-weights tokens already in the prompt</strong> The HF repetition penalty applies to every token in input_ids, prompt included, so it pushes the model away from copying the input. BrewSLM hit exactly this and now pins repetition_penalty=1.0 for evals. Use 1.0 for extraction, classification and structured output, and check generation_config.json, which can apply a penalty silently.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The penalty also down-weights tokens already in the prompt</strong> The HF repetition penalty applies to every token in input_ids, prompt included, so it pushes the model away from copying the input. BrewSLM hit exactly this and now pins repetition_penalty=1.0 by default for evals. Use 1.0 for extraction, classification and structured output, and check generation_config.json, which can apply a penalty silently.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

@@ -177,7 +177,7 @@
             "text": "About 5–10% of the narrow dataset",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "A small fraction gives the optimizer counter-pressure each epoch without diluting the task. It is a heuristic, not a law; Ibrahim et al. 2024 (arXiv:2403.08763) support about 5% replay for continued pretraining. Measure with a broad eval."
+              "text": "A small fraction gives the optimizer counter-pressure each epoch without diluting the task. It is a heuristic, not a law; for continued pretraining, Ibrahim et al. 2024 (arXiv:2403.08763) use a few percent replay, more for bigger distribution shifts. Measure with a broad eval."
             }
           }
         },
@@ -329,7 +329,7 @@ mixed = concatenate_datasets([narrow, broad]).shuffle(seed=42)</code></pre>
         <p>Both sets must share a schema before they can be concatenated, hence <code>select_columns(["messages"])</code> on each. Check the licence of whatever you mix in: <code>no_robots</code> is CC BY-NC 4.0 (non-commercial use only).</p>
 
         <h2>Mitigation 3: stop training early</h2>
-        <p>Forgetting tends to compound with epochs. Lesson 1.17's loss-curve reading already told you to pick the checkpoint by its dev-set task metric, not to ship the final one by default — that policy doubles as a forgetting mitigation, because the final checkpoint is also the most forgotten one. If your task hits its quality gate at epoch 2 of 5, ship epoch 2.</p>
+        <p>Forgetting tends to compound with epochs. Lesson 1.17's loss-curve reading already told you to pick the checkpoint by its dev-set task metric, not to ship the final one by default — that policy also helps with forgetting: an earlier checkpoint has usually forgotten less, but early stopping limits forgetting rather than avoiding it (Kalajdzievski 2024). If your task hits its quality gate at epoch 2 of 5, ship epoch 2.</p>
 
         <h2>Mitigation 4: evaluate broadly, not just on your task</h2>
         <p>The fastest way to discover forgetting is to look for it. Build a tiny "broad eval" — 10–30 prompts that test general instruction-following, polite refusals, basic reasoning, format-switching — and run it on every candidate checkpoint alongside your task eval. A run that aces the task eval but tanks the broad eval is forgetting; pick the earlier checkpoint or revisit the mix.</p>
@@ -393,7 +393,7 @@ mixed = concatenate_datasets([narrow, broad]).shuffle(seed=42)</code></pre>
                   "Twice the narrow dataset, so the broad skills dominate every epoch"
                 ],
                 "answer": 2,
-                "explanation": "A small fraction gives the optimizer counter-pressure each epoch without diluting the task. It is a heuristic, not a law; Ibrahim et al. 2024 (arXiv:2403.08763) support about 5% replay for continued pretraining. Measure with a broad eval."
+                "explanation": "A small fraction gives the optimizer counter-pressure each epoch without diluting the task. It is a heuristic, not a law; for continued pretraining, Ibrahim et al. 2024 (arXiv:2403.08763) use a few percent replay, more for bigger distribution shifts. Measure with a broad eval."
               },
               {
                 "q": "A colleague says small models always forget more than large ones when fine-tuned. What does the evidence support?",
@@ -435,7 +435,7 @@ mixed = concatenate_datasets([narrow, broad]).shuffle(seed=42)</code></pre>
                   <li>About 5–10% of the narrow dataset</li>
                   <li>Twice the narrow dataset, so the broad skills dominate every epoch</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. About 5–10% of the narrow dataset</strong> A small fraction gives the optimizer counter-pressure each epoch without diluting the task. It is a heuristic, not a law; Ibrahim et al. 2024 (arXiv:2403.08763) support about 5% replay for continued pretraining. Measure with a broad eval.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. About 5–10% of the narrow dataset</strong> A small fraction gives the optimizer counter-pressure each epoch without diluting the task. It is a heuristic, not a law; for continued pretraining, Ibrahim et al. 2024 (arXiv:2403.08763) use a few percent replay, more for bigger distribution shifts. Measure with a broad eval.</p></details></li>
               <li><p class="quiz__q-text">A colleague says small models always forget more than large ones when fine-tuned. What does the evidence support?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>It is settled: fewer weights leave less spare capacity, so small models always forget more</li>

@@ -177,7 +177,7 @@
             "text": "It quantises the frozen base, e.g. to 4-bit NF4",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "QLoRA stores the frozen base in 4-bit and trains a 16-bit adapter. Steps are noticeably slower (dequantising on every matmul), and embeddings and norms stay 16-bit, so small models save less than a quarter."
+              "text": "QLoRA stores the frozen base in 4-bit and trains a 16-bit adapter. Steps are noticeably slower (dequantising on every matmul), and embeddings and norms stay 16-bit, so a small model's total ends up well above a quarter of its 16-bit size (the tied embedding is ~21% of SmolLM2-135M)."
             }
           }
         },
@@ -306,7 +306,7 @@
         <p><strong>alpha</strong> scales the adapter's contribution before it's added to the frozen weights (in PEFT the multiplier is exactly <code>lora_alpha / r</code>, or <code>alpha / √r</code> with <code>use_rslora=True</code>). A frequent community convention is <code>alpha = 2 × r</code> (e.g. r=16, alpha=32) — a convention, not a rule: the QLoRA paper used r=64 with alpha=16. Because the multiplier is <code>alpha / r</code>, doubling <code>r</code> with <code>alpha</code> fixed halves the update's scale, which is why people often move <code>alpha</code> with <code>r</code>. Treat the pair together rather than tuning each blindly.</p>
 
         <h2>Target modules: where to put adapters</h2>
-        <p>You choose which weight matrices get an adapter — the <strong>target modules</strong>. The candidates are the attention projections (the query/key/value/output matrices from Track 0) and the feed-forward (MLP) layers. The original 2021 LoRA paper adapted only the query and value projections, and that minimal choice is still common. Later work found it under-fits: the QLoRA paper (Dettmers et al. 2023) needed LoRA on <em>all linear layers</em> to match full fine-tuning, and "LoRA Without Regret" (Thinking Machines, 2025) found attention-only LoRA clearly behind MLP-only. Start from <code>target_modules="all-linear"</code>; treat q/v as the cheaper option when memory is tight on a large model. BrewSLM's default, <code>auto</code>, does exactly this: all linear layers for models up to 2B parameters, q/v above, because q/v alone under-fit SmolLM2-135M and Qwen2.5-1.5B in its own runs.</p>
+        <p>You choose which weight matrices get an adapter — the <strong>target modules</strong>. The candidates are the attention projections (the query/key/value/output matrices from Track 0) and the feed-forward (MLP) layers. The original 2021 LoRA paper adapted only the query and value projections, and that minimal choice is still common. Later work found it under-fits: the QLoRA paper (Dettmers et al. 2023) needed LoRA on <em>all linear layers</em> to match full fine-tuning, and a 2025 LoRA study ("LoRA Without Regret") found attention-only LoRA clearly behind MLP-only. Start from <code>target_modules="all-linear"</code>; treat q/v as the cheaper option when memory is tight on a large model. BrewSLM's default, <code>auto</code>, does exactly this: all linear layers for models up to 2B parameters, q/v above, because q/v alone under-fit SmolLM2-135M and Qwen2.5-1.5B in its own runs.</p>
 
         <h2>Dropout: light regularization</h2>
         <p><strong>LoRA dropout</strong> randomly zeroes some of the adapter's input during training (PEFT computes <code>lora_B(lora_A(dropout(x)))</code>), a mild regularizer that helps avoid overfitting on small datasets. A small value like <code>0.05</code> is typical; raise it slightly if you see overfitting, lower it toward 0 for larger datasets.</p>
@@ -367,7 +367,7 @@
                   "It removes the optimizer state for the adapter"
                 ],
                 "answer": 1,
-                "explanation": "QLoRA stores the frozen base in 4-bit and trains a 16-bit adapter. Steps are noticeably slower (dequantising on every matmul), and embeddings and norms stay 16-bit, so small models save less than a quarter."
+                "explanation": "QLoRA stores the frozen base in 4-bit and trains a 16-bit adapter. Steps are noticeably slower (dequantising on every matmul), and embeddings and norms stay 16-bit, so a small model's total ends up well above a quarter of its 16-bit size (the tied embedding is ~21% of SmolLM2-135M)."
               },
               {
                 "q": "Which target-module choice did later work find closest to full fine-tuning?",
@@ -409,7 +409,7 @@
                   <li>It trains the whole model at 4-bit precision</li>
                   <li>It removes the optimizer state for the adapter</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. It quantises the frozen base, e.g. to 4-bit NF4</strong> QLoRA stores the frozen base in 4-bit and trains a 16-bit adapter. Steps are noticeably slower (dequantising on every matmul), and embeddings and norms stay 16-bit, so small models save less than a quarter.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. It quantises the frozen base, e.g. to 4-bit NF4</strong> QLoRA stores the frozen base in 4-bit and trains a 16-bit adapter. Steps are noticeably slower (dequantising on every matmul), and embeddings and norms stay 16-bit, so a small model's total ends up well above a quarter of its 16-bit size (the tied embedding is ~21% of SmolLM2-135M).</p></details></li>
               <li><p class="quiz__q-text">Which target-module choice did later work find closest to full fine-tuning?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Only the attention query and value projections</li>

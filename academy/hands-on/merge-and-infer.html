@@ -306,8 +306,11 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 
 model_id = "HuggingFaceTB/SmolLM2-135M-Instruct"
+use_bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported(including_emulation=False)
+use_fp16 = torch.cuda.is_available() and not use_bf16
+dtype = torch.bfloat16 if use_bf16 else (torch.float16 if use_fp16 else torch.float32)   # Lesson 2.1
 tok = AutoTokenizer.from_pretrained("sft-out/adapter")
-base = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.bfloat16)
+base = AutoModelForCausalLM.from_pretrained(model_id, dtype=dtype)
 tuned = PeftModel.from_pretrained(base, "sft-out/adapter")
 
 merged = tuned.merge_and_unload()      # a plain AutoModelForCausalLM, no PEFT wrapper</code></pre>
@@ -320,7 +323,7 @@ import os
 print(os.listdir("sft-out/merged"))</code></pre>
         <h2>Reload and run — no peft needed</h2>
         <p>The merged folder is a normal model. Loading it requires only transformers; there's no adapter to attach.</p>
-        <pre class="code-block"><code>m = AutoModelForCausalLM.from_pretrained("sft-out/merged", dtype=torch.bfloat16)
+        <pre class="code-block"><code>m = AutoModelForCausalLM.from_pretrained("sft-out/merged", dtype=dtype)
 t = AutoTokenizer.from_pretrained("sft-out/merged")
 
 msgs = [{"role": "user", "content": "Classify the sentiment as positive or negative: I would buy it again."}]
