@@ -48,7 +48,7 @@
       "learningResourceType": "Lesson",
       "educationalLevel": "Intermediate",
       "timeRequired": "PT11M",
-      "teaches": "After this reference you can read a brewslm.yaml manifest section by section, identify which knob controls which behaviour, and know which fields are safe to edit by hand versus generated.",
+      "teaches": "After this reference you can read a brewslm.yaml manifest section by section, identify which knob controls which behaviour, and know which fields apply actually writes versus only carries.",
       "isAccessibleForFree": true,
       "isPartOf": {
         "@type": "Course",
@@ -152,8 +152,8 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Which section carries the flat hyperparameter dict?",
-          "text": "Which section carries the flat hyperparameter dict?",
+          "name": "Which manifest field looks like a hyperparameter dict but is actually stored as the project's dataset adapter preset?",
+          "text": "Which manifest field looks like a hyperparameter dict but is actually stored as the project's dataset adapter preset?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
@@ -177,7 +177,7 @@
             "text": "spec.training_plan.config",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "training_plan.config is a flat bag (learning rate, batch, epochs, LoRA knobs…). Apply stores it on the project as its preset; it is not validated against TrainingConfig at apply time."
+              "text": "training_plan.config is a flat dict that apply writes to the project's dataset adapter preset (adapter id, field mapping, task profile). It is not validated against TrainingConfig, and per-run hyperparameters are not stored there."
             }
           }
         },
@@ -289,7 +289,7 @@
         <header class="lesson-header">
           <span class="lesson-header__badge">Track 3 · With BrewSLM · Lesson 11</span>
           <h1>Training config reference: the brewslm.yaml manifest</h1>
-          <p class="lesson-header__outcome">After this reference you can read a <code>brewslm.yaml</code> manifest section by section, identify which knob controls which behaviour, and know which fields are safe to edit by hand versus generated.</p>
+          <p class="lesson-header__outcome">After this reference you can read a <code>brewslm.yaml</code> manifest section by section, identify which knob controls which behaviour, and know which fields apply actually writes versus only carries.</p>
           <div class="lesson-meta">
             <span><strong>Level:</strong> intermediate</span>
             <span><strong>Read time:</strong> ~11 min</span>
@@ -297,7 +297,7 @@
           </div>
         </header>
 
-        <p>Track 3's narrative lessons described <em>what</em> BrewSLM does. This reference describes <em>how</em> a project is configured at the schema level. The canonical artifact is <code>brewslm.yaml</code> — a project-as-code manifest the platform reads, validates, diffs, and applies. Every training run is the result of resolving this file against the project's data. Knowing its sections gives you the keys to the platform. In the workspace you get the file from <strong>Settings → Export the project manifest</strong> (or <strong>Ship → Package → Options → manifest</strong>); the fields themselves are the same ones the <strong>Train</strong> form and its <em>More options</em> sections set, and each section below says where.</p>
+        <p>Track 3's narrative lessons described <em>what</em> BrewSLM does. This reference describes <em>how</em> a project is configured at the schema level. The canonical artifact is <code>brewslm.yaml</code> — a project-as-code manifest the platform reads, validates, diffs, and applies. It captures the project-level settings a run starts from; per-run hyperparameters are set on the <strong>Train</strong> form and stored on each run, not in this file. Knowing its sections gives you the keys to the platform. In the workspace you get the file from <strong>Settings → Export the project manifest</strong> (or <strong>Ship → Package → Options → manifest</strong>); many fields mirror workspace settings, and each section below says where.</p>
 
         <h2>Manifest envelope</h2>
         <p>Every <code>brewslm.yaml</code> opens with a fixed envelope:</p>
@@ -308,22 +308,24 @@ metadata:
   description: "..."
   labels: { team: "ml", env: "dev" }
 spec:
-  # ten sections, all optional, all defaulted</code></pre>
-        <p>The schema is <strong>strict-extra-forbid</strong>: unknown keys fail validation. Typos and stale fields are caught at apply time, not as silent no-ops. Schema drift is therefore visible by design.</p>
+  # ten sections, all optional; blueprint defaults to null, the rest to defaults</code></pre>
+        <p>The schema is <strong>strict-extra-forbid</strong>: unknown keys fail validation. Typos and stale fields are caught by validate / diff / apply, not as silent no-ops. Schema drift is therefore visible by design.</p>
+        <p>One caution before the sections: <strong>a valid field is not always an applied field.</strong> Apply writes some fields to the project and only carries others (they validate and round-trip through export, but apply never reads them). Each section below marks its fields <strong>applied</strong> or <strong>carried, not applied</strong>.</p>
 
         <h2>spec.workflow — project-level toggles</h2>
         <p>Cross-cutting settings that don't belong to any single stage.</p>
         <pre class="code-block"><code>workflow:
-  beginner_mode: false
+  beginner_mode: true
   pipeline_stage: ingestion
   target_profile_id: vllm_server
   training_preferred_plan_profile: balanced   # safe | balanced | max_quality
   gate_policy: {}
   budget_settings: {}</code></pre>
+        <p><strong>All six fields are applied</strong> to the project.</p>
         <ul>
-          <li><strong><code>training_preferred_plan_profile</code></strong> is the hyperparameter preset for the next launch. Three values: <code>safe</code> (conservative), <code>balanced</code> (default; right for most projects), <code>max_quality</code> (longer training, more aggressive knobs).</li>
-          <li><strong><code>target_profile_id</code></strong> defines the export/deploy target shape — <code>vllm_server</code>, <code>cpu_local</code>, etc.</li>
-          <li><strong><code>beginner_mode</code></strong> is the <strong>Settings → Workspace → <em>Start advanced sections collapsed</em></strong> switch: power tools open on request, nothing is hidden. (The Coach notices have their own switch, <em>Show inline tips</em>, which is not a manifest field.)</li>
+          <li><strong><code>training_preferred_plan_profile</code></strong> is the hyperparameter preset for the next launch, and the only plan-profile field apply reads. Three values: <code>safe</code> (conservative), <code>balanced</code> (default; right for most projects), <code>max_quality</code> (longer training, more aggressive knobs).</li>
+          <li><strong><code>target_profile_id</code></strong> defines the export/deploy target shape — <code>vllm_server</code>, <code>mobile_cpu</code>, <code>edge_gpu</code>, etc. Validate rejects an unregistered id.</li>
+          <li><strong><code>beginner_mode</code></strong> is the <strong>Settings → Workspace → <em>Start advanced sections collapsed</em></strong> switch (default <code>true</code>): power tools open on request, nothing is hidden. (The Coach notices have their own switch, <em>Show inline tips</em>, which is not a manifest field.)</li>
         </ul>
 
         <h2>spec.blueprint — domain blueprint</h2>
@@ -343,14 +345,16 @@ spec:
   glossary:
     - { term: "P1", plain_language: "Highest-priority ticket", category: "ops" }
   confidence_score: 0.0
-  unresolved_assumptions: []</code></pre>
-        <p>The blueprint is round-tripped, not executed. It anchors reviews ("did the model actually do what we said it should?") and feeds the eval-pack auto-suggestions.</p>
+  unresolved_assumptions: []
+  version: 3                        # informational
+  source: manual                    # informational</code></pre>
+        <p><strong>Applied</strong> when present: apply validates the section and saves it as a new active blueprint revision. <code>version</code> and <code>source</code> are <strong>carried, not applied</strong> (provenance only). If you leave <code>blueprint</code> out (its default is null), apply leaves the project's blueprint alone. It anchors reviews ("did the model actually do what we said it should?") and feeds the eval-pack auto-suggestions.</p>
 
         <h2>spec.domain — domain pack + profile</h2>
         <pre class="code-block"><code>domain:
   pack_id: customer-support
   profile_id: ticket-intent</code></pre>
-        <p>A domain pack ships pre-built defaults (synth playbooks, eval prompts, blueprint hints) for a vertical. Profiles narrow further. Both are pointers; the platform resolves them on apply. In the workspace: <strong>Settings → Tools → Domain Packs / Domain Profiles</strong>.</p>
+        <p>A domain pack ships pre-built defaults (synth playbooks, eval prompts, blueprint hints) for a vertical. Profiles narrow further. Both are pointers, and both are <strong>applied</strong>: the platform resolves them on apply. In the workspace: <strong>Settings → Tools → Domain Packs / Domain Profiles</strong>.</p>
 
         <h2>spec.model — base model selection</h2>
         <pre class="code-block"><code>model:
@@ -358,7 +362,7 @@ spec:
   cache_fingerprint: "sha256:..."
   source_ref: "hf:..."
   registry_id: 42</code></pre>
-        <p><strong>Only <code>base_model</code> is authoritative.</strong> Everything else is informational and re-derived on apply. Changing <code>base_model</code> in the manifest is a real change — apply will note it and your next training run will start from a different base. It is the <em>Base model</em> field at the top of the <strong>Train</strong> form (<em>Browse</em> opens the registry; the same list is <strong>Train → More options → Base model registry</strong>).</p>
+        <p><strong>Only <code>base_model</code> is applied.</strong> <code>registry_id</code> is informational and re-resolved from <code>base_model</code>; <code>cache_fingerprint</code> and <code>source_ref</code> are <strong>carried, not applied</strong> (the exported manifest writes only <code>base_model</code>). Changing <code>base_model</code> in the manifest is a real change — apply will note it and your next training run will start from a different base. It is the <em>Base model</em> field at the top of the <strong>Train</strong> form (<em>Browse</em> opens the registry; the same list is <strong>Train → More options → Base model registry</strong>).</p>
 
         <h2>spec.data_sources — registered datasets</h2>
         <pre class="code-block"><code>data_sources:
@@ -370,7 +374,7 @@ spec:
     metadata: { schema_hash: "..." }
     versions:
       - { version: 1, record_count: 4812, file_path: "..." }</code></pre>
-        <p>Per-source <code>versions</code> entries let manifest apply detect "the underlying file changed" vs "a new source was added" — distinguishing resumable training from "you need to re-import." Sources are added under <strong>Data → Sources</strong>; the dataset versions panel sits in <strong>Data → Split → Details</strong>.</p>
+        <p><strong>Applied</strong>, matched by <code>name</code>. A new name creates the dataset, and its <code>versions</code> entries are written only then. For an existing name, apply updates <code>type</code>, <code>description</code>, <code>record_count</code>, <code>file_path</code> and <code>metadata</code>; <code>versions</code> is not re-applied. Apply never deletes a dataset that is missing from the manifest; it lists it as a warning. Sources are added under <strong>Data → Sources</strong>; the dataset versions panel sits in <strong>Data → Split → Details</strong>.</p>
 
         <h2>spec.adapters — Adapter Studio entries</h2>
         <pre class="code-block"><code>adapters:
@@ -384,25 +388,25 @@ spec:
     field_mapping: { input: question, output: answer }
     adapter_config: { ... }
     output_contract: { ... }</code></pre>
-        <p>Adapters are the data-transformation layer between raw rows and the training-ready shape. The schema is intentionally open (<code>adapter_config</code> + <code>output_contract</code> are free-form dicts) because the adapter class is what defines the contract. Adapter Studio is <strong>Train → More options → Adapter Studio</strong>; the preset a split uses is picked on <strong>Data → Split</strong>.</p>
+        <p>Adapters are the data-transformation layer between raw rows and the training-ready shape. The schema is intentionally open (<code>adapter_config</code> + <code>output_contract</code> are free-form dicts) because the adapter class is what defines the contract. <strong>Applied</strong>, matched by <code>name</code>: an adapter version is immutable, so a changed config writes a new row at the next version (<code>version</code> is only used when the adapter is first created). Adapter Studio is <strong>Train → More options → Adapter Studio</strong>; the preset a split uses is picked on <strong>Data → Split</strong>.</p>
 
-        <h2>spec.training_plan — what the trainer actually executes</h2>
-        <p>The section most directly tied to "training" — the recipe and the resolved hyperparameters. Every field here is set from the <strong>Train</strong> form: the task / recipe under <em>Task → Change</em> (= <strong>More options → Task type</strong>), the numbers under <strong>More options → Model and hyperparameters</strong> and <strong>LoRA and advanced training</strong>, preset patches under <strong>Training presets</strong>, a rented GPU under <strong>Cloud burst</strong>.</p>
+        <h2>spec.training_plan — mostly carried, not applied</h2>
+        <p>The name suggests this section drives the trainer. Today it mostly does not: apply reads only <code>config</code>, and even that is not a hyperparameter set. The run itself is configured on the <strong>Train</strong> form: the task / recipe under <em>Task → Change</em> (= <strong>More options → Task type</strong>), the numbers under <strong>More options → Model and hyperparameters</strong> and <strong>LoRA and advanced training</strong>, preset patches under <strong>Training presets</strong>, a rented GPU under <strong>Cloud burst</strong>. Those values live on each run's own config, not in the manifest.</p>
         <pre class="code-block"><code>training_plan:
-  training_mode: sft                # sft | kd
-  plan_profile: balanced            # safe | balanced | max_quality
-  preferred_runtime_id: simulate    # simulate | external | cloud_burst | ...
-  config: { ... }                   # flat dict — the resolved TrainingConfig</code></pre>
+  training_mode: sft                # default sft; carried, not applied
+  plan_profile: balanced            # carried, not applied
+  preferred_runtime_id: null        # default null; carried, not applied
+  config: { ... }                   # applied: stored as the project's dataset adapter preset</code></pre>
         <ul>
-          <li><strong><code>training_mode</code></strong> selects the trainer. <code>sft</code> is the default (Track 2 by-hand pipeline). <code>kd</code> selects the Knowledge Distillation trainer (Track 4, Lesson 4.3 — the alpha*CE + (1-alpha)*T^2*KL loss against captured teacher logprobs).</li>
-          <li><strong><code>plan_profile</code></strong> is the hyperparameter preset. Maps to a concrete <code>TrainingConfig</code> with learning rate, batch size, epochs, LoRA knobs — the same knobs you set by hand in Track 2 Lesson 2.5. The named profile is chosen by the Autopilot Planner (<strong>Settings → Tools → Autopilot Planner</strong>); the Train form edits the resolved knobs directly.</li>
-          <li><strong><code>preferred_runtime_id</code></strong> picks where the run lands. <code>simulate</code> for tests, <code>external</code> for the subprocess runtime. (Renting a GPU is planned separately, under <strong>Train → More options → Cloud burst</strong>.)</li>
-          <li><strong><code>config</code></strong> is a flat dict — the actual resolved hyperparameters. Manifest validation checks this against the <code>TrainingConfig</code> schema at apply time.</li>
+          <li><strong><code>training_mode</code></strong> (<strong>carried, not applied</strong>). A run's own mode is one of <code>sft</code> (default), <code>domain_pretrain</code>, <code>dpo</code> or <code>orpo</code>. Distillation is not in that list: an offline knowledge-distillation recipe (<code>recipe.kd.*</code>) sets <code>training_mode: distillation</code> plus <code>distillation_offline: true</code> in the run config, which trains against captured teacher logprobs (Track 4, Lesson 4.3 — the alpha*CE + (1-alpha)*T^2*KL loss); the live-teacher recipe sets <code>distillation_enabled: true</code> instead.</li>
+          <li><strong><code>plan_profile</code></strong> (<strong>carried, not applied</strong>). The profile apply uses comes from <code>workflow.training_preferred_plan_profile</code>; export fills <code>plan_profile</code> from that same project field. The named profile is chosen by the Autopilot Planner (<strong>Settings → Tools → Autopilot Planner</strong>); the Train form edits the resolved knobs directly.</li>
+          <li><strong><code>preferred_runtime_id</code></strong> (<strong>carried, not applied</strong>; default null). The registered runtime ids are <code>builtin.simulate</code> (tests) and <code>builtin.external_celery</code> (real training through a Celery worker). A run picks its runtime from its own <code>training_runtime_id</code> config key; <code>auto</code> falls back to the server's <code>TRAINING_BACKEND</code> setting.</li>
+          <li><strong><code>config</code></strong> (<strong>applied</strong>) is a flat dict written as-is to the project's dataset adapter preset (keys such as <code>adapter_id</code>, <code>adapter_config</code>, <code>field_mapping</code>, <code>task_profile</code>). Apply does <strong>not</strong> validate it against <code>TrainingConfig</code>, and it holds no learning rate or epochs.</li>
         </ul>
 
         <div class="callout callout--note">
           <p class="callout__label">Where the actual hyperparameter values live</p>
-          <p>The manifest carries <code>plan_profile</code> as a name; the platform resolves that to a real <code>TrainingConfig</code> dict (learning rate, batch size, epochs, LoRA <code>r</code>/<code>alpha</code>/<code>dropout</code>, target modules, scheduler, warmup ratio, precision). The dict ends up in <code>training_plan.config</code> at apply time. Edit the dict to override individual fields (or change them in <strong>Train → More options → Model and hyperparameters</strong> / <strong>LoRA and advanced training</strong> — the confirm dialog before <em>Launch</em> shows the resolved config); change <code>plan_profile</code> to flip the whole preset. The profile values themselves evolve with the recipe library — treat the named profile as the stable contract, the resolved config as the snapshot.</p>
+          <p>Not in the manifest. Learning rate, batch size, epochs, LoRA <code>r</code>/<code>alpha</code>/<code>dropout</code>, target modules, scheduler, warmup and precision are resolved when you launch a run and stored on that run's config. Change them in <strong>Train → More options → Model and hyperparameters</strong> / <strong>LoRA and advanced training</strong> — the confirm dialog before <em>Launch</em> shows the resolved config. To change the project's default preset through the manifest, edit <code>workflow.training_preferred_plan_profile</code>, not <code>training_plan.plan_profile</code>.</p>
         </div>
 
         <h2>spec.eval_pack — what counts as "good"</h2>
@@ -411,27 +415,27 @@ spec:
   datasets: [gold_dev, gold_test]
   eval_types: [exact_match, f1, hallucination, safety]
   extra: {}</code></pre>
-        <p>The pack referenced here declares the gates — in the UI the <strong>pass/fail rules</strong> (rule set) on <strong>Results → Verdict</strong> (Lesson 3.13's reference). <code>datasets</code> names the held-out sets that get evaluated; <code>eval_types</code> selects which scorers run. Default datasets are <code>gold_dev</code> + <code>gold_test</code> — the platform's names for the <strong>answer key</strong>'s practice and final halves, kept under <strong>Data → Labels</strong>; <code>test</code> is the prepared split's <em>test examples</em>.</p>
+        <p><code>pack_id</code> is <strong>applied</strong> (validated against the registered packs, stored as the project's preferred pack). <code>datasets</code>, <code>eval_types</code> and <code>extra</code> are <strong>carried, not applied</strong>: editing them changes nothing about which sets are scored or which scorers run. The pack referenced here declares the gates — in the UI the <strong>pass/fail rules</strong> (rule set) on <strong>Results → Verdict</strong> (Lesson 3.13's reference). Default datasets are <code>gold_dev</code> + <code>gold_test</code> — the platform's names for the <strong>answer key</strong>'s practice and final halves, kept under <strong>Data → Labels</strong>; <code>test</code> is the prepared split's <em>test examples</em>.</p>
 
         <h2>spec.export — artifact production</h2>
         <pre class="code-block"><code>export:
-  formats: [gguf, safetensors]
-  quantization: Q4_K_M
+  formats: []                       # default; carried, not applied
+  quantization: null
   extra: {}</code></pre>
-        <p>Mapping straight onto Track 4 Lesson 4.6: pick the formats you'll deploy. Multiple formats can be produced from one trained model in a single export stage. Interactively this is the <em>New export</em> form on <strong>Ship → Package</strong> (formats offered there: GGUF, ONNX, HuggingFace, TensorRT-LLM, Docker).</p>
+        <p>The whole section is <strong>carried, not applied</strong>: apply never reads it, and an exported manifest always carries an empty <code>export</code> section. Export formats are chosen per export, in the <em>New export</em> form on <strong>Ship → Package</strong> (formats offered there: GGUF, ONNX, HuggingFace, TensorRT-LLM, Docker).</p>
 
         <h2>spec.deployment — endpoint target hints</h2>
         <pre class="code-block"><code>deployment:
   target_profile_id: vllm_server
   extra: {}</code></pre>
-        <p>The <code>target_profile_id</code> here overrides the project-level default in <code>workflow.target_profile_id</code> for the deploy stage. <code>extra</code> carries serving-stack-specific knobs (vLLM tensor parallelism, llama.cpp threads, etc.). Deployments are created and watched under <strong>Ship → Deploy</strong> / <strong>Ship → Monitor</strong>.</p>
+        <p><strong>Carried, not applied.</strong> Export fills <code>target_profile_id</code> here from the project's target profile, but apply only reads <code>workflow.target_profile_id</code>; this copy and <code>extra</code> are never applied (a diff still lists a change to them). Deployments are created and watched under <strong>Ship → Deploy</strong> / <strong>Ship → Monitor</strong>.</p>
 
         <h2>What apply does with all of this</h2>
-        <p>The <strong>manifest apply</strong> service takes the parsed <code>brewslm.yaml</code> plus the project's current state and produces a <code>ManifestApplyPlan</code> — a list of <code>ManifestApplyAction</code> rows, each declaring a <code>target</code> (project / blueprint / data_source / adapter / training_plan), an <code>operation</code> (<code>create</code> / <code>update</code> / <code>noop</code> / <code>delete</code>), the before/after, and the fields that changed. <strong>Apply never silently drops a field</strong> — every actionable diff is reported, every unknown key is rejected, every conflict surfaced as a warning.</p>
+        <p>The <strong>manifest apply</strong> service takes the parsed <code>brewslm.yaml</code> plus the project's current state and produces a <code>ManifestApplyPlan</code> — a list of <code>ManifestApplyAction</code> rows, each declaring a <code>target</code> (project / blueprint / data_source / adapter / training_plan), an <code>operation</code>, the before/after, and the fields that changed. The schema allows <code>delete</code>, but apply never emits it: deletes are intentionally not part of the apply contract, and a dataset or adapter missing from the manifest becomes a warning. Every unknown key is rejected, but <strong>a known field can still be ignored</strong>: the fields marked <em>carried, not applied</em> above validate, round-trip and may show in the diff, yet apply does not write them.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p><code>brewslm.yaml</code> is the catalog of every knob a project has. Read it section by section and you have read the platform's training contract. The schema is <strong>versioned</strong> (<code>api_version: brewslm/v1</code>) and <strong>strict</strong> (unknown keys are errors) — when the contract evolves, the next apply tells you. Edit by hand for surgical overrides; let the platform regenerate for ordinary changes.</p>
+          <p><code>brewslm.yaml</code> is the catalog of every knob a project has. Read it section by section and you have read the platform's training contract. The schema is <strong>versioned</strong> (<code>api_version: brewslm/v1</code>) and <strong>strict</strong> (unknown keys are errors) — when the contract evolves, the next apply tells you. Strict about keys is not the same as applied: check the applied / carried marks before you rely on an edit. Edit by hand for surgical overrides; let the platform regenerate for ordinary changes.</p>
         </div>
 
         <p>The next reference catalogues the audit-spine surfaces that <em>watch</em> what apply triggers: the RunEvent taxonomy and the Coach action catalogue behind the inline Coach notices.</p>
@@ -441,10 +445,10 @@ spec:
           <dl>
             <dt><code>brewslm.yaml</code></dt><dd>The project-as-code manifest. Versioned (<code>brewslm/v1</code>), strict-extra-forbid, validates / diffs / applies against project state.</dd>
             <dt>Manifest spec sections</dt><dd>The ten sections of <code>spec</code>: <code>workflow</code>, <code>blueprint</code>, <code>domain</code>, <code>model</code>, <code>data_sources</code>, <code>adapters</code>, <code>training_plan</code>, <code>eval_pack</code>, <code>export</code>, <code>deployment</code>.</dd>
-            <dt>Training plan profile</dt><dd>Named hyperparameter preset — <code>safe</code> / <code>balanced</code> / <code>max_quality</code> — that resolves to a concrete <code>TrainingConfig</code> at apply time.</dd>
-            <dt>Training mode</dt><dd><code>training_plan.training_mode</code>: <code>sft</code> for supervised fine-tuning, <code>kd</code> for knowledge distillation (Track 4).</dd>
+            <dt>Training plan profile</dt><dd>Named hyperparameter preset — <code>safe</code> / <code>balanced</code> / <code>max_quality</code>. Apply reads it from <code>workflow.training_preferred_plan_profile</code>; <code>training_plan.plan_profile</code> is carried, not applied.</dd>
+            <dt>Training mode</dt><dd>A run's mode: <code>sft</code> (default), <code>domain_pretrain</code>, <code>dpo</code> or <code>orpo</code>; offline distillation recipes set <code>distillation</code> in the run config (Track 4). The manifest's <code>training_plan.training_mode</code> is carried, not applied.</dd>
             <dt>Eval pack id</dt><dd>Registered pack reference like <code>evalpack.general.default</code>; the pack declares the gates — the pass/fail rules shown on Results → Verdict (Lesson 3.13).</dd>
-            <dt>ManifestApplyPlan</dt><dd>The before/after action list produced by manifest apply — every create / update / noop / delete is declared, every unknown key rejected.</dd>
+            <dt>ManifestApplyPlan</dt><dd>The before/after action list produced by manifest diff / apply — create / update / noop actions (apply never deletes), every unknown key rejected.</dd>
           </dl>
         </section>
 
@@ -476,7 +480,7 @@ spec:
                 "explanation": "The profiles are safe, balanced and max_quality; balanced is the default. On apply, the profile comes from workflow.training_preferred_plan_profile — training_plan.plan_profile is carried, not applied."
               },
               {
-                "q": "Which section carries the flat hyperparameter dict?",
+                "q": "Which manifest field looks like a hyperparameter dict but is actually stored as the project's dataset adapter preset?",
                 "options": [
                   "spec.workflow.budget_settings",
                   "spec.adapters[].adapter_config",
@@ -484,7 +488,7 @@ spec:
                   "spec.model.cache_fingerprint"
                 ],
                 "answer": 2,
-                "explanation": "training_plan.config is a flat bag (learning rate, batch, epochs, LoRA knobs…). Apply stores it on the project as its preset; it is not validated against TrainingConfig at apply time."
+                "explanation": "training_plan.config is a flat dict that apply writes to the project's dataset adapter preset (adapter id, field mapping, task profile). It is not validated against TrainingConfig, and per-run hyperparameters are not stored there."
               },
               {
                 "q": "Which field in spec.model does apply actually use?",
@@ -519,14 +523,14 @@ spec:
                   <li>safe / balanced / max_quality</li>
                 </ol>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. safe / balanced / max_quality</strong> The profiles are safe, balanced and max_quality; balanced is the default. On apply, the profile comes from workflow.training_preferred_plan_profile — training_plan.plan_profile is carried, not applied.</p></details></li>
-              <li><p class="quiz__q-text">Which section carries the flat hyperparameter dict?</p>
+              <li><p class="quiz__q-text">Which manifest field looks like a hyperparameter dict but is actually stored as the project's dataset adapter preset?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>spec.workflow.budget_settings</li>
                   <li>spec.adapters[].adapter_config</li>
                   <li>spec.training_plan.config</li>
                   <li>spec.model.cache_fingerprint</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. spec.training_plan.config</strong> training_plan.config is a flat bag (learning rate, batch, epochs, LoRA knobs…). Apply stores it on the project as its preset; it is not validated against TrainingConfig at apply time.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. spec.training_plan.config</strong> training_plan.config is a flat dict that apply writes to the project's dataset adapter preset (adapter id, field mapping, task profile). It is not validated against TrainingConfig, and per-run hyperparameters are not stored there.</p></details></li>
               <li><p class="quiz__q-text">Which field in spec.model does apply actually use?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>cache_fingerprint</li>
