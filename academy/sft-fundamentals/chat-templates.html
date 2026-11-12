@@ -311,17 +311,21 @@
         </div>
 
         <h2>The chat template does this for you</h2>
-        <p>Every instruct tokenizer ships a <strong>chat template</strong> — a rule that turns a messages list into exactly the formatted string that model expects. You call <code>tokenizer.apply_chat_template(messages)</code> and get the correct string with the right special tokens, every time. The cardinal rule:</p>
+        <p>Every instruct tokenizer ships a <strong>chat template</strong> — a rule that turns a messages list into exactly the formatted string that model expects. <code>tokenizer.apply_chat_template(messages, tokenize=False)</code> returns that formatted string with the right special tokens; called with its defaults (transformers v5) it returns token IDs ready for the model instead. Either way, the template, not you, decides the format. The cardinal rule:</p>
+        <div class="callout callout--warning">
+          <p class="callout__label">The double-BOS trap</p>
+          <p>Many templates already put the beginning-of-sequence token in the string. If you render with <code>tokenize=False</code> and then call <code>tokenizer(text)</code>, the tokenizer adds a second BOS (Mistral-7B-Instruct's tokenizer does exactly this). Pass <code>add_special_tokens=False</code> when you tokenize a rendered template, or let <code>apply_chat_template</code> tokenize for you.</p>
+        </div>
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>Use the model's <strong>own</strong> chat template for both training and inference, and never hand-format. The format you train on must match the format you serve on — and both must match what the base model was trained with.</p>
+          <p>Use the model's <strong>own</strong> chat template for both training and inference, and never hand-format. The format you train on must match the format you serve on. When you fine-tune an instruct model, both must match the template it was aligned with; when you fine-tune a base model, you pick a template, and train/serve consistency is what matters.</p>
         </div>
 
         <h2>The generation prompt</h2>
         <p>At inference you pass the system + user messages and set <code>add_generation_prompt=True</code>. That appends the opening of the assistant turn (e.g. <code>&lt;|im_start|&gt;assistant</code>) so the model knows it's now its turn to speak and starts generating the response. During training you don't add it — the assistant turn is already present as the completion.</p>
 
         <h2>Where templates meet the loss mask</h2>
-        <p>Combine this with the previous lesson: the chat template lays out the full conversation, and the loss mask is set so that only the <em>assistant</em> content (plus its end token) is a learning target. Good tooling derives the mask from the template automatically — another reason to let the template do the work rather than building strings by hand.</p>
+        <p>Combine this with the previous lesson: the chat template lays out the full conversation, and the loss mask is set so that only the <em>assistant</em> content (plus its end token) is a learning target. Don't assume the tooling does this by default: TRL's <code>SFTTrainer</code> masks the prompt on prompt–completion data, but on <code>messages</code> data it trains on every token unless you set <code>assistant_only_loss=True</code>, which needs a template with <code>{% generation %}</code> markers (SmolLM2's has none). Decode the tokens whose label isn't <code>-100</code> for one batch to check.</p>
         <div class="callout callout--warning">
           <p class="callout__label">The silent failure</p>
           <p>A template mismatch rarely errors. You'll see a plausible training loss and then <strong>garbage or oddly formatted outputs</strong> at inference. If a freshly fine-tuned model behaves strangely, check the chat template first — it's the usual culprit.</p>
@@ -333,7 +337,7 @@
             <dt>Chat template</dt><dd>A tokenizer rule that converts a messages list into the exact formatted string the model expects.</dd>
             <dt>Role</dt><dd>Who is speaking: system, user, or assistant.</dd>
             <dt>Special/control tokens</dt><dd>Non-text tokens (e.g. turn delimiters) the model was trained with.</dd>
-            <dt>apply_chat_template</dt><dd>The function that renders messages into the correct formatted string.</dd>
+            <dt>apply_chat_template</dt><dd>The function that renders messages with the model's template: a string with <code>tokenize=False</code>, token IDs by default.</dd>
             <dt>add_generation_prompt</dt><dd>At inference, appends the assistant-turn opener so the model starts responding.</dd>
           </dl>
         </section>
