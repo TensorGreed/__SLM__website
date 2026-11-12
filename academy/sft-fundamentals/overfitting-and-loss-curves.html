@@ -318,13 +318,13 @@
             <text x="540" y="60" font-family="Geist, sans-serif" font-size="10" fill="#737373">val ↑</text>
             <text x="540" y="140" font-family="Geist, sans-serif" font-size="10" fill="#171717">train ↓</text>
           </svg>
-          <figcaption>Solid = training loss; dashed = validation loss. The minimum of the validation curve is the checkpoint to keep; beyond it the model overfits.</figcaption>
+          <figcaption>Solid = training loss; dashed = validation loss. Past the validation minimum the model is fitting the training set more than the validation set — a warning to check the task metric, which picks the checkpoint.</figcaption>
         </figure>
 
         <h2>Responding to overfitting</h2>
         <p>When validation turns up, you have several moves, roughly in order of preference:</p>
         <ul>
-          <li><strong>Early stopping</strong> — just keep the checkpoint at the validation minimum (you saved several, per Lesson 9). The simplest fix.</li>
+          <li><strong>Early stopping</strong> — keep an earlier checkpoint instead of the final one (you saved several, per Lesson 1.9). The simplest fix. Pick it by the task metric on the dev (practice) split of your gold set, not by the validation-loss minimum alone: in SFT, validation loss often starts rising after about one epoch while task quality keeps improving (InstructGPT, arXiv:2203.02155, trained 16 epochs for exactly this reason). Treat rising validation loss as a warning to check the metric.</li>
           <li><strong>Fewer epochs</strong> next run — you were training past the sweet spot.</li>
           <li><strong>More / more varied data</strong> — the real cure; a model overfits most easily on thin data.</li>
           <li><strong>More regularization</strong> — e.g. a bit more LoRA dropout or weight decay.</li>
@@ -344,7 +344,7 @@
             <dt>Overfitting</dt><dd>Training loss falls while validation loss rises — the model memorizes instead of generalizing.</dd>
             <dt>Underfitting</dt><dd>Both losses stay high; the model hasn't learned enough (too few steps, low LR, too little capacity).</dd>
             <dt>Generalization gap</dt><dd>The distance between training and validation loss; a widening gap signals overfitting.</dd>
-            <dt>Early stopping</dt><dd>Keeping the checkpoint at the validation-loss minimum rather than the final step.</dd>
+            <dt>Early stopping</dt><dd>Keeping an earlier checkpoint rather than the final step — chosen by the dev-set task metric, with validation loss as a warning sign.</dd>
             <dt>Validation loss</dt><dd>Loss on held-out data; the signal for generalization and checkpoint selection.</dd>
           </dl>
         </section>

@@ -310,10 +310,10 @@
         <p><strong>RLHF</strong> (Reinforcement Learning from Human Feedback) trains a separate <em>reward model</em> from preferences, then optimizes the language model against it with reinforcement learning (PPO). It is powerful but complex and finicky to stabilize. For most teams, <strong>DPO achieves similar ends with far less machinery</strong>, which is why it has largely displaced RLHF for fine-tuning small models.</p>
 
         <h2>Continued pretraining: build base ability</h2>
-        <p>If the problem is that the base model doesn't speak your domain's language at all, <strong>continued pretraining</strong> — more raw next-token training on a large domain corpus — comes <em>before</em> SFT. It's expensive and rarely the first move; most projects start from an existing base and skip straight to SFT.</p>
+        <p>If the problem is that the base model doesn't speak your domain's language at all, <strong>continued pretraining</strong> — more raw next-token training on a large domain corpus — comes <em>before</em> SFT. It's expensive and rarely the first move; most projects start from an existing base and skip straight to SFT. Before you choose it, measure: compare the base model's per-token loss on held-out domain text with its loss on generic text. Only when the domain loss is far higher <em>and</em> you have tens of millions of tokens of raw text is CPT worth it (Lesson 1.21).</p>
         <div class="callout callout--key">
           <p class="callout__label">Decision guide</p>
-          <p>One right answer per input → <strong>SFT</strong>. "A is better than B" judgments to refine an already-decent model → <strong>DPO</strong> (or ORPO) after SFT. A whole new domain's language, with budget → <strong>continued pretraining</strong>, then SFT. Reach for RLHF only if you specifically need a reward model.</p>
+          <p>One right answer per input → <strong>SFT</strong>. "A is better than B" judgments to refine an already-decent model → <strong>DPO</strong> (or ORPO) after SFT. Domain text the base measurably can't read (held-out loss far above generic text), plus a large raw corpus → <strong>continued pretraining</strong>, then SFT. Reach for RLHF only if you specifically need a reward model.</p>
         </div>
         <p>The overwhelming majority of practical projects are SFT, occasionally followed by DPO. This Academy focuses on SFT and returns to alignment (DPO/ORPO) as an advanced topic in Track 4. Next, we dissect a single SFT example.</p>
 

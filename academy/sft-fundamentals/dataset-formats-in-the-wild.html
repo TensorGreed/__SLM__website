@@ -287,7 +287,7 @@
 
       <article class="lesson-article">
         <header class="lesson-header">
-          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 20</span>
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · 1C · Lesson 20</span>
           <h1>Dataset formats in the wild</h1>
           <p class="lesson-header__outcome">After this lesson you can recognise the common SFT dataset shapes — JSONL, completion, chat messages, Alpaca, ShareGPT, classification, extraction — pick the right one for a task, and convert between them so the trainer sees what it expects.</p>
           <div class="lesson-meta">
@@ -300,7 +300,7 @@
         <p>The dataset you receive is almost never the format the trainer wants. You'll meet a Hugging Face dataset in Alpaca format and need chat messages; you'll meet a JSONL of <code>{prompt, completion}</code> rows and need to wrap them in the chat template; you'll meet a tab-separated classification CSV and have to decide whether to convert at all. The conversions are mechanical — and silently wrong if you get them slightly off. This lesson is the field guide.</p>
 
         <h2>Why formats matter</h2>
-        <p>SFT trainers (raw <code>Trainer</code>, TRL's <code>SFTTrainer</code>, BrewSLM's task handlers) all eat the same fundamental object — tokenised <code>input_ids</code> with a loss mask — but they accept their <em>source</em> data in different shapes. Picking the right shape means the trainer's built-in chat-template + loss-mask code works correctly without bespoke glue. Picking the wrong shape means you'll fight the trainer or build your own preprocessing — and the training silently optimises the wrong tokens.</p>
+        <p>SFT trainers (raw <code>Trainer</code>, TRL's <code>SFTTrainer</code>, BrewSLM's training script) all eat the same fundamental object — tokenised <code>input_ids</code> with a loss mask — but they accept their <em>source</em> data in different shapes, and the shape decides which tokens get masked. Picking the right shape means the trainer's built-in chat-template + loss-mask code does what you expect. Picking the wrong one means you'll fight the trainer or build your own preprocessing — and the training silently optimises the wrong tokens.</p>
 
         <h2>JSONL: the lingua franca</h2>
         <p><strong>JSONL</strong> is one JSON object per line. It's not a schema — it's a container. Inside each line, you can put any of the shapes below. JSONL exists because it's streamable (the trainer can read one line at a time), line-recoverable (a corrupt row only kills its line), and easy to inspect with <code>head</code>.</p>
@@ -322,7 +322,14 @@
     {"role": "assistant", "content": "I'm sorry. Can you share the tracking number so I can investigate?"}
   ]
 }</code></pre>
-        <p>Use this for chat models, multi-turn tasks, anything where role matters. TRL's <code>SFTTrainer</code> accepts it directly.</p>
+        <p>Use this for chat models, multi-turn tasks, anything where role matters. TRL's <code>SFTTrainer</code> accepts it directly — but with its defaults it trains on <em>every</em> token of the rendered conversation, system and user included. Masking to the assistant turns needs <code>assistant_only_loss=True</code> and a chat template with <code>{% generation %}</code> markers (many templates, SmolLM2's included, have none), or your own per-turn mask.</p>
+
+        <h2>Conversational prompt–completion: chat template plus a masked prompt</h2>
+        <p>For single-turn chat data there's a cleaner shape: <code>prompt</code> is a list of messages and <code>completion</code> is the assistant message. TRL renders both with the chat template and, by default, computes the loss only on the completion. It's the simplest way to get completion-only loss with a chat model.</p>
+        <pre class="code-block"><code>{
+  "prompt":     [{"role": "user",      "content": "My package never arrived."}],
+  "completion": [{"role": "assistant", "content": "I'm sorry. Can you share the tracking number so I can investigate?"}]
+}</code></pre>
 
         <h2>Alpaca format: legacy, but you'll see it</h2>
         <p>From Stanford's original instruction-tuning dataset. Three fields: <code>instruction</code>, optional <code>input</code>, <code>output</code>. Lots of older HF datasets ship in this shape.</p>
@@ -334,7 +341,7 @@
         <p>Convert it to chat messages: <code>instruction + "\n\n" + input</code> becomes the user content, <code>output</code> becomes the assistant content. The conversion is mechanical; the easy bug is concatenating without the blank line and losing the boundary between instruction and input.</p>
 
         <h2>ShareGPT format: messy multi-turn</h2>
-        <p>From early dumps of shared ChatGPT conversations. Multi-turn, with a quirky <code>from</code>/<code>value</code> field naming (instead of <code>role</code>/<code>content</code>).</p>
+        <p>From early public dumps of shared chatbot conversations. Multi-turn, with a quirky <code>from</code>/<code>value</code> field naming (instead of <code>role</code>/<code>content</code>).</p>
         <pre class="code-block"><code>{
   "conversations": [
     {"from": "human", "value": "What's the capital of France?"},
@@ -346,13 +353,13 @@
         <p>Convert to chat messages: rename <code>from: "human"</code> → <code>role: "user"</code>, <code>from: "gpt"</code> → <code>role: "assistant"</code>, <code>value</code> → <code>content</code>. Done.</p>
 
         <h2>Classification format: not a chat shape at all</h2>
-        <p>For pure classification tasks the simplest shape is two fields: <code>text</code> and <code>label</code>. This is what scikit-learn and the HF <code>evaluate</code> library expect, and it's what the BrewSLM Classification handler ingests.</p>
+        <p>For pure classification tasks the simplest shape is two fields: <code>text</code> and <code>label</code>. It's the usual Hugging Face <code>datasets</code> convention for text classification and maps straight onto scikit-learn's <code>X</code>/<code>y</code>; BrewSLM trains a classification head on it.</p>
         <pre class="code-block"><code>{"text": "Loved the service.", "label": "positive"}
 {"text": "Never again.",       "label": "negative"}</code></pre>
         <p>When you train a chat-style SLM on classification data, you (or the trainer) wrap each row into a chat-messages turn: "Classify this: {text}" / "{label}". When you train a small classification head separately (no SFT), you don't — the classification format is the input directly.</p>
 
         <h2>Extraction format: structured outputs</h2>
-        <p>For span extraction (PII, named entities, structured data pulled from text), you need to encode positions. Two common shapes — the <em>span set</em>: <code>{text, spans: [{start, end, label}, ...]}</code>; and the <em>field map</em>: <code>{text, fields: {invoice_number: "...", date: "..."}}</code>. BrewSLM's StructuredExtraction handler supports both via <code>scoring_mode</code>.</p>
+        <p>For span extraction (PII, named entities, structured data pulled from text), you need to encode positions. Two common shapes — the <em>span set</em>: <code>{text, spans: [{start, end, label}, ...]}</code>; and the <em>field map</em>: <code>{text, fields: {invoice_number: "...", date: "..."}}</code>. BrewSLM's StructuredExtraction eval handler scores both, picked by <code>scoring_mode</code>.</p>
         <pre class="code-block"><code>{
   "text": "Contact jane.doe@example.com or 555-0123",
   "spans": [
@@ -362,7 +369,7 @@
 }</code></pre>
 
         <h2>Converting between formats</h2>
-        <p>The mechanical conversion is usually 5–15 lines. The whole point of using a standard format is that the trainer's preprocessing handles tokenisation + chat-template + loss-mask for you. If you find yourself writing those by hand, step back and ask whether a small conversion would let the trainer's built-in path do it correctly.</p>
+        <p>The mechanical conversion is usually 5–15 lines. The point of using a standard format is that the trainer's preprocessing handles tokenisation and the chat template for you — and, for the right shape, the loss mask. If you find yourself writing those by hand, step back and ask whether a small conversion would let the trainer's built-in path do it. Then verify the mask anyway: decode the tokens whose label isn't <code>-100</code> for one batch.</p>
         <pre class="code-block"><code>def alpaca_to_chat(row):
     user = row["instruction"] + (f"\n\n{row['input']}" if row.get("input") else "")
     return {"messages": [
@@ -379,10 +386,10 @@ def sharegpt_to_chat(row):
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>The format question is not "what's correct?" — it's "what does my trainer expect, and does my data shape match it?" For chat models, the answer is almost always the <strong>chat messages</strong> format (a list of <code>{role, content}</code> dicts). For everything else — Alpaca, ShareGPT, completion, CSVs — write a tiny conversion and let the trainer's built-in chat-template + loss-mask code do the rest.</p>
+          <p>The format question is not "what's correct?" — it's "what does my trainer expect, and does my data shape match it?" For chat models, the answer is almost always the <strong>chat messages</strong> format (a list of <code>{role, content}</code> dicts). For everything else — Alpaca, ShareGPT, completion, CSVs — write a tiny conversion into a shape your trainer knows. Then check which tokens it trains on: with TRL's defaults, prompt–completion rows are masked to the completion and <code>messages</code> rows are not masked at all.</p>
         </div>
 
-        <p>You can now read any dataset you're handed. The next lesson covers a failure mode that bites SFT especially hard once you start training on narrow data: catastrophic forgetting.</p>
+        <p>You can now read any dataset you're handed. The next lesson covers the case where formatting isn't the problem at all — the base model doesn't know your domain's text — and when continued pretraining is the fix.</p>
 
         <section class="key-terms">
           <h2>Key terms</h2>

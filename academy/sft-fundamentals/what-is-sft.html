@@ -307,20 +307,20 @@
         <p>A note on starting points. A <strong>base</strong> model is raw next-token prediction; an <strong>instruct</strong> model has already been fine-tuned to follow instructions and chat. You can SFT either, but starting from an instruct model usually gets you to a polished, on-format result with less data.</p>
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>SFT changes <strong>behavior</strong>, not <strong>knowledge</strong>. It is excellent at teaching a model <em>how</em> to respond — format, style, task — and unreliable at teaching it new <em>facts</em>. For facts that change or are private, reach for RAG (Track 0, Lesson 7).</p>
+          <p>SFT is reliable for <strong>behavior</strong> and an inefficient, hallucination-prone way to add <strong>knowledge</strong>. It is excellent at teaching a model <em>how</em> to respond — format, style, task. It can absorb some new facts, but slowly, and learning them tends to raise hallucination (Gekhman et al. 2024, arXiv:2405.05904); for knowledge injection, retrieval beat fine-tuning in Ovadia et al. 2023 (arXiv:2312.05934). For facts that change or are private, reach for RAG (Track 0, Lesson 7). BrewSLM's own <a class="inline-link" href="../../blog-irs-pub17-fine-tune-lost-retrieval-won.html">IRS Publication 17 experiment</a> is a worked example: fine-tuning lost, retrieval won.</p>
         </div>
 
         <h2>What SFT is good at</h2>
         <ul>
           <li><strong>Format and structure</strong> — always emit strict JSON, a fixed label set, spans in a schema.</li>
           <li><strong>Style and tone</strong> — answer in a specific voice or length.</li>
-          <li><strong>A narrow task at accuracy</strong> — classification, extraction, domain QA, where a small fine-tuned model can rival a far larger one.</li>
+          <li><strong>A narrow task at accuracy</strong> — classification, extraction, domain QA over supplied context, where a small fine-tuned model can often match a far larger general one on that one task — measure it on your gold set.</li>
           <li><strong>Following one instruction pattern</strong> reliably, without re-explaining it every call.</li>
         </ul>
 
         <h2>When NOT to use SFT</h2>
         <ul>
-          <li><strong>You need fresh or private facts</strong> → use RAG; SFT won't reliably memorize them.</li>
+          <li><strong>You need fresh or private facts</strong> → use RAG; SFT learns new facts slowly and unreliably.</li>
           <li><strong>Prompting already works</strong> → don't pay for a training run you don't need.</li>
           <li><strong>You have almost no data and no way to make more</strong> → too few examples to learn from (later tracks show synthetic data, distillation, and warm starts that lower the bar).</li>
           <li><strong>The base genuinely lacks the capability</strong> → consider a stronger base or continued pretraining; SFT sharpens existing ability more than it creates new ability from nothing.</li>
@@ -333,7 +333,7 @@
             <dt>Supervised Fine-Tuning (SFT)</dt><dd>Continuing training on labeled (prompt, completion) examples to change a model's behavior for a task.</dd>
             <dt>(prompt, completion) pair</dt><dd>One SFT example: an input and the target output you want the model to produce.</dd>
             <dt>Base vs instruct model</dt><dd>A base model is raw next-token prediction; an instruct model is already tuned to follow instructions.</dd>
-            <dt>Behavior vs knowledge</dt><dd>SFT reshapes how a model responds (behavior); it does not reliably add new facts (knowledge — use RAG).</dd>
+            <dt>Behavior vs knowledge</dt><dd>SFT reliably reshapes how a model responds (behavior); it adds new facts (knowledge) slowly and at a cost in hallucination — use RAG for those.</dd>
           </dl>
         </section>
 

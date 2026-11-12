@@ -297,7 +297,7 @@
           </div>
         </header>
 
-        <p>Training produces a model; evaluation tells you whether it's any good. This capstone of Track 1 ties the whole loop together: a fine-tune isn't finished when the loss flattens — it's finished when a metric on the gold set clears a bar you set in advance.</p>
+        <p>Training produces a model; evaluation tells you whether it's any good. This lesson closes the core loop of Track 1: a fine-tune isn't finished when the loss flattens — it's finished when a metric on the gold set clears a bar you set in advance.</p>
 
         <h2>Pick a metric that fits the shape</h2>
         <p>From the task-shapes lesson: the metric must match the shape, or the number is meaningless. Quick map:</p>
@@ -311,10 +311,14 @@
         <p>A word on precision vs recall, since they recur everywhere: <strong>precision</strong> is "of what the model flagged, how much was right"; <strong>recall</strong> is "of what it should have found, how much it caught." <strong>F1</strong> is their harmonic mean — one number when you care about both. Which matters more is a product decision (a PII detector usually prizes recall; a spam filter, precision).</p>
 
         <h2>Always compare to a baseline</h2>
-        <p>A number alone is not evidence. <strong>"Is it better than what?"</strong> Evaluate the <em>base</em> model (before fine-tuning) on the same gold set, and report the fine-tuned model's score next to it. The lift over baseline is the thing your training actually bought. Other useful baselines: a simple prompt on a larger model, or the previous deployed version.</p>
+        <p>A number alone is not evidence. <strong>"Is it better than what?"</strong> Evaluate the <em>base</em> model (before fine-tuning) on the same gold set, with the same prompt template and decoding settings, and report the fine-tuned model's score next to it. The lift over baseline is the thing your training actually bought. Other useful baselines: a simple prompt on a larger model, or the previous deployed version.</p>
 
         <h2>Gates: decide the bar in advance</h2>
         <p>A <strong>quality gate</strong> is a threshold you commit to <em>before</em> seeing the result ("ship only if gold-set F1 ≥ 0.85 and no safety regressions"). Setting it in advance stops you from rationalizing a mediocre model after the fact. Gates turn evaluation from a vibe into a decision rule.</p>
+
+        <h2>Is the difference real?</h2>
+        <p>A gold set is a sample, so every score carries noise. At 80% accuracy the 95% confidence interval is about ±11 points on 50 rows, ±8 on 100 and ±4.5 on 300 — a 4-point gap on 50 rows tells you almost nothing. A lift is only evidence when it's well outside the noise of the <em>difference</em>, roughly two standard errors, and it's sharper when both models are scored on the same rows and you compare them row by row (a paired test). Per-class or per-slice scores on a handful of rows are noisier still: one miss in 20 rows is 5 points.</p>
+        <p>Looking at the same gold set again and again while you tune also leaks into it. Keep a <strong>practice</strong> split you can consult freely and a <strong>final</strong> split you score once, at the end (BrewSLM calls them the practice and final answer keys).</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Honest reporting (the rule that matters most)</p>
@@ -323,7 +327,7 @@
 
         <h2>Evaluate on the gold set, then iterate</h2>
         <p>Run the metric on the held-out <strong>gold set</strong> (never the training data), read the failures, and feed them back into the data-centric loop (Track 0, Lesson 9): the classes and slices where the model loses tell you exactly which examples to add or fix before the next run.</p>
-        <p>That completes Track 1. You now understand <em>why and what</em> for every part of supervised fine-tuning — objectives, data, the loss mask and chat templates, the training loop and its loss, learning rate and batch, LoRA and memory, and how to read and evaluate the result. In <strong>Track 2</strong> you'll do all of it <em>by hand</em> in PyTorch and Transformers, turning this understanding into a working fine-tune.</p>
+        <p>That completes the core loop of Track 1: objectives, data, the loss mask and chat templates, the training loop and its loss, learning rate and batch, LoRA and memory, and how to read and evaluate the result. The four lessons of <strong>1C · Beyond the core loop</strong> come next — decoding controls, dataset formats, continued pretraining and catastrophic forgetting — and then <strong>Track 2</strong>, where you'll do all of it <em>by hand</em> in PyTorch and Transformers.</p>
 
         <section class="key-terms">
           <h2>Key terms</h2>

@@ -287,7 +287,7 @@
 
       <article class="lesson-article">
         <header class="lesson-header">
-          <span class="lesson-header__badge">Track 1 · SFT fundamentals · Lesson 21</span>
+          <span class="lesson-header__badge">Track 1 · SFT fundamentals · 1C · Lesson 21</span>
           <h1>Continued pretraining: when SFT isn't enough</h1>
           <p class="lesson-header__outcome">After this lesson you can tell whether your problem is &quot;the model doesn't speak my domain&quot; or &quot;the model speaks my domain but fails my task,&quot; pick continued pretraining only when it's the first one, prepare raw-text data and the right recipe (smaller learning rate, longer sequences, conservative vocab decisions), and evaluate honestly by measuring downstream-task SFT performance, not CPT loss.</p>
           <div class="lesson-meta">
@@ -335,44 +335,53 @@
           <li>One paragraph per row, each row short. (Wastes compute on padding tokens; pack into long sequences instead — Lesson 1.6.)</li>
         </ul>
         <pre class="code-block"><code># raw-text packing for CPT — no loss mask, no roles
+from itertools import chain
 from datasets import load_dataset
 from transformers import AutoTokenizer
 
 tok = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-135M")
-raw = load_dataset("path/to/your/domain/corpus", split="train")   # one doc per row
-
-def to_ids(batch):
-    return {"ids": tok(batch["text"], add_special_tokens=False)["input_ids"]}
-
-ids = raw.map(to_ids, batched=True, remove_columns=raw.column_names)
-
-# pack: concat all docs, split into 2048-token chunks
+raw = load_dataset("json", data_files="corpus.jsonl", split="train")   # one doc per row, in "text"
 SEQ = 2048
-flat = sum(ids["ids"], [])
-chunks = [flat[i:i+SEQ] for i in range(0, len(flat) - SEQ + 1, SEQ)]
-# each `chunks[i]` is a CPT training example; labels = inputs (no mask)</code></pre>
+
+def tokenize(batch):
+    # end every document with EOS so the model learns where one stops
+    ids = tok(batch["text"], add_special_tokens=False)["input_ids"]
+    return {"input_ids": [x + [tok.eos_token_id] for x in ids]}
+
+def pack(batch):
+    # concatenate a batch of documents and cut it into SEQ-token chunks
+    flat = list(chain.from_iterable(batch["input_ids"]))
+    usable = len(flat) // SEQ * SEQ          # the leftover tail is dropped
+    chunks = [flat[i:i + SEQ] for i in range(0, usable, SEQ)]
+    return {"input_ids": chunks, "labels": [c.copy() for c in chunks]}
+
+ids = raw.map(tokenize, batched=True, remove_columns=raw.column_names)
+packed = ids.map(pack, batched=True, batch_size=1000)
+# each row of `packed` is one CPT example; labels = input_ids (no mask —
+# the model shifts them by one internally)</code></pre>
+        <p>Two details matter. Each document ends with the EOS token, so the model learns where one document stops instead of reading the corpus as one endless text. And the packing runs as a batched <code>map</code>, the same way Hugging Face's <code>run_clm.py</code> example does it, so it never builds one giant list: on tens of millions of tokens, concatenating everything with <code>sum(list_of_lists, [])</code> would effectively never finish.</p>
 
         <h2>The recipe (and why it differs from SFT)</h2>
         <p>CPT is more delicate than SFT because you're touching weights the model uses for everything, not just adding a task-specific behaviour. Conservative defaults:</p>
         <ul>
-          <li><strong>Learning rate</strong> — smaller than SFT, much smaller than the original pretraining. A typical CPT learning rate for a small base is 1e-5 to 5e-5. Too high and you wreck the broader behaviours faster than catastrophic forgetting in SFT does (Lesson 1.21). Use a short warmup and cosine decay.</li>
-          <li><strong>Sequence length</strong> — longer than SFT, because pretraining-style learning benefits from cross-sentence context. Pack to the model's full context (2k for SmolLM2-135M, 8k+ for larger bases) if memory allows.</li>
-          <li><strong>Epochs</strong> — usually one pass over the corpus, sometimes two. Repeating raw text aggressively is a well-known way to make pretraining-style runs worse, not better.</li>
-          <li><strong>Mix-back of generic data</strong> — exactly the same mitigation as Lesson 1.21: include 5–10% of generic pretraining-style text in the mix so the model doesn't drift wholesale into your domain and lose general competence.</li>
-          <li><strong>LoRA vs full</strong> — LoRA for CPT is a recent, viable option (LoRA-CPT) and dramatically cheaper. Full CPT moves more weight but risks more forgetting; if you don't have a strong reason for full, start with LoRA.</li>
+          <li><strong>Learning rate</strong> — well below the original pretraining peak. For <em>full</em> CPT of a small base, about 1e-5 to 5e-5 (the same range as full SFT in Lesson 1.11); for LoRA-CPT, roughly 10× higher, around 1e-4, as with LoRA SFT. Too high and you wreck the broader behaviours faster than catastrophic forgetting in SFT does (Lesson 1.22). CPT re-warms the learning rate from a fresh warmup and then decays it again (cosine); Ibrahim et al. 2024 (arXiv:2403.08763) show that re-warming and re-decaying plus a little replay of generic data matches retraining from scratch.</li>
+          <li><strong>Sequence length</strong> — longer than SFT, because pretraining-style learning benefits from cross-sentence context. Pack to as long a sequence as memory allows, up to the model's context (SmolLM2-135M declares 8,192 tokens; 2,048 is a common, cheaper choice for it, and it's what the snippet above uses).</li>
+          <li><strong>Epochs</strong> — usually one pass over the corpus, sometimes two. A few repeats cost little (Muennighoff et al. 2023, arXiv:2305.16264, found up to about 4 epochs nearly as good as fresh data), but repeating raw text much beyond that makes pretraining-style runs worse, not better.</li>
+          <li><strong>Mix-back of generic data</strong> — exactly the same mitigation as Lesson 1.22: include 5–10% of generic pretraining-style text in the mix (a heuristic; Ibrahim et al. used about 5% replay) so the model doesn't drift wholesale into your domain and lose general competence.</li>
+          <li><strong>LoRA vs full</strong> — LoRA for CPT (LoRA-CPT) is a viable option and dramatically cheaper. The trade-off is real: Biderman et al. 2024 ("LoRA Learns Less and Forgets Less", arXiv:2405.09673) found LoRA-CPT on code and maths clearly behind full CPT on the target domain, while forgetting less. Start with LoRA when compute is tight or forgetting is the bigger worry, and measure the downstream probe below either way. If you extend the vocabulary, LoRA alone won't train the new rows: add <code>embed_tokens</code> and <code>lm_head</code> to <code>modules_to_save</code>.</li>
         </ul>
 
         <h2>Vocab extension: a separate decision</h2>
         <p>If your domain has tokens that the base tokenizer splits into long ugly streams (e.g. <code>oxytocin</code> → <code>oxy + tocin</code> across multiple pieces, or domain-specific code identifiers), you may consider <strong>extending the tokenizer's vocabulary</strong> by adding new tokens before CPT begins. The trade-off is sharp:</p>
         <ul>
           <li><strong>Benefit:</strong> fewer tokens per document → cheaper context, faster inference, sometimes faster learning of those terms.</li>
-          <li><strong>Cost:</strong> the new embeddings start <em>random</em>. Until CPT trains them, they're noise. If you extend vocab and then do only a short CPT run, those embeddings stay nearly random and the model gets <em>worse</em> at those tokens. Vocab extension only pays off if you have enough CPT data to train the new embeddings into useful representations.</li>
-          <li><strong>Distillation foot-gun:</strong> if you're planning to distil from a teacher later, vocab extension breaks the same-tokenizer assumption. Pick one path.</li>
+          <li><strong>Cost:</strong> the new embeddings start with no specific meaning. Since transformers 4.46, <code>resize_token_embeddings</code> initialises new rows around the mean of the existing embeddings (better still: set each new token to the mean of the sub-tokens it replaces). Either way they stand for nothing in particular until CPT trains them. If you extend vocab and then do only a short CPT run, those rows stay generic and the model gets <em>worse</em> at those tokens. Vocab extension only pays off if you have enough CPT data to train the new embeddings into useful representations.</li>
+          <li><strong>Distillation foot-gun:</strong> if you're planning logit-level distillation from a teacher that shares the original tokenizer, vocab extension breaks the token-for-token match it relies on. Sequence-level distillation (training on the teacher's text) still works. Decide before you extend.</li>
         </ul>
         <p>The conservative default: <em>don't extend the vocab</em> on a first CPT run. Run CPT without it, look at the gate, and only reach for vocab extension if the token-stream cost is a measured bottleneck.</p>
 
         <h2>Evaluating CPT: don't trust the CPT loss alone</h2>
-        <p>The most common honest-metrics failure in CPT projects: the team watches CPT loss drop on the domain corpus and declares victory. CPT loss <em>always</em> drops on in-distribution data — that's just memorisation pressure. It tells you nothing about whether the model is more useful for your downstream task.</p>
+        <p>The most common honest-metrics failure in CPT projects: the team watches CPT loss drop on the domain corpus and declares victory. <em>Training</em> loss on in-distribution text almost always drops, so it proves little. A falling <em>held-out</em> domain loss is real: the model reads your text more fluently. But fluency is not task usefulness, and neither number tells you whether the model is better at your downstream task.</p>
         <p>The honest evaluation cadence is downstream-task SFT performance, frozen across runs:</p>
         <ol>
           <li>Pin a gold set and an SFT recipe (data, hyperparameters, epochs) — call this the <em>downstream probe</em>.</li>
@@ -396,7 +405,7 @@ Evaluate task-model on the same gold set you would have used without stage 1.</c
         <p>Two practical notes about this pipeline:</p>
         <ul>
           <li><strong>Stage 2's recipe is unchanged.</strong> CPT replaces the starting point, not the SFT method. Same SFT data, same chat template, same LR range, same gold set.</li>
-          <li><strong>Catastrophic forgetting (next lesson) is a stage-2 concern that CPT can amplify.</strong> Mix-back during SFT becomes more important, not less, because a CPT'd model has already been pulled toward your domain — narrow SFT pulls it further. Track 1.21's mitigations apply.</li>
+          <li><strong>Catastrophic forgetting (next lesson) is a stage-2 concern that CPT can amplify.</strong> Mix-back during SFT becomes more important, not less, because a CPT'd model has already been pulled toward your domain — narrow SFT pulls it further. Lesson 1.22's mitigations apply.</li>
         </ul>
 
         <div class="callout callout--key">
@@ -409,9 +418,9 @@ Evaluate task-model on the same gold set you would have used without stage 1.</c
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
-            <dt>Continued pretraining (CPT)</dt><dd>Continuing the next-token objective on raw text from a new domain, before any task SFT. Same loss as pretraining, different data, smaller learning rate.</dd>
+            <dt>Continued pretraining (CPT)</dt><dd>Continuing the next-token objective on raw text from a new domain, before any task SFT. Same loss as pretraining, different data, a learning rate well below the pretraining peak.</dd>
             <dt>Domain-adaptive pretraining (DAPT)</dt><dd>The research name for CPT applied to a specific domain (medical, legal, code, finance). Same mechanic; the "domain-adaptive" label emphasises the purpose.</dd>
-            <dt>Vocab extension</dt><dd>Adding new tokens to the tokenizer for domain-specific vocabulary before CPT, so those terms become single tokens. Sharp trade-off: cheaper at inference, but the new embeddings start random and need enough CPT to learn.</dd>
+            <dt>Vocab extension</dt><dd>Adding new tokens to the tokenizer for domain-specific vocabulary before CPT, so those terms become single tokens. Sharp trade-off: cheaper at inference, but the new embeddings start with no specific meaning and need enough CPT to learn.</dd>
             <dt>Catastrophic forgetting (CPT view)</dt><dd>The same forgetting risk as in SFT (Lesson 1.22), but a CPT'd model is already biased toward the domain — narrow SFT on top can compound the drift unless mix-back and broad eval are kept in.</dd>
             <dt>Two-stage CPT → SFT pipeline</dt><dd>The standard shape: stage 1 is CPT on raw domain text, stage 2 is SFT on task instructions from the CPT'd checkpoint. Evaluated end-to-end on the downstream task gold set.</dd>
             <dt>Downstream probe</dt><dd>A pinned SFT recipe + gold set used to compare a base checkpoint and a CPT'd checkpoint on the metric that actually matters — task performance, not CPT loss.</dd>
