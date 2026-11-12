@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What does brewslm.yaml's strict-extra-forbid behaviour mean for an unknown key?",
-          "text": "What does brewslm.yaml's strict-extra-forbid behaviour mean for an unknown key?",
+          "name": "What does brewslm.yaml's extra='forbid' behaviour mean for an unknown key?",
+          "text": "What does brewslm.yaml's extra='forbid' behaviour mean for an unknown key?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "It's silently ignored"
+              "text": "It's silently ignored and dropped on the next export"
             },
             {
               "@type": "Answer",
               "position": 1,
-              "text": "It's logged as a warning"
+              "text": "It's logged as a warning and kept as-is in the manifest"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It's auto-renamed to the closest match"
+              "text": "It's auto-renamed to the closest known field name"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 2,
-            "text": "Validation fails — typos and stale fields are caught at apply time, not as silent no-ops",
+            "text": "Validation fails, so validate / diff / apply flag it",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Strict-extra-forbid is the explicit choice in the manifest's Pydantic config. Schema drift is visible by design."
+              "text": "extra='forbid' is the explicit choice on every manifest section: unknown keys are usually typos or stale fields, so they fail validation instead of becoming silent no-ops."
             }
           }
         },
@@ -125,17 +125,17 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "beginner / standard / expert"
+              "text": "minimal / standard / production"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "lo / mid / hi"
+              "text": "fast / balanced / thorough"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "v1 / v2 / v3"
+              "text": "sft / distillation / dpo"
             }
           ],
           "acceptedAnswer": {
@@ -144,7 +144,7 @@
             "text": "safe / balanced / max_quality",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "training_plan.plan_profile is one of {safe, balanced, max_quality}. Balanced is the default for most projects."
+              "text": "The profiles are safe, balanced and max_quality; balanced is the default. On apply, the profile comes from workflow.training_preferred_plan_profile — training_plan.plan_profile is carried, not applied."
             }
           }
         },
@@ -152,8 +152,8 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Which section carries the actual flat hyperparameter dict the trainer runs?",
-          "text": "Which section carries the actual flat hyperparameter dict the trainer runs?",
+          "name": "Which section carries the flat hyperparameter dict?",
+          "text": "Which section carries the flat hyperparameter dict?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
@@ -177,7 +177,7 @@
             "text": "spec.training_plan.config",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "training_plan.config is the resolved TrainingConfig — learning rate, batch, epochs, LoRA knobs, etc. The profile is the name; the dict is the snapshot."
+              "text": "training_plan.config is a flat bag (learning rate, batch, epochs, LoRA knobs…). Apply stores it on the project as its preset; it is not validated against TrainingConfig at apply time."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Which manifest field is the only authoritative one in spec.model?",
-          "text": "Which manifest field is the only authoritative one in spec.model?",
+          "name": "Which field in spec.model does apply actually use?",
+          "text": "Which field in spec.model does apply actually use?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
+              "position": 1,
               "text": "cache_fingerprint"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "source_ref"
+              "position": 2,
+              "text": "registry_id, which apply re-uses as-is"
             },
             {
               "@type": "Answer",
-              "position": 2,
-              "text": "registry_id"
+              "position": 3,
+              "text": "source_ref"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 3,
-            "text": "base_model — everything else is informational and re-derived on apply",
+            "position": 0,
+            "text": "base_model — the others are not applied",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "base_model is authoritative. cache_fingerprint, source_ref, registry_id are informational; apply re-resolves them."
+              "text": "base_model is authoritative. registry_id is re-resolved from base_model on apply, and cache_fingerprint / source_ref are carried for provenance, not applied."
             }
           }
         }
@@ -452,61 +452,89 @@ spec:
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "What does brewslm.yaml's strict-extra-forbid behaviour mean for an unknown key?",
-   "options": ["It's silently ignored", "It's logged as a warning", "Validation fails — typos and stale fields are caught at apply time, not as silent no-ops", "It's auto-renamed to the closest match"],
-   "answer": 2,
-   "explanation": "Strict-extra-forbid is the explicit choice in the manifest's Pydantic config. Schema drift is visible by design."},
-  {"q": "What are the three named training-plan profiles?",
-   "options": ["beginner / standard / expert", "safe / balanced / max_quality", "lo / mid / hi", "v1 / v2 / v3"],
-   "answer": 1,
-   "explanation": "training_plan.plan_profile is one of {safe, balanced, max_quality}. Balanced is the default for most projects."},
-  {"q": "Which section carries the actual flat hyperparameter dict the trainer runs?",
-   "options": ["spec.workflow.budget_settings", "spec.training_plan.config", "spec.adapters[].adapter_config", "spec.model.cache_fingerprint"],
-   "answer": 1,
-   "explanation": "training_plan.config is the resolved TrainingConfig — learning rate, batch, epochs, LoRA knobs, etc. The profile is the name; the dict is the snapshot."},
-  {"q": "Which manifest field is the only authoritative one in spec.model?",
-   "options": ["cache_fingerprint", "source_ref", "registry_id", "base_model — everything else is informational and re-derived on apply"],
-   "answer": 3,
-   "explanation": "base_model is authoritative. cache_fingerprint, source_ref, registry_id are informational; apply re-resolves them."}
-]
+            [
+              {
+                "q": "What does brewslm.yaml's extra='forbid' behaviour mean for an unknown key?",
+                "options": [
+                  "It's silently ignored and dropped on the next export",
+                  "It's logged as a warning and kept as-is in the manifest",
+                  "Validation fails, so validate / diff / apply flag it",
+                  "It's auto-renamed to the closest known field name"
+                ],
+                "answer": 2,
+                "explanation": "extra='forbid' is the explicit choice on every manifest section: unknown keys are usually typos or stale fields, so they fail validation instead of becoming silent no-ops."
+              },
+              {
+                "q": "What are the three named training-plan profiles?",
+                "options": [
+                  "minimal / standard / production",
+                  "safe / balanced / max_quality",
+                  "fast / balanced / thorough",
+                  "sft / distillation / dpo"
+                ],
+                "answer": 1,
+                "explanation": "The profiles are safe, balanced and max_quality; balanced is the default. On apply, the profile comes from workflow.training_preferred_plan_profile — training_plan.plan_profile is carried, not applied."
+              },
+              {
+                "q": "Which section carries the flat hyperparameter dict?",
+                "options": [
+                  "spec.workflow.budget_settings",
+                  "spec.training_plan.config",
+                  "spec.adapters[].adapter_config",
+                  "spec.model.cache_fingerprint"
+                ],
+                "answer": 1,
+                "explanation": "training_plan.config is a flat bag (learning rate, batch, epochs, LoRA knobs…). Apply stores it on the project as its preset; it is not validated against TrainingConfig at apply time."
+              },
+              {
+                "q": "Which field in spec.model does apply actually use?",
+                "options": [
+                  "base_model — the others are not applied",
+                  "cache_fingerprint",
+                  "registry_id, which apply re-uses as-is",
+                  "source_ref"
+                ],
+                "answer": 0,
+                "explanation": "base_model is authoritative. registry_id is re-resolved from base_model on apply, and cache_fingerprint / source_ref are carried for provenance, not applied."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">What does brewslm.yaml's strict-extra-forbid behaviour mean for an unknown key?</p>
+              <li><p class="quiz__q-text">What does brewslm.yaml's extra='forbid' behaviour mean for an unknown key?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It's silently ignored</li>
-                  <li>It's logged as a warning</li>
-                  <li>Validation fails — typos and stale fields are caught at apply time, not as silent no-ops</li>
-                  <li>It's auto-renamed to the closest match</li>
+                  <li>It's silently ignored and dropped on the next export</li>
+                  <li>It's logged as a warning and kept as-is in the manifest</li>
+                  <li>Validation fails, so validate / diff / apply flag it</li>
+                  <li>It's auto-renamed to the closest known field name</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Validation fails — typos and stale fields are caught at apply time, not as silent no-ops</strong> Strict-extra-forbid is the explicit choice in the manifest's Pydantic config. Schema drift is visible by design.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Validation fails, so validate / diff / apply flag it</strong> extra='forbid' is the explicit choice on every manifest section: unknown keys are usually typos or stale fields, so they fail validation instead of becoming silent no-ops.</p></details></li>
               <li><p class="quiz__q-text">What are the three named training-plan profiles?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>beginner / standard / expert</li>
+                  <li>minimal / standard / production</li>
                   <li>safe / balanced / max_quality</li>
-                  <li>lo / mid / hi</li>
-                  <li>v1 / v2 / v3</li>
+                  <li>fast / balanced / thorough</li>
+                  <li>sft / distillation / dpo</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. safe / balanced / max_quality</strong> training_plan.plan_profile is one of {safe, balanced, max_quality}. Balanced is the default for most projects.</p></details></li>
-              <li><p class="quiz__q-text">Which section carries the actual flat hyperparameter dict the trainer runs?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. safe / balanced / max_quality</strong> The profiles are safe, balanced and max_quality; balanced is the default. On apply, the profile comes from workflow.training_preferred_plan_profile — training_plan.plan_profile is carried, not applied.</p></details></li>
+              <li><p class="quiz__q-text">Which section carries the flat hyperparameter dict?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>spec.workflow.budget_settings</li>
                   <li>spec.training_plan.config</li>
                   <li>spec.adapters[].adapter_config</li>
                   <li>spec.model.cache_fingerprint</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. spec.training_plan.config</strong> training_plan.config is the resolved TrainingConfig — learning rate, batch, epochs, LoRA knobs, etc. The profile is the name; the dict is the snapshot.</p></details></li>
-              <li><p class="quiz__q-text">Which manifest field is the only authoritative one in spec.model?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. spec.training_plan.config</strong> training_plan.config is a flat bag (learning rate, batch, epochs, LoRA knobs…). Apply stores it on the project as its preset; it is not validated against TrainingConfig at apply time.</p></details></li>
+              <li><p class="quiz__q-text">Which field in spec.model does apply actually use?</p>
                 <ol class="quiz__static-options" type="A">
+                  <li>base_model — the others are not applied</li>
                   <li>cache_fingerprint</li>
+                  <li>registry_id, which apply re-uses as-is</li>
                   <li>source_ref</li>
-                  <li>registry_id</li>
-                  <li>base_model — everything else is informational and re-derived on apply</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: D. base_model — everything else is informational and re-derived on apply</strong> base_model is authoritative. cache_fingerprint, source_ref, registry_id are informational; apply re-resolves them.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. base_model — the others are not applied</strong> base_model is authoritative. registry_id is re-resolved from base_model on apply, and cache_fingerprint / source_ref are carried for provenance, not applied.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

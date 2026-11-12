@@ -91,27 +91,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "After training"
+              "position": 1,
+              "text": "After the first checkpoint, to check loss"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Only on failure"
+              "text": "Only after a run fails, to diagnose it"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "During export"
+              "text": "During export, before the artifact is built"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Before training starts",
+            "position": 0,
+            "text": "Before training starts, ahead of dispatch",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Preflight is stage 07 — it gates the launch before compute is spent."
+              "text": "Preflight runs before dispatch, so problems surface before any compute is spent."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Which preflight check is the Track 1 GPU memory math, automated?",
-          "text": "Which preflight check is the Track 1 GPU memory math, automated?",
+          "name": "How does preflight treat GPU memory (the Track 1 memory math)?",
+          "text": "How does preflight treat GPU memory (the Track 1 memory math)?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Dependency"
+              "position": 1,
+              "text": "It compares the estimated GB with free VRAM and blocks the launch if over"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Gate-policy"
+              "text": "It loads the model once on the GPU to measure peak memory"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Capability"
+              "text": "It checks memory only for full fine-tunes, not for LoRA"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Memory-fit",
+            "position": 0,
+            "text": "A low / medium / high VRAM-risk heuristic that never blocks",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Memory-fit estimates whether the run fits in VRAM up front."
+              "text": "Memory is a heuristic risk score per plan profile. It does not compare GB against VRAM and never blocks the launch."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "In strict mode, a blocker…",
-          "text": "In strict mode, a blocker…",
+          "name": "Preflight returns one error and two warnings. What happens on Train?",
+          "text": "Preflight returns one error and two warnings. What happens on Train?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Is ignored"
+              "position": 1,
+              "text": "All three block the launch until strict mode is switched off in Settings"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Only warns"
+              "text": "Nothing blocks; errors only become a RunEvent"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Merges the adapter"
+              "text": "The warnings block; the error is auto-repaired"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Prevents the run from dispatching until cleared",
+            "position": 0,
+            "text": "The error blocks the launch; the two warnings don't",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Strict blocks; fail-open would only warn."
+              "text": "Errors always block and warnings never do; there are no strict / fail-open preflight modes. A preflight failure raises before dispatch and emits no RunEvent (training_dispatch_error is for dispatch failures after preflight passed)."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "It uses a bigger GPU"
+              "position": 1,
+              "text": "It switches the run to a larger GPU automatically"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It skips evaluation"
+              "text": "It trains on a small sample first to find the bug"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It exports faster"
+              "text": "It retries the run with smaller batches until the run fits in memory"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "It catches the issue in seconds before spending a GPU-hour",
+            "position": 0,
+            "text": "It catches the issue in seconds, before any training runs",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Forecasting failure on paper beats crashing an hour into a run."
+              "text": "Catching a missing dependency or an unsupported capability in seconds beats crashing partway into a run."
             }
           }
         }
@@ -350,52 +350,52 @@ verdict: GO  →  train plan generated (lora r=16, 3 epochs, eff. batch 16)
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "When does preflight run relative to training?",
-    "options": [
-      "After training",
-      "Before training starts",
-      "Only on failure",
-      "During export"
-    ],
-    "answer": 1,
-    "explanation": "Preflight is stage 07 \u2014 it gates the launch before compute is spent."
-  },
-  {
-    "q": "Which preflight check is the Track 1 GPU memory math, automated?",
-    "options": [
-      "Dependency",
-      "Memory-fit",
-      "Gate-policy",
-      "Capability"
-    ],
-    "answer": 1,
-    "explanation": "Memory-fit estimates whether the run fits in VRAM up front."
-  },
-  {
-    "q": "In strict mode, a blocker\u2026",
-    "options": [
-      "Is ignored",
-      "Prevents the run from dispatching until cleared",
-      "Only warns",
-      "Merges the adapter"
-    ],
-    "answer": 1,
-    "explanation": "Strict blocks; fail-open would only warn."
-  },
-  {
-    "q": "Why is a preflight blocker cheaper than discovering the problem during training?",
-    "options": [
-      "It uses a bigger GPU",
-      "It catches the issue in seconds before spending a GPU-hour",
-      "It skips evaluation",
-      "It exports faster"
-    ],
-    "answer": 1,
-    "explanation": "Forecasting failure on paper beats crashing an hour into a run."
-  }
-]
+            [
+              {
+                "q": "When does preflight run relative to training?",
+                "options": [
+                  "Before training starts, ahead of dispatch",
+                  "After the first checkpoint, to check loss",
+                  "Only after a run fails, to diagnose it",
+                  "During export, before the artifact is built"
+                ],
+                "answer": 0,
+                "explanation": "Preflight runs before dispatch, so problems surface before any compute is spent."
+              },
+              {
+                "q": "How does preflight treat GPU memory (the Track 1 memory math)?",
+                "options": [
+                  "A low / medium / high VRAM-risk heuristic that never blocks",
+                  "It compares the estimated GB with free VRAM and blocks the launch if over",
+                  "It loads the model once on the GPU to measure peak memory",
+                  "It checks memory only for full fine-tunes, not for LoRA"
+                ],
+                "answer": 0,
+                "explanation": "Memory is a heuristic risk score per plan profile. It does not compare GB against VRAM and never blocks the launch."
+              },
+              {
+                "q": "Preflight returns one error and two warnings. What happens on Train?",
+                "options": [
+                  "The error blocks the launch; the two warnings don't",
+                  "All three block the launch until strict mode is switched off in Settings",
+                  "Nothing blocks; errors only become a RunEvent",
+                  "The warnings block; the error is auto-repaired"
+                ],
+                "answer": 0,
+                "explanation": "Errors always block and warnings never do; there are no strict / fail-open preflight modes. A preflight failure raises before dispatch and emits no RunEvent (training_dispatch_error is for dispatch failures after preflight passed)."
+              },
+              {
+                "q": "Why is a preflight blocker cheaper than discovering the problem during training?",
+                "options": [
+                  "It catches the issue in seconds, before any training runs",
+                  "It switches the run to a larger GPU automatically",
+                  "It trains on a small sample first to find the bug",
+                  "It retries the run with smaller batches until the run fits in memory"
+                ],
+                "answer": 0,
+                "explanation": "Catching a missing dependency or an unsupported capability in seconds beats crashing partway into a run."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -403,36 +403,36 @@ verdict: GO  →  train plan generated (lora r=16, 3 epochs, eff. batch 16)
             <ol class="quiz__static">
               <li><p class="quiz__q-text">When does preflight run relative to training?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>After training</li>
-                  <li>Before training starts</li>
-                  <li>Only on failure</li>
-                  <li>During export</li>
+                  <li>Before training starts, ahead of dispatch</li>
+                  <li>After the first checkpoint, to check loss</li>
+                  <li>Only after a run fails, to diagnose it</li>
+                  <li>During export, before the artifact is built</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Before training starts</strong> Preflight is stage 07 — it gates the launch before compute is spent.</p></details></li>
-              <li><p class="quiz__q-text">Which preflight check is the Track 1 GPU memory math, automated?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Before training starts, ahead of dispatch</strong> Preflight runs before dispatch, so problems surface before any compute is spent.</p></details></li>
+              <li><p class="quiz__q-text">How does preflight treat GPU memory (the Track 1 memory math)?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Dependency</li>
-                  <li>Memory-fit</li>
-                  <li>Gate-policy</li>
-                  <li>Capability</li>
+                  <li>A low / medium / high VRAM-risk heuristic that never blocks</li>
+                  <li>It compares the estimated GB with free VRAM and blocks the launch if over</li>
+                  <li>It loads the model once on the GPU to measure peak memory</li>
+                  <li>It checks memory only for full fine-tunes, not for LoRA</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Memory-fit</strong> Memory-fit estimates whether the run fits in VRAM up front.</p></details></li>
-              <li><p class="quiz__q-text">In strict mode, a blocker…</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A low / medium / high VRAM-risk heuristic that never blocks</strong> Memory is a heuristic risk score per plan profile. It does not compare GB against VRAM and never blocks the launch.</p></details></li>
+              <li><p class="quiz__q-text">Preflight returns one error and two warnings. What happens on Train?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Is ignored</li>
-                  <li>Prevents the run from dispatching until cleared</li>
-                  <li>Only warns</li>
-                  <li>Merges the adapter</li>
+                  <li>The error blocks the launch; the two warnings don't</li>
+                  <li>All three block the launch until strict mode is switched off in Settings</li>
+                  <li>Nothing blocks; errors only become a RunEvent</li>
+                  <li>The warnings block; the error is auto-repaired</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Prevents the run from dispatching until cleared</strong> Strict blocks; fail-open would only warn.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The error blocks the launch; the two warnings don't</strong> Errors always block and warnings never do; there are no strict / fail-open preflight modes. A preflight failure raises before dispatch and emits no RunEvent (training_dispatch_error is for dispatch failures after preflight passed).</p></details></li>
               <li><p class="quiz__q-text">Why is a preflight blocker cheaper than discovering the problem during training?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It uses a bigger GPU</li>
-                  <li>It catches the issue in seconds before spending a GPU-hour</li>
-                  <li>It skips evaluation</li>
-                  <li>It exports faster</li>
+                  <li>It catches the issue in seconds, before any training runs</li>
+                  <li>It switches the run to a larger GPU automatically</li>
+                  <li>It trains on a small sample first to find the bug</li>
+                  <li>It retries the run with smaller batches until the run fits in memory</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. It catches the issue in seconds before spending a GPU-hour</strong> Forecasting failure on paper beats crashing an hour into a run.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. It catches the issue in seconds, before any training runs</strong> Catching a missing dependency or an unsupported capability in seconds beats crashing partway into a run.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

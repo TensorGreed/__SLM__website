@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What is the manifest the source of truth for?",
-          "text": "What is the manifest the source of truth for?",
+          "name": "What does the prepared split's manifest.json record?",
+          "text": "What does the prepared split's manifest.json record?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Only training"
+              "position": 1,
+              "text": "The only file paths Train, Evaluate and Export may read"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The GPU driver"
+              "text": "The tokenizer vocabulary and chat template used at train time"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The tokenizer vocabulary"
+              "text": "The trained adapter's hyperparameters and final eval scores"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Every downstream stage — train, evaluate, export all read it",
+            "position": 0,
+            "text": "The rows, schema, scoring mode and file hashes of the split",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Nothing reads disk paths directly; the manifest is the contract."
+              "text": "The manifest records what the split produced. Training still reads prepared/train.jsonl and val.jsonl directly, evaluation reads its task profile and scoring mode from the manifest, and export writes its own run manifest — so 'everything reads the manifest' overstates it."
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The export stage"
+              "position": 1,
+              "text": "Into the task handler, which also scores the outputs"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The clean stage"
+              "text": "Into the Clean stage, which writes tokenized rows to disk"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "They were removed"
+              "text": "Into the Split stage, which stores input_ids and labels in manifest.json"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Into the task handler at train time, driven by the manifest's task_profile",
+            "position": 0,
+            "text": "Into the trainer (scripts/train.py), driven by the task profile",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "You declare task_profile/scoring_mode; the handler applies template/labels/mask."
+              "text": "The trainer applies the chat template, builds input_ids/labels and masks the prompt with -100, driven by the task profile. Task handlers are evaluation-only: they build eval prompts and score() outputs."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "A deployed endpoint"
+              "position": 1,
+              "text": "Tokenized tensors cached per base model, ready for the trainer"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "A GGUF file"
+              "text": "A cleaned dataset version with PII redacted but no splits"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "A RunEvent only"
+              "text": "A RunEvent per split row"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "manifest.json plus train.jsonl, val.jsonl and test.jsonl",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The Split step builds the manifest and the train / val / test files."
+              "text": "The Split step builds the manifest and the train / val / test files. Prepare emits no RunEvent."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Why is a BrewSLM run more reproducible than your script?",
-          "text": "Why is a BrewSLM run more reproducible than your script?",
+          "name": "Two runs show different scores. What lets you check whether they saw the same data?",
+          "text": "Two runs show different scores. What lets you check whether they saw the same data?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "It uses a bigger model"
+              "position": 1,
+              "text": "The RunEvent the Prepare stage emits for each split it writes"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It runs on more GPUs"
+              "text": "The project name and the dataset's row count"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It skips evaluation"
+              "text": "The training loss curve's starting value for each run"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The manifest pins exact rows, schema, scoring mode, and hashes",
+            "position": 0,
+            "text": "The file hashes recorded in each split's manifest.json",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The manifest freezes everything that went into the run."
+              "text": "The manifest's file hashes tell you whether two runs trained and tested on the same split files. Prepare emits no RunEvent, and row counts can match while the rows differ."
             }
           }
         }
@@ -342,89 +342,89 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "What is the manifest the source of truth for?",
-    "options": [
-      "Only training",
-      "Every downstream stage \u2014 train, evaluate, export all read it",
-      "The GPU driver",
-      "The tokenizer vocabulary"
-    ],
-    "answer": 1,
-    "explanation": "Nothing reads disk paths directly; the manifest is the contract."
-  },
-  {
-    "q": "Your by-hand tokenization and loss mask moved where in BrewSLM?",
-    "options": [
-      "The export stage",
-      "Into the task handler at train time, driven by the manifest's task_profile",
-      "The clean stage",
-      "They were removed"
-    ],
-    "answer": 1,
-    "explanation": "You declare task_profile/scoring_mode; the handler applies template/labels/mask."
-  },
-  {
-    "q": "What does Prepare produce?",
-    "options": [
-      "A deployed endpoint",
-      "manifest.json plus train.jsonl, val.jsonl and test.jsonl",
-      "A GGUF file",
-      "A RunEvent only"
-    ],
-    "answer": 1,
-    "explanation": "The Split step builds the manifest and the train / val / test files."
-  },
-  {
-    "q": "Why is a BrewSLM run more reproducible than your script?",
-    "options": [
-      "It uses a bigger model",
-      "The manifest pins exact rows, schema, scoring mode, and hashes",
-      "It runs on more GPUs",
-      "It skips evaluation"
-    ],
-    "answer": 1,
-    "explanation": "The manifest freezes everything that went into the run."
-  }
-]
+            [
+              {
+                "q": "What does the prepared split's manifest.json record?",
+                "options": [
+                  "The rows, schema, scoring mode and file hashes of the split",
+                  "The only file paths Train, Evaluate and Export may read",
+                  "The tokenizer vocabulary and chat template used at train time",
+                  "The trained adapter's hyperparameters and final eval scores"
+                ],
+                "answer": 0,
+                "explanation": "The manifest records what the split produced. Training still reads prepared/train.jsonl and val.jsonl directly, evaluation reads its task profile and scoring mode from the manifest, and export writes its own run manifest — so 'everything reads the manifest' overstates it."
+              },
+              {
+                "q": "Your by-hand tokenization and loss mask moved where in BrewSLM?",
+                "options": [
+                  "Into the trainer (scripts/train.py), driven by the task profile",
+                  "Into the task handler, which also scores the outputs",
+                  "Into the Clean stage, which writes tokenized rows to disk",
+                  "Into the Split stage, which stores input_ids and labels in manifest.json"
+                ],
+                "answer": 0,
+                "explanation": "The trainer applies the chat template, builds input_ids/labels and masks the prompt with -100, driven by the task profile. Task handlers are evaluation-only: they build eval prompts and score() outputs."
+              },
+              {
+                "q": "What does Prepare produce?",
+                "options": [
+                  "manifest.json plus train.jsonl, val.jsonl and test.jsonl",
+                  "Tokenized tensors cached per base model, ready for the trainer",
+                  "A cleaned dataset version with PII redacted but no splits",
+                  "A RunEvent per split row"
+                ],
+                "answer": 0,
+                "explanation": "The Split step builds the manifest and the train / val / test files. Prepare emits no RunEvent."
+              },
+              {
+                "q": "Two runs show different scores. What lets you check whether they saw the same data?",
+                "options": [
+                  "The file hashes recorded in each split's manifest.json",
+                  "The RunEvent the Prepare stage emits for each split it writes",
+                  "The project name and the dataset's row count",
+                  "The training loss curve's starting value for each run"
+                ],
+                "answer": 0,
+                "explanation": "The manifest's file hashes tell you whether two runs trained and tested on the same split files. Prepare emits no RunEvent, and row counts can match while the rows differ."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">What is the manifest the source of truth for?</p>
+              <li><p class="quiz__q-text">What does the prepared split's manifest.json record?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Only training</li>
-                  <li>Every downstream stage — train, evaluate, export all read it</li>
-                  <li>The GPU driver</li>
-                  <li>The tokenizer vocabulary</li>
+                  <li>The rows, schema, scoring mode and file hashes of the split</li>
+                  <li>The only file paths Train, Evaluate and Export may read</li>
+                  <li>The tokenizer vocabulary and chat template used at train time</li>
+                  <li>The trained adapter's hyperparameters and final eval scores</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Every downstream stage — train, evaluate, export all read it</strong> Nothing reads disk paths directly; the manifest is the contract.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The rows, schema, scoring mode and file hashes of the split</strong> The manifest records what the split produced. Training still reads prepared/train.jsonl and val.jsonl directly, evaluation reads its task profile and scoring mode from the manifest, and export writes its own run manifest — so 'everything reads the manifest' overstates it.</p></details></li>
               <li><p class="quiz__q-text">Your by-hand tokenization and loss mask moved where in BrewSLM?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The export stage</li>
-                  <li>Into the task handler at train time, driven by the manifest's task_profile</li>
-                  <li>The clean stage</li>
-                  <li>They were removed</li>
+                  <li>Into the trainer (scripts/train.py), driven by the task profile</li>
+                  <li>Into the task handler, which also scores the outputs</li>
+                  <li>Into the Clean stage, which writes tokenized rows to disk</li>
+                  <li>Into the Split stage, which stores input_ids and labels in manifest.json</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Into the task handler at train time, driven by the manifest's task_profile</strong> You declare task_profile/scoring_mode; the handler applies template/labels/mask.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Into the trainer (scripts/train.py), driven by the task profile</strong> The trainer applies the chat template, builds input_ids/labels and masks the prompt with -100, driven by the task profile. Task handlers are evaluation-only: they build eval prompts and score() outputs.</p></details></li>
               <li><p class="quiz__q-text">What does Prepare produce?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A deployed endpoint</li>
                   <li>manifest.json plus train.jsonl, val.jsonl and test.jsonl</li>
-                  <li>A GGUF file</li>
-                  <li>A RunEvent only</li>
+                  <li>Tokenized tensors cached per base model, ready for the trainer</li>
+                  <li>A cleaned dataset version with PII redacted but no splits</li>
+                  <li>A RunEvent per split row</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. manifest.json plus train.jsonl, val.jsonl and test.jsonl</strong> The Split step builds the manifest and the train / val / test files.</p></details></li>
-              <li><p class="quiz__q-text">Why is a BrewSLM run more reproducible than your script?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. manifest.json plus train.jsonl, val.jsonl and test.jsonl</strong> The Split step builds the manifest and the train / val / test files. Prepare emits no RunEvent.</p></details></li>
+              <li><p class="quiz__q-text">Two runs show different scores. What lets you check whether they saw the same data?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It uses a bigger model</li>
-                  <li>The manifest pins exact rows, schema, scoring mode, and hashes</li>
-                  <li>It runs on more GPUs</li>
-                  <li>It skips evaluation</li>
+                  <li>The file hashes recorded in each split's manifest.json</li>
+                  <li>The RunEvent the Prepare stage emits for each split it writes</li>
+                  <li>The project name and the dataset's row count</li>
+                  <li>The training loss curve's starting value for each run</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The manifest pins exact rows, schema, scoring mode, and hashes</strong> The manifest freezes everything that went into the run.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The file hashes recorded in each split's manifest.json</strong> The manifest's file hashes tell you whether two runs trained and tested on the same split files. Prepare emits no RunEvent, and row counts can match while the rows differ.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What decides whether a model is promotable?",
-          "text": "What decides whether a model is promotable?",
+          "name": "What turns an eval result into PASS / FAIL on Results → Verdict?",
+          "text": "What turns an eval result into PASS / FAIL on Results → Verdict?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The training loss"
+              "position": 1,
+              "text": "A training loss below the run's starting loss"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The export format"
+              "text": "The judge model's overall rating of the answers across the test examples"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The notification bell"
+              "text": "The number of failure clusters on the Failures tab"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The gates declared in the eval pack",
+            "position": 0,
+            "text": "The pass/fail rules (gates) declared in the project's eval pack",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Eval-pack gates — the pass/fail rules on Results → Verdict — are the enforceable form of Track 1's quality gate."
+              "text": "Gates in the eval pack compare metrics to thresholds. They block anything only at export, and only when the project's gate_policy is switched on (off by default)."
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The recipe"
+              "position": 1,
+              "text": "The training preset picked on the Train form"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The source locator"
+              "text": "The base model's tokenizer and chat template"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The GPU"
+              "text": "The source connector and mapper the rows were imported through"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The handler's score() for that task shape",
+            "position": 0,
+            "text": "The eval task handler's score() for that task shape",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Task-aware metrics are defined by the handler, so they fit the task."
+              "text": "The eval task handler, chosen by task profile, builds the prompts and score()s the outputs, so the metrics fit the task."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What is a failure cluster?",
-          "text": "What is a failure cluster?",
+          "name": "What is a failure cluster on Results → Failures?",
+          "text": "What is a failure cluster on Results → Failures?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "A GPU error"
+              "text": "Eval misses grouped by input phrasing or class pair"
             },
             {
               "@type": "Answer",
-              "position": 2,
-              "text": "A checkpoint"
+              "position": 1,
+              "text": "RunEvents with the same digit-stripped signature"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "A deployment version"
+              "text": "Checkpoints whose validation loss rose together"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "A group of eval misses sharing a pattern",
+            "position": 2,
+            "text": "Eval misses grouped by reason × output pattern",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Clusters group the misses so the data gap is obvious and actionable."
+              "text": "Eval-miss clusters group by root-cause reason (e.g. formatting_mismatch, hallucination) and an output-pattern fingerprint such as len-short:lead-prose. The digit-stripped RunEvent signature belongs to the other cluster feature, on Ship → Monitor."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "A cluster's remediation is usually…",
-          "text": "A cluster's remediation is usually…",
+          "name": "A cluster of 37 formatting misses shows up. What is the usual remediation?",
+          "text": "A cluster of 37 formatting misses shows up. What is the usual remediation?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Delete the model"
+              "position": 1,
+              "text": "Raise the learning rate and train for more epochs on the same rows"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Increase the learning rate"
+              "text": "Add the 37 missed test rows to the training split"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Export to GGUF"
+              "text": "Export to GGUF and re-run the drift check on Deploy"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Augment from the cluster, review, re-prepare, re-train",
+            "position": 0,
+            "text": "Augment from the cluster, review the new rows, then re-train",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "augment_from_cluster closes the data-centric loop from Track 1."
+              "text": "augment_from_cluster generates targeted rows for review, then you retrain — the data-centric loop from Track 1. Copying the missed test rows into training would leak the answer key and inflate the next score."
             }
           }
         }
@@ -350,89 +350,89 @@ transcription    →  WER</code></pre>
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "What decides whether a model is promotable?",
-    "options": [
-      "The training loss",
-      "The gates declared in the eval pack",
-      "The export format",
-      "The notification bell"
-    ],
-    "answer": 1,
-    "explanation": "Eval-pack gates — the pass/fail rules on Results → Verdict — are the enforceable form of Track 1's quality gate."
-  },
-  {
-    "q": "Where does the shape of the metrics come from?",
-    "options": [
-      "The recipe",
-      "The handler's score() for that task shape",
-      "The source locator",
-      "The GPU"
-    ],
-    "answer": 1,
-    "explanation": "Task-aware metrics are defined by the handler, so they fit the task."
-  },
-  {
-    "q": "What is a failure cluster?",
-    "options": [
-      "A GPU error",
-      "A group of eval misses sharing a pattern",
-      "A checkpoint",
-      "A deployment version"
-    ],
-    "answer": 1,
-    "explanation": "Clusters group the misses so the data gap is obvious and actionable."
-  },
-  {
-    "q": "A cluster's remediation is usually\u2026",
-    "options": [
-      "Delete the model",
-      "Augment from the cluster, review, re-prepare, re-train",
-      "Increase the learning rate",
-      "Export to GGUF"
-    ],
-    "answer": 1,
-    "explanation": "augment_from_cluster closes the data-centric loop from Track 1."
-  }
-]
+            [
+              {
+                "q": "What turns an eval result into PASS / FAIL on Results → Verdict?",
+                "options": [
+                  "The pass/fail rules (gates) declared in the project's eval pack",
+                  "A training loss below the run's starting loss",
+                  "The judge model's overall rating of the answers across the test examples",
+                  "The number of failure clusters on the Failures tab"
+                ],
+                "answer": 0,
+                "explanation": "Gates in the eval pack compare metrics to thresholds. They block anything only at export, and only when the project's gate_policy is switched on (off by default)."
+              },
+              {
+                "q": "Where does the shape of the metrics come from?",
+                "options": [
+                  "The eval task handler's score() for that task shape",
+                  "The training preset picked on the Train form",
+                  "The base model's tokenizer and chat template",
+                  "The source connector and mapper the rows were imported through"
+                ],
+                "answer": 0,
+                "explanation": "The eval task handler, chosen by task profile, builds the prompts and score()s the outputs, so the metrics fit the task."
+              },
+              {
+                "q": "What is a failure cluster on Results → Failures?",
+                "options": [
+                  "Eval misses grouped by input phrasing or class pair",
+                  "RunEvents with the same digit-stripped signature",
+                  "Eval misses grouped by reason × output pattern",
+                  "Checkpoints whose validation loss rose together"
+                ],
+                "answer": 2,
+                "explanation": "Eval-miss clusters group by root-cause reason (e.g. formatting_mismatch, hallucination) and an output-pattern fingerprint such as len-short:lead-prose. The digit-stripped RunEvent signature belongs to the other cluster feature, on Ship → Monitor."
+              },
+              {
+                "q": "A cluster of 37 formatting misses shows up. What is the usual remediation?",
+                "options": [
+                  "Augment from the cluster, review the new rows, then re-train",
+                  "Raise the learning rate and train for more epochs on the same rows",
+                  "Add the 37 missed test rows to the training split",
+                  "Export to GGUF and re-run the drift check on Deploy"
+                ],
+                "answer": 0,
+                "explanation": "augment_from_cluster generates targeted rows for review, then you retrain — the data-centric loop from Track 1. Copying the missed test rows into training would leak the answer key and inflate the next score."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">What decides whether a model is promotable?</p>
+              <li><p class="quiz__q-text">What turns an eval result into PASS / FAIL on Results → Verdict?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The training loss</li>
-                  <li>The gates declared in the eval pack</li>
-                  <li>The export format</li>
-                  <li>The notification bell</li>
+                  <li>The pass/fail rules (gates) declared in the project's eval pack</li>
+                  <li>A training loss below the run's starting loss</li>
+                  <li>The judge model's overall rating of the answers across the test examples</li>
+                  <li>The number of failure clusters on the Failures tab</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The gates declared in the eval pack</strong> Eval-pack gates — the pass/fail rules on Results → Verdict — are the enforceable form of Track 1's quality gate.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The pass/fail rules (gates) declared in the project's eval pack</strong> Gates in the eval pack compare metrics to thresholds. They block anything only at export, and only when the project's gate_policy is switched on (off by default).</p></details></li>
               <li><p class="quiz__q-text">Where does the shape of the metrics come from?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The recipe</li>
-                  <li>The handler's score() for that task shape</li>
-                  <li>The source locator</li>
-                  <li>The GPU</li>
+                  <li>The eval task handler's score() for that task shape</li>
+                  <li>The training preset picked on the Train form</li>
+                  <li>The base model's tokenizer and chat template</li>
+                  <li>The source connector and mapper the rows were imported through</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The handler's score() for that task shape</strong> Task-aware metrics are defined by the handler, so they fit the task.</p></details></li>
-              <li><p class="quiz__q-text">What is a failure cluster?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The eval task handler's score() for that task shape</strong> The eval task handler, chosen by task profile, builds the prompts and score()s the outputs, so the metrics fit the task.</p></details></li>
+              <li><p class="quiz__q-text">What is a failure cluster on Results → Failures?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A GPU error</li>
-                  <li>A group of eval misses sharing a pattern</li>
-                  <li>A checkpoint</li>
-                  <li>A deployment version</li>
+                  <li>Eval misses grouped by input phrasing or class pair</li>
+                  <li>RunEvents with the same digit-stripped signature</li>
+                  <li>Eval misses grouped by reason × output pattern</li>
+                  <li>Checkpoints whose validation loss rose together</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. A group of eval misses sharing a pattern</strong> Clusters group the misses so the data gap is obvious and actionable.</p></details></li>
-              <li><p class="quiz__q-text">A cluster's remediation is usually…</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Eval misses grouped by reason × output pattern</strong> Eval-miss clusters group by root-cause reason (e.g. formatting_mismatch, hallucination) and an output-pattern fingerprint such as len-short:lead-prose. The digit-stripped RunEvent signature belongs to the other cluster feature, on Ship → Monitor.</p></details></li>
+              <li><p class="quiz__q-text">A cluster of 37 formatting misses shows up. What is the usual remediation?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Delete the model</li>
-                  <li>Augment from the cluster, review, re-prepare, re-train</li>
-                  <li>Increase the learning rate</li>
-                  <li>Export to GGUF</li>
+                  <li>Augment from the cluster, review the new rows, then re-train</li>
+                  <li>Raise the learning rate and train for more epochs on the same rows</li>
+                  <li>Add the 37 missed test rows to the training split</li>
+                  <li>Export to GGUF and re-run the drift check on Deploy</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Augment from the cluster, review, re-prepare, re-train</strong> augment_from_cluster closes the data-centric loop from Track 1.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Augment from the cluster, review the new rows, then re-train</strong> augment_from_cluster generates targeted rows for review, then you retrain — the data-centric loop from Track 1. Copying the missed test rows into training would leak the answer key and inflate the next score.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

@@ -92,17 +92,17 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "trainable"
+              "text": "review_status = accepted"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "exported"
+              "text": "review_status = flagged"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "rejected"
+              "text": "No status; trains at once"
             }
           ],
           "acceptedAnswer": {
@@ -111,7 +111,7 @@
             "text": "review_status = pending",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Generated rows are pending until you review them — never auto-trusted."
+              "text": "Generated rows are pending until you review them — never auto-trusted. (Imported rows are the exception: they are written already accepted.)"
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "To save tokens"
+              "position": 1,
+              "text": "So rows reuse the training preset's hyperparameters as metadata"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "To skip review"
+              "text": "So rows can skip the review queue once accepted"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "To merge adapters"
+              "text": "So rows copy the answer key's formatting exactly"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "So examples match the project's task shape and scoring mode",
+            "position": 0,
+            "text": "So rows match the project's task shape and scoring mode",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Rows are shaped like what the model will be scored on, not generic text."
+              "text": "Rows are shaped like what the model will be scored on, not generic text. Copying the answer key would contaminate the test."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "How are rejected synthetic rows handled?",
-          "text": "How are rejected synthetic rows handled?",
+          "name": "Review assist has flagged rows with reasons. How do you drop the bad ones?",
+          "text": "Review assist has flagged rows with reasons. How do you drop the bad ones?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "All discarded together"
+              "position": 1,
+              "text": "Reject the whole generation job and rerun it with a stricter prompt"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Auto-approved"
+              "text": "Delete everything below a confidence cutoff"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Sent to export"
+              "text": "Edit each row's JSON by hand before training"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Grouped by reason and individually selectable for bulk-drop",
+            "position": 0,
+            "text": "Group by verdict + reason, select rows, reject in bulk",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The selectable-by-reason pattern lets you drop junk and rescue fixables."
+              "text": "Rows have per-row checkboxes with Accept / Reject selected, and grouping by verdict + reason puts the reason vocabulary to work. Never all-or-nothing."
             }
           }
         },
@@ -191,26 +191,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Report 'Done' silently"
+              "text": "The Job reports Done with an empty result"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Train on nothing"
+              "text": "It retries the generation until the target row count is met"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Export anyway"
+              "text": "It falls back to copying the seed rows"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "The Job fails loudly with a diagnostic",
+            "text": "The Job fails loudly with a diagnostic error",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "A no-op success would mislead; honest loud failure is the rule."
+              "text": "A no-op success would mislead; the Job raises with a diagnostic explaining why nothing was produced."
             }
           }
         }
@@ -346,52 +346,52 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "What state does a freshly generated synthetic row start in?",
-    "options": [
-      "trainable",
-      "review_status = pending",
-      "exported",
-      "rejected"
-    ],
-    "answer": 1,
-    "explanation": "Generated rows are pending until you review them \u2014 never auto-trusted."
-  },
-  {
-    "q": "Why does a synthetic playbook generate 'recipe-aware' rows?",
-    "options": [
-      "To save tokens",
-      "So examples match the project's task shape and scoring mode",
-      "To skip review",
-      "To merge adapters"
-    ],
-    "answer": 1,
-    "explanation": "Rows are shaped like what the model will be scored on, not generic text."
-  },
-  {
-    "q": "How are rejected synthetic rows handled?",
-    "options": [
-      "All discarded together",
-      "Grouped by reason and individually selectable for bulk-drop",
-      "Auto-approved",
-      "Sent to export"
-    ],
-    "answer": 1,
-    "explanation": "The selectable-by-reason pattern lets you drop junk and rescue fixables."
-  },
-  {
-    "q": "A generation run yields zero usable rows. What should happen?",
-    "options": [
-      "Report 'Done' silently",
-      "The Job fails loudly with a diagnostic",
-      "Train on nothing",
-      "Export anyway"
-    ],
-    "answer": 1,
-    "explanation": "A no-op success would mislead; honest loud failure is the rule."
-  }
-]
+            [
+              {
+                "q": "What state does a freshly generated synthetic row start in?",
+                "options": [
+                  "review_status = accepted",
+                  "review_status = pending",
+                  "review_status = flagged",
+                  "No status; trains at once"
+                ],
+                "answer": 1,
+                "explanation": "Generated rows are pending until you review them — never auto-trusted. (Imported rows are the exception: they are written already accepted.)"
+              },
+              {
+                "q": "Why does a synthetic playbook generate 'recipe-aware' rows?",
+                "options": [
+                  "So rows match the project's task shape and scoring mode",
+                  "So rows reuse the training preset's hyperparameters as metadata",
+                  "So rows can skip the review queue once accepted",
+                  "So rows copy the answer key's formatting exactly"
+                ],
+                "answer": 0,
+                "explanation": "Rows are shaped like what the model will be scored on, not generic text. Copying the answer key would contaminate the test."
+              },
+              {
+                "q": "Review assist has flagged rows with reasons. How do you drop the bad ones?",
+                "options": [
+                  "Group by verdict + reason, select rows, reject in bulk",
+                  "Reject the whole generation job and rerun it with a stricter prompt",
+                  "Delete everything below a confidence cutoff",
+                  "Edit each row's JSON by hand before training"
+                ],
+                "answer": 0,
+                "explanation": "Rows have per-row checkboxes with Accept / Reject selected, and grouping by verdict + reason puts the reason vocabulary to work. Never all-or-nothing."
+              },
+              {
+                "q": "A generation run yields zero usable rows. What should happen?",
+                "options": [
+                  "The Job reports Done with an empty result",
+                  "The Job fails loudly with a diagnostic error",
+                  "It retries the generation until the target row count is met",
+                  "It falls back to copying the seed rows"
+                ],
+                "answer": 1,
+                "explanation": "A no-op success would mislead; the Job raises with a diagnostic explaining why nothing was produced."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -399,36 +399,36 @@
             <ol class="quiz__static">
               <li><p class="quiz__q-text">What state does a freshly generated synthetic row start in?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>trainable</li>
+                  <li>review_status = accepted</li>
                   <li>review_status = pending</li>
-                  <li>exported</li>
-                  <li>rejected</li>
+                  <li>review_status = flagged</li>
+                  <li>No status; trains at once</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. review_status = pending</strong> Generated rows are pending until you review them — never auto-trusted.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. review_status = pending</strong> Generated rows are pending until you review them — never auto-trusted. (Imported rows are the exception: they are written already accepted.)</p></details></li>
               <li><p class="quiz__q-text">Why does a synthetic playbook generate 'recipe-aware' rows?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>To save tokens</li>
-                  <li>So examples match the project's task shape and scoring mode</li>
-                  <li>To skip review</li>
-                  <li>To merge adapters</li>
+                  <li>So rows match the project's task shape and scoring mode</li>
+                  <li>So rows reuse the training preset's hyperparameters as metadata</li>
+                  <li>So rows can skip the review queue once accepted</li>
+                  <li>So rows copy the answer key's formatting exactly</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. So examples match the project's task shape and scoring mode</strong> Rows are shaped like what the model will be scored on, not generic text.</p></details></li>
-              <li><p class="quiz__q-text">How are rejected synthetic rows handled?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. So rows match the project's task shape and scoring mode</strong> Rows are shaped like what the model will be scored on, not generic text. Copying the answer key would contaminate the test.</p></details></li>
+              <li><p class="quiz__q-text">Review assist has flagged rows with reasons. How do you drop the bad ones?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>All discarded together</li>
-                  <li>Grouped by reason and individually selectable for bulk-drop</li>
-                  <li>Auto-approved</li>
-                  <li>Sent to export</li>
+                  <li>Group by verdict + reason, select rows, reject in bulk</li>
+                  <li>Reject the whole generation job and rerun it with a stricter prompt</li>
+                  <li>Delete everything below a confidence cutoff</li>
+                  <li>Edit each row's JSON by hand before training</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Grouped by reason and individually selectable for bulk-drop</strong> The selectable-by-reason pattern lets you drop junk and rescue fixables.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Group by verdict + reason, select rows, reject in bulk</strong> Rows have per-row checkboxes with Accept / Reject selected, and grouping by verdict + reason puts the reason vocabulary to work. Never all-or-nothing.</p></details></li>
               <li><p class="quiz__q-text">A generation run yields zero usable rows. What should happen?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Report 'Done' silently</li>
-                  <li>The Job fails loudly with a diagnostic</li>
-                  <li>Train on nothing</li>
-                  <li>Export anyway</li>
+                  <li>The Job reports Done with an empty result</li>
+                  <li>The Job fails loudly with a diagnostic error</li>
+                  <li>It retries the generation until the target row count is met</li>
+                  <li>It falls back to copying the seed rows</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The Job fails loudly with a diagnostic</strong> A no-op success would mislead; honest loud failure is the rule.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The Job fails loudly with a diagnostic error</strong> A no-op success would mislead; the Job raises with a diagnostic explaining why nothing was produced.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

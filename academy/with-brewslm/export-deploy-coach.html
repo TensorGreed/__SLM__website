@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Which export format + quant would you pick for CPU/edge?",
-          "text": "Which export format + quant would you pick for CPU/edge?",
+          "name": "You want a Q4_K_M GGUF for CPU serving. What is the order on Ship → Package?",
+          "text": "You want a Q4_K_M GGUF for CPU serving. What is the order on Ship → Package?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "TensorRT-LLM"
+              "position": 1,
+              "text": "New export → GGUF (CPU), with the Quantization field set to Q4_K_M"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "Docker image"
+              "position": 2,
+              "text": "Export HuggingFace, then quantize to Q4_K_M at promote"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "HuggingFace full precision"
+              "text": "Deploy the adapter, then pick Q4_K_M as the runner option"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "GGUF + Q4_K_M",
+            "position": 0,
+            "text": "Compress to GGUF Q4_K_M first, then New export → GGUF (CPU)",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "GGUF with a quant like Q4_K_M is the CPU/edge path (Track 2.8) — the GGUF (CPU) option in the New export form on Ship → Package."
+              "text": "The New export form's Quantization is only None / 4-bit / 8-bit. You produce the Q4_K_M file under Options → Compress first; the GGUF (CPU) export then packages the compressed file."
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Retrains the model"
+              "position": 1,
+              "text": "A scheduled job that alerts whenever the live traffic distribution shifts"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Exports a new format"
+              "text": "Retrains the model when the eval score drops by 5 points"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Deletes old versions"
+              "text": "Compares the export's file hash with the promoted version"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Re-runs the answer key (gold set) against the live endpoint to catch regressions",
+            "position": 0,
+            "text": "Exact-match scores answer-key rows against the deployment",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Drift detection keeps the answer key working against production; Ship → Deploy runs it and keeps its history."
+              "text": "It runs on demand: answer-key rows are scored by exact match against predictions you paste (or an endpoint the API calls) and compared with the promote-time baseline, with a 0.05 tolerance. Nothing runs on a schedule."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "A training algorithm"
+              "position": 1,
+              "text": "A background job that retrains whenever a gate fails"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "An export format"
+              "text": "Notifications from the bell about finished Jobs"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "A GPU scheduler"
+              "text": "A lint pass that blocks training until fixed"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The suggestion service whose stage notices and action buttons appear inline on each workspace destination",
+            "position": 0,
+            "text": "Inline suggestions with action buttons",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The Coach service narrates the lifecycle; its suggestions render inline (Data per step, Train, Results, Ship, and the Overview's Worth a look) with action buttons, a why? trace and a dismiss ×."
+              "text": "The Coach service's suggestions render inline (Data per step, Train, Results, Ship, and the Overview's Worth a look) with action buttons, a why? trace and a dismiss ×. Job progress is the bell, a separate surface."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "A better model architecture"
+              "position": 1,
+              "text": "A different training objective — one that needs far fewer labelled rows"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Faster math"
+              "text": "A custom model architecture tuned for small GPUs"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "A different objective"
+              "text": "Faster kernels that make LoRA training cheaper"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Accountability, reproducibility, pass/fail rules, monitoring, and scale over the same pipeline",
+            "position": 0,
+            "text": "Accountability and monitoring around the same pipeline",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Same pipeline; the platform adds the operational rigor around it."
+              "text": "Same pipeline and objective; the platform adds accountability, reproducibility, pass/fail rules, monitoring and scale around it."
             }
           }
         }
@@ -354,89 +354,89 @@ RunEvent: export (info)   payload: { format, output_path, file_size_bytes }
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "Which export format + quant would you pick for CPU/edge?",
-    "options": [
-      "TensorRT-LLM",
-      "Docker image",
-      "GGUF + Q4_K_M",
-      "HuggingFace full precision"
-    ],
-    "answer": 2,
-    "explanation": "GGUF with a quant like Q4_K_M is the CPU/edge path (Track 2.8) — the GGUF (CPU) option in the New export form on Ship → Package."
-  },
-  {
-    "q": "What does the drift check do?",
-    "options": [
-      "Retrains the model",
-      "Re-runs the answer key (gold set) against the live endpoint to catch regressions",
-      "Exports a new format",
-      "Deletes old versions"
-    ],
-    "answer": 1,
-    "explanation": "Drift detection keeps the answer key working against production; Ship → Deploy runs it and keeps its history."
-  },
-  {
-    "q": "What are the Coach notices?",
-    "options": [
-      "A training algorithm",
-      "The suggestion service whose stage notices and action buttons appear inline on each workspace destination",
-      "An export format",
-      "A GPU scheduler"
-    ],
-    "answer": 1,
-    "explanation": "The Coach service narrates the lifecycle; its suggestions render inline (Data per step, Train, Results, Ship, and the Overview's Worth a look) with action buttons, a why? trace and a dismiss ×."
-  },
-  {
-    "q": "Having done Track 2 by hand, what does Track 3 show the platform adds?",
-    "options": [
-      "A better model architecture",
-      "Accountability, reproducibility, pass/fail rules, monitoring, and scale over the same pipeline",
-      "Faster math",
-      "A different objective"
-    ],
-    "answer": 1,
-    "explanation": "Same pipeline; the platform adds the operational rigor around it."
-  }
-]
+            [
+              {
+                "q": "You want a Q4_K_M GGUF for CPU serving. What is the order on Ship → Package?",
+                "options": [
+                  "Compress to GGUF Q4_K_M first, then New export → GGUF (CPU)",
+                  "New export → GGUF (CPU), with the Quantization field set to Q4_K_M",
+                  "Export HuggingFace, then quantize to Q4_K_M at promote",
+                  "Deploy the adapter, then pick Q4_K_M as the runner option"
+                ],
+                "answer": 0,
+                "explanation": "The New export form's Quantization is only None / 4-bit / 8-bit. You produce the Q4_K_M file under Options → Compress first; the GGUF (CPU) export then packages the compressed file."
+              },
+              {
+                "q": "What does the drift check do?",
+                "options": [
+                  "Exact-match scores answer-key rows against the deployment",
+                  "A scheduled job that alerts whenever the live traffic distribution shifts",
+                  "Retrains the model when the eval score drops by 5 points",
+                  "Compares the export's file hash with the promoted version"
+                ],
+                "answer": 0,
+                "explanation": "It runs on demand: answer-key rows are scored by exact match against predictions you paste (or an endpoint the API calls) and compared with the promote-time baseline, with a 0.05 tolerance. Nothing runs on a schedule."
+              },
+              {
+                "q": "What are the Coach notices?",
+                "options": [
+                  "Inline suggestions with action buttons",
+                  "A background job that retrains whenever a gate fails",
+                  "Notifications from the bell about finished Jobs",
+                  "A lint pass that blocks training until fixed"
+                ],
+                "answer": 0,
+                "explanation": "The Coach service's suggestions render inline (Data per step, Train, Results, Ship, and the Overview's Worth a look) with action buttons, a why? trace and a dismiss ×. Job progress is the bell, a separate surface."
+              },
+              {
+                "q": "Having done Track 2 by hand, what does Track 3 show the platform adds?",
+                "options": [
+                  "Accountability and monitoring around the same pipeline",
+                  "A different training objective — one that needs far fewer labelled rows",
+                  "A custom model architecture tuned for small GPUs",
+                  "Faster kernels that make LoRA training cheaper"
+                ],
+                "answer": 0,
+                "explanation": "Same pipeline and objective; the platform adds accountability, reproducibility, pass/fail rules, monitoring and scale around it."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">Which export format + quant would you pick for CPU/edge?</p>
+              <li><p class="quiz__q-text">You want a Q4_K_M GGUF for CPU serving. What is the order on Ship → Package?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>TensorRT-LLM</li>
-                  <li>Docker image</li>
-                  <li>GGUF + Q4_K_M</li>
-                  <li>HuggingFace full precision</li>
+                  <li>Compress to GGUF Q4_K_M first, then New export → GGUF (CPU)</li>
+                  <li>New export → GGUF (CPU), with the Quantization field set to Q4_K_M</li>
+                  <li>Export HuggingFace, then quantize to Q4_K_M at promote</li>
+                  <li>Deploy the adapter, then pick Q4_K_M as the runner option</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. GGUF + Q4_K_M</strong> GGUF with a quant like Q4_K_M is the CPU/edge path (Track 2.8) — the GGUF (CPU) option in the New export form on Ship → Package.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Compress to GGUF Q4_K_M first, then New export → GGUF (CPU)</strong> The New export form's Quantization is only None / 4-bit / 8-bit. You produce the Q4_K_M file under Options → Compress first; the GGUF (CPU) export then packages the compressed file.</p></details></li>
               <li><p class="quiz__q-text">What does the drift check do?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Retrains the model</li>
-                  <li>Re-runs the answer key (gold set) against the live endpoint to catch regressions</li>
-                  <li>Exports a new format</li>
-                  <li>Deletes old versions</li>
+                  <li>Exact-match scores answer-key rows against the deployment</li>
+                  <li>A scheduled job that alerts whenever the live traffic distribution shifts</li>
+                  <li>Retrains the model when the eval score drops by 5 points</li>
+                  <li>Compares the export's file hash with the promoted version</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Re-runs the answer key (gold set) against the live endpoint to catch regressions</strong> Drift detection keeps the answer key working against production; Ship → Deploy runs it and keeps its history.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Exact-match scores answer-key rows against the deployment</strong> It runs on demand: answer-key rows are scored by exact match against predictions you paste (or an endpoint the API calls) and compared with the promote-time baseline, with a 0.05 tolerance. Nothing runs on a schedule.</p></details></li>
               <li><p class="quiz__q-text">What are the Coach notices?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A training algorithm</li>
-                  <li>The suggestion service whose stage notices and action buttons appear inline on each workspace destination</li>
-                  <li>An export format</li>
-                  <li>A GPU scheduler</li>
+                  <li>Inline suggestions with action buttons</li>
+                  <li>A background job that retrains whenever a gate fails</li>
+                  <li>Notifications from the bell about finished Jobs</li>
+                  <li>A lint pass that blocks training until fixed</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The suggestion service whose stage notices and action buttons appear inline on each workspace destination</strong> The Coach service narrates the lifecycle; its suggestions render inline (Data per step, Train, Results, Ship, and the Overview's Worth a look) with action buttons, a why? trace and a dismiss ×.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Inline suggestions with action buttons</strong> The Coach service's suggestions render inline (Data per step, Train, Results, Ship, and the Overview's Worth a look) with action buttons, a why? trace and a dismiss ×. Job progress is the bell, a separate surface.</p></details></li>
               <li><p class="quiz__q-text">Having done Track 2 by hand, what does Track 3 show the platform adds?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>A better model architecture</li>
-                  <li>Accountability, reproducibility, pass/fail rules, monitoring, and scale over the same pipeline</li>
-                  <li>Faster math</li>
-                  <li>A different objective</li>
+                  <li>Accountability and monitoring around the same pipeline</li>
+                  <li>A different training objective — one that needs far fewer labelled rows</li>
+                  <li>A custom model architecture tuned for small GPUs</li>
+                  <li>Faster kernels that make LoRA training cheaper</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Accountability, reproducibility, pass/fail rules, monitoring, and scale over the same pipeline</strong> Same pipeline; the platform adds the operational rigor around it.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Accountability and monitoring around the same pipeline</strong> Same pipeline and objective; the platform adds accountability, reproducibility, pass/fail rules, monitoring and scale around it.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

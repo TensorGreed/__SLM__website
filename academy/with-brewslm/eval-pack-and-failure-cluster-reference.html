@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Which four gate fields are required?",
-          "text": "Which four gate fields are required?",
+          "name": "A gate is written as {metric_id: accuracy, threshold: 0.9} and nothing else. What does the pack store?",
+          "text": "A gate is written as {metric_id: accuracy, threshold: 0.9} and nothing else. What does the pack store?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 1,
-              "text": "gate_id, threshold, source, weight"
+              "text": "Nothing — the gate is dropped because gate_id, operator and threshold are required"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "metric_id, operator, required, weight"
+              "text": "gate_id min_accuracy, operator gte, required false (optional)"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "gate_id, metric_id, required, source"
+              "text": "gate_id accuracy, operator lte, required true, weight 1.0"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 0,
-            "text": "gate_id, metric_id, operator, threshold",
+            "text": "gate_id min_accuracy, operator gte, required true, threshold 0.9",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Required: gate_id, metric_id, operator (gte|lte), threshold. Plus required:bool, source, weight as optional extras."
+              "text": "Only metric_id is needed; a gate without it is dropped. gate_id defaults to min_\u003cmetric_id>, operator to gte, and required to true. A null threshold makes the gate not_enforced, and it passes."
             }
           }
         },
@@ -119,65 +119,65 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What blocks promotion?",
-          "text": "What blocks promotion?",
+          "name": "Where are unmet required gates enforced today?",
+          "text": "Where are unmet required gates enforced today?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Any failed gate"
+              "position": 1,
+              "text": "At promote, where the deploy stage refuses with deployment_promote_blocked"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Only critical-severity events"
+              "text": "At training launch, as a preflight blocking error"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The training_oom RunEvent alone"
+              "text": "At eval time, which discards the failing result"
+            }
+          ],
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "position": 0,
+            "text": "At export, and only when the project's gate_policy is switched on",
+            "answerExplanation": {
+              "@type": "Comment",
+              "text": "Promotion only checks the version's status. Gates block through project.gate_policy (must_pass / min_score / blocked_if_missing) at export, and that policy is off by default; a blocked export fails with 'Export blocked by deployment gates: …'."
+            }
+          }
+        },
+        {
+          "@type": "Question",
+          "eduQuestionType": "Multiple choice",
+          "learningResourceType": "Practice problem",
+          "name": "What uniquely keys a FailureCluster row (Ship → Monitor)?",
+          "text": "What uniquely keys a FailureCluster row (Ship → Monitor)?",
+          "suggestedAnswer": [
+            {
+              "@type": "Answer",
+              "position": 0,
+              "text": "run_id plus the experiment's base model"
+            },
+            {
+              "@type": "Answer",
+              "position": 2,
+              "text": "(project_id, eval_result_id, output fingerprint)"
+            },
+            {
+              "@type": "Answer",
+              "position": 3,
+              "text": "exemplar_event_ids, capped at the first five events"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "Only unmet required gates — non-required gates report but don't block",
-            "answerExplanation": {
-              "@type": "Comment",
-              "text": "required:true is what makes a gate blocking. An unmet required gate triggers deployment_promote_blocked at deploy time."
-            }
-          }
-        },
-        {
-          "@type": "Question",
-          "eduQuestionType": "Multiple choice",
-          "learningResourceType": "Practice problem",
-          "name": "What uniquely keys a FailureCluster row?",
-          "text": "What uniquely keys a FailureCluster row?",
-          "suggestedAnswer": [
-            {
-              "@type": "Answer",
-              "position": 0,
-              "text": "project_id alone"
-            },
-            {
-              "@type": "Answer",
-              "position": 1,
-              "text": "run_id"
-            },
-            {
-              "@type": "Answer",
-              "position": 3,
-              "text": "exemplar_event_ids"
-            }
-          ],
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "position": 2,
             "text": "(project_id, stage, reason_code, signature)",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "One row per distinct failure shape per project: same signature in the same stage with the same reason code under the same project = same cluster."
+              "text": "One row per distinct RunEvent failure shape per project. The signature is sha1 of stage, reason code and a digit-stripped summary, so different batch sizes collapse into one cluster. Eval-miss clusters on Results → Failures are a separate feature and are not stored in this table."
             }
           }
         },
@@ -191,26 +191,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "It auto-merges the failed rows back into training"
+              "text": "It retrains on the RunEvent payloads stored in failure_clusters"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "It increases the learning rate"
+              "text": "It copies the missed answer-key rows into the training split"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It silences the cluster"
+              "text": "It raises the cluster label's class weight for the next run"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "It triggers a synthetic-data playbook seeded by the cluster's exemplars; the generated rows land with review_status pending and roll into the next training round after review",
+            "text": "It runs a cluster-targeted playbook; rows land pending review",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Cluster → generation seed → review queue → next training round. The whole loop is audited; nothing trains without review."
+              "text": "It takes an eval-miss cluster (reason, output pattern, exemplar rows) from an eval result and runs the CLUSTER_TARGETED synthetic playbook; the new rows wait in the review queue. It never reads the failure_clusters table, and copying answer-key rows into training would leak the test set."
             }
           }
         }
@@ -429,61 +429,89 @@ last_computed_at    datetime           refresh marker for clustering runs</code>
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "Which four gate fields are required?",
-   "options": ["gate_id, metric_id, operator, threshold", "gate_id, threshold, source, weight", "metric_id, operator, required, weight", "gate_id, metric_id, required, source"],
-   "answer": 0,
-   "explanation": "Required: gate_id, metric_id, operator (gte|lte), threshold. Plus required:bool, source, weight as optional extras."},
-  {"q": "What blocks promotion?",
-   "options": ["Any failed gate", "Only unmet required gates — non-required gates report but don't block", "Only critical-severity events", "The training_oom RunEvent alone"],
-   "answer": 1,
-   "explanation": "required:true is what makes a gate blocking. An unmet required gate triggers deployment_promote_blocked at deploy time."},
-  {"q": "What uniquely keys a FailureCluster row?",
-   "options": ["project_id alone", "run_id", "(project_id, stage, reason_code, signature)", "exemplar_event_ids"],
-   "answer": 2,
-   "explanation": "One row per distinct failure shape per project: same signature in the same stage with the same reason code under the same project = same cluster."},
-  {"q": "How does augment_from_cluster close the loop?",
-   "options": ["It auto-merges the failed rows back into training", "It triggers a synthetic-data playbook seeded by the cluster's exemplars; the generated rows land with review_status pending and roll into the next training round after review", "It increases the learning rate", "It silences the cluster"],
-   "answer": 1,
-   "explanation": "Cluster → generation seed → review queue → next training round. The whole loop is audited; nothing trains without review."}
-]
+            [
+              {
+                "q": "A gate is written as {metric_id: accuracy, threshold: 0.9} and nothing else. What does the pack store?",
+                "options": [
+                  "gate_id min_accuracy, operator gte, required true, threshold 0.9",
+                  "Nothing — the gate is dropped because gate_id, operator and threshold are required",
+                  "gate_id min_accuracy, operator gte, required false (optional)",
+                  "gate_id accuracy, operator lte, required true, weight 1.0"
+                ],
+                "answer": 0,
+                "explanation": "Only metric_id is needed; a gate without it is dropped. gate_id defaults to min_<metric_id>, operator to gte, and required to true. A null threshold makes the gate not_enforced, and it passes."
+              },
+              {
+                "q": "Where are unmet required gates enforced today?",
+                "options": [
+                  "At export, and only when the project's gate_policy is switched on",
+                  "At promote, where the deploy stage refuses with deployment_promote_blocked",
+                  "At training launch, as a preflight blocking error",
+                  "At eval time, which discards the failing result"
+                ],
+                "answer": 0,
+                "explanation": "Promotion only checks the version's status. Gates block through project.gate_policy (must_pass / min_score / blocked_if_missing) at export, and that policy is off by default; a blocked export fails with 'Export blocked by deployment gates: …'."
+              },
+              {
+                "q": "What uniquely keys a FailureCluster row (Ship → Monitor)?",
+                "options": [
+                  "run_id plus the experiment's base model",
+                  "(project_id, stage, reason_code, signature)",
+                  "(project_id, eval_result_id, output fingerprint)",
+                  "exemplar_event_ids, capped at the first five events"
+                ],
+                "answer": 1,
+                "explanation": "One row per distinct RunEvent failure shape per project. The signature is sha1 of stage, reason code and a digit-stripped summary, so different batch sizes collapse into one cluster. Eval-miss clusters on Results → Failures are a separate feature and are not stored in this table."
+              },
+              {
+                "q": "How does augment_from_cluster close the loop?",
+                "options": [
+                  "It retrains on the RunEvent payloads stored in failure_clusters",
+                  "It runs a cluster-targeted playbook; rows land pending review",
+                  "It copies the missed answer-key rows into the training split",
+                  "It raises the cluster label's class weight for the next run"
+                ],
+                "answer": 1,
+                "explanation": "It takes an eval-miss cluster (reason, output pattern, exemplar rows) from an eval result and runs the CLUSTER_TARGETED synthetic playbook; the new rows wait in the review queue. It never reads the failure_clusters table, and copying answer-key rows into training would leak the test set."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">Which four gate fields are required?</p>
+              <li><p class="quiz__q-text">A gate is written as {metric_id: accuracy, threshold: 0.9} and nothing else. What does the pack store?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>gate_id, metric_id, operator, threshold</li>
-                  <li>gate_id, threshold, source, weight</li>
-                  <li>metric_id, operator, required, weight</li>
-                  <li>gate_id, metric_id, required, source</li>
+                  <li>gate_id min_accuracy, operator gte, required true, threshold 0.9</li>
+                  <li>Nothing — the gate is dropped because gate_id, operator and threshold are required</li>
+                  <li>gate_id min_accuracy, operator gte, required false (optional)</li>
+                  <li>gate_id accuracy, operator lte, required true, weight 1.0</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. gate_id, metric_id, operator, threshold</strong> Required: gate_id, metric_id, operator (gte|lte), threshold. Plus required:bool, source, weight as optional extras.</p></details></li>
-              <li><p class="quiz__q-text">What blocks promotion?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. gate_id min_accuracy, operator gte, required true, threshold 0.9</strong> Only metric_id is needed; a gate without it is dropped. gate_id defaults to min_&lt;metric_id&gt;, operator to gte, and required to true. A null threshold makes the gate not_enforced, and it passes.</p></details></li>
+              <li><p class="quiz__q-text">Where are unmet required gates enforced today?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Any failed gate</li>
-                  <li>Only unmet required gates — non-required gates report but don't block</li>
-                  <li>Only critical-severity events</li>
-                  <li>The training_oom RunEvent alone</li>
+                  <li>At export, and only when the project's gate_policy is switched on</li>
+                  <li>At promote, where the deploy stage refuses with deployment_promote_blocked</li>
+                  <li>At training launch, as a preflight blocking error</li>
+                  <li>At eval time, which discards the failing result</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Only unmet required gates — non-required gates report but don't block</strong> required:true is what makes a gate blocking. An unmet required gate triggers deployment_promote_blocked at deploy time.</p></details></li>
-              <li><p class="quiz__q-text">What uniquely keys a FailureCluster row?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. At export, and only when the project's gate_policy is switched on</strong> Promotion only checks the version's status. Gates block through project.gate_policy (must_pass / min_score / blocked_if_missing) at export, and that policy is off by default; a blocked export fails with 'Export blocked by deployment gates: …'.</p></details></li>
+              <li><p class="quiz__q-text">What uniquely keys a FailureCluster row (Ship → Monitor)?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>project_id alone</li>
-                  <li>run_id</li>
+                  <li>run_id plus the experiment's base model</li>
                   <li>(project_id, stage, reason_code, signature)</li>
-                  <li>exemplar_event_ids</li>
+                  <li>(project_id, eval_result_id, output fingerprint)</li>
+                  <li>exemplar_event_ids, capped at the first five events</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. (project_id, stage, reason_code, signature)</strong> One row per distinct failure shape per project: same signature in the same stage with the same reason code under the same project = same cluster.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. (project_id, stage, reason_code, signature)</strong> One row per distinct RunEvent failure shape per project. The signature is sha1 of stage, reason code and a digit-stripped summary, so different batch sizes collapse into one cluster. Eval-miss clusters on Results → Failures are a separate feature and are not stored in this table.</p></details></li>
               <li><p class="quiz__q-text">How does augment_from_cluster close the loop?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It auto-merges the failed rows back into training</li>
-                  <li>It triggers a synthetic-data playbook seeded by the cluster's exemplars; the generated rows land with review_status pending and roll into the next training round after review</li>
-                  <li>It increases the learning rate</li>
-                  <li>It silences the cluster</li>
+                  <li>It retrains on the RunEvent payloads stored in failure_clusters</li>
+                  <li>It runs a cluster-targeted playbook; rows land pending review</li>
+                  <li>It copies the missed answer-key rows into the training split</li>
+                  <li>It raises the cluster label's class weight for the next run</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. It triggers a synthetic-data playbook seeded by the cluster's exemplars; the generated rows land with review_status pending and roll into the next training round after review</strong> Cluster → generation seed → review queue → next training round. The whole loop is audited; nothing trains without review.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. It runs a cluster-targeted playbook; rows land pending review</strong> It takes an eval-miss cluster (reason, output pattern, exemplar rows) from an eval result and runs the CLUSTER_TARGETED synthetic playbook; the new rows wait in the review queue. It never reads the failure_clusters table, and copying answer-key rows into training would leak the test set.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

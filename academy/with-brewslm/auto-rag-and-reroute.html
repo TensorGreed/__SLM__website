@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "When does the decision engine recommend retrieval over more fine-tuning?",
-          "text": "When does the decision engine recommend retrieval over more fine-tuning?",
+          "name": "Which signal is the measured case for switching a project to retrieval?",
+          "text": "Which signal is the measured case for switching a project to retrieval?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "Always"
+              "text": "The heuristic recommender returns try_rag for the brief"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "When the GPU is small"
+              "text": "The fine-tune's training loss plateaus above the baseline curve"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Never"
+              "text": "Results → Failures shows a large cluster of formatting misses"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "When failures look knowledge-bound (fluent but factually wrong)",
+            "text": "Base model + passages beats the fine-tune on the same judge",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Knowledge gaps are a retrieval problem, not a fine-tuning one."
+              "text": "The Coach rule eval:passages-beat-finetune fires when the judged base-model-plus-passages score beats the fine-tune under the same judge. The post-eval recommender's try_rag is a heuristic (brief phrasing, answer diversity, output/input length ratio); it does not read failure clusters."
             }
           }
         },
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Retrains the model"
+              "position": 1,
+              "text": "Retrains the adapter on the retrieved passages before answering"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "Merges the adapter"
+              "text": "Swaps in a fine-tuned embedding model for the base"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Exports to GGUF"
+              "text": "Appends the closest answer-key row as a few-shot example"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Prepends top-K BM25-retrieved passages to the prompt",
+            "position": 0,
+            "text": "Prepends the top-K BM25-retrieved passages to the prompt",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "It adds retrieved context in front of the prompt before generation."
+              "text": "It retrieves the top-K passages (default 3) with BM25 and puts them in front of the prompt; no weights change. The index is built from the project's training rows plus document passages — never the answer key, which would leak the test answers."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The LoRA adapter only"
+              "position": 1,
+              "text": "The parent's LoRA adapter plus retrieval"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "A bigger model"
+              "text": "A larger base model fine-tuned on the parent's passages"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "No model"
+              "text": "A copy of the parent's merged checkpoint with a longer context"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The base model plus retrieval, no LoRA",
+            "position": 0,
+            "text": "The base model plus retrieved passages, with no LoRA adapter",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "rag_first=True means base model + retrieval, adapter-free."
+              "text": "Reroute clones the project as a RAG-first sibling (rag_first=True): the base model answers with retrieved passages and no adapter."
             }
           }
         },
@@ -185,32 +185,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "The decision engine recommending RAG means…",
-          "text": "The decision engine recommending RAG means…",
+          "name": "The post-eval recommender returns try_rag, but no passages-vs-fine-tune comparison has run yet. How should you treat it?",
+          "text": "The post-eval recommender returns try_rag, but no passages-vs-fine-tune comparison has run yet. How should you treat it?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Your fine-tune failed shamefully"
+              "position": 1,
+              "text": "As proof the fine-tune failed and should be deleted"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "You need more GPUs"
+              "text": "As a measured verdict that retrieval beats this fine-tune on the judge"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "Evaluation is broken"
+              "text": "As a sign the eval pack is misconfigured and the results are invalid"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The platform is steering you to the right tool for a knowledge-bound task",
+            "position": 0,
+            "text": "As a heuristic lead to test with the auto-RAG comparison",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Knowing when not to fine-tune is a feature, not a failure."
+              "text": "The recommender works from heuristics (brief wording, answer diversity, length ratio), so it is a lead, not a measurement. The auto-RAG comparison scores base + passages against the fine-tune on the same rows; that is the evidence."
             }
           }
         }
@@ -343,89 +343,89 @@
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "When does the decision engine recommend retrieval over more fine-tuning?",
-    "options": [
-      "Always",
-      "When failures look knowledge-bound (fluent but factually wrong)",
-      "When the GPU is small",
-      "Never"
-    ],
-    "answer": 1,
-    "explanation": "Knowledge gaps are a retrieval problem, not a fine-tuning one."
-  },
-  {
-    "q": "What does auto-RAG do at inference?",
-    "options": [
-      "Retrains the model",
-      "Prepends top-K BM25-retrieved passages to the prompt",
-      "Merges the adapter",
-      "Exports to GGUF"
-    ],
-    "answer": 1,
-    "explanation": "It adds retrieved context in front of the prompt before generation."
-  },
-  {
-    "q": "A reroute-to-RAG sibling project uses\u2026",
-    "options": [
-      "The LoRA adapter only",
-      "The base model plus retrieval, no LoRA",
-      "A bigger model",
-      "No model"
-    ],
-    "answer": 1,
-    "explanation": "rag_first=True means base model + retrieval, adapter-free."
-  },
-  {
-    "q": "The decision engine recommending RAG means\u2026",
-    "options": [
-      "Your fine-tune failed shamefully",
-      "The platform is steering you to the right tool for a knowledge-bound task",
-      "You need more GPUs",
-      "Evaluation is broken"
-    ],
-    "answer": 1,
-    "explanation": "Knowing when not to fine-tune is a feature, not a failure."
-  }
-]
+            [
+              {
+                "q": "Which signal is the measured case for switching a project to retrieval?",
+                "options": [
+                  "The heuristic recommender returns try_rag for the brief",
+                  "Base model + passages beats the fine-tune on the same judge",
+                  "The fine-tune's training loss plateaus above the baseline curve",
+                  "Results → Failures shows a large cluster of formatting misses"
+                ],
+                "answer": 1,
+                "explanation": "The Coach rule eval:passages-beat-finetune fires when the judged base-model-plus-passages score beats the fine-tune under the same judge. The post-eval recommender's try_rag is a heuristic (brief phrasing, answer diversity, output/input length ratio); it does not read failure clusters."
+              },
+              {
+                "q": "What does auto-RAG do at inference?",
+                "options": [
+                  "Prepends the top-K BM25-retrieved passages to the prompt",
+                  "Retrains the adapter on the retrieved passages before answering",
+                  "Swaps in a fine-tuned embedding model for the base",
+                  "Appends the closest answer-key row as a few-shot example"
+                ],
+                "answer": 0,
+                "explanation": "It retrieves the top-K passages (default 3) with BM25 and puts them in front of the prompt; no weights change. The index is built from the project's training rows plus document passages — never the answer key, which would leak the test answers."
+              },
+              {
+                "q": "A reroute-to-RAG sibling project uses…",
+                "options": [
+                  "The base model plus retrieved passages, with no LoRA adapter",
+                  "The parent's LoRA adapter plus retrieval",
+                  "A larger base model fine-tuned on the parent's passages",
+                  "A copy of the parent's merged checkpoint with a longer context"
+                ],
+                "answer": 0,
+                "explanation": "Reroute clones the project as a RAG-first sibling (rag_first=True): the base model answers with retrieved passages and no adapter."
+              },
+              {
+                "q": "The post-eval recommender returns try_rag, but no passages-vs-fine-tune comparison has run yet. How should you treat it?",
+                "options": [
+                  "As a heuristic lead to test with the auto-RAG comparison",
+                  "As proof the fine-tune failed and should be deleted",
+                  "As a measured verdict that retrieval beats this fine-tune on the judge",
+                  "As a sign the eval pack is misconfigured and the results are invalid"
+                ],
+                "answer": 0,
+                "explanation": "The recommender works from heuristics (brief wording, answer diversity, length ratio), so it is a lead, not a measurement. The auto-RAG comparison scores base + passages against the fine-tune on the same rows; that is the evidence."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">When does the decision engine recommend retrieval over more fine-tuning?</p>
+              <li><p class="quiz__q-text">Which signal is the measured case for switching a project to retrieval?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Always</li>
-                  <li>When failures look knowledge-bound (fluent but factually wrong)</li>
-                  <li>When the GPU is small</li>
-                  <li>Never</li>
+                  <li>The heuristic recommender returns try_rag for the brief</li>
+                  <li>Base model + passages beats the fine-tune on the same judge</li>
+                  <li>The fine-tune's training loss plateaus above the baseline curve</li>
+                  <li>Results → Failures shows a large cluster of formatting misses</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. When failures look knowledge-bound (fluent but factually wrong)</strong> Knowledge gaps are a retrieval problem, not a fine-tuning one.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Base model + passages beats the fine-tune on the same judge</strong> The Coach rule eval:passages-beat-finetune fires when the judged base-model-plus-passages score beats the fine-tune under the same judge. The post-eval recommender's try_rag is a heuristic (brief phrasing, answer diversity, output/input length ratio); it does not read failure clusters.</p></details></li>
               <li><p class="quiz__q-text">What does auto-RAG do at inference?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Retrains the model</li>
-                  <li>Prepends top-K BM25-retrieved passages to the prompt</li>
-                  <li>Merges the adapter</li>
-                  <li>Exports to GGUF</li>
+                  <li>Prepends the top-K BM25-retrieved passages to the prompt</li>
+                  <li>Retrains the adapter on the retrieved passages before answering</li>
+                  <li>Swaps in a fine-tuned embedding model for the base</li>
+                  <li>Appends the closest answer-key row as a few-shot example</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Prepends top-K BM25-retrieved passages to the prompt</strong> It adds retrieved context in front of the prompt before generation.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Prepends the top-K BM25-retrieved passages to the prompt</strong> It retrieves the top-K passages (default 3) with BM25 and puts them in front of the prompt; no weights change. The index is built from the project's training rows plus document passages — never the answer key, which would leak the test answers.</p></details></li>
               <li><p class="quiz__q-text">A reroute-to-RAG sibling project uses…</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The LoRA adapter only</li>
-                  <li>The base model plus retrieval, no LoRA</li>
-                  <li>A bigger model</li>
-                  <li>No model</li>
+                  <li>The base model plus retrieved passages, with no LoRA adapter</li>
+                  <li>The parent's LoRA adapter plus retrieval</li>
+                  <li>A larger base model fine-tuned on the parent's passages</li>
+                  <li>A copy of the parent's merged checkpoint with a longer context</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The base model plus retrieval, no LoRA</strong> rag_first=True means base model + retrieval, adapter-free.</p></details></li>
-              <li><p class="quiz__q-text">The decision engine recommending RAG means…</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The base model plus retrieved passages, with no LoRA adapter</strong> Reroute clones the project as a RAG-first sibling (rag_first=True): the base model answers with retrieved passages and no adapter.</p></details></li>
+              <li><p class="quiz__q-text">The post-eval recommender returns try_rag, but no passages-vs-fine-tune comparison has run yet. How should you treat it?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Your fine-tune failed shamefully</li>
-                  <li>The platform is steering you to the right tool for a knowledge-bound task</li>
-                  <li>You need more GPUs</li>
-                  <li>Evaluation is broken</li>
+                  <li>As a heuristic lead to test with the auto-RAG comparison</li>
+                  <li>As proof the fine-tune failed and should be deleted</li>
+                  <li>As a measured verdict that retrieval beats this fine-tune on the judge</li>
+                  <li>As a sign the eval pack is misconfigured and the results are invalid</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The platform is steering you to the right tool for a knowledge-bound task</strong> Knowing when not to fine-tune is a feature, not a failure.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. As a heuristic lead to test with the auto-RAG comparison</strong> The recommender works from heuristics (brief wording, answer diversity, length ratio), so it is a lead, not a measurement. The auto-RAG comparison scores base + passages against the fine-tune on the same rows; that is the evidence.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

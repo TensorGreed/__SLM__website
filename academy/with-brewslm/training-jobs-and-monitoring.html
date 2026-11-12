@@ -91,24 +91,24 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Synchronously"
+              "position": 1,
+              "text": "Synchronously inside the HTTP request"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "On the client"
+              "text": "In a browser web worker on the client"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "It doesn't train"
+              "text": "As a cron task the worker picks up at the next scheduled interval"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "As a background Job tracked by the notification bell",
+            "position": 0,
+            "text": "As a background Job that the notification bell tracks",
             "answerExplanation": {
               "@type": "Comment",
               "text": "Training is a background Job launched from the Train form; the bell polls /api/jobs/active for progress."
@@ -124,27 +124,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The GPU temperature"
+              "position": 1,
+              "text": "The eval-score gap between the base model and the fine-tune, per step"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The export format"
+              "text": "The GPU memory used at each step of the run"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The token count"
+              "text": "The learning-rate schedule's warmup and decay"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Whether and by how much you're improving on the run's starting loss",
+            "position": 0,
+            "text": "How far the training loss has moved from its starting value",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The starting loss is the zero line; the curve shows the lift your rows add. The base-vs-fine-tune verdict itself is on Results → Verdict."
+              "text": "The starting loss is the zero line; the curve shows how much the run improves on it. The base-vs-fine-tune verdict itself is on Results → Verdict."
             }
           }
         },
@@ -152,32 +152,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "A run exhausts GPU memory. Which RunEvent fires?",
-          "text": "A run exhausts GPU memory. Which RunEvent fires?",
+          "name": "A real run is killed partway through, most likely by the system running out of memory. Where do you learn the cause?",
+          "text": "A real run is killed partway through, most likely by the system running out of memory. Where do you learn the cause?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
               "position": 0,
-              "text": "training_timeout"
+              "text": "A training_oom RunEvent on Ship → Monitor"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "training_cancelled"
+              "text": "A training_cancelled entry in the notification bell"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "export_run_failed"
+              "text": "The preflight report, rerun after the failure"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "training_oom",
+            "text": "The failure banner (code signal) and log tail",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "training_oom is the named out-of-memory event."
+              "text": "Real runs record a failure code — timeout, signal, exit or error — and the banner says 'killed by a signal … often the system running out of memory'. training_oom and training_cancelled are declared but never emitted."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "To speed it up"
+              "position": 1,
+              "text": "So the event loop gives it a higher scheduling priority than requests"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "To save memory"
+              "text": "So a cancel request can't reach it mid-run"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "To skip preflight"
+              "text": "So its memory is freed as soon as it finishes"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
+            "position": 0,
             "text": "So the garbage collector can't silently kill it mid-run",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The Job framework keeps a strong ref to prevent silent GC of the task."
+              "text": "An asyncio task whose only reference is a local variable can be garbage-collected mid-run; the Job framework keeps strong refs to prevent that."
             }
           }
         }
@@ -352,52 +352,52 @@ training_cancelled             # you cancelled it</code></pre>
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "How does BrewSLM run a training job so the request doesn't block?",
-    "options": [
-      "Synchronously",
-      "As a background Job tracked by the notification bell",
-      "On the client",
-      "It doesn't train"
-    ],
-    "answer": 1,
-    "explanation": "Training is a background Job launched from the Train form; the bell polls /api/jobs/active for progress."
-  },
-  {
-    "q": "What does the delta-from-baseline curve make explicit?",
-    "options": [
-      "The GPU temperature",
-      "Whether and by how much you're improving on the run's starting loss",
-      "The export format",
-      "The token count"
-    ],
-    "answer": 1,
-    "explanation": "The starting loss is the zero line; the curve shows the lift your rows add. The base-vs-fine-tune verdict itself is on Results → Verdict."
-  },
-  {
-    "q": "A run exhausts GPU memory. Which RunEvent fires?",
-    "options": [
-      "training_timeout",
-      "training_oom",
-      "training_cancelled",
-      "export_run_failed"
-    ],
-    "answer": 1,
-    "explanation": "training_oom is the named out-of-memory event."
-  },
-  {
-    "q": "Why hold a strong reference to the running task?",
-    "options": [
-      "To speed it up",
-      "So the garbage collector can't silently kill it mid-run",
-      "To save memory",
-      "To skip preflight"
-    ],
-    "answer": 1,
-    "explanation": "The Job framework keeps a strong ref to prevent silent GC of the task."
-  }
-]
+            [
+              {
+                "q": "How does BrewSLM run a training job so the request doesn't block?",
+                "options": [
+                  "As a background Job that the notification bell tracks",
+                  "Synchronously inside the HTTP request",
+                  "In a browser web worker on the client",
+                  "As a cron task the worker picks up at the next scheduled interval"
+                ],
+                "answer": 0,
+                "explanation": "Training is a background Job launched from the Train form; the bell polls /api/jobs/active for progress."
+              },
+              {
+                "q": "What does the delta-from-baseline curve make explicit?",
+                "options": [
+                  "How far the training loss has moved from its starting value",
+                  "The eval-score gap between the base model and the fine-tune, per step",
+                  "The GPU memory used at each step of the run",
+                  "The learning-rate schedule's warmup and decay"
+                ],
+                "answer": 0,
+                "explanation": "The starting loss is the zero line; the curve shows how much the run improves on it. The base-vs-fine-tune verdict itself is on Results → Verdict."
+              },
+              {
+                "q": "A real run is killed partway through, most likely by the system running out of memory. Where do you learn the cause?",
+                "options": [
+                  "A training_oom RunEvent on Ship → Monitor",
+                  "The failure banner (code signal) and log tail",
+                  "A training_cancelled entry in the notification bell",
+                  "The preflight report, rerun after the failure"
+                ],
+                "answer": 1,
+                "explanation": "Real runs record a failure code — timeout, signal, exit or error — and the banner says 'killed by a signal … often the system running out of memory'. training_oom and training_cancelled are declared but never emitted."
+              },
+              {
+                "q": "Why hold a strong reference to the running task?",
+                "options": [
+                  "So the garbage collector can't silently kill it mid-run",
+                  "So the event loop gives it a higher scheduling priority than requests",
+                  "So a cancel request can't reach it mid-run",
+                  "So its memory is freed as soon as it finishes"
+                ],
+                "answer": 0,
+                "explanation": "An asyncio task whose only reference is a local variable can be garbage-collected mid-run; the Job framework keeps strong refs to prevent that."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -405,36 +405,36 @@ training_cancelled             # you cancelled it</code></pre>
             <ol class="quiz__static">
               <li><p class="quiz__q-text">How does BrewSLM run a training job so the request doesn't block?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Synchronously</li>
-                  <li>As a background Job tracked by the notification bell</li>
-                  <li>On the client</li>
-                  <li>It doesn't train</li>
+                  <li>As a background Job that the notification bell tracks</li>
+                  <li>Synchronously inside the HTTP request</li>
+                  <li>In a browser web worker on the client</li>
+                  <li>As a cron task the worker picks up at the next scheduled interval</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. As a background Job tracked by the notification bell</strong> Training is a background Job launched from the Train form; the bell polls /api/jobs/active for progress.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. As a background Job that the notification bell tracks</strong> Training is a background Job launched from the Train form; the bell polls /api/jobs/active for progress.</p></details></li>
               <li><p class="quiz__q-text">What does the delta-from-baseline curve make explicit?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The GPU temperature</li>
-                  <li>Whether and by how much you're improving on the run's starting loss</li>
-                  <li>The export format</li>
-                  <li>The token count</li>
+                  <li>How far the training loss has moved from its starting value</li>
+                  <li>The eval-score gap between the base model and the fine-tune, per step</li>
+                  <li>The GPU memory used at each step of the run</li>
+                  <li>The learning-rate schedule's warmup and decay</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Whether and by how much you're improving on the run's starting loss</strong> The starting loss is the zero line; the curve shows the lift your rows add. The base-vs-fine-tune verdict itself is on Results → Verdict.</p></details></li>
-              <li><p class="quiz__q-text">A run exhausts GPU memory. Which RunEvent fires?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. How far the training loss has moved from its starting value</strong> The starting loss is the zero line; the curve shows how much the run improves on it. The base-vs-fine-tune verdict itself is on Results → Verdict.</p></details></li>
+              <li><p class="quiz__q-text">A real run is killed partway through, most likely by the system running out of memory. Where do you learn the cause?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>training_timeout</li>
-                  <li>training_oom</li>
-                  <li>training_cancelled</li>
-                  <li>export_run_failed</li>
+                  <li>A training_oom RunEvent on Ship → Monitor</li>
+                  <li>The failure banner (code signal) and log tail</li>
+                  <li>A training_cancelled entry in the notification bell</li>
+                  <li>The preflight report, rerun after the failure</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. training_oom</strong> training_oom is the named out-of-memory event.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The failure banner (code signal) and log tail</strong> Real runs record a failure code — timeout, signal, exit or error — and the banner says 'killed by a signal … often the system running out of memory'. training_oom and training_cancelled are declared but never emitted.</p></details></li>
               <li><p class="quiz__q-text">Why hold a strong reference to the running task?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>To speed it up</li>
                   <li>So the garbage collector can't silently kill it mid-run</li>
-                  <li>To save memory</li>
-                  <li>To skip preflight</li>
+                  <li>So the event loop gives it a higher scheduling priority than requests</li>
+                  <li>So a cancel request can't reach it mid-run</li>
+                  <li>So its memory is freed as soon as it finishes</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. So the garbage collector can't silently kill it mid-run</strong> The Job framework keeps a strong ref to prevent silent GC of the task.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. So the garbage collector can't silently kill it mid-run</strong> An asyncio task whose only reference is a local variable can be garbage-collected mid-run; the Job framework keeps strong refs to prevent that.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

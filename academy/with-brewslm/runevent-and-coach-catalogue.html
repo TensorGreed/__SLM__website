@@ -92,26 +92,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "It's stored as-is"
+              "text": "It's stored with reason_code null and a warning is logged instead"
             },
             {
               "@type": "Answer",
               "position": 1,
-              "text": "It's silently dropped"
+              "text": "emit_event raises invalid_reason_code:\u003cvalue>"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The Coach picks one"
+              "text": "The Coach assigns the closest known code"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 2,
-            "text": "The service boundary rejects it (invalid_reason_code:\u003cvalue>)",
+            "text": "emit_event raises reason_code_required; the event is dropped",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The reason-code taxonomy is lint-gated at emit time. Error and critical events must carry a known code or the emit is rejected."
+              "text": "A missing code raises reason_code_required; invalid_reason_code:\u003cvalue> is for an unknown code. The check is a runtime validation in emit_event for error and critical events. Call sites swallow the exception, so in practice the event is dropped and logged."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "Which RunEvent stage is the right tag for a model export quantization failure?",
-          "text": "Which RunEvent stage is the right tag for a model export quantization failure?",
+          "name": "An export run fails today. Which stage and reason code does its RunEvent carry?",
+          "text": "An export run fails today. Which stage and reason code does its RunEvent carry?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "training"
+              "position": 1,
+              "text": "export / export_quantization_failed"
             },
             {
               "@type": "Answer",
-              "position": 1,
-              "text": "deployment"
+              "position": 2,
+              "text": "deployment / deployment_promote_blocked"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "system"
+              "text": "export / export_artifact_missing"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 2,
-            "text": "export — and the reason code would be export_quantization_failed",
+            "position": 0,
+            "text": "export / export_run_failed",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Export stage. The taxonomy includes export_run_failed, export_artifact_missing, and export_quantization_failed."
+              "text": "export_run_failed is the export code actually emitted. export_quantization_failed and export_artifact_missing are declared in the taxonomy but nothing emits them yet, and deployment emits info events only."
             }
           }
         },
@@ -158,26 +158,26 @@
             {
               "@type": "Answer",
               "position": 0,
-              "text": "True — that's how they get fresh data"
+              "text": "True — generators refresh project state on each render"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "True only for run_playbook actions"
+              "text": "True, but only for run_playbook and start_flow actions"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "False except when inline tips are off"
+              "text": "False, except when inline tips are turned off in Settings"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 1,
-            "text": "False — generators are read-only; side effects happen ONLY when the user clicks the action button on the notice",
+            "text": "False — side effects run only when you click the action",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Generators don't mutate project state. The action payload tells the frontend what to call on click; that's where any side effect happens."
+              "text": "Generators are read-only. The action payload tells the frontend what to call on click; that is where any side effect happens."
             }
           }
         },
@@ -201,16 +201,16 @@
             {
               "@type": "Answer",
               "position": 3,
-              "text": "system"
+              "text": "reroute_to_rag (open the sibling)"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 2,
-            "text": "augment_from_cluster — open the cluster as a generation source",
+            "text": "augment_from_cluster",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "augment_from_cluster takes the cluster id and a suggested top-up — the canonical 'fix the data that broke me' loop."
+              "text": "augment_from_cluster takes the cluster id and a suggested top-up — the 'fix the data that broke me' loop. run_playbook is generic generation, and reroute_to_rag is for knowledge-bound tasks."
             }
           }
         }
@@ -478,24 +478,52 @@ SUGGESTED_TOPUP_CEILING       500   # don't suggest above this</code></pre>
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {"q": "An error-severity RunEvent is emitted without a reason_code. What happens?",
-   "options": ["It's stored as-is", "It's silently dropped", "The service boundary rejects it (invalid_reason_code:<value>)", "The Coach picks one"],
-   "answer": 2,
-   "explanation": "The reason-code taxonomy is lint-gated at emit time. Error and critical events must carry a known code or the emit is rejected."},
-  {"q": "Which RunEvent stage is the right tag for a model export quantization failure?",
-   "options": ["training", "deployment", "export — and the reason code would be export_quantization_failed", "system"],
-   "answer": 2,
-   "explanation": "Export stage. The taxonomy includes export_run_failed, export_artifact_missing, and export_quantization_failed."},
-  {"q": "Coach suggestions can call the backend on render. True or false?",
-   "options": ["True — that's how they get fresh data", "False — generators are read-only; side effects happen ONLY when the user clicks the action button on the notice", "True only for run_playbook actions", "False except when inline tips are off"],
-   "answer": 1,
-   "explanation": "Generators don't mutate project state. The action payload tells the frontend what to call on click; that's where any side effect happens."},
-  {"q": "After an eval surfaces a failure cluster of similar errors, the natural Coach action kind is…",
-   "options": ["navigate", "run_playbook", "augment_from_cluster — open the cluster as a generation source", "system"],
-   "answer": 2,
-   "explanation": "augment_from_cluster takes the cluster id and a suggested top-up — the canonical 'fix the data that broke me' loop."}
-]
+            [
+              {
+                "q": "An error-severity RunEvent is emitted without a reason_code. What happens?",
+                "options": [
+                  "It's stored with reason_code null and a warning is logged instead",
+                  "emit_event raises invalid_reason_code:<value>",
+                  "emit_event raises reason_code_required; the event is dropped",
+                  "The Coach assigns the closest known code"
+                ],
+                "answer": 2,
+                "explanation": "A missing code raises reason_code_required; invalid_reason_code:<value> is for an unknown code. The check is a runtime validation in emit_event for error and critical events. Call sites swallow the exception, so in practice the event is dropped and logged."
+              },
+              {
+                "q": "An export run fails today. Which stage and reason code does its RunEvent carry?",
+                "options": [
+                  "export / export_run_failed",
+                  "export / export_quantization_failed",
+                  "deployment / deployment_promote_blocked",
+                  "export / export_artifact_missing"
+                ],
+                "answer": 0,
+                "explanation": "export_run_failed is the export code actually emitted. export_quantization_failed and export_artifact_missing are declared in the taxonomy but nothing emits them yet, and deployment emits info events only."
+              },
+              {
+                "q": "Coach suggestions can call the backend on render. True or false?",
+                "options": [
+                  "True — generators refresh project state on each render",
+                  "False — side effects run only when you click the action",
+                  "True, but only for run_playbook and start_flow actions",
+                  "False, except when inline tips are turned off in Settings"
+                ],
+                "answer": 1,
+                "explanation": "Generators are read-only. The action payload tells the frontend what to call on click; that is where any side effect happens."
+              },
+              {
+                "q": "After an eval surfaces a failure cluster of similar errors, the natural Coach action kind is…",
+                "options": [
+                  "navigate",
+                  "run_playbook",
+                  "augment_from_cluster",
+                  "reroute_to_rag (open the sibling)"
+                ],
+                "answer": 2,
+                "explanation": "augment_from_cluster takes the cluster id and a suggested top-up — the 'fix the data that broke me' loop. run_playbook is generic generation, and reroute_to_rag is for knowledge-bound tasks."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
@@ -503,36 +531,36 @@ SUGGESTED_TOPUP_CEILING       500   # don't suggest above this</code></pre>
             <ol class="quiz__static">
               <li><p class="quiz__q-text">An error-severity RunEvent is emitted without a reason_code. What happens?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>It's stored as-is</li>
-                  <li>It's silently dropped</li>
-                  <li>The service boundary rejects it (invalid_reason_code:&lt;value&gt;)</li>
-                  <li>The Coach picks one</li>
+                  <li>It's stored with reason_code null and a warning is logged instead</li>
+                  <li>emit_event raises invalid_reason_code:&lt;value&gt;</li>
+                  <li>emit_event raises reason_code_required; the event is dropped</li>
+                  <li>The Coach assigns the closest known code</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The service boundary rejects it (invalid_reason_code:&lt;value&gt;)</strong> The reason-code taxonomy is lint-gated at emit time. Error and critical events must carry a known code or the emit is rejected.</p></details></li>
-              <li><p class="quiz__q-text">Which RunEvent stage is the right tag for a model export quantization failure?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. emit_event raises reason_code_required; the event is dropped</strong> A missing code raises reason_code_required; invalid_reason_code:&lt;value&gt; is for an unknown code. The check is a runtime validation in emit_event for error and critical events. Call sites swallow the exception, so in practice the event is dropped and logged.</p></details></li>
+              <li><p class="quiz__q-text">An export run fails today. Which stage and reason code does its RunEvent carry?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>training</li>
-                  <li>deployment</li>
-                  <li>export — and the reason code would be export_quantization_failed</li>
-                  <li>system</li>
+                  <li>export / export_run_failed</li>
+                  <li>export / export_quantization_failed</li>
+                  <li>deployment / deployment_promote_blocked</li>
+                  <li>export / export_artifact_missing</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. export — and the reason code would be export_quantization_failed</strong> Export stage. The taxonomy includes export_run_failed, export_artifact_missing, and export_quantization_failed.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. export / export_run_failed</strong> export_run_failed is the export code actually emitted. export_quantization_failed and export_artifact_missing are declared in the taxonomy but nothing emits them yet, and deployment emits info events only.</p></details></li>
               <li><p class="quiz__q-text">Coach suggestions can call the backend on render. True or false?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>True — that's how they get fresh data</li>
-                  <li>False — generators are read-only; side effects happen ONLY when the user clicks the action button on the notice</li>
-                  <li>True only for run_playbook actions</li>
-                  <li>False except when inline tips are off</li>
+                  <li>True — generators refresh project state on each render</li>
+                  <li>False — side effects run only when you click the action</li>
+                  <li>True, but only for run_playbook and start_flow actions</li>
+                  <li>False, except when inline tips are turned off in Settings</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. False — generators are read-only; side effects happen ONLY when the user clicks the action button on the notice</strong> Generators don't mutate project state. The action payload tells the frontend what to call on click; that's where any side effect happens.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. False — side effects run only when you click the action</strong> Generators are read-only. The action payload tells the frontend what to call on click; that is where any side effect happens.</p></details></li>
               <li><p class="quiz__q-text">After an eval surfaces a failure cluster of similar errors, the natural Coach action kind is…</p>
                 <ol class="quiz__static-options" type="A">
                   <li>navigate</li>
                   <li>run_playbook</li>
-                  <li>augment_from_cluster — open the cluster as a generation source</li>
-                  <li>system</li>
+                  <li>augment_from_cluster</li>
+                  <li>reroute_to_rag (open the sibling)</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. augment_from_cluster — open the cluster as a generation source</strong> augment_from_cluster takes the cluster id and a suggested top-up — the canonical 'fix the data that broke me' loop.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. augment_from_cluster</strong> augment_from_cluster takes the cluster id and a suggested top-up — the 'fix the data that broke me' loop. run_playbook is generic generation, and reroute_to_rag is for knowledge-bound tasks.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->

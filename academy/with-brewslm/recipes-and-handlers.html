@@ -86,32 +86,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "A recipe is the declarative form of which Track 2 code?",
-          "text": "A recipe is the declarative form of which Track 2 code?",
+          "name": "Which BrewSLM object holds what you set by hand in TrainingArguments + LoraConfig?",
+          "text": "Which BrewSLM object holds what you set by hand in TrainingArguments + LoraConfig?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The dataset list"
+              "position": 1,
+              "text": "A recipe YAML block inside the prepared manifest, next to the task profile"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The predict() helper"
+              "text": "The task-shape recipe (qa-sft, classification…)"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "merge_and_unload"
+              "text": "The eval pack's metric_schema and gate list"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "TrainingArguments + LoraConfig",
+            "position": 0,
+            "text": "TrainingConfig, the schema in backend/app/schemas/training.py",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "A recipe captures the same hyperparameters you set by hand."
+              "text": "TrainingConfig carries lora_r, learning_rate, batch_size, gradient_accumulation_steps and the rest. Task-shape recipes carry no hyperparameters, and training presets are patches applied to a TrainingConfig."
             }
           }
         },
@@ -119,32 +119,32 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "What picks the task handler for a run?",
-          "text": "What picks the task handler for a run?",
+          "name": "What picks the task handler that scores an evaluation?",
+          "text": "What picks the task handler that scores an evaluation?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The export format"
+              "position": 1,
+              "text": "The training preset chosen on the Train form for this experiment"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The learning rate"
+              "text": "The export format picked on Ship → Package"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The notification bell"
+              "text": "The base model's architecture family"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "The manifest's task_profile, via the dispatcher",
+            "position": 0,
+            "text": "The task_profile, routed through the eval dispatcher",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "task_profile routes through the dispatcher to a handler."
+              "text": "The eval dispatcher routes the task_profile to a handler (with a Generic fallback)."
             }
           }
         },
@@ -157,27 +157,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "Branding"
+              "position": 1,
+              "text": "Domain handlers would need a separate base model each"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "To save memory"
+              "text": "Task shapes need fewer training rows than domains do"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "To require less data"
+              "text": "Domain names can't be stored in the task_profile field"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "So one general handler serves many domains via a scoring mode",
+            "position": 0,
+            "text": "So one handler serves many domains via a scoring mode",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Task-shape generality keeps the platform broadly applicable."
+              "text": "Task-shape generality keeps the platform broadly applicable: a handler plus a scoring mode (field_match, span_set, finding_set, remediation, structured_plan, multi_option) covers many domains."
             }
           }
         },
@@ -190,27 +190,27 @@
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "position": 0,
-              "text": "The GPU driver"
+              "position": 1,
+              "text": "Tokenization, the -100 label mask, and score() for each output"
             },
             {
               "@type": "Answer",
               "position": 2,
-              "text": "The source locator"
+              "text": "The chat template and the LoRA target modules"
             },
             {
               "@type": "Answer",
               "position": 3,
-              "text": "The deployment endpoint"
+              "text": "The train / val / test split and its hashes"
             }
           ],
           "acceptedAnswer": {
             "@type": "Answer",
-            "position": 1,
-            "text": "Tokenization, label masking, and score()",
+            "position": 0,
+            "text": "Building the eval prompt and the score() of each output",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The handler carries the tokenize/mask/score mechanics, picked by shape."
+              "text": "Handlers are evaluation-only: build_prompts() and score(). Tokenization and the -100 loss mask live in the trainer (scripts/train.py)."
             }
           }
         }
@@ -350,89 +350,89 @@ AudioTranscriptHandler       SafetyHandler</code></pre>
           <h2 class="quiz__title">Check yourself</h2>
           <p class="quiz__intro">Answers are saved to this browser.</p>
           <script type="application/json">
-[
-  {
-    "q": "A recipe is the declarative form of which Track 2 code?",
-    "options": [
-      "The dataset list",
-      "TrainingArguments + LoraConfig",
-      "The predict() helper",
-      "merge_and_unload"
-    ],
-    "answer": 1,
-    "explanation": "A recipe captures the same hyperparameters you set by hand."
-  },
-  {
-    "q": "What picks the task handler for a run?",
-    "options": [
-      "The export format",
-      "The manifest's task_profile, via the dispatcher",
-      "The learning rate",
-      "The notification bell"
-    ],
-    "answer": 1,
-    "explanation": "task_profile routes through the dispatcher to a handler."
-  },
-  {
-    "q": "Why are handlers named after task shapes (Classification, QA) not domains (Invoice, PII)?",
-    "options": [
-      "Branding",
-      "So one general handler serves many domains via a scoring mode",
-      "To save memory",
-      "To require less data"
-    ],
-    "answer": 1,
-    "explanation": "Task-shape generality keeps the platform broadly applicable."
-  },
-  {
-    "q": "What does the task handler own that your script wrote by hand?",
-    "options": [
-      "The GPU driver",
-      "Tokenization, label masking, and score()",
-      "The source locator",
-      "The deployment endpoint"
-    ],
-    "answer": 1,
-    "explanation": "The handler carries the tokenize/mask/score mechanics, picked by shape."
-  }
-]
+            [
+              {
+                "q": "Which BrewSLM object holds what you set by hand in TrainingArguments + LoraConfig?",
+                "options": [
+                  "TrainingConfig, the schema in backend/app/schemas/training.py",
+                  "A recipe YAML block inside the prepared manifest, next to the task profile",
+                  "The task-shape recipe (qa-sft, classification…)",
+                  "The eval pack's metric_schema and gate list"
+                ],
+                "answer": 0,
+                "explanation": "TrainingConfig carries lora_r, learning_rate, batch_size, gradient_accumulation_steps and the rest. Task-shape recipes carry no hyperparameters, and training presets are patches applied to a TrainingConfig."
+              },
+              {
+                "q": "What picks the task handler that scores an evaluation?",
+                "options": [
+                  "The task_profile, routed through the eval dispatcher",
+                  "The training preset chosen on the Train form for this experiment",
+                  "The export format picked on Ship → Package",
+                  "The base model's architecture family"
+                ],
+                "answer": 0,
+                "explanation": "The eval dispatcher routes the task_profile to a handler (with a Generic fallback)."
+              },
+              {
+                "q": "Why are handlers named after task shapes (Classification, QA) not domains (Invoice, PII)?",
+                "options": [
+                  "So one handler serves many domains via a scoring mode",
+                  "Domain handlers would need a separate base model each",
+                  "Task shapes need fewer training rows than domains do",
+                  "Domain names can't be stored in the task_profile field"
+                ],
+                "answer": 0,
+                "explanation": "Task-shape generality keeps the platform broadly applicable: a handler plus a scoring mode (field_match, span_set, finding_set, remediation, structured_plan, multi_option) covers many domains."
+              },
+              {
+                "q": "What does the task handler own that your script wrote by hand?",
+                "options": [
+                  "Building the eval prompt and the score() of each output",
+                  "Tokenization, the -100 label mask, and score() for each output",
+                  "The chat template and the LoRA target modules",
+                  "The train / val / test split and its hashes"
+                ],
+                "answer": 0,
+                "explanation": "Handlers are evaluation-only: build_prompts() and score(). Tokenization and the -100 loss mask live in the trainer (scripts/train.py)."
+              }
+            ]
           </script>
           <!-- site:quiz: generated by _build/site.py from the quiz JSON above; edit that, not this -->
           <noscript>
             <p class="quiz__intro">JavaScript is off, so the quiz is shown as a list. Pick your answer, then open “Show answer”.</p>
             <ol class="quiz__static">
-              <li><p class="quiz__q-text">A recipe is the declarative form of which Track 2 code?</p>
+              <li><p class="quiz__q-text">Which BrewSLM object holds what you set by hand in TrainingArguments + LoraConfig?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The dataset list</li>
-                  <li>TrainingArguments + LoraConfig</li>
-                  <li>The predict() helper</li>
-                  <li>merge_and_unload</li>
+                  <li>TrainingConfig, the schema in backend/app/schemas/training.py</li>
+                  <li>A recipe YAML block inside the prepared manifest, next to the task profile</li>
+                  <li>The task-shape recipe (qa-sft, classification…)</li>
+                  <li>The eval pack's metric_schema and gate list</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. TrainingArguments + LoraConfig</strong> A recipe captures the same hyperparameters you set by hand.</p></details></li>
-              <li><p class="quiz__q-text">What picks the task handler for a run?</p>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. TrainingConfig, the schema in backend/app/schemas/training.py</strong> TrainingConfig carries lora_r, learning_rate, batch_size, gradient_accumulation_steps and the rest. Task-shape recipes carry no hyperparameters, and training presets are patches applied to a TrainingConfig.</p></details></li>
+              <li><p class="quiz__q-text">What picks the task handler that scores an evaluation?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The export format</li>
-                  <li>The manifest's task_profile, via the dispatcher</li>
-                  <li>The learning rate</li>
-                  <li>The notification bell</li>
+                  <li>The task_profile, routed through the eval dispatcher</li>
+                  <li>The training preset chosen on the Train form for this experiment</li>
+                  <li>The export format picked on Ship → Package</li>
+                  <li>The base model's architecture family</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. The manifest's task_profile, via the dispatcher</strong> task_profile routes through the dispatcher to a handler.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The task_profile, routed through the eval dispatcher</strong> The eval dispatcher routes the task_profile to a handler (with a Generic fallback).</p></details></li>
               <li><p class="quiz__q-text">Why are handlers named after task shapes (Classification, QA) not domains (Invoice, PII)?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>Branding</li>
-                  <li>So one general handler serves many domains via a scoring mode</li>
-                  <li>To save memory</li>
-                  <li>To require less data</li>
+                  <li>So one handler serves many domains via a scoring mode</li>
+                  <li>Domain handlers would need a separate base model each</li>
+                  <li>Task shapes need fewer training rows than domains do</li>
+                  <li>Domain names can't be stored in the task_profile field</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. So one general handler serves many domains via a scoring mode</strong> Task-shape generality keeps the platform broadly applicable.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. So one handler serves many domains via a scoring mode</strong> Task-shape generality keeps the platform broadly applicable: a handler plus a scoring mode (field_match, span_set, finding_set, remediation, structured_plan, multi_option) covers many domains.</p></details></li>
               <li><p class="quiz__q-text">What does the task handler own that your script wrote by hand?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The GPU driver</li>
-                  <li>Tokenization, label masking, and score()</li>
-                  <li>The source locator</li>
-                  <li>The deployment endpoint</li>
+                  <li>Building the eval prompt and the score() of each output</li>
+                  <li>Tokenization, the -100 label mask, and score() for each output</li>
+                  <li>The chat template and the LoRA target modules</li>
+                  <li>The train / val / test split and its hashes</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: B. Tokenization, label masking, and score()</strong> The handler carries the tokenize/mask/score mechanics, picked by shape.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Building the eval prompt and the score() of each output</strong> Handlers are evaluation-only: build_prompts() and score(). Tokenization and the -100 loss mask live in the trainer (scripts/train.py).</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->
