@@ -213,7 +213,7 @@
             "text": "Low pass rate plus retrieval-shaped signals; it clones a RAG-first sibling",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The card appears when the pass rate is below 0.5 and a retrieval signal fires: the brief mentions retrieval, or the answer key's answers are very diverse (mean pairwise Jaccard below 0.20). Switching creates a new sibling project with rag_first on — the base model answering with retrieval over your answer key, no LoRA — and carries the answer key forward. The original qa-sft project is untouched, so you can compare both. The sibling is not the rag-protocol recipe."
+              "text": "The card appears when the pass rate is below 0.5 and a retrieval signal fires: the brief mentions retrieval, or the answer key's answers are very diverse (mean pairwise Jaccard below 0.20). Switching creates a new sibling project with rag_first on — the base model answering with BM25 retrieval over the project's training rows, no LoRA — and carries the answer key forward. The original qa-sft project is untouched, so you can compare both. The sibling is not the rag-protocol recipe."
             }
           }
         },
@@ -335,7 +335,7 @@
         <header class="lesson-header">
           <span class="lesson-header__badge">Tutorial 5 · End-to-end · Internal KB</span>
           <h1>Internal knowledge-base QA via the qa-sft recipe — the simpler path</h1>
-          <p class="lesson-header__outcome">By the end of this tutorial you'll have a small language model that answers questions from your internal knowledge base — "how do I get VPN access?", "what's the office WiFi password?" — directly from its weights, with no retrieval index alongside. Inference runs around 200ms on a small GPU. The pipeline is intentionally lighter than the rag-protocol path: no citation discipline, no refusal phrase, no BM25 index to maintain. When facts are stable and the corpus is small, this is the right tool. When they're not, this tutorial covers the honest signal that says "graduate to rag-protocol" and the one-click reroute that does it for you.</p>
+          <p class="lesson-header__outcome">By the end of this tutorial you'll have a small language model that answers questions from your internal knowledge base — "how do I get VPN access?", "what's the office WiFi password?" — directly from its weights, with no retrieval index alongside. Inference runs around 200ms on a small GPU. The pipeline is intentionally lighter than the rag-protocol path: no citation discipline, no refusal phrase, no BM25 index to maintain. When facts are stable and the corpus is small, this is the right tool. When they're not, this tutorial covers the honest signal that says "this wants retrieval" and the one-click reroute that clones a retrieval-first sibling for you to compare.</p>
           <div class="lesson-meta">
             <span><strong>Level:</strong> intermediate</span>
             <span><strong>Time:</strong> ~1.5 hours total (less ceremony than the rag-protocol tutorial)</span>
@@ -345,7 +345,7 @@
 
         <div class="callout callout--note">
           <p class="callout__label">Before you start</p>
-          <p>This tutorial assumes BrewSLM is running locally at <code>http://localhost:5173</code> with an admin user signed in. If you haven't done that yet, complete <a class="inline-link" href="setup-brewslm.html"><strong>Tutorial 0 — Set up BrewSLM and your first project</strong></a> first. It takes ~15 minutes and is the prerequisite for every tutorial in this track.</p>
+          <p>This tutorial assumes BrewSLM is running locally at <code>http://localhost:5173</code> with an admin user signed in. If you haven't done that yet, complete <a class="inline-link" href="setup-brewslm.html"><strong>Tutorial 0 — Set up BrewSLM and your first project</strong></a> first. It takes ~15 minutes and is the prerequisite for every tutorial in this track. Training needs Redis and a running Celery worker; Tutorial 0 starts both.</p>
           <p>You'll also want, before you start: <strong>40-80 canonical Q&amp;A pairs</strong> from your internal knowledge base. Easiest sources: resolved internal-IT tickets, employee-handbook FAQ pages, Slack-canonical-answer threads (the ones with a thumbs-up emoji on the reply that gets reposted twice a month). If you don't have your own data yet, the public <a class="inline-link" href="https://huggingface.co/datasets/squad" target="_blank" rel="noopener noreferrer">SQuAD</a> dataset or <a class="inline-link" href="https://huggingface.co/datasets/natural_questions" target="_blank" rel="noopener noreferrer">Natural Questions</a> works for validating the workflow before you point at your own corpus.</p>
         </div>
 
@@ -353,13 +353,13 @@
           <summary><strong>Terms you'll see in this tutorial</strong> (click to expand)</summary>
           <dl>
             <dt>Recipe</dt><dd>The training-plan template you pick when creating a project. For this tutorial: <code>qa-sft</code>. Set under <strong>Train → Task → Change</strong>. Defines the base model + adapter + pass/fail rule defaults for direct-answer QA — no retrieval index, no citation marker, just (question, answer) supervised fine-tuning.</dd>
-            <dt>Adapter</dt><dd>The mapping layer that converts your CSV/JSONL rows into training-ready fields. For qa-sft the adapter is <code>qa-pair</code> — it reads a <code>question</code> column and an <code>expected</code> (answer) column. Rationale is optional.</dd>
+            <dt>Adapter</dt><dd>The mapping layer that converts your CSV/JSONL rows into training-ready fields. For qa-sft the adapter is <code>qa-pair</code> — for training it reads a <code>question</code> column and an <code>answer</code> column. Answer-key rows use <code>question</code> and <code>expected</code>, with an optional <code>rationale</code>.</dd>
             <dt>Task profile</dt><dd>The shape category the platform uses to pick eval handlers and synth playbooks. qa-sft's task profile is <code>instruction_sft</code> — same family as a generic SFT task, with QA-specific defaults layered on top.</dd>
             <dt>Scoring mode</dt><dd>How the eval handler compares prediction to gold. qa-sft uses <code>field_match</code> — the prediction is scored against the single <code>expected</code> field via exact_match + F1, with an LLM-judge gate on top to catch semantic equivalence the string metrics miss.</dd>
             <dt>Memorisation</dt><dd>The model encodes each (question, answer) pair into its weights during training. At inference, the same (or paraphrased) question retrieves the answer from those weights. No index, no retrieval step. The trade: when a fact changes, you retrain.</dd>
             <dt>Canonical answer</dt><dd>The single "official" version of an answer to a question. qa-sft trains on one canonical answer per question — paraphrasing the question is encouraged, paraphrasing the answer is noise.</dd>
-            <dt>LLM-judge pass rate</dt><dd>A semantic-equivalence gate. A teacher model reads (gold answer, predicted answer) and scores whether they say the same thing. Catches the case where "Visit Settings → Security" and "Go to Settings, then Security" should both pass even though exact_match says they don't.</dd>
-            <dt>Reroute-to-RAG</dt><dd>The platform's one-click escape hatch when the post-eval decision engine detects you're using qa-sft for a workload that wants retrieval. Clones your project as a sibling with <code>runtime_config.rag_first=True</code>, carries your answer key (gold set) forward, builds the BM25 index. You compare both side-by-side.</dd>
+            <dt>LLM-judge pass rate</dt><dd>A semantic-equivalence gate. A judge model reads (gold answer, predicted answer) and scores whether they say the same thing. Catches the case where "Visit Settings → Security" and "Go to Settings, then Security" should both pass even though exact_match says they don't.</dd>
+            <dt>Reroute-to-RAG</dt><dd>The platform's one-click escape hatch when the post-eval decision engine detects you're using qa-sft for a workload that wants retrieval. Clones your project as a sibling with <code>runtime_config.rag_first=True</code> (the base model plus retrieval, not the rag-protocol recipe), carries your answer key (gold set) forward, builds the BM25 index. You compare both side-by-side.</dd>
           </dl>
         </details>
 
@@ -370,15 +370,15 @@
         <h2 id="what-youll-build">What you'll build</h2>
         <p>A direct-answer QA assistant. Concretely:</p>
         <ul>
-          <li><strong>"How do I get VPN access?"</strong> → "File a ticket in #it-help with the project you need access to, then run the Tailscale installer that IT sends back."</li>
-          <li><strong>"How do I file expenses?"</strong> → "Use Ramp. Photograph the receipt, tag the project code, and submit. Manager approval is automatic under $200."</li>
-          <li><strong>"How do I get on the office WiFi?"</strong> → "The network is <code>brewslm-corp</code>, password is in 1Password under <em>Office WiFi</em>. Mobile devices use the <code>brewslm-guest</code> network with a daily PSK posted in #office."</li>
+          <li><strong>"How do I get VPN access?"</strong> → "File a ticket in #it-help with the project you need access to, then run the VPN installer that IT sends back."</li>
+          <li><strong>"How do I file expenses?"</strong> → "Use the expense app. Photograph the receipt, tag the project code, and submit. Manager approval is automatic under $200."</li>
+          <li><strong>"How do I get on the office WiFi?"</strong> → "The network is <code>brewslm-corp</code>, password is in the team password manager under <em>Office WiFi</em>. Mobile devices use the <code>brewslm-guest</code> network with a daily PSK posted in #office."</li>
         </ul>
         <p>The model is a fine-tuned LoRA adapter on top of <code>SmolLM2-135M-Instruct</code>. Inference is ~200ms on a single GPU, 600-900ms on CPU (still fine for a Slack-bot). <strong>No citations in the output</strong> (the part rag-protocol does and qa-sft doesn't); when a fact changes, you update the gold set and retrain.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>qa-sft is the simpler tool. Less ceremony than rag-protocol — no citation discipline, no refusal training, no index to maintain. It memorises facts. When facts change, you retrain. That's the trade. If your corpus is small (under ~100 facts) and stable (changes less often than once a month), this is the right pick. If it isn't, the post-eval decision engine in BrewSLM will tell you to reroute and we'll walk through how to take that recommendation gracefully.</p>
+          <p>qa-sft is the simpler tool. Less ceremony than rag-protocol — no citation discipline, no refusal training, no index to maintain. It memorises facts. When facts change, you retrain. That's the trade. If your corpus is small (under ~100 facts) and stable (changes less often than once a month), this is the right pick. If it isn't, the post-eval decision engine in BrewSLM may suggest a retrieval-first approach, and we'll walk through how to test that suggestion.</p>
         </div>
 
         <h2 id="why-small">Why a small model (not regex, not a frontier API, not always RAG)</h2>
@@ -414,19 +414,19 @@
         </div>
 
         <h2 id="ingest-map">Ingest and map</h2>
-        <p>In BrewSLM, create a new project: on the projects home click <strong>+ New Project</strong>, give it a name and a brief ("Answer internal IT helpdesk questions from our knowledge base, directly, no citations"), then <strong>Create project</strong>. On the project's <strong>Overview</strong> check the task; if it isn't <code>qa-sft</code>, open <strong>Train → Task → Change</strong> and pick it. The recipe pre-fills the adapter (<code>qa-pair</code>), the task profile (<code>instruction_sft</code>), the scoring mode (<code>field_match</code>), and the pass/fail rule scaffold (exact_match + F1 + LLM-judge).</p>
+        <p>In BrewSLM, create a new project: on the projects home click <strong>+ New Project</strong>, give it a name and a brief ("Answer internal IT helpdesk questions from our knowledge base, directly, no citations"), then <strong>Create project</strong>. On the project's <strong>Overview</strong> check the task; if it isn't <code>qa-sft</code>, open <strong>Train → Task → Change</strong> and pick it. The recipe pre-fills the adapter (<code>qa-pair</code>), the task profile (<code>instruction_sft</code>) and the scoring mode (<code>field_match</code>). It also offers a draft pass/fail rule set (exact_match + F1 + LLM-judge), but that draft only applies once you click <strong>Use scaffold</strong> after your first run — see <a class="inline-link" href="#evaluate">Evaluation</a>.</p>
         <p>Open <strong>Data → Sources → Import dataset (auto-mapping) → Import dataset →</strong>. Your CSV or JSONL should look like:</p>
-        <pre class="code-block"><code>question,expected,rationale
-"How do I get VPN access?","File a ticket in #it-help with the project you need access to, then run the Tailscale installer that IT sends back.","Standard onboarding flow; the project-scoping prevents broad Tailscale acls."
-"What's the office WiFi password?","The network is brewslm-corp, password is in 1Password under Office WiFi. Mobile devices use brewslm-guest with a daily PSK posted in #office.",""
-"How do I expense a $30 dinner?","Use Ramp. Photograph the receipt, tag the project code, submit. Under $200 manager approval is automatic.",""</code></pre>
-        <p>Two required columns (<code>question</code>, <code>expected</code>) and one optional (<code>rationale</code>). Rationale is for your future-self — some eval handlers use it; the qa-sft recipe doesn't require it for training. The import wizard scans your columns and proposes a binding; confirm it when the preview rows look right.</p>
+        <pre class="code-block"><code>question,answer
+"How do I get VPN access?","File a ticket in #it-help with the project you need access to, then run the VPN installer that IT sends back."
+"What's the office WiFi password?","The network is brewslm-corp, password is in the team password manager under Office WiFi. Mobile devices use brewslm-guest with a daily PSK posted in #office."
+"How do I expense a $30 dinner?","Use the expense app. Photograph the receipt, tag the project code, submit. Under $200 manager approval is automatic."</code></pre>
+        <p>Two required columns, <code>question</code> and <code>answer</code>; the recipe's shape matcher recognises <code>answer</code> (or <code>response</code>, <code>output</code>, <code>reply</code>) as the output column. Don't call it <code>expected</code> here: that is the field name for answer-key rows, not training rows. The import wizard scans your columns and proposes a binding; check it in the preview and fix the output column if needed. Imported rows land as accepted training rows (they skip the review queue), so the preview is your review.</p>
 
         <p><strong>✓ Checkpoint:</strong> <strong>Data → Sources → Details → Readiness overview</strong> now shows your imported row count (e.g. "62 trainable rows"), and <strong>Sources summary</strong> in the same drawer lists your imported CSV/JSONL. If the mapping is wrong, the preview will show empty or mis-shaped rows — check <strong>Data → Split → Details → Schema mapping</strong> and re-run the import with the correct column for each field.</p>
 
         <div class="callout callout--warning">
           <p class="callout__label">One canonical answer per question</p>
-          <p>If your data contains the same question with multiple slightly-different answers ("Use Tailscale" / "We use Tailscale, install the desktop app" / "Tailscale, ping #it-help if it doesn't work"), <strong>pick one canonical phrasing and drop the rest</strong>. Training on three different answers to the same question teaches the model that the question has a distribution of valid responses — which is noise, not signal, when what you actually want is "say this one thing".</p>
+          <p>If your data contains the same question with multiple slightly-different answers ("Use the VPN client" / "We use the VPN client, install the desktop app" / "VPN client, ping #it-help if it doesn't work"), <strong>pick one canonical phrasing and drop the rest</strong>. Training on three different answers to the same question teaches the model that the question has a distribution of valid responses — which is noise, not signal, when what you actually want is "say this one thing".</p>
         </div>
 
         <h2 id="cleanup">Cleanup</h2>
@@ -469,8 +469,8 @@
         </div>
 
         <h2 id="domain-packs">Domain packs (optional)</h2>
-        <p>BrewSLM ships a few domain packs (support, legal, ecommerce) that bundle cleaning rules, eval thresholds, and synth-recipe constraints scoped to one vertical. The <code>support</code> pack is the closest match to internal-IT helpdesk — it pre-loads PII patterns common to ticket data.</p>
-        <p>For most internal-KB use cases <strong>domain packs are optional</strong>. The platform defaults work fine; the support pack is a refinement you can apply later from <strong>Settings → Tools → Domain Packs</strong> if you find yourself doing the same PII cleanup on every project. The recipe defaults plus the cleanup step above cover everything important.</p>
+        <p>Three domain layers exist. <strong>Domain presets</strong> are starting defaults picked at creation (<strong>+ New Project → Advanced options → Domain preset</strong>: Legal, Customer Support, Healthcare and Finance starters). <strong>Domain packs</strong> are overlays assigned under <strong>Settings → Tools → Domain Packs</strong>; the only built-in one is <code>general-pack-v1</code>, and you can build your own (see <a class="inline-link" href="legal-contracts-domain-pack.html">Tutorial 8</a>). Built-in <strong>domain eval packs</strong> such as <code>evalpack.domain.support</code> show up in the Project rule set picker.</p>
+        <p>For most internal-KB use cases <strong>all of these are optional</strong>. The platform defaults work fine; a custom pack is a refinement you can add later if you find yourself doing the same cleanup on every project. The recipe defaults plus the cleanup step above cover everything important.</p>
 
         <h2 id="gold-set">Build the answer key</h2>
         <p>The <strong>answer key</strong> — the gold set — is the trusted reference your model is evaluated against, under <strong>Data → Labels</strong>. For qa-sft this is the most important data work you'll do — every answer-key row is a fact the model commits to memory. Aim for 40-80 rows; quality matters more than quantity.</p>
@@ -484,16 +484,17 @@
         </ol>
         <p>Spend an hour here. The model will inherit the tone, format, and granularity of these rows — casual and short stays casual and short; formal and exhaustive stays formal and exhaustive.</p>
 
-        <h3 id="gold-llm-assisted">Path B — LLM-assisted promotion from raw exports</h3>
-        <p>If you bulk-imported a few hundred Confluence pages or resolved tickets, use the same "promote from raw" flow other tutorials use:</p>
+        <h3 id="gold-llm-assisted">Path B — LLM-assisted drafting from raw exports</h3>
+        <p>If you have a few hundred raw Confluence pages or resolved tickets, let a model draft candidates:</p>
         <ol>
-          <li>Bulk-import the raw pages / tickets as candidate rows.</li>
-          <li>Run a teacher model (Ollama is the free default; OpenAI / Anthropic / DeepSeek work if you have keys) against them from <strong>Data → Generate</strong> — Provider, Model Name, <em>Load from Cleaned Data</em> — with the generation mode set to Single-turn Q&amp;A, so it extracts (question, answer) pairs.</li>
-          <li>Every extracted pair lands in the review queue (<strong>Data → Generate → Details → Review queue</strong>) with <code>review_status="pending"</code>. Accept the good ones; they're promoted to the answer key.</li>
+          <li>Bring the raw pages / tickets in on <strong>Data → Sources</strong> and clean them.</li>
+          <li>Run a data-writer model (a local model through Ollama is the free default; a cloud provider key or any OpenAI-compatible endpoint also works) against them from <strong>Data → Generate</strong> — Provider, Model Name, <em>Load from Cleaned Data</em> — with the generation mode set to Single-turn Q&amp;A, so it drafts (question, answer) pairs.</li>
+          <li>Every drafted pair lands in the review queue (<strong>Data → Generate → Details → Review queue</strong>) with <code>review_status="pending"</code>. Accepting a row makes it <strong>training</strong> data, not an answer-key row.</li>
+          <li>For the answer key, copy the best drafts by hand into the <strong>Answer key</strong> card on <strong>Data → Labels</strong>, as in Path A. The answer key is held out of training, so keep a row in one or the other, not both.</li>
         </ol>
-        <p>This compresses 3 hours of manual gold-writing into 30 minutes of review. The platform will not auto-accept LLM-generated gold — each promotion is an explicit click.</p>
+        <p>This turns hours of writing from scratch into review and light editing. The platform will not auto-accept LLM-generated rows — every accept is an explicit click.</p>
 
-        <p><strong>✓ Checkpoint:</strong> the goal ledger's answer-key readiness row (<strong>Data → Sources → Details → Readiness overview</strong>) should now be green (60 rows ready) or amber (fewer than the recommended 50). Amber is fine for now — the paraphrase playbook in the next section will multiply your seed. If it says nothing has been promoted, open <strong>Data → Labels</strong> and confirm rows landed in the Answer key card.</p>
+        <p><strong>✓ Checkpoint:</strong> the recipe recommends at least 50 answer-key rows; the goal ledger's answer-key row (<strong>Data → Sources → Details → Readiness overview</strong>) counts toward 100, so at 60 rows it shows partial progress. That is fine for now. The paraphrase playbook in the next section adds <em>training</em> rows, not answer-key rows. If it says nothing has been promoted, open <strong>Data → Labels</strong> and confirm rows landed in the Answer key card.</p>
 
         <h2 id="split">Splitting train, validation, test</h2>
         <p>BrewSLM splits when you click <strong>Run Split</strong> on <strong>Data → Split</strong> (the <strong>Train / Val / Test Split</strong> form; the split adapter reads <code>qa-pair</code>). The default ratios are 80/10/10 with a deterministic seed. For qa-sft, <strong>uniform random off the canonical config is fine</strong>.</p>
@@ -508,39 +509,39 @@
           <dt><code>qa_sft_cluster_targeted</code> — for iteration 2 (CLUSTER_TARGETED mode)</dt>
           <dd>After your first training pass + eval, the platform's failure-cluster surface will identify question-types the model is weak on. The cluster-targeted playbook generates new examples specifically aimed at those clusters. <strong>Don't run this on iteration 1</strong> — there's no failure cluster yet. It's the right tool for round 2.</dd>
         </dl>
-        <p>Open <strong>Data → Generate → Details → Playbooks</strong>. The qa-sft recipe surfaces the paraphrase card; click it, set target count to 3-5× your answer-key size, pick a backend. Generation runs as a background Job — the notification bell tracks progress, and <strong>Details → Playbook center</strong> keeps the run history.</p>
+        <p>Open <strong>Data → Generate → Details → Playbooks</strong>. The qa-sft recipe surfaces the paraphrase card; click it, set target count to 3-5× your answer-key size, pick a backend (a local model, a cloud provider key or any OpenAI-compatible endpoint). Generation runs as a background Job — the notification bell tracks progress, and <strong>Details → Playbook center</strong> keeps the run history.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Paraphrase the question, not the answer</p>
-          <p>The whole point of the paraphrase playbook is to teach the model question-invariance — "the same fact answers many phrasings". If the teacher model paraphrases the ANSWER too, you'll be training the model that the same question can have N slightly-different acceptable answers, which is the noise mode this tutorial keeps warning against. The review queue (next section) is where you catch this.</p>
+          <p>The whole point of the paraphrase playbook is to teach the model question-invariance — "the same fact answers many phrasings". If the data-writer model paraphrases the ANSWER too, you'll be training the model that the same question can have N slightly-different acceptable answers, which is the noise mode this tutorial keeps warning against. The review queue (next section) is where you catch this.</p>
         </div>
 
         <h2 id="review-queue">Review the synth queue</h2>
-        <p>Every paraphrase row lands in the <strong>Review queue</strong> (<strong>Data → Generate → Details → Review queue</strong>) with <code>review_status="pending"</code>. The queue groups rows by source answer-key row, so you can scan "here are 5 paraphrases of the VPN question" in one screen. Per-row actions:</p>
+        <p>Every paraphrase row lands in the <strong>Review queue</strong> (<strong>Data → Generate → Details → Review queue</strong>) with <code>review_status="pending"</code>. By default the queue groups rows by source (the playbook that made them); <em>Group by</em> also offers Job, Backend and the Pre-screen verdicts. Per-row actions:</p>
         <ul>
           <li><strong>Accept</strong> — the row joins the training corpus on the next split.</li>
-          <li><strong>Reject (soft)</strong> — marked with an optional reason tag (<code>answer-paraphrased</code>, <code>question-meaning-drifted</code>, <code>too-similar-to-seed</code>). The row stays on disk for audit.</li>
-          <li><strong>Purge</strong> — a section-level action that physically deletes all rejected rows (optionally filtered by reason).</li>
+          <li><strong>Reject (soft)</strong> — the row stays on disk for audit. You can't type a reason tag; the only reasons are the ones a <strong>Pre-screen</strong> (review assist) run attaches.</li>
+          <li><strong>Purge</strong> — a section-level action that physically deletes all rejected rows (optionally only those with one pre-screen reason).</li>
         </ul>
-        <p>The key check for qa-sft paraphrase rows is <strong>"does the answer match the seed verbatim?"</strong>. If yes (most rows), accept. If the teacher paraphrased the answer too — even slightly — soft-reject with the <code>answer-paraphrased</code> reason. You want question variation, not answer variation.</p>
+        <p>The key check for qa-sft paraphrase rows is <strong>"does the answer match the seed verbatim?"</strong>. If yes (most rows), accept. If the data writer paraphrased the answer too — even slightly — reject it. You want question variation, not answer variation. For a large batch, run <strong>Pre-screen</strong> with that check as the rubric, then group by <em>Verdict + reason</em> and reject the failing group in one go.</p>
 
-        <p>Expect to accept ~70-85% on first pass. If you're rejecting more than half, the teacher prompt is drifting and the playbook card's prompt editor lets you tweak the system message.</p>
+        <p>If you're rejecting more than half, the playbook prompt itself can't be edited — try a different backend or model, or tidy the seed rows it paraphrases.</p>
 
         <h2 id="train">Training configuration</h2>
-        <p>Open <strong>Train</strong>. The form shows <strong>Base model</strong>, <strong>Task</strong>, <strong>Seeds</strong> and <strong>Run name</strong>; the values below live under <strong>More options → Model and hyperparameters</strong> and <strong>LoRA and advanced training</strong>. The qa-sft recipe defaults are sensible — for a first run, accept all of them:</p>
+        <p>Open <strong>Train</strong>. The form shows <strong>Base model</strong>, <strong>Task</strong>, <strong>Seeds</strong> and <strong>Run name</strong>; the values below live under <strong>More options → Model and hyperparameters</strong> and <strong>LoRA and advanced training</strong>. The defaults are sensible — for a first run, accept all of them. Several are <em>auto</em>: they resolve from your model and data size, and the confirm dialog shows the resolved values before you launch.</p>
         <dl>
           <dt>Base model</dt>
           <dd><code>HuggingFaceTB/SmolLM2-135M-Instruct</code>. Small, instruction-tuned, runs on consumer hardware. Alternatives the recipe surfaces: <code>Qwen/Qwen2.5-0.5B-Instruct</code> (slightly better quality at ~4x the size), <code>Qwen/Qwen2.5-3B-Instruct</code> (noticeably better, needs more VRAM).</dd>
           <dt>Adapter</dt>
-          <dd>LoRA, rank 16, alpha 32, target modules <code>q_proj,k_proj,v_proj,o_proj</code>. Standard. No separate classification head, no custom output projection — qa-sft uses the base model's standard LM head; the adapter just trains its attention projections.</dd>
+          <dd>LoRA, rank 16, alpha 32, target modules <code>auto</code> — on models of 2B parameters or fewer that means every linear layer (all-linear). No separate classification head, no custom output projection — qa-sft uses the base model's standard LM head.</dd>
           <dt>Learning rate</dt>
           <dd>2e-4. Higher than full fine-tuning because LoRA has fewer trainable parameters.</dd>
           <dt>Epochs</dt>
-          <dd>2. Slightly fewer than the classification or span-extraction tutorials because the task is simpler — the model is memorising direct answers, not learning a discriminative boundary. For 250-row training sets, 2 epochs typically hits the loss plateau; 4+ overfits and the model starts emitting verbatim training rows even on questions it shouldn't.</dd>
+          <dd>Auto. The trainer aims for about 200 optimiser steps and caps epochs by dataset size (up to 8 for 100–999 rows); a 250-row training set resolves to 4 epochs. Memorisation is the goal here, so several passes are expected; watch for the model echoing training rows verbatim on questions it shouldn't. Typing an epoch count turns auto off.</dd>
           <dt>Batch size + gradient accumulation</dt>
-          <dd>Batch 4, accumulate 4 → effective batch 16. Adjust down on GPUs under 8 GB.</dd>
+          <dd>Batch 4, accumulation 4 configured, but with auto epochs the trainer shrinks accumulation first on small datasets, so a few hundred rows train at accumulation 1 (effective batch 4). Lower the batch on GPUs under 8 GB.</dd>
         </dl>
-        <p>Expected runtime: 3-10 minutes on a single GPU (RTX 3060 or better), 10-25 minutes on CPU. The runs list below the form shows live loss; if loss isn't dropping after the first 50 steps, cancel the run and check your data — the dataset is probably misshapen.</p>
+        <p>Training runs on the Celery worker, so Redis and the worker from <a class="inline-link" href="setup-brewslm.html">Tutorial 0</a> must be up; without them the run sits in Queued. Expected runtime (a rough guide, not a measured benchmark): minutes on a single GPU, longer on CPU. The runs list below the form shows live loss; if loss isn't dropping after the first 50 steps, cancel the run and check your data — the dataset is probably misshapen.</p>
 
         <p><strong>✓ Checkpoint:</strong> in the runs list under <strong>Train</strong>, your run's loss drops from ~2-3 in the first few steps down to ~0.3-0.6 by the end. The bell shows a "training" notification with a percentage. When complete, BrewSLM runs the lift check against the base model on its own; <strong>Results → Verdict</strong> shows the summary card (or an <strong>Evaluate this run</strong> button if the check didn't run).</p>
 
@@ -549,20 +550,27 @@
         <p>qa-sft's pass probability tends to be <strong>higher than rag-protocol's</strong> for the same-size data set. That's because there's no citation discipline to learn, no canonical refusal phrase to imprint, no protocol-shaped gates — just (question → answer). Healthy targets for a fresh internal-KB project:</p>
         <ul>
           <li>Predicted pass probability <strong>≥ 70%</strong>. qa-sft on 60+ answer-key rows + paraphrase synth typically clears this. Below 50% usually means your answer key is genuinely too thin or has inconsistent canonical answers (one question with multiple slightly-different golds — see the cleanup section).</li>
-          <li>Answer-key readiness <strong>≥ 100%</strong> (≥ 50 rows for qa-sft's default minimum). Below that the forecast becomes noisy.</li>
+          <li>Answer key at or above the recipe's recommended 50 rows (the ledger row itself counts toward 100). Below that the forecast becomes noisy.</li>
           <li>Data ready <strong>= met</strong> (training rows + mapping + splits all green).</li>
         </ul>
         <p>If the forecast is below 50%, add data before you train. The goal ledger's blockers panel tells you which component is weakest.</p>
 
         <h2 id="evaluate">Evaluation: exact_match + F1 + LLM-judge</h2>
-        <p>After training, the platform automatically evaluates against the project's rule set; <strong>Results → Verdict</strong> shows the <strong>Pass/fail rules</strong> card (PASS / FAIL and the failed required rules) below the summary card, both naming the run they describe. For qa-sft projects the scaffolded rule set carries four rules:</p>
+        <p>After training, the platform automatically evaluates against the project's rule set; <strong>Results → Verdict</strong> shows the <strong>Pass/fail rules</strong> card (PASS / FAIL and the failed required rules) below the summary card, both naming the run they describe.</p>
+        <p>Picking the qa-sft task does <em>not</em> pick its rules. Until you act, you're scored against the general default (<code>evalpack.general.default</code>), whose Instruction / QA rules are exact match ≥ 0.40 and F1 ≥ 0.50 required, LLM-judge ≥ 0.65 and safety ≥ 0.90 optional. To use the qa-sft rules:</p>
+        <ol>
+          <li>Open <strong>Results → Failures</strong> with your run selected and find the <strong>Pass/fail rules</strong> card.</li>
+          <li>Leave <strong>Project rule set</strong> on <em>Auto (domain profile fallback)</em>; the <strong>Scaffolded pass/fail rule set</strong> panel appears below it, auto-generated from the qa-sft task type.</li>
+          <li>Adjust any threshold, then click <strong>Use scaffold</strong>. It is saved as the project's rule set and later evaluations score against it.</li>
+        </ol>
+        <p>The scaffolded qa-sft rule set carries four rules:</p>
         <dl>
           <dt>Exact match ≥ 0.45 (required)</dt>
           <dd>Share of predictions where the model emitted the gold answer verbatim. <strong>0.45 is intentionally not strict</strong> — exact_match is a coarse signal for natural-language answers because "Visit Settings → Security" and "Go to Settings, then Security" both say the same thing but differ on every token. exact_match catches gross paraphrase drift; the LLM-judge gate below catches the semantic case.</dd>
           <dt>F1 ≥ 0.60 (required)</dt>
           <dd>Token-overlap F1 between prediction and gold. A middle ground — partial credit for predictions that contain the right content words but reorder them. Standard SQuAD-style F1.</dd>
           <dt>LLM-judge pass rate ≥ 0.75 (required)</dt>
-          <dd>A teacher model reads (gold, prediction) and scores whether they say the same thing semantically. <strong>This is the gate that actually matters for natural-language QA.</strong> It catches the "Visit Settings → Security" / "Go to Settings, then Security" case as a pass even though exact_match fails. It also catches the failure mode where exact_match passes (model memorised the gold verbatim) but the answer is wrong in context.</dd>
+          <dd>A judge model reads (gold, prediction) and scores whether they say the same thing semantically. <strong>This is the gate that actually matters for natural-language QA.</strong> It catches the "Visit Settings → Security" / "Go to Settings, then Security" case as a pass even though exact_match fails. It also catches the failure mode where exact_match passes (model memorised the gold verbatim) but the answer is wrong in context.</dd>
           <dt>Safety pass rate ≥ 0.93 (not required)</dt>
           <dd>Refusal / off-topic / adversarial input handling. Marked non-required for qa-sft because the recipe doesn't train refusal behaviour — if you need this gate active, it's a signal you're in rag-protocol territory.</dd>
         </dl>
@@ -576,39 +584,36 @@
           </thead>
           <tbody>
             <tr><td>LLM-judge passes (≥ 0.80) but exact_match low (≤ 0.30)</td><td>Model paraphrases answers — semantically right but emits its own wording rather than your canonical version</td><td>Usually acceptable for a helpdesk bot. If you need verbatim, add the canonical wording as a system-prompt prefix at deploy time and retrain with the prefix in the gold question.</td></tr>
-            <tr><td>exact_match high but LLM-judge low</td><td>Model memorised the gold rows verbatim but the answer is wrong in context — overfitting on the training distribution</td><td>Reduce epochs from 2 to 1; add more paraphrase rows; check for stale gold answers that are no longer correct.</td></tr>
-            <tr><td>Both metrics mediocre AND post-eval engine recommends reroute-to-RAG</td><td>Your workload is retrieval-shaped — too many distinct facts to memorise, or facts that need citation</td><td>Walk the reroute trace below and accept the recommendation.</td></tr>
-            <tr><td>Model invents facts on questions outside the KB</td><td>qa-sft doesn't train refusal behaviour — when asked something it doesn't know, the model generates a plausible-looking but fabricated answer</td><td>This is a known qa-sft limitation. The answer is to reroute to rag-protocol, which DOES train refusal. Don't try to hand-train refusal into qa-sft — that's working against the recipe.</td></tr>
+            <tr><td>exact_match high but LLM-judge low</td><td>Model memorised the gold rows verbatim but the answer is wrong in context — overfitting on the training distribution</td><td>Set a lower epoch count than the auto value (this turns auto off); add more paraphrase rows; check for stale gold answers that are no longer correct.</td></tr>
+            <tr><td>Both metrics mediocre AND post-eval engine recommends reroute-to-RAG</td><td>Your workload is retrieval-shaped — too many distinct facts to memorise, or facts that need citation</td><td>Walk the reroute trace below and, if it holds up, try the retrieval-first sibling.</td></tr>
+            <tr><td>Model invents facts on questions outside the KB</td><td>qa-sft doesn't train refusal behaviour — when asked something it doesn't know, the model generates a plausible-looking but fabricated answer</td><td>This is a known qa-sft limitation. If clean refusals matter, move to rag-protocol (<a class="inline-link" href="support-faq-rag-protocol.html">Tutorial 1</a>), which DOES train refusal. Don't try to hand-train refusal into qa-sft — that's working against the recipe.</td></tr>
           </tbody>
         </table>
 
         <h3 id="reroute-trace">The reroute-to-RAG flow (when memorisation stops being enough)</h3>
-        <p>BrewSLM's post-eval decision engine looks at your eval result and the shape of your gold set. When it sees retrieval-shaped signals — low pass rate combined with high answer-diversity in your gold (many distinct factual answers) — it surfaces a recommendation card on <strong>Results → Failures</strong> (and as a Coach notice at the top of <strong>Results</strong>): <strong>"You're memorising what should be retrieved. Reroute to rag-protocol?"</strong></p>
-        <p>Expand the <strong>"Why this fired?"</strong> disclosure. You'll see the actual numbers ("answer-diversity ratio 0.82 ≥ 0.70 threshold", "exact_match 0.31 &lt; 0.45 gate"). If the trace matches your read of the data, click <strong>"Switch to RAG (keeps your answer key)"</strong>. The platform runs <code>clone_project_for_rag</code>, which does three concrete things:</p>
+        <p>BrewSLM's post-eval decision engine looks at your eval result and the shape of your gold set. When the pass rate is below 0.5 and a retrieval-shaped signal fires — the brief mentions retrieval, or the answers in your answer key are very diverse — it surfaces a recommendation card on <strong>Results → Failures</strong>: <strong>"This task looks more like a RAG fit"</strong>.</p>
+        <p>Expand the <strong>"Why this fired?"</strong> disclosure on each signal. You'll see the actual numbers, for example a mean pairwise answer Jaccard below the 0.20 threshold (lower means more diverse answers) next to the pass rate under 0.5. If the trace matches your read of the data, click <strong>"Switch to RAG (keeps your answer key)"</strong>. The platform runs <code>clone_project_for_rag</code>, which does three concrete things:</p>
         <ol>
           <li><strong>Creates a sibling project</strong> with your project name + " (RAG)" suffix. The new project's <code>parent_project_id</code> points back at the qa-sft project.</li>
           <li><strong>Forces <code>runtime_config.rag_first=True</code> and <code>auto_rag.enabled=True</code></strong> on the clone. At inference time <strong>Results → Try it</strong> uses the BASE model (no LoRA) plus BM25 retrieval — no new training step.</li>
           <li><strong>Carries your answer key + prepared splits forward</strong> and builds the BM25 index immediately, so the sibling's <strong>Results → Try it</strong> works the moment the clone completes.</li>
         </ol>
-        <p>The original qa-sft project stays put — nothing is destroyed. You now have two projects side-by-side. Open <strong>Results → Try it</strong> on each, ask the same 10 questions, compare. If you accept the reroute, the rest of the workflow is <a class="inline-link" href="support-faq-rag-protocol.html">Tutorial 1</a>'s — answer key, cleanup, and deployment pattern all carry forward; what changes is the recipe and the rule set.</p>
+        <p>The original qa-sft project stays put — nothing is destroyed. You now have two projects side-by-side. Open <strong>Results → Try it</strong> on each, ask the same 10 questions, compare. The sibling is still a qa-sft project answered by the base model with retrieval; it is not the rag-protocol recipe. If you later want a model trained to cite and refuse, that is a separate project built as in <a class="inline-link" href="support-faq-rag-protocol.html">Tutorial 1</a>.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">The honest move</p>
-          <p>The reroute recommendation is one of BrewSLM's better moments. The platform isn't trying to keep you on qa-sft because that's the project you started with — it'll volunteer that a different recipe might do better, with the trace to back the call. Take the recommendation seriously. If the trace looks right, accept it. The qa-sft project doesn't go away; you compare both and ship whichever wins.</p>
+          <p>The reroute recommendation is one of BrewSLM's better moments. The platform isn't trying to keep you on qa-sft because that's the project you started with — it'll volunteer that a different recipe might do better, with the trace to back the call. Take the recommendation seriously. If the trace looks right, try it. The qa-sft project doesn't go away; you compare both and ship whichever wins.</p>
         </div>
 
         <h2 id="ship">Ship the model</h2>
         <p>Once the rule set passes, ship in three steps:</p>
         <ol>
-          <li><strong>Export the LoRA adapter.</strong> Open <strong>Ship → Package</strong>: in the <strong>New export</strong> form pick the run, the format (Hugging Face), the deployment targets, then <strong>Run Export</strong>; the export shows up in the <strong>Releases</strong> table. The platform writes the adapter weights, the tokenizer config, and a deploy manifest into <code>data/projects/&lt;id&gt;/exports/</code>. The adapter is ~5-15 MB; the base model is loaded fresh at deploy time.</li>
-          <li><strong>Deploy via vLLM (or Ollama).</strong> The recipe's <code>target_profile</code> is <code>vllm_server</code> by default. The export bundle includes a vLLM launch script:
-            <pre class="code-block"><code>cd data/projects/&lt;id&gt;/exports/run-2026-06-05
-./deploy-vllm.sh
-# Serves the base model + LoRA adapter on localhost:8000
-# Exposes the OpenAI-compatible /v1/chat/completions endpoint</code></pre>
-            Ollama variant: <code>./deploy-ollama.sh</code>. Either gives you a standard chat-completions endpoint on a local port.
+          <li><strong>Export the model.</strong> Open <strong>Ship → Package</strong>. In the <strong>New export</strong> card pick the run under <em>Experiment</em> and a <em>Format</em>: <strong>HuggingFace</strong> (a LoRA run is merged into its base model) for vLLM, or <strong>GGUF (CPU)</strong> for Ollama. GGUF needs a compressed file first: open <strong>Options → Compress first</strong>, pick the training run, set <em>Output Format</em> to GGUF and click <strong>Quantize</strong> (the LoRA adapter is merged automatically). Then <strong>Run Export</strong>. The export lands under <code>data/exports/&lt;project&gt;/&lt;export&gt;/run-&lt;n&gt;/</code> and appears in the <strong>Exports</strong> table.</li>
+          <li><strong>Get the launch commands.</strong> Expand the export's row and click <strong>Serve Plan</strong>. The <strong>One-Click Serve Plan</strong> card shows the <em>Setup Commands</em> and the <em>Launch Command</em>. For a HuggingFace export the vLLM runner is
+            <pre class="code-block"><code>python -m vllm.entrypoints.openai.api_server --model ./model</code></pre>
+            which exposes an OpenAI-compatible <code>/v1/chat/completions</code> endpoint. For a GGUF export the setup writes a <code>Modelfile</code> (<code>FROM ./model/&lt;file&gt;.gguf</code>) and runs <code>ollama create</code>; the launch command is <code>ollama serve</code>. There are no deploy scripts in the bundle.
           </li>
-          <li><strong>Wrap in your own <code>/ask</code> microservice.</strong> BrewSLM doesn't expose a hosted <code>/ask</code> endpoint — you wrap the chat-completions endpoint in a thin HTTP service that handles the request shaping (your system prompt, your auth, your rate limiting). For a Slack-bot use case the wrapper is ~30 lines of Python: receive a Slack event, call <code>/v1/chat/completions</code> with the user's question, post the response back to the channel. Same deploy pattern other tutorials use; nothing qa-sft-specific.</li>
+          <li><strong>Wrap in your own <code>/ask</code> microservice.</strong> BrewSLM doesn't expose a hosted <code>/ask</code> endpoint — you wrap the chat-completions endpoint in a thin HTTP service that handles the request shaping (your system prompt, your auth, your rate limiting). For a Slack-bot use case the wrapper is ~30 lines of Python: receive a Slack event, call <code>/v1/chat/completions</code> with the user's question, post the response back to the channel. Nothing qa-sft-specific.</li>
         </ol>
 
         <div class="callout callout--note">
@@ -617,14 +622,14 @@
         </div>
 
         <h2 id="whats-next">What's next</h2>
-        <p>You have a deployed direct-answer internal-KB assistant. Three obvious next moves:</p>
+        <p>You have an exported direct-answer internal-KB assistant. Three obvious next moves:</p>
         <dl>
           <dt>Refresh every N weeks when the KB changes</dt>
           <dd>qa-sft memorises facts. When facts change, you retrain. Set a recurring calendar item — every 4-8 weeks for an internal-IT helpdesk. Update the answer key with new canonical answers, re-run the paraphrase playbook on the new rows, retrain. &lt; 30 minutes once you've done it once.</dd>
           <dt>Grow the corpus thoughtfully (don't just dump everything in)</dt>
           <dd>The temptation when the model works is to throw every Confluence page at it. Resist. Each added row is a fact the model has to keep memorised; pile on too many and the memorisation pressure costs accuracy on the original rows. Add new answer-key rows when you have a real "we got this question N times and didn't have a good answer" signal.</dd>
           <dt>Watch the reroute signal — the honest "you've outgrown qa-sft" tripwire</dt>
-          <dd>When your corpus passes ~200 facts OR your KB updates more than once a month, the post-eval decision engine usually fires the reroute-to-RAG recommendation. <strong>Accept it when it fires.</strong> qa-sft was the right tool when the corpus was small and stable; rag-protocol is the right tool when it isn't. Walk through <a class="inline-link" href="support-faq-rag-protocol.html">Tutorial 1</a> from that point — your answer key is already carried forward.</dd>
+          <dd>As your corpus grows past what the model can memorise, the pass rate drops and the post-eval decision engine may fire the reroute-to-RAG recommendation. <strong>Take it seriously when it fires</strong>: compare the retrieval-first sibling against your fine-tune. qa-sft was the right tool when the corpus was small and stable; retrieval is the right tool when it isn't. If you also need citations and clean refusals, start a rag-protocol project as in <a class="inline-link" href="support-faq-rag-protocol.html">Tutorial 1</a>.</dd>
         </dl>
 
         <p>The next tutorial in this series picks a different recipe shape: <strong><a class="inline-link" href="invoice-field-extraction.html">invoice field extraction</a></strong> with the span-extraction recipe — structured output with character offsets, JSON-schema gold sets, and the span-set eval handler. Different shape, same end-to-end workflow.</p>
@@ -634,9 +639,9 @@
           <dl>
             <dt>qa-sft recipe</dt><dd>BrewSLM recipe that trains a small model to directly answer questions from memorised facts. No retrieval index, no citation marker, no canonical refusal phrase. The simpler counterpart to rag-protocol; right tool for small, stable knowledge bases.</dd>
             <dt>Canonical answer</dt><dd>The single official version of an answer to a question. qa-sft trains on one canonical answer per question — paraphrasing the question (across many phrasings) is encouraged; paraphrasing the answer is noise.</dd>
-            <dt>field_match scoring</dt><dd>The eval-handler mode qa-sft uses. Compares prediction to a single <code>expected</code> field via exact_match + F1, with an LLM-judge gate layered on top for semantic equivalence.</dd>
-            <dt>LLM-judge pass rate</dt><dd>The gate that actually matters for natural-language QA — a teacher model reads (gold, prediction) and scores whether they say the same thing. Catches paraphrase that exact_match misses; required at ≥ 0.75 in the qa-sft scaffolded eval pack.</dd>
-            <dt>Reroute-to-RAG</dt><dd>One-click platform flow that clones the qa-sft project as a RAG-first sibling. The clone has <code>runtime_config.rag_first=True</code>, carries the gold set forward, and builds the BM25 index immediately. The original qa-sft project stays put. The honest escape hatch when memorisation stops being the right strategy.</dd>
+            <dt>field_match scoring</dt><dd>The eval-handler mode qa-sft uses. Compares prediction to a single <code>expected</code> field via exact_match + F1; the scaffolded rule set adds a required LLM-judge rule for semantic equivalence.</dd>
+            <dt>LLM-judge pass rate</dt><dd>The gate that actually matters for natural-language QA — a judge model reads (gold, prediction) and scores whether they say the same thing. Catches paraphrase that exact_match misses; required at ≥ 0.75 in the qa-sft scaffolded rule set once you click Use scaffold (optional at ≥ 0.65 in the general default).</dd>
+            <dt>Reroute-to-RAG</dt><dd>One-click platform flow that clones the qa-sft project as a RAG-first sibling. The clone has <code>runtime_config.rag_first=True</code> (base model plus retrieval, not the rag-protocol recipe), carries the gold set forward, and builds the BM25 index immediately. Only qa-sft projects can be cloned this way. The original qa-sft project stays put. The honest escape hatch when memorisation stops being the right strategy.</dd>
             <dt>Memorisation pressure</dt><dd>The trade-off qa-sft makes. Every gold row is a fact the model commits to weights. Up to ~100 facts a small model handles cleanly; past ~200-500 the model starts dropping signal on earlier rows to make room for new ones. That ceiling is the natural reroute-to-RAG trigger.</dd>
           </dl>
         </section>
@@ -677,7 +682,7 @@
                   "The click deletes the fine-tuned run and serves the base model instead"
                 ],
                 "answer": 0,
-                "explanation": "The card appears when the pass rate is below 0.5 and a retrieval signal fires: the brief mentions retrieval, or the answer key's answers are very diverse (mean pairwise Jaccard below 0.20). Switching creates a new sibling project with rag_first on — the base model answering with retrieval over your answer key, no LoRA — and carries the answer key forward. The original qa-sft project is untouched, so you can compare both. The sibling is not the rag-protocol recipe."
+                "explanation": "The card appears when the pass rate is below 0.5 and a retrieval signal fires: the brief mentions retrieval, or the answer key's answers are very diverse (mean pairwise Jaccard below 0.20). Switching creates a new sibling project with rag_first on — the base model answering with BM25 retrieval over the project's training rows, no LoRA — and carries the answer key forward. The original qa-sft project is untouched, so you can compare both. The sibling is not the rag-protocol recipe."
               },
               {
                 "q": "Your answer key contains the same question with three slightly different canonical answers. What should you do?",
@@ -719,7 +724,7 @@
                   <li>The click converts this project in place to the rag-protocol recipe</li>
                   <li>The click deletes the fine-tuned run and serves the base model instead</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Low pass rate plus retrieval-shaped signals; it clones a RAG-first sibling</strong> The card appears when the pass rate is below 0.5 and a retrieval signal fires: the brief mentions retrieval, or the answer key's answers are very diverse (mean pairwise Jaccard below 0.20). Switching creates a new sibling project with rag_first on — the base model answering with retrieval over your answer key, no LoRA — and carries the answer key forward. The original qa-sft project is untouched, so you can compare both. The sibling is not the rag-protocol recipe.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. Low pass rate plus retrieval-shaped signals; it clones a RAG-first sibling</strong> The card appears when the pass rate is below 0.5 and a retrieval signal fires: the brief mentions retrieval, or the answer key's answers are very diverse (mean pairwise Jaccard below 0.20). Switching creates a new sibling project with rag_first on — the base model answering with BM25 retrieval over the project's training rows, no LoRA — and carries the answer key forward. The original qa-sft project is untouched, so you can compare both. The sibling is not the rag-protocol recipe.</p></details></li>
               <li><p class="quiz__q-text">Your answer key contains the same question with three slightly different canonical answers. What should you do?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>Keep one canonical answer and drop the other two</li>
@@ -738,9 +743,9 @@
           <ul>
             <li><a class="inline-link" href="support-faq-rag-protocol.html">Tutorial 1 — Support FAQ assistant with rag-protocol (the retrieval counterpart)</a><span class="related-lessons__track">Tutorials</span></li>
             <li><a class="inline-link" href="../foundations/pretraining-vs-finetuning-vs-rag.html">Pretraining vs fine-tuning vs RAG</a><span class="related-lessons__track">Track 0</span></li>
-            <li><a class="inline-link" href="../sft-fundamentals/task-shapes.html">Task shapes — classification vs QA vs span vs RAG</a><span class="related-lessons__track">Track 1B</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/task-shapes.html">Task shapes — classification vs QA vs span vs RAG</a><span class="related-lessons__track">Track 1</span></li>
             <li><a class="inline-link" href="../with-brewslm/auto-rag-and-reroute.html">Auto-RAG &amp; reroute-to-RAG</a><span class="related-lessons__track">Track 3</span></li>
-            <li><a class="inline-link" href="../sft-fundamentals/gold-sets.html">Gold sets — what they are, how to build one</a><span class="related-lessons__track">Track 1B</span></li>
+            <li><a class="inline-link" href="../sft-fundamentals/gold-sets.html">Gold sets — what they are, how to build one</a><span class="related-lessons__track">Track 1</span></li>
           </ul>
         </section>
 
