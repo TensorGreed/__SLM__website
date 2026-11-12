@@ -354,7 +354,7 @@
           <li>Use a particular style and tone.</li>
         </ul>
         <p>
-          Same parameters, retrained. The result behaves like the chatbot you expected — because
+          Same architecture, different parameter values. The result behaves like the chatbot you expected — because
           someone else paid the cost of teaching it to behave like one.
         </p>
 
@@ -368,8 +368,11 @@
           template and it produces clean assistant replies.
         </p>
         <p>
-          Base models don't have a chat template — there is no assistant turn for them to fill,
-          because they were never taught the concept. They take raw text and continue it.
+          A base model may ship a chat template too (Qwen2.5-1.5B's base tokenizer includes the same
+          ChatML template as its instruct sibling), and many recent base models saw chat-formatted text
+          during pretraining. But a base model was not <em>aligned</em> to the template, so don't rely
+          on it behaving like an assistant inside one. Treat it as what it is: a model that takes raw
+          text and continues it.
         </p>
 
         <h2>Which one should you fine-tune? Almost always: instruct</h2>
@@ -415,32 +418,39 @@
         </ul>
 
         <div class="callout callout--warning">
-          <p class="callout__label">The alignment tax</p>
+          <p class="callout__label">Inherited behaviour</p>
           <p>
             The instruct version comes with someone else's choices baked in: refusal patterns,
             "as a language model" hedging, RLHF preferences, a particular style. Those choices
             travel with the model. When they help, great. When they fight your task, you push
-            against them — sometimes successfully with more data, sometimes not. That cost is
-            sometimes called the <strong>alignment tax</strong>, and it's worth knowing it
-            exists before you pick a starting point.
+            against them — sometimes successfully with more data, sometimes not. It's worth
+            knowing this <strong>inherited behaviour</strong> exists before you pick a starting
+            point.
+          </p>
+          <p>
+            Don't confuse it with the <strong>alignment tax</strong>. In the research literature
+            that term means the capability lost on some benchmarks as a side effect of alignment
+            training: InstructGPT (<a class="inline-link" href="https://arxiv.org/abs/2203.02155" target="_blank" rel="noopener noreferrer">Ouyang et al. 2022</a>)
+            reported performance regressions on public NLP datasets after RLHF.
           </p>
         </div>
 
         <p>
           Most of the time, on most tasks, the instruct version is the right starting point and
-          the alignment tax is small. The next lesson is about everything else that goes into
+          its inherited behaviour rarely gets in the way. The next lesson is about everything else that goes into
           picking the specific base model — license, tokenizer, context length, size.
         </p>
 
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
-            <dt>Base model</dt><dd>The model straight from pretraining: a next-token continuer over raw text. No chat template, no roles, no refusals.</dd>
+            <dt>Base model</dt><dd>The model straight from pretraining: a next-token continuer over raw text. It may ship a chat template, but it was not aligned to one: no roles, no refusals.</dd>
             <dt>Instruct model</dt><dd>A base model further trained (SFT + often preference tuning) to follow instructions inside a chat template. Same architecture, different behaviour.</dd>
             <dt>Alignment training</dt><dd>The post-pretraining training (SFT on instruction data plus optional DPO/RLHF) that turns a base into an instruct model.</dd>
-            <dt>Chat template</dt><dd>The tokenizer rule wrapping messages with role markers (<code>&lt;|im_start|&gt;user</code>, …). Instruct models expect it; base models don't.</dd>
+            <dt>Chat template</dt><dd>The tokenizer rule wrapping messages with role markers (<code>&lt;|im_start|&gt;user</code>, …). Instruct models were aligned to it; a base model may ship one but wasn't.</dd>
             <dt>Continued pretraining</dt><dd>Continuing the next-token objective on new raw text to teach a base model a new domain — not the same as instruction tuning.</dd>
-            <dt>Alignment tax</dt><dd>The cost of the instruct model's baked-in choices (refusals, hedges, style) when they don't match your task.</dd>
+            <dt>Alignment tax</dt><dd>Capability lost on some benchmarks as a side effect of alignment training (Ouyang et al. 2022).</dd>
+            <dt>Inherited behaviour</dt><dd>The instruct model's baked-in choices (refusals, hedges, style), which can fight your task.</dd>
           </dl>
         </section>
 
