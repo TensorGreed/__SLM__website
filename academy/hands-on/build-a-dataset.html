@@ -297,10 +297,10 @@
           </div>
         </header>
 
-        <p>The model is loaded; now it needs examples. We'll use a tiny, hand-built <strong>sentiment classification</strong> dataset so the whole pipeline is fast and inspectable. In a real project you'd have hundreds to thousands of rows; the mechanics are identical.</p>
+        <p>The model is loaded; now it needs examples. We'll use a tiny, hand-built <strong>sentiment classification</strong> dataset so the whole pipeline is fast and inspectable. In a real project you'd have hundreds to thousands of rows; the mechanics are identical. Be warned that six rows only prove the code runs: with the batch settings in Lesson 2.5 they give a single optimizer step per epoch, so you will not see the model learn, or any lift in Lesson 2.7, until you swap in a few hundred real rows.</p>
 
         <h2>The shape: (prompt, completion)</h2>
-        <p>From Track 1: an SFT example is a prompt paired with the target completion. For classification the completion is just the label. We keep the prompt instruction identical across examples so the model learns the <em>task</em>, not the wording.</p>
+        <p>From Track 1: an SFT example is a prompt paired with the target completion. For classification the completion is just the label. We keep the prompt instruction identical across examples so the model learns the <em>task</em>, not the wording. That is the right call when production always sends that exact prompt; if real users will phrase the request in different ways, vary the instruction in training too, or the model may only respond well to the one phrasing it saw.</p>
         <pre class="code-block"><code>raw = [
     {"prompt": "Classify the sentiment as positive or negative: I loved this movie.", "completion": "positive"},
     {"prompt": "Classify the sentiment as positive or negative: A complete waste of time.", "completion": "negative"},

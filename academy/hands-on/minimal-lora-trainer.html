@@ -313,12 +313,18 @@ lora_config = LoraConfig(
 
 model = get_peft_model(model, lora_config)
 model.print_trainable_parameters()
-# e.g. trainable params: ~0.4M || all params: ~135M || trainable%: ~0.3</code></pre>
-        <p>That <code>print_trainable_parameters()</code> line is worth pausing on: you're training well under 1% of the model. This is exactly why LoRA fits on a small GPU (Track 1's memory lesson).</p>
+# trainable params: 921,600 || all params: 135,436,608 || trainable%: 0.6805</code></pre>
+        <p>That <code>print_trainable_parameters()</code> line is worth pausing on: you're training under 1% of the model (30 layers × r=16 × the in+out widths of <code>q_proj</code> and <code>v_proj</code> = 921,600 parameters). This is exactly why LoRA fits on a small GPU (Track 1's memory lesson).</p>
+        <p>Adapting only <code>q_proj</code> and <code>v_proj</code> is the original LoRA paper's choice and the cheapest one. Many recipes now start from all linear layers (<code>target_modules="all-linear"</code>), which usually trains better for a modest increase in adapter size; the QLoRA lesson (2.11) does that. We keep q/v here so the numbers stay small and easy to check.</p>
 
         <h2>Configure the run</h2>
-        <p>The hyperparameters are the ones you studied in Track 1 — learning rate, epochs, effective batch size (per-device batch × gradient accumulation), bf16, and how often to log/save.</p>
-        <pre class="code-block"><code>from transformers import TrainingArguments, Trainer
+        <p>The hyperparameters are the ones you studied in Track 1 — learning rate, epochs, effective batch size (per-device batch × gradient accumulation), precision, and how often to log/save.</p>
+        <pre class="code-block"><code>import torch
+from transformers import TrainingArguments, Trainer
+
+# bf16 on Ampere+ GPUs, fp16 on older GPUs (T4, V100), fp32 on CPU (Lesson 2.1)
+use_bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+use_fp16 = torch.cuda.is_available() and not use_bf16
 
 args = TrainingArguments(
     output_dir="sft-out",
@@ -327,8 +333,10 @@ args = TrainingArguments(
     learning_rate=2e-4,                   # LoRA tolerates a higher LR
     num_train_epochs=3,
     lr_scheduler_type="cosine",
-    warmup_ratio=0.03,
-    bf16=True,
+    warmup_steps=0.03,                    # a float below 1 = fraction of total steps
+                                          # (transformers 5 removed warmup_ratio)
+    bf16=use_bf16,
+    fp16=use_fp16,
     logging_steps=5,
     eval_strategy="epoch",                # older transformers: evaluation_strategy
     save_strategy="epoch",

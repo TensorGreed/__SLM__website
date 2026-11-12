@@ -311,8 +311,12 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 tok = AutoTokenizer.from_pretrained("sft-out/adapter")
 base = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.bfloat16).to(device)
 tuned = PeftModel.from_pretrained(base, "sft-out/adapter").eval()</code></pre>
+        <div class="callout callout--warning">
+          <p class="callout__label">PEFT modifies the model you pass in</p>
+          <p><code>PeftModel.from_pretrained(base, …)</code> injects the LoRA layers into <code>base</code> in place. After that line, <code>base</code> <em>is</em> the tuned model: scoring it gives the tuned accuracy, and the lift always reads 0. To get the real baseline, score the base before attaching the adapter, or switch the adapter off with <code>tuned.disable_adapter()</code>, as below.</p>
+        </div>
         <h2>A prediction helper</h2>
-        <p>We use <strong>greedy decoding</strong> (<code>do_sample=False</code>) so results are deterministic and reproducible — exactly what Track 1 recommended for evaluation. The completion is short (a label), so a handful of new tokens is enough.</p>
+        <p>We use <strong>greedy decoding</strong> (<code>do_sample=False</code>) so results repeat run to run on the same hardware and batch size (GPU kernels and padding can still flip a near-tie elsewhere) — exactly what Track 1 recommended for evaluation. The completion is short (a label), so a handful of new tokens is enough.</p>
         <pre class="code-block"><code>@torch.no_grad()
 def predict(model, prompt):
     msgs = [{"role": "user", "content": prompt}]
@@ -332,8 +336,13 @@ def accuracy(model):
     hits = sum(predict(model, ex["prompt"]).startswith(ex["label"]) for ex in gold)
     return hits / len(gold)
 
-print("base  accuracy:", accuracy(base))    # the baseline
-print("tuned accuracy:", accuracy(tuned))   # after fine-tuning</code></pre>
+with tuned.disable_adapter():               # the base, with the adapter switched off
+    base_acc = accuracy(tuned)
+tuned_acc = accuracy(tuned)                 # adapter back on
+print("base  accuracy:", base_acc)          # the baseline
+print("tuned accuracy:", tuned_acc)         # after fine-tuning
+print("lift:", tuned_acc - base_acc)</code></pre>
+        <p>Two things to keep in mind when you read these numbers. First, <code>startswith</code> is a strict format check: the untuned model answers "I would say that the sentiment of this statement is positive." (Lesson 2.2), which scores as wrong even though the sentiment is right, so part of any lift here is the model learning the output format. Second, the gold set must be big enough to mean something: with two rows, accuracy can only be 0%, 50% or 100%, and even at 100 rows a 90% score has a 95% interval of roughly ±6 points.</p>
         <div class="callout callout--key">
           <p class="callout__label">Always report the lift</p>
           <p>A single accuracy number means little. The <strong>difference</strong> between the tuned model and the base — the lift — is what your fine-tune actually bought. If tuned ≈ base, fine-tuning didn't help; revisit the data (Track 1) before anything else.</p>
