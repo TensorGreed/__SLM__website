@@ -108,7 +108,7 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 0,
-            "text": "They carry the teacher's uncertainty",
+            "text": "They carry the teacher's uncertainty over alternatives",
             "answerExplanation": {
               "@type": "Comment",
               "text": "The full distribution shows how confident the teacher is and which alternatives it considers close — 'dark knowledge' a one-hot label discards. Soft targets aren't more accurate than gold labels; that is why the loss keeps a CE term."
@@ -174,7 +174,7 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 2,
-            "text": "Most probability mass sits on a few tokens",
+            "text": "Most probability mass sits on a few tokens per position",
             "answerExplanation": {
               "@type": "Comment",
               "text": "The distribution is usually peaked, so top-k keeps most of the signal compactly; BrewSLM captures through a chat-completions-style endpoint whose top_logprobs is capped at 20 (default k = 10). The dropped tail is not zero, so high-entropy positions do lose information."
@@ -360,7 +360,7 @@ GET  /api/projects/&lt;id&gt;/distillation/tasks/&lt;task_id&gt;  → its progre
               {
                 "q": "Why are soft targets richer than hard labels?",
                 "options": [
-                  "They carry the teacher's uncertainty",
+                  "They carry the teacher's uncertainty over alternatives",
                   "They are smaller to store",
                   "They are always more accurate than gold labels",
                   "They let you skip the gold-label loss entirely"
@@ -384,7 +384,7 @@ GET  /api/projects/&lt;id&gt;/distillation/tasks/&lt;task_id&gt;  → its progre
                 "options": [
                   "Tail tokens have zero probability",
                   "Top-k makes the KL term exact rather than approximate",
-                  "Most probability mass sits on a few tokens",
+                  "Most probability mass sits on a few tokens per position",
                   "The student only has k output tokens per position"
                 ],
                 "answer": 2,
@@ -409,12 +409,12 @@ GET  /api/projects/&lt;id&gt;/distillation/tasks/&lt;task_id&gt;  → its progre
             <ol class="quiz__static">
               <li><p class="quiz__q-text">Why are soft targets richer than hard labels?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>They carry the teacher's uncertainty</li>
+                  <li>They carry the teacher's uncertainty over alternatives</li>
                   <li>They are smaller to store</li>
                   <li>They are always more accurate than gold labels</li>
                   <li>They let you skip the gold-label loss entirely</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. They carry the teacher's uncertainty</strong> The full distribution shows how confident the teacher is and which alternatives it considers close — 'dark knowledge' a one-hot label discards. Soft targets aren't more accurate than gold labels; that is why the loss keeps a CE term.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. They carry the teacher's uncertainty over alternatives</strong> The full distribution shows how confident the teacher is and which alternatives it considers close — 'dark knowledge' a one-hot label discards. Soft targets aren't more accurate than gold labels; that is why the loss keeps a CE term.</p></details></li>
               <li><p class="quiz__q-text">Why does BrewSLM capture the teacher's outputs offline?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>The teacher runs once; students reuse it</li>
@@ -427,10 +427,10 @@ GET  /api/projects/&lt;id&gt;/distillation/tasks/&lt;task_id&gt;  → its progre
                 <ol class="quiz__static-options" type="A">
                   <li>Tail tokens have zero probability</li>
                   <li>Top-k makes the KL term exact rather than approximate</li>
-                  <li>Most probability mass sits on a few tokens</li>
+                  <li>Most probability mass sits on a few tokens per position</li>
                   <li>The student only has k output tokens per position</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Most probability mass sits on a few tokens</strong> The distribution is usually peaked, so top-k keeps most of the signal compactly; BrewSLM captures through a chat-completions-style endpoint whose top_logprobs is capped at 20 (default k = 10). The dropped tail is not zero, so high-entropy positions do lose information.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. Most probability mass sits on a few tokens per position</strong> The distribution is usually peaked, so top-k keeps most of the signal compactly; BrewSLM captures through a chat-completions-style endpoint whose top_logprobs is capped at 20 (default k = 10). The dropped tail is not zero, so high-entropy positions do lose information.</p></details></li>
               <li><p class="quiz__q-text">The teacher and student use different tokenizers. What happens in BrewSLM's offline KD?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>The captured ids point at wrong tokens, so soft targets become gibberish</li>
