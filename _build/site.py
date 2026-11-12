@@ -650,6 +650,9 @@ def jsonld_blocks(rel: str, facts: dict[str, "Facts"], pages: list[str]) -> list
                    else {"@type": "CollectionPage", "name": facts[track].h1, "url": url_of(track)}
                    if track in facts else academy_ref())
         mins = duration_minutes(f.time)
+        # No datePublished/dateModified and no image: lessons show no date and
+        # have no raster image yet. Dates (from git lastmod) can come once the
+        # page shows them (T10); the image with the T6 social cards.
         lr = {"@type": ["LearningResource", "Article"], "@id": f.url + "#lesson",
               "name": f.h1, "headline": f.h1, "description": f.description, "url": f.url,
               "mainEntityOfPage": f.url, "inLanguage": "en",
@@ -677,7 +680,9 @@ def jsonld_blocks(rel: str, facts: dict[str, "Facts"], pages: list[str]) -> list
                        "mainEntity": [{"@type": "Question", "name": q,
                                        "acceptedAnswer": {"@type": "Answer", "text": a}}
                                       for q, a in f.faq()]})
-    elif pt in ("top_level", "certificate", "roadmap", "academy_page"):
+    elif pt in ("top_level", "certificate", "roadmap", "academy_page", "tool"):
+        # "tool" (e.g. a calculator under /tools/) gets a plain WebPage until
+        # its own WebApplication branch lands with the page.
         page = {"@type": "WebPage", "name": f.h1, "description": f.description, "url": f.url,
                 "inLanguage": "en", "isPartOf": academy_ref() if rel.startswith("academy/") else {"@id": SITE_ID}}
         if pt == "certificate":
@@ -1140,6 +1145,7 @@ LD_EXPECTED = {
     "roadmap": {"WebPage", "BreadcrumbList"},
     "academy_page": {"BreadcrumbList"},
     "top_level": {"BreadcrumbList"},
+    "tool": {"WebPage"},
 }
 DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?")
 
