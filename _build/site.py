@@ -325,6 +325,8 @@ def line_span(text: str, start: int, end: int) -> tuple[int, int]:
 
 OVERRIDE_KEYS = ("robots", "og_title", "og_description", "og_image", "og_image_alt",
                  "twitter_title", "twitter_description", "date_modified")
+# Other keys a [pages."<path>"] table may carry (not head overrides).
+PAGE_KEYS = OVERRIDE_KEYS + ("verified",)
 
 
 def head_values(rel: str, s: "Scan") -> dict:
@@ -332,7 +334,7 @@ def head_values(rel: str, s: "Scan") -> dict:
     <title>, meta description and site.toml, unless site.toml's [pages."<rel>"]
     table overrides a key."""
     ov = CFG.get("pages", {}).get(rel, {})
-    unknown = set(ov) - set(OVERRIDE_KEYS)
+    unknown = set(ov) - set(PAGE_KEYS)
     if unknown:
         raise SystemExit(f"site.toml [pages.\"{rel}\"]: unknown key(s) {sorted(unknown)}")
     ptype = page_type(rel)
@@ -1976,8 +1978,9 @@ def names_lesson(hint: str, vis: dict, rel: str) -> bool:
     other lesson may match it better. Words are weighted by rarity (1 / the
     number of lessons whose title uses them), so "Lesson 0.12 (picking a base
     model)" fails: "base" and "model" fit 0.12 too, but "picking" fits only
-    0.13. Ties pass ("QLoRA" fits two lessons equally). True when the hint has
-    no significant words (nothing to compare)."""
+    0.13. Lessons are ranked by shared words first, then rarity; ties pass
+    ("QLoRA" fits two lessons equally). True when the hint has no
+    significant words (nothing to compare)."""
     want = sig_words(hint)
     if not want:
         return True
@@ -1990,9 +1993,13 @@ def names_lesson(hint: str, vis: dict, rel: str) -> bool:
         for w in ws & want:
             df[w] = df.get(w, 0) + 1
 
-    def score(r: str) -> float:
-        return sum(1 / df[w] for w in want & words[r])
-    return score(rel) >= max(score(r) for r in words) - 1e-9
+    # Rank by how many of the hint's words a title shares, then by their
+    # rarity: "choosing a base model" names 0.13 (base, model) even though
+    # "choosing" alone is rarer and only in 1.2's title.
+    def rank(r: str) -> tuple[int, float]:
+        shared = want & words[r]
+        return len(shared), round(sum(1 / df[w] for w in shared), 9)
+    return rank(rel) >= max(rank(r) for r in words)
 
 
 def pager_links(text: str) -> tuple[tuple[str, str] | None, tuple[str, str] | None]:
@@ -2136,11 +2143,10 @@ def check_freshness(vis: dict, today: dt.date | None = None) -> tuple[list[str],
             if v.level or v.time:
                 errs.append(f"{rel}: no Updated/Verified date in the lesson-meta row (run build)")
             continue
-        want, by_hand = freshness_label(rel), verified_by_hand(rel)
-        if v.verified_label != want:
-            errs.append(f"{rel}: the date is labelled {v.verified_label!r}, want {want!r} (\"Verified\" only "
-                        f"when [pages.\"{rel}\"].verified is set by hand in _build/site.toml)")
-        elif by_hand and v.verified != by_hand:
+        by_hand = verified_by_hand(rel)
+        label_errs = check_freshness_labels({rel: v})
+        errs += label_errs
+        if not label_errs and by_hand and v.verified != by_hand:
             errs.append(f"{rel}: Verified date {v.verified} is not site.toml's {by_hand} (run build)")
         try:
             days = stale_days(v.verified, today)
@@ -2152,6 +2158,21 @@ def check_freshness(vis: dict, today: dt.date | None = None) -> tuple[list[str],
         elif days < 0:
             errs.append(f"{rel}: {v.verified_label} date {v.verified} is in the future")
     return errs, stale
+
+
+def check_freshness_labels(vis: dict) -> list[str]:
+    """The date's label is "Verified" exactly when site.toml sets a hand-checked
+    [pages."<path>"].verified, else "Updated". `check` runs this on the pages as
+    they are on disk too, so a hand-typed "Verified:" fails even before build."""
+    errs = []
+    for rel, v in sorted(vis.items()):
+        if not has_verified(rel) or v.verified is None:
+            continue
+        want = freshness_label(rel)
+        if v.verified_label != want:
+            errs.append(f"{rel}: the date is labelled {v.verified_label!r}, want {want!r} (\"Verified\" only "
+                        f"when [pages.\"{rel}\"].verified is set by hand in _build/site.toml)")
+    return errs
 
 
 def check_certificate(vis: dict, pages: dict[str, str]) -> list[str]:
@@ -2273,6 +2294,9 @@ def cmd_check(args) -> int:
     errors += check_boxes({rel: (ROOT / rel).read_text(encoding="utf-8") for rel in pages}, BOXES)
     ferr, stale = check_freshness(vis)
     errors += ferr
+    on_disk = {rel: (ROOT / rel).read_text(encoding="utf-8") for rel in pages}
+    errors += [e + " (in the page as it is on disk)" for e in
+               check_freshness_labels({rel: Visible(rel, t) for rel, t in on_disk.items()})]
     if stale:
         warns.append(f"{len(stale)} page(s) not updated or verified in over {STALE_AFTER_DAYS} days (re-check them, then "
                      f"set [pages.\"<path>\"].verified in _build/site.toml)"

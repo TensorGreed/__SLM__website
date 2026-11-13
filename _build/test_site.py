@@ -281,6 +281,9 @@ class SequenceChecks(unittest.TestCase):
         self.assertFalse(S.names_lesson("picking a base model", self.vis, nums["0.12"]))
         self.assertTrue(S.names_lesson("base vs instruct", self.vis, nums["0.12"]))
         self.assertFalse(S.names_lesson("base vs instruct", self.vis, nums["0.13"]))
+        # R3 nit: "choosing" is otherwise only in 1.2's title; a one-word rival doesn't count
+        self.assertTrue(S.names_lesson("choosing a base model", self.vis, nums["0.13"]))
+        self.assertFalse(S.names_lesson("choosing a base model", self.vis, nums["1.2"]))
         pages, vis = self.mutate(rel, "Lesson 4.8 — serving and inference",
                                  "Lesson 0.12 (picking a base model) and Lesson 4.8 — serving and inference")
         errs = self.refs(pages, vis)
@@ -380,6 +383,34 @@ class FreshnessChecks(unittest.TestCase):
         relabelled = text.replace("<strong>Updated:</strong>", "<strong>Verified:</strong>")
         errs = S.check_freshness({self.lesson: S.Visible(self.lesson, relabelled)}, dt.date(2026, 11, 13))[0]
         self.assertTrue(any("labelled 'Verified', want 'Updated'" in e for e in errs), errs)
+
+    def test_hand_typed_verified_label_fails_on_disk(self):
+        # R3 S3: check reads the label on disk too, not only in render() output.
+        text = self.pages[self.lesson]
+        relabelled = text.replace("<strong>Updated:</strong>", "<strong>Verified:</strong>")
+        self.assertEqual(S.check_freshness_labels({self.lesson: S.Visible(self.lesson, text)}), [])
+        errs = S.check_freshness_labels({self.lesson: S.Visible(self.lesson, relabelled)})
+        self.assertTrue(any("labelled 'Verified', want 'Updated'" in e for e in errs), errs)
+
+    def test_site_toml_verified_key_builds(self):
+        # R3 S2: a hand-set verified date (a TOML date) goes through the real build path.
+        pages_cfg = S.CFG.setdefault("pages", {})
+        saved = pages_cfg.get(self.lesson)
+        pages_cfg[self.lesson] = {**(saved or {}), "verified": dt.date(2026, 11, 10)}
+        try:
+            new, _, facts = S.render()
+            built = new[self.lesson]
+            self.assertIn('<strong>Verified:</strong> <time datetime="2026-11-10">10 Nov 2026</time>', built)
+            self.assertIn('"dateModified": "2026-11-10"', built)
+            v = S.Visible(self.lesson, built)
+            self.assertEqual(S.check_freshness({self.lesson: v}, dt.date(2026, 11, 13))[0], [])
+            other = next(r for r in new if r != self.lesson and S.page_type(r) == "lesson")
+            self.assertIn("<strong>Updated:</strong>", new[other])
+        finally:
+            if saved is None:
+                del pages_cfg[self.lesson]
+            else:
+                pages_cfg[self.lesson] = saved
 
     def test_site_toml_override_wins(self):
         pages_cfg = S.CFG.setdefault("pages", {})
