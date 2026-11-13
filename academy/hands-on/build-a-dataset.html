@@ -425,15 +425,15 @@ gold_ds.select_columns(["prompt", "completion"]) \
                 "explanation": "A fixed instruction focuses learning on the task when the deployed prompt is fixed. If real users will phrase requests differently, train on varied phrasings so the model doesn't depend on one wording."
               },
               {
-                "q": "What does ds.train_test_split(test_size=0.2) give you?",
+                "q": "What does the lesson's first cut, ds.train_test_split(test_size=200, stratify_by_column=\"label\", seed=42), give you?",
                 "options": [
-                  "A 20% train / 80% validation split",
-                  "A verified gold set for final accuracy",
-                  "A split stratified by label, so class balance is kept automatically",
-                  "An 80% train split and a 20% held-out split"
+                  "A 200-row training set, with every other row held out",
+                  "A random 20% held-out split",
+                  "200 held-out rows whose class ratio is whatever chance gives",
+                  "200 held-out rows (the gold set) with the label ratio of the whole dataset kept"
                 ],
                 "answer": 3,
-                "explanation": "test_size=0.2 holds out a random 20% to watch overfitting during training. It is not stratified unless you pass stratify_by_column, and a random slice is not a verified gold set."
+                "explanation": "An integer test_size is a row count, not a fraction, so 200 rows go to the held-out side and become the gold set. stratify_by_column keeps the positive/negative ratio in both parts (a random cut only does that on average). The gold set is cut first so the later train/validation split never touches it."
               },
               {
                 "q": "The gold set should be…",
