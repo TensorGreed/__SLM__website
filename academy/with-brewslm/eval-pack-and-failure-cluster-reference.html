@@ -146,7 +146,7 @@
             "text": "At export, and only when the project's gate_policy is switched on",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Promotion only checks the version's status. Gates block through project.gate_policy (must_pass / min_score / blocked_if_missing) at export, and that policy is off by default; a blocked export fails with 'Export blocked by deployment gates: …'."
+              "text": "Promotion only checks the version's status. Gates block through project.gate_policy (must_pass / min_score / blocked_if_missing) at export, and that policy is off by default (the built-in starter packs switch it on); a blocked export fails with 'Export blocked by deployment gates: …'."
             }
           }
         },
@@ -301,6 +301,7 @@
         </header>
 
         <p>This last reference catalogues the two surfaces the evaluation lifecycle exposes: the <strong>eval pack</strong> (gates that score whether a trained model meets its bar) and the <strong>failure cluster</strong> (the grouping of similar errors that drives the data-iteration loop). <a class="inline-link" href="eval-packs-and-failure-clusters.html">Lesson 3.8</a> explained what they do and where they live in the workspace; this reference documents the schema. One naming note before the JSON: the workspace calls an eval pack a <strong>rule set</strong> and a gate a <strong>pass/fail rule</strong> (<strong>Results → Verdict</strong>'s <em>Pass/fail rules</em> card; the rule-set card on <strong>Results → Failures</strong>). The field names, pack ids and keys below are the API's and are unchanged.</p>
+        <p>This is a <strong>verified-contract</strong> page: every row was checked against the public BrewSLM code, and the Verified date at the top says when. Tables say what is <em>enforced</em> or <em>applied</em> today in their own column and name the file that does it; most of the gate logic lives in <code>services/evaluation_pack_service.py</code>.</p>
 
         <h2>Eval pack — the envelope</h2>
         <p>An eval pack is identified by id (e.g. <code>evalpack.general.default</code>, <code>evalpack.domain-profile</code>) and conforms to the <strong>Evaluation Contract v2</strong> (<code>slm.evaluation-pack/v2</code>). The pack carries per-task specs and a backward-compatible top-level gate list.</p>
@@ -315,22 +316,26 @@
         <p>The legacy top-level <code>gates</code> field still works for single-task projects; modern packs put their gates inside <code>task_specs</code> so different task profiles in one project can each carry their own promotion criteria.</p>
 
         <h2>The gate schema (Evaluation Contract v2)</h2>
-        <p>Every gate is a small dict. <strong>Only <code>metric_id</code> is required</strong> — a gate without it is dropped. Everything else has a default.</p>
-        <pre class="code-block"><code>{
-  "gate_id":   "min_macro_f1",        // default f"min_{metric_id}"
-  "metric_id": "macro_f1",            // the only required field
-  "operator":  "gte",                 // "gte" (>=) or "lte" (<=); default "gte"
-  "threshold": 0.90,                  // default null: the gate is not_enforced and passes
-  "required":  true,                  // default true
-  "source":    "blueprint",           // set by the pack builder, not read from your dict
-  "weight":    1.0                    // optional — kept only if you set it
-}</code></pre>
-        <ul>
-          <li><strong><code>operator</code></strong> is normalised: in a pack's task spec, anything outside <code>{gte, lte}</code> falls back to <code>gte</code>. There is no <code>eq</code>, no <code>in</code>, no string match — gates are scalar comparisons.</li>
-          <li><strong><code>required</code></strong> defaults to <code>true</code>. A required gate fails when its metric is missing; a <code>required: false</code> gate with a missing metric still passes. Whether any failure actually blocks anything is decided by the project's gate policy (below), not by the gate.</li>
-          <li><strong><code>threshold: null</code></strong> makes the gate <code>not_enforced</code>: it is reported and always passes.</li>
-          <li><strong><code>source</code></strong> is informational: the pack builder stamps where the gate came from so the audit can trace it.</li>
-        </ul>
+        <p>Every gate is a small dict. <strong>Only <code>metric_id</code> is required</strong>: a gate without it is dropped. When a pack is loaded, each gate is normalised to the keys below; anything else on the dict is discarded.</p>
+        <table class="comparison-table">
+          <thead>
+            <tr><th>Key</th><th>Required?</th><th>Default</th><th>Meaning</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>metric_id</code></td><td>yes</td><td>—</td><td>The metric to compare, lower-cased (hyphens and spaces become <code>_</code>). Matched against the eval's metrics, including <code>metric_schema</code> aliases.</td></tr>
+            <tr><td><code>gate_id</code></td><td>no</td><td><code>min_&lt;metric_id&gt;</code></td><td>The name the report and the Verdict card use ("Failed required rules: min_f1").</td></tr>
+            <tr><td><code>operator</code></td><td>no</td><td><code>gte</code></td><td><code>gte</code> (actual ≥ threshold) or <code>lte</code> (actual ≤ threshold). Any other value becomes <code>gte</code>. No <code>eq</code>, no <code>in</code>, no string match.</td></tr>
+            <tr><td><code>threshold</code></td><td>no</td><td><code>null</code></td><td>A number. <code>null</code> makes the gate <code>not_enforced</code>: reported, always passes.</td></tr>
+            <tr><td><code>required</code></td><td>no</td><td><code>true</code></td><td>A required gate fails the report when it fails or its metric is missing; an optional one is shown but never fails the report.</td></tr>
+            <tr><td><code>weight</code></td><td>no</td><td>absent</td><td>Kept only if you set it to a number.</td></tr>
+            <tr><td><code>source</code></td><td>set for you</td><td><code>evaluation_pack_v2</code> or the pack builder's tag</td><td>Where the gate came from, for the audit. Not read from your dict.</td></tr>
+          </tbody>
+        </table>
+        <pre class="code-block"><code>{ "metric_id": "macro_f1", "threshold": 0.5 }
+// is stored as
+{ "gate_id": "min_macro_f1", "metric_id": "macro_f1", "operator": "gte",
+  "threshold": 0.5, "required": true, "source": "evaluation_pack_v2" }</code></pre>
+        <p>The gate checker also understands per-gate <code>variance_policy</code>, <code>slice_name</code>, <code>min_slice_support</code> and the operators <code>worst_slice_gte</code> / <code>worst_slice_lte</code> (the rule-set editor offers the worst-slice operators). Pack loading drops those keys and turns a worst-slice operator into plain <code>gte</code> on the overall metric, so in a project's gate report they are <strong>carried, not applied</strong> today. A gate on one slice still works if you write the slice into the metric id: <code>"metric_id": "per_slice.long_input.f1"</code>.</p>
 
         <h2>Per-task specs (the canonical v2 form)</h2>
         <p>The example below is an <strong>illustrative custom pack</strong>, not a built-in default: its thresholds are ones you might set for a release candidate. The built-in <code>evalpack.general.default</code> asks much less of <code>instruction_sft</code> (exact match ≥ 0.4 and F1 ≥ 0.5, both required), because it is calibrated for the 135M default model.</p>
@@ -351,20 +356,65 @@
 }</code></pre>
         <p>A pack with multiple task profiles supports projects whose blueprint says "we're training a classifier <em>and</em> a span extractor"; each profile gets its own gates and metric schema. <code>required_metric_ids</code> is auto-extended to include every metric referenced by a <code>required</code> gate, so a typo in a metric name there surfaces as a <code>missing_metric_required</code> gate result rather than a silently un-evaluated gate.</p>
 
-        <h2>How gates are checked, and where they block</h2>
-        <p>At Evaluate stage time (Track 3, Lesson 3.8) the run's evaluations produce a metrics dict — actual values for the metrics the task spec declared. Each gate is then checked mechanically and gets <code>passed: true|false</code> plus a <code>reason</code>:</p>
-        <ol>
-          <li>If <code>threshold</code> is null — <code>not_enforced</code>, passes.</li>
-          <li>If the metric is missing — <code>missing_metric_required</code> (fails) or <code>missing_metric_optional</code> (passes).</li>
-          <li>Otherwise compare against the threshold — <code>ok</code>, <code>below_threshold</code> (a <code>gte</code> gate) or <code>above_threshold</code> (an <code>lte</code> gate).</li>
-          <li>For a multi-seed metric under the lower-bound policy, a gate that the mean clears but mean − std does not reports <code>variance_below_threshold</code> (or <code>variance_above_threshold</code> for <code>lte</code>).</li>
-        </ol>
-        <p>The gate report says <strong>passed</strong> when no required gate failed and no required metric is missing; a failed optional gate is shown but does not fail the report. <strong>Promotion does not check gates</strong>; promote only checks the deployment version's status. Gates block at <strong>export</strong>, through the project's <code>gate_policy</code> (<code>workflow.gate_policy</code> in the manifest): <code>must_pass</code> (block if the gate report did not pass), <code>blocked_if_missing</code> (block if required metrics are missing) and <code>min_score</code> (block below an aggregate gate score). <strong>All three are off by default</strong>, so out of the box a failing gate blocks nothing. A blocked export is marked FAILED with the message "Export blocked by deployment gates: …".</p>
-        <p>You read the outcome on <strong>Results → Verdict</strong>: the <em>Pass/fail rules</em> card shows the run, the rule set (e.g. <code>evalpack.general.default</code>), when it was checked, a PASS / FAIL badge (NO REPORT when nothing has been checked) and the required rules that failed by <code>gate_id</code> ("Failed required rules: min_exact_match, min_f1"). To change the project's rule set or inspect every rule for a run, use the rule-set card on <strong>Results → Failures</strong>.</p>
+        <h2>How gates are checked: the <code>reason</code> vocabulary</h2>
+        <p>After evaluation (Lesson 3.8) the run's latest result of each eval type is flattened into one metrics dict. Each gate is then checked mechanically and gets <code>passed: true|false</code> plus a <code>reason</code>:</p>
+        <table class="comparison-table">
+          <thead>
+            <tr><th><code>reason</code></th><th>Passed?</th><th>When</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>ok</code></td><td>yes</td><td>The value clears the threshold.</td></tr>
+            <tr><td><code>below_threshold</code></td><td>no</td><td>A <code>gte</code> gate's value is under the threshold.</td></tr>
+            <tr><td><code>above_threshold</code></td><td>no</td><td>An <code>lte</code> gate's value is over the threshold.</td></tr>
+            <tr><td><code>missing_metric_required</code></td><td>no</td><td>A required gate's metric is not in the results.</td></tr>
+            <tr><td><code>missing_metric_optional</code></td><td>yes</td><td>An optional gate's metric is not in the results.</td></tr>
+            <tr><td><code>not_enforced</code></td><td>yes</td><td>The gate's threshold is <code>null</code>.</td></tr>
+            <tr><td><code>variance_below_threshold</code></td><td>no</td><td>Multi-seed run: the mean clears a <code>gte</code> gate but mean − std does not.</td></tr>
+            <tr><td><code>variance_above_threshold</code></td><td>no</td><td>Multi-seed run: the mean clears an <code>lte</code> gate but mean + std does not.</td></tr>
+          </tbody>
+        </table>
+        <p><strong>Variance gates.</strong> When the metric comes from a multi-seed aggregate (Lesson 3.7), the gate is checked against the <strong>lower bound</strong>: mean − std for <code>gte</code>, mean + std for <code>lte</code>. The check then also reports <code>actual_std</code>, <code>actual_min</code>, <code>actual_max</code>, <code>actual_n</code>, <code>gate_value</code>, <code>per_seed</code> and <code>variance_policy: "lower_bound"</code>. A single-seed run is checked on its value as-is. (The checker has a <code>mean</code> policy too, but since pack loading drops a gate's <code>variance_policy</code>, every pack gate uses the lower bound.) The worst-slice check has its own reasons (<code>worst_slice_below_threshold</code>, <code>no_eligible_slices_required</code>…), which a project report does not produce today, for the reason above.</p>
+        <p>The gate report says <strong>passed</strong> when no required gate failed and no required metric is missing; a failed optional gate is shown but does not fail the report. Two gates can be added on top of the pack: the built-in checks' probe gate, when the project switches it on, and a required <code>probe_critical_failures</code> ≤ 0 gate whenever the project has a custom check marked critical.</p>
+
+        <h2>Where gates are enforced</h2>
+        <table class="comparison-table">
+          <thead>
+            <tr><th>Place</th><th>Enforced today?</th><th>What happens</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Results → Verdict</strong>, <em>Pass/fail rules</em> card</td><td>no, informational</td><td>A PASS / FAIL badge (NO REPORT when nothing has been checked), the run, the rule set, when it was checked and the failed required rules by <code>gate_id</code>. Nothing is blocked.</td></tr>
+            <tr><td>Promote (Ship → Deploy)</td><td>no</td><td>Promote checks only the deployment version's status; it never reads gates. (<code>deployment_promote_blocked</code> is declared, not emitted.)</td></tr>
+            <tr><td>Export</td><td><strong>yes, when <code>gate_policy</code> is on</strong></td><td><code>services/export_service.py</code> reads <code>project.gate_policy</code>: <code>must_pass</code> blocks if the report did not pass, <code>blocked_if_missing</code> if required metrics are missing, <code>min_score</code> below an aggregate gate score (the share of scored gates that passed). The export is marked FAILED: "Export blocked by deployment gates: …".</td></tr>
+            <tr><td><code>GET /api/projects/{id}/gate-check</code></td><td>no, a report</td><td>Applies the same policy and returns <code>is_blocked</code> plus reasons, without blocking anything.</td></tr>
+          </tbody>
+        </table>
+        <p><strong><code>gate_policy</code> is off by default</strong>: a new project gets <code>must_pass: false</code>, <code>blocked_if_missing: false</code>, <code>min_score: 0.0</code>, so out of the box a failing gate blocks nothing. Two ways switch it on: the four built-in starter packs offered in the New Project dialog (legal, customer support, healthcare, finance) each set <code>must_pass: true</code> and a <code>min_score</code>, and the manifest's <code>workflow.gate_policy</code> sets it on apply. There is no UI toggle for it.</p>
+
+        <h2>The built-in rule sets</h2>
+        <table class="comparison-table">
+          <thead>
+            <tr><th>Pack id</th><th>What it gates</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>evalpack.general.default</code></td><td>The fallback. Per-profile specs; e.g. instruction SFT exact match ≥ 0.4 and F1 ≥ 0.5 (required), classification accuracy and macro-F1 ≥ 0.5 (required).</td></tr>
+            <tr><td><code>evalpack.quality.strict</code></td><td>Higher bars for release candidates; every gate required.</td></tr>
+            <tr><td><code>evalpack.fast.iteration</code></td><td>Low bars for quick loops.</td></tr>
+            <tr><td><code>evalpack.domain.legal</code>, <code>.support</code>, <code>.healthcare</code>, <code>.finance</code></td><td>Small domain-flavoured gate sets (e.g. support: accuracy ≥ 0.8 and hallucination rate ≤ 0.05).</td></tr>
+            <tr><td><code>evalpack.rag_protocol.discipline</code></td><td>RAG answers: F1, citation rate, hallucination rate, appropriate refusals.</td></tr>
+            <tr><td><code>evalpack.domain-profile</code></td><td>Built on the fly from the project's domain profile thresholds.</td></tr>
+            <tr><td><code>evalpack.project.scaffolded</code></td><td>A project's own draft, saved from the rule-set card.</td></tr>
+          </tbody>
+        </table>
+        <p>Which of these scores your project depends on the project's preference, its domain profile and the default, in that order.</p>
+        <!-- box:which-rule-set -->
+        <div class="callout callout--note">
+          <p class="callout__label">Fix coming</p>
+          <p>The classification recipe names <code>evalpack.classification.default</code>, which main does not define yet: a project that asks for it gets the warning "not available; falling back" and is scored by the next pack in the chain. A change that adds the pack is merged but not yet released.</p>
+        </div>
 
         <div class="callout callout--note">
           <p class="callout__label">Honest reporting: required vs informational</p>
-          <p>The pack's report carries <code>passed</code> and a <code>reason</code> on every gate, regardless of <code>required</code>. A model that clears its <code>required</code> gates but fails an informational one still passes the report, and even a failed report blocks nothing unless the project's gate policy is switched on — so the gate report carries every failing gate explicitly. This is the "show the gate that failed" rule the Academy keeps coming back to: don't hide informational failures inside a headline "passed: true."</p>
+          <p>The pack's report carries <code>passed</code> and a <code>reason</code> on every gate, regardless of <code>required</code>. A model that clears its <code>required</code> gates but fails an informational one still passes the report, and even a failed report blocks nothing unless the project's gate policy is on, so the gate report carries every failing gate explicitly. This is the "show the gate that failed" rule the Academy keeps coming back to: don't hide informational failures inside a headline "passed: true."</p>
         </div>
 
         <h2>The metric_schema field</h2>
@@ -399,6 +449,7 @@ last_computed_at    datetime           refresh marker for clustering runs</code>
           <li><strong><code>failure_count</code></strong> grows over time; the cluster is the unit of "this keeps happening" not "this happened once."</li>
           <li><strong>Exemplar lists are capped at 5</strong> — the cluster carries enough rows to investigate without each cluster ballooning.</li>
         </ul>
+        <p>Because only a few error codes are emitted today (Lesson 3.12), these clusters can only hold failed imports (<code>dataset_import_failed</code>), failed dispatches (<code>training_dispatch_error</code>), simulate-runtime training errors and failed exports (<code>export_run_failed</code>). The service is <code>services/run_event_clustering_service.py</code>; the eval-miss clusters are <code>services/failure_cluster_service.py</code>.</p>
 
         <h2>Remediation: the augment_from_cluster path</h2>
         <p>The remediation contract is: <strong>a cluster of eval misses becomes a generation source</strong>. This uses the <em>eval-miss</em> clusters on <strong>Results → Failures</strong>, not the RunEvent <code>failure_clusters</code> rows above. The Coach notice's <code>augment_from_cluster</code> action (Lesson 3.12) carries <code>{eval_result_id, cluster_id, target_count}</code>. The flow:</p>
@@ -422,7 +473,7 @@ last_computed_at    datetime           refresh marker for clustering runs</code>
           <h2>Key terms</h2>
           <dl>
             <dt>Evaluation Contract v2</dt><dd><code>slm.evaluation-pack/v2</code> — the eval-pack schema with per-task specs (each carrying its own gates and metric schema).</dd>
-            <dt>Gate</dt><dd>A scalar comparison: <code>{gate_id, metric_id, operator: gte|lte, threshold, required, source?, weight?}</code>; only <code>metric_id</code> is required. In the UI: a <strong>pass/fail rule</strong>; the pack is the <strong>rule set</strong>.</dd>
+            <dt>Gate</dt><dd>A scalar comparison: <code>{gate_id, metric_id, operator: gte|lte, threshold, required, source?, weight?}</code>; only <code>metric_id</code> is required. Its result carries <code>passed</code> and a <code>reason</code> (<code>ok</code>, <code>below_threshold</code>, <code>variance_below_threshold</code>…). In the UI: a <strong>pass/fail rule</strong>; the pack is the <strong>rule set</strong>.</dd>
             <dt>Required gate</dt><dd>A gate with <code>required: true</code> (the default): a missing metric fails it. Failed gates block only at export, and only when the project's <code>gate_policy</code> is switched on; promotion never checks gates.</dd>
             <dt>Task spec</dt><dd>Per-task-profile section of an eval pack carrying <code>required_metric_ids</code>, <code>metric_schema</code>, and the gate list.</dd>
             <dt>FailureCluster</dt><dd>Row in <code>failure_clusters</code>, uniquely keyed on <code>(project_id, stage, reason_code, signature)</code>; carries counts, timestamps, and exemplar lists capped at 5. Built from error / critical RunEvents, not eval misses.</dd>
