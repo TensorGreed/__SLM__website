@@ -25,6 +25,13 @@ The hand-written HTML stays the source of truth. This script only:
     diagrams: edit the box file, never the region in a page);
   * writes whole generated files: sitemap.xml, feed.xml, 404.html.
 
+Pages under tools/ (the calculators) get WebApplication + FAQPage +
+BreadcrumbList JSON-LD; `check` also fails on an inline style or a colour
+literal in a tool page's body, tools/*.css or tools/*.js. The calculators'
+formulas are validated by _build/test_tools.py (node runs tools/*.js on the
+cases in _build/tool_cases.json; _build/lift_reference.py writes the scipy /
+statsmodels reference values).
+
 Usage:
   python3 _build/site.py build    # rewrite regions + generated files
   python3 _build/site.py check    # exit 1 if build would change anything, or a
@@ -712,9 +719,24 @@ def jsonld_blocks(rel: str, facts: dict[str, "Facts"], pages: list[str]) -> list
                        "mainEntity": [{"@type": "Question", "name": q,
                                        "acceptedAnswer": {"@type": "Answer", "text": a}}
                                       for q, a in f.faq()]})
-    elif pt in ("top_level", "certificate", "roadmap", "academy_page", "tool"):
-        # "tool" (e.g. a calculator under /tools/) gets a plain WebPage until
-        # its own WebApplication branch lands with the page.
+    elif pt == "tool":
+        # A calculator under /tools/: a free WebApplication, plus a FAQPage
+        # from the <details> Q&As on the page (the only <details> it may use).
+        blocks.append({"@type": "WebApplication", "@id": f.url + "#app", "name": f.h1,
+                       "description": f.description, "url": f.url, "inLanguage": "en",
+                       "applicationCategory": "DeveloperApplication",
+                       "operatingSystem": "Any (runs in the browser)",
+                       "browserRequirements": "Requires JavaScript", "isAccessibleForFree": True,
+                       "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+                       "publisher": org, "isPartOf": {"@id": SITE_ID}})
+        qa = f.faq()
+        if qa:
+            blocks.append({"@type": "FAQPage", "name": f.h1, "description": f.description, "url": f.url,
+                           "inLanguage": "en", "isPartOf": {"@id": SITE_ID},
+                           "mainEntity": [{"@type": "Question", "name": q,
+                                           "acceptedAnswer": {"@type": "Answer", "text": a}}
+                                          for q, a in qa]})
+    elif pt in ("top_level", "certificate", "roadmap", "academy_page"):
         page = {"@type": "WebPage", "name": f.h1, "description": f.description, "url": f.url,
                 "inLanguage": "en", "isPartOf": academy_ref() if rel.startswith("academy/") else {"@id": SITE_ID}}
         if pt == "certificate":
@@ -1148,6 +1170,43 @@ def open_paragraph(text: str, pos: int) -> bool:
 
 
 BOXES = load_boxes()
+
+
+# ── tool pages (/tools/) ───────────────────────────────────────────────────
+# The calculators use the site's CSS tokens like the boxes do: no inline
+# styles or colour literals in a tool page's body, its stylesheet or its
+# scripts (the dark theme in tools/tools.css maps tokens to other tokens), and
+# scripts never set .style (they toggle classes).
+TOOL_JS_FORBIDDEN = [
+    (re.compile(r"\.style\b|setAttribute\(\s*[\"']style"), "an inline style set from script"),
+    (re.compile(r"(?<![&\w])#[0-9a-fA-F]{3,8}\b(?![\w-])"), "a hex colour literal"),
+    (re.compile(r"\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch)\s*\("), "a colour function"),
+]
+
+
+def tool_file_errors(pages: list[str]) -> list[str]:
+    errs = []
+    for rel in pages:
+        if page_type(rel) != "tool":
+            continue
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        start = text.find("<body")
+        for rx, what in BOX_FILE_FORBIDDEN:
+            for m in rx.finditer(text, max(start, 0)):
+                line = text[:m.start()].count("\n") + 1
+                errs.append(f"{rel}:{line}: {what} {m.group(0)!r} (tool pages use classes on the CSS tokens)")
+        if re.search(r"<script\b(?![^>]*\bsrc=)(?![^>]*application/(?:ld\+)?json)[^>]*>", text[max(start, 0):]):
+            errs.append(f"{rel}: inline <script> in the body (put page code in tools/*.js)")
+    tools_dir = ROOT / "tools"
+    for f in sorted(tools_dir.glob("*.css")) + sorted(tools_dir.glob("*.js")) if tools_dir.is_dir() else []:
+        text = f.read_text(encoding="utf-8")
+        rules = BOX_FILE_FORBIDDEN[2:4] if f.suffix == ".css" else TOOL_JS_FORBIDDEN
+        code = re.sub(r"/\*.*?\*/", lambda m: re.sub(r"[^\n]", " ", m.group(0)), text, flags=re.S)
+        for rx, what in rules:
+            for m in rx.finditer(code):
+                line = code[:m.start()].count("\n") + 1
+                errs.append(f"tools/{f.name}:{line}: {what} {m.group(0)!r} (use the CSS tokens)")
+    return errs
 
 
 # ── freshness (site:verified region) ───────────────────────────────────────
@@ -1605,6 +1664,7 @@ LD_REQUIRED = {
     "Organization": ["name", "url", "logo"],
     "WebSite": ["name", "url"],
     "SoftwareApplication": ["name", "applicationCategory", "offers"],
+    "WebApplication": ["name", "url", "applicationCategory", "offers"],
     "BlogPosting": ["headline", "description", "datePublished", "dateModified", "author", "publisher",
                     "image", "mainEntityOfPage"],
     "Blog": ["name", "url", "blogPost"],
@@ -1633,7 +1693,7 @@ LD_EXPECTED = {
     "roadmap": {"WebPage", "BreadcrumbList"},
     "academy_page": {"BreadcrumbList"},
     "top_level": {"BreadcrumbList"},
-    "tool": {"WebPage"},
+    "tool": {"WebApplication", "FAQPage", "BreadcrumbList"},
 }
 DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?")
 
@@ -1776,14 +1836,15 @@ def check_jsonld(rel: str, text: str, vis: dict, pages: set[str], texts: dict) -
         # ── agreement with the visible page ──
         main_url = n.get("url")
         if types & {"BlogPosting", "Blog", "LearningResource", "HowTo", "DefinedTermSet", "WebPage",
-                    "CollectionPage", "FAQPage", "WebSite", "SoftwareApplication"} or \
+                    "CollectionPage", "FAQPage", "WebSite", "SoftwareApplication", "WebApplication"} or \
                 (types == {"Course"} and pt in ("academy_index", "track_index")):
             if main_url != url:
                 err(f"{name}.url {main_url!r} is not this page ({url})")
             if "description" in n and n["description"] != description and not types & {"SoftwareApplication"}:
                 err(f"{name}.description differs from the meta description")
         heading = n.get("headline") if types & {"BlogPosting", "Article"} else n.get("name")
-        if (types & {"BlogPosting", "LearningResource", "HowTo", "WebPage", "CollectionPage", "FAQPage"}
+        if (types & {"BlogPosting", "LearningResource", "HowTo", "WebPage", "CollectionPage", "FAQPage",
+                     "WebApplication"}
                 or (types == {"Course"} and pt == "track_index")) and heading != v.h1:
             err(f"{name} name/headline {heading!r} is not the h1 {v.h1!r}")
         if "Article" in types and n.get("headline") != v.h1:
@@ -1901,7 +1962,7 @@ def check_jsonld(rel: str, text: str, vis: dict, pages: set[str], texts: dict) -
         want.add("BreadcrumbList")
     for t in sorted(want - have):
         err(f"missing {t} for a {pt} page")
-    for t in ("BreadcrumbList", "Organization", "WebSite", "FAQPage", "Quiz", "DefinedTermSet"):
+    for t in ("BreadcrumbList", "Organization", "WebSite", "FAQPage", "Quiz", "DefinedTermSet", "WebApplication"):
         if found.count(t) > 1:
             err(f"{found.count(t)} {t} nodes (want 1)")
     return [f"{rel}: JSON-LD {e}" for e in errs], found
@@ -2291,6 +2352,7 @@ def cmd_check(args) -> int:
     errors += check_sequence(vis, pages)
     errors += check_lesson_refs(vis, pages)
     errors += box_file_errors(BOXES)
+    errors += tool_file_errors(list(pages))
     errors += check_boxes({rel: (ROOT / rel).read_text(encoding="utf-8") for rel in pages}, BOXES)
     ferr, stale = check_freshness(vis)
     errors += ferr
