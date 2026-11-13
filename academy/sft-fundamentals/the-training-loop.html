@@ -329,6 +329,56 @@
         </div>
         <p>Everything else in this track tunes this loop: the loss (next lesson), the learning rate and schedule, the batch size, and which parameters you train (full vs LoRA). The loop itself never changes.</p>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>One step is forward pass, loss on the completion tokens only, backward pass, optimizer step, scheduler step, then zero the gradients.</li>
+            <li>AdamW adapts the step per parameter and stores two extra numbers per parameter; checkpoints let you resume after a crash and keep the best version rather than the last.</li>
+            <li>Validation passes run without gradient updates; training loss almost always keeps dropping, so pick the checkpoint where validation was best, not where training loss was lowest.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>Run the script (about three minutes on a CPU): it runs the loop from the lesson for 8 steps on 4 training rows, with a linear learning-rate decay, and measures validation loss on 2 held-out rows after every step. How many parameters does SmolLM2-135M have, how many extra numbers does AdamW keep (and how many bytes in fp32), and how do training and validation loss move?</p>
+          <pre class="code-block"><code>import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+name = "HuggingFaceTB/SmolLM2-135M-Instruct"
+tok = AutoTokenizer.from_pretrained(name)
+model = AutoModelForCausalLM.from_pretrained(name, dtype=torch.float32)
+
+def encode(prompt, answer):
+    text = tok.apply_chat_template([{"role": "user", "content": prompt}], tokenize=False, add_generation_prompt=True)
+    p = tok(text, add_special_tokens=False).input_ids
+    c = tok(answer + "&lt;|im_end|&gt;", add_special_tokens=False).input_ids
+    return torch.tensor([p + c]), torch.tensor([[-100] * len(p) + c])
+
+train = [encode(*x) for x in [("Classify: I loved it", "positive"), ("Classify: Terrible service", "negative"),
+                              ("Classify: Works fine", "positive"), ("Classify: Never again", "negative")]]
+val = [encode(*x) for x in [("Classify: Great value", "positive"), ("Classify: Broke in a day", "negative")]]
+
+def val_loss():
+    with torch.no_grad():
+        return sum(model(i, labels=l).loss.item() for i, l in val) / len(val)
+
+n = sum(p.numel() for p in model.parameters())
+print("parameters", n, "| AdamW extra numbers", 2 * n)
+opt = torch.optim.AdamW(model.parameters(), lr=1e-4)
+sched = torch.optim.lr_scheduler.LambdaLR(opt, lambda s: 1 - s / 8)
+print("before: val", round(val_loss(), 3))
+for step in range(1, 9):
+    ids, labels = train[(step - 1) % 4]
+    loss = model(ids, labels=labels).loss          # forward + loss
+    loss.backward()                                # backprop
+    opt.step(); sched.step(); opt.zero_grad()      # step, schedule, reset
+    print("step", step, "train", round(loss.item(), 3), "val", round(val_loss(), 3))</code></pre>
+          <details>
+            <summary>Show answer</summary>
+            <p>The model has <strong>134,515,008</strong> parameters, so AdamW keeps <strong>269,030,016</strong> extra numbers, about <strong>1.08 GB</strong> in fp32 (&times;4 bytes) on top of the weights. Validation loss goes from <strong>9.472</strong> before training to <strong>2.366</strong> after step 1 and <strong>0.073</strong> after step 8; training loss goes from 9.557 at step 1 to 0.026 at step 8 (each is measured before that step's update). Both fall together here because the 6 rows share one pattern; on real data the gap between them is what the validation pass is there to show.</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>

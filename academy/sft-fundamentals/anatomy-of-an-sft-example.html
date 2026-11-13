@@ -368,6 +368,40 @@
           <p><strong>Training on the prompt</strong> (no mask) dilutes the signal and wastes capacity. <strong>Missing the EOS in the loss</strong> produces a model that won't stop. Both pass silently — the loss still goes down — and both quietly hurt the result.</p>
         </div>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>One example is a prompt plus a completion, concatenated into one token sequence; the loss mask gives prompt (and padding) positions the label -100 so only completion tokens carry loss.</li>
+            <li>The loss must include the end-of-turn token, or the model never learns to stop; setting pad = EOS and masking every pad ID in the labels silently removes the real EOS.</li>
+            <li>Don't assume your framework masks for you: TRL's SFTTrainer on messages data trains on every token unless assistant_only_loss=True, so decode the tokens whose label isn't -100 and check.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>Run the script: it renders one chat row with SmolLM2's template, masks the prompt, and lists the tokens that carry loss. Then it masks every pad ID, as a collator would. How many tokens are in the row, how many carry loss, and what is left after the pad masking?</p>
+          <pre class="code-block"><code>import torch
+from transformers import AutoTokenizer
+
+tok = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-135M-Instruct")
+msgs = [{"role": "user", "content": "What is the capital of France?"},
+        {"role": "assistant", "content": "Paris."}]
+prompt = tok.apply_chat_template(msgs[:1], tokenize=False, add_generation_prompt=True)
+full = tok.apply_chat_template(msgs, tokenize=False)
+p = tok(prompt, add_special_tokens=False).input_ids
+f = tok(full, add_special_tokens=False).input_ids
+labels = [-100] * len(p) + f[len(p):]          # mask the prompt
+print(len(f), "tokens,", len(p), "prompt,", len(f) - len(p), "with loss")
+print([tok.decode([t]) for t in f[len(p):]])
+print("pad id", tok.pad_token_id, "eos id", tok.eos_token_id)
+labels = [-100 if t == tok.pad_token_id else y for t, y in zip(f, labels)]
+print("after masking pad ids:", [tok.decode([t]) for t, y in zip(f, labels) if y != -100])</code></pre>
+          <details>
+            <summary>Show answer</summary>
+            <p>The row has <strong>41 tokens</strong>, <strong>37</strong> of them prompt (SmolLM2's template inserts a default system prompt when you give none) and <strong>4</strong> with loss: <code>'Paris'</code>, <code>'.'</code>, <code>'&lt;|im_end|&gt;'</code> and the newline the template puts after it. Pad and EOS are both id 2, so after masking pad IDs only <code>['Paris', '.', '\n']</code> remain: the end-of-turn token is gone, which is exactly the never-learns-to-stop bug.</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>

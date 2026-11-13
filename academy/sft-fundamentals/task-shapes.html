@@ -324,6 +324,34 @@
         <h2>Choosing your shape</h2>
         <p>Map your real problem onto the closest shape, and if it doesn't fit cleanly, reframe it until it does — a well-chosen shape makes data collection, training, and evaluation all straightforward, while a forced one fights you at every stage. Most business tasks reduce to classification, extraction, or QA. Once the shape is fixed, the next thing that determines success is the quality of the data itself — the subject of the next two lessons.</p>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>The task shape decides the data format, what the completion looks like, and which metric applies: classification, QA, extraction, structured output, summarization, chat (and preference pairs for DPO).</li>
+            <li>The metric must match the shape: entity-level span F1 for extraction, valid-JSON rate plus per-field correctness for structured output, ROUGE plus a faithfulness check for summaries.</li>
+            <li>Map your problem onto the closest shape and reframe it if it doesn't fit; most business tasks reduce to classification, extraction, or QA.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>By hand first. A model extracts three entities from "Ada Lovelace joined Acme Corp on 12 March 1843" but returns the organisation as "Acme" instead of "Acme Corp". (1) What is the entity-level F1? (2) What is the word-level accuracy over the 9 words? (3) Four classification outputs are scored against the labels positive, negative, positive, neutral: "The sentiment is positive.", "negative", "I think it is positive", "Neutral". What is exact match, and what share of outputs contain the right label? Then run the script to check.</p>
+          <pre class="code-block"><code>gold = {("PER", "Ada Lovelace"), ("ORG", "Acme Corp"), ("DATE", "12 March 1843")}
+pred = {("PER", "Ada Lovelace"), ("ORG", "Acme"), ("DATE", "12 March 1843")}
+tp = len(gold &amp; pred)
+precision, recall = tp / len(pred), tp / len(gold)
+print("entity F1:", round(2 * precision * recall / (precision + recall), 3))
+
+refs = ["positive", "negative", "positive", "neutral"]
+outs = ["The sentiment is positive.", "negative", "I think it is positive", "Neutral"]
+print("exact match:", sum(r == o for r, o in zip(refs, outs)) / 4)
+print("label appears:", sum(r in o.lower() for r, o in zip(refs, outs)) / 4)</code></pre>
+          <details>
+            <summary>Show answer</summary>
+            <p>(1) Two of three entities match exactly, so precision = recall = F1 = <strong>0.667</strong>. (2) Only "Corp" is mislabelled, so word-level accuracy is 8/9 = <strong>0.889</strong>, which flatters the model because most words are not entities. (3) Exact match is <strong>0.25</strong> (only "negative" matches; "Neutral" fails on case) while the right label appears in <strong>1.0</strong> of the outputs. The same outputs score 0.25 or 1.0 depending on the metric.</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>

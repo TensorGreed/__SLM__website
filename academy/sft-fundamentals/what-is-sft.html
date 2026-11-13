@@ -330,6 +330,46 @@
         </ul>
         <p>How much data? There is no universal number, but for a narrow task a few hundred to a few thousand clean examples is a realistic starting range — and quality matters more than raw count. The rest of this track is about getting that data right and running the training that turns it into a better model.</p>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>SFT continues training a pretrained model on (prompt, completion) examples so it learns to produce those outputs; mechanically it is the same next-token training, run on your examples.</li>
+            <li>SFT is reliable for behavior (format, style, a narrow task) and an inefficient, hallucination-prone way to add knowledge, so use RAG for fresh or private facts.</li>
+            <li>Skip SFT when prompting already works, when you have almost no data, or when the base lacks the capability; a few hundred to a few thousand clean examples is a realistic start for a narrow task.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>Run the script on a CPU: it takes one (prompt, completion) example, computes the loss on the completion tokens only, and takes ten AdamW steps. How many completion tokens carry loss, what is the loss at step 1 (the base model's starting point) and at step 10, and what does the model now generate for that prompt?</p>
+          <pre class="code-block"><code>import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+name = "HuggingFaceTB/SmolLM2-135M-Instruct"
+tok = AutoTokenizer.from_pretrained(name)
+model = AutoModelForCausalLM.from_pretrained(name, dtype=torch.float32)
+
+msgs = [{"role": "user", "content": "Classify the sentiment: I loved it"}]
+prompt = tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
+p = tok(prompt, add_special_tokens=False).input_ids
+c = tok("LABEL=positive&lt;|im_end|&gt;", add_special_tokens=False).input_ids
+print("completion tokens:", len(c))
+ids = torch.tensor([p + c])
+labels = torch.tensor([[-100] * len(p) + c])  # loss on the completion only
+opt = torch.optim.AdamW(model.parameters(), lr=5e-5)
+for step in range(1, 11):
+    loss = model(ids, labels=labels).loss
+    loss.backward(); opt.step(); opt.zero_grad()
+    if step in (1, 10):
+        print("step", step, "loss", round(loss.item(), 3))
+out = model.generate(torch.tensor([p]), max_new_tokens=8, do_sample=False)
+print(repr(tok.decode(out[0][len(p):])))</code></pre>
+          <details>
+            <summary>Show answer</summary>
+            <p>The completion is <strong>5 tokens</strong>. The loss goes from <strong>5.091</strong> at step 1 to <strong>0.002</strong> at step 10, and greedy generation now returns exactly <code>'LABEL=positive&lt;|im_end|&gt;'</code>, a format the base model would not have produced. Ten steps on one row is memorisation, so this shows the mechanism, not a useful model. Your numbers may differ in the last digit.</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>

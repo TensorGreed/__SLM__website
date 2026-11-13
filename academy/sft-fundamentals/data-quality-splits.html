@@ -339,6 +339,47 @@
         </ul>
         <p>None of these need to be huge. Twenty hard negatives plus twenty ambiguous cases plus a handful of refusal/OOD examples is enough to move the decision boundary measurably on a small dataset. Skipping them is the most common silent quality cap on SFT projects.</p>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>Data quality beats hyperparameter tuning: deduplicate first, and check class balance with per-class metrics (95% of one label lets a model score 95% by guessing).</li>
+            <li>Use three disjoint sets: train to learn, validation to watch overfitting and pick checkpoints, test touched once at the end.</li>
+            <li>Leakage inflates eval numbers: dedupe across splits and split by the right unit (document or user, not row). Include hard negatives, ambiguous cases, refusal and out-of-distribution examples, not only the average case.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>Run the script: 12 support-ticket rows from 5 source documents, with one case-and-whitespace duplicate. It dedupes, then splits by row and by document using two random seeds. How many rows survive dedup, and which documents appear in both train and test under each split?</p>
+          <pre class="code-block"><code>import random, re
+
+rows = [("d1", "Refund not received after 10 days"), ("d1", "refund not received after 10 days "),
+        ("d1", "Refund still missing, order 4411"), ("d2", "App crashes when I open settings"),
+        ("d2", "App crashes on opening Settings page"), ("d2", "Settings screen freezes the app"),
+        ("d3", "How do I change my email address?"), ("d3", "How can I change my email address"),
+        ("d4", "Love the new dark mode"), ("d4", "Dark mode looks great"),
+        ("d5", "Invoice shows wrong tax rate"), ("d5", "Wrong tax rate on my invoice")]
+norm = lambda s: re.sub(r"[^a-z0-9 ]", "", s.lower()).strip()
+seen, data = set(), []
+for doc, text in rows:
+    if norm(text) not in seen:
+        seen.add(norm(text)); data.append((doc, text))
+print("after dedup:", len(data), "of", len(rows))
+
+for seed in (0, 1):
+    random.seed(seed)
+    idx = list(range(len(data))); random.shuffle(idx)
+    test, train = [data[i] for i in idx[:3]], [data[i] for i in idx[3:]]
+    print("row split, seed", seed, "docs in both:", sorted({d for d, _ in test} &amp; {d for d, _ in train}))
+    docs = sorted({d for d, _ in data}); random.shuffle(docs)
+    test = [r for r in data if r[0] == docs[0]]; train = [r for r in data if r[0] != docs[0]]
+    print("doc split, seed", seed, "docs in both:", sorted({d for d, _ in test} &amp; {d for d, _ in train}))</code></pre>
+          <details>
+            <summary>Show answer</summary>
+            <p>Dedup keeps <strong>11 of 12</strong>: only the row that differs by case and trailing space is removed, and paraphrases such as "How can I change my email address" survive. The row-level split puts rows of the same document on both sides: <strong>d1, d4, d5</strong> with seed 0 and <strong>d3, d4, d5</strong> with seed 1. The document-level split shares <strong>no documents</strong> with either seed (the test set is 2 rows instead of 3).</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>

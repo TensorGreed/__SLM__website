@@ -322,6 +322,42 @@
           <p>Set <code>max_seq_length</code> from your data, not a round number: large enough that completions are never clipped, small enough that you're not paying for empty context.</p>
         </div>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>A batch must be rectangular, so shorter rows are padded; the attention mask hides the padding from attention and label -100 hides it from the loss.</li>
+            <li>Truncation at max_seq_length cuts from the end, which is where the completion sits (TRL defaults to max_length=1024, keep_start); choose the length from your data and shorten the prompt or drop the row yourself.</li>
+            <li>Packing concatenates short examples to save compute and needs position resets and boundary-respecting attention; a larger max_seq_length costs more per step, so pick the smallest that fits.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>Run the script: it formats four rows with SmolLM2's chat template and applies keep-start truncation at a deliberately small max length of 64 tokens. For each row, how many completion tokens survive?</p>
+          <pre class="code-block"><code>from transformers import AutoTokenizer
+
+tok = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-135M-Instruct")
+rows = [
+    ("Classify: I loved it", "positive"),
+    ("Classify: The battery died after two days and support never replied to my three emails.", "negative"),
+    ("Summarize: " + "The committee met on Tuesday to review the budget. " * 8,
+     "The committee reviewed the budget on Tuesday and approved it without changes after a short discussion."),
+    ("Extract the date: Invoice issued 12 March 2024, due in 30 days.",
+     '{"issued": "2024-03-12", "due_days": 30}'),
+]
+MAX = 64
+for prompt, answer in rows:
+    text = tok.apply_chat_template([{"role": "user", "content": prompt}], tokenize=False, add_generation_prompt=True)
+    p = tok(text, add_special_tokens=False).input_ids
+    c = tok(answer + "&lt;|im_end|&gt;", add_special_tokens=False).input_ids
+    kept = max(0, min(len(c), MAX - len(p)))  # keep_start truncation
+    print("prompt", len(p), "completion", len(c), "-&gt; completion tokens kept:", kept)</code></pre>
+          <details>
+            <summary>Show answer</summary>
+            <p>Row by row (prompt tokens, completion tokens, completion kept): <strong>36, 2, 2</strong>; <strong>48, 2, 2</strong>; <strong>115, 18, 0</strong>; <strong>54, 26, 10</strong>. The summarisation row loses its entire completion because the prompt alone is over 64 tokens, and the JSON row keeps only 10 of 26 tokens, so it would train on half an object. Training would run normally on both. Prompts include SmolLM2's default system prompt, which is why even the short one is 36 tokens.</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>

@@ -320,6 +320,41 @@
         </div>
         <p>The overwhelming majority of practical projects are SFT, occasionally followed by DPO. This Academy focuses on SFT and returns to alignment (DPO/ORPO) as an advanced topic in Track 4. Next, we dissect a single SFT example.</p>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>SFT minimizes cross-entropy on the completion tokens, so use it when each input has a clear target; it is almost always the first objective you run.</li>
+            <li>DPO learns from chosen/rejected pairs and is typically applied after SFT; ORPO folds that into the SFT step, and DPO has largely displaced RLHF for small models.</li>
+            <li>Continued pretraining comes before SFT only when the base's held-out loss on domain text is far above its loss on generic text and you have tens of millions of tokens of raw text.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>Run the script: it measures SmolLM2-135M-Instruct's loss per token on one generic sentence and on two domain sentences (legal and chemistry). How much higher is each domain loss than the generic one, and is that enough to justify continued pretraining?</p>
+          <pre class="code-block"><code>import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+name = "HuggingFaceTB/SmolLM2-135M-Instruct"
+tok = AutoTokenizer.from_pretrained(name)
+model = AutoModelForCausalLM.from_pretrained(name, dtype=torch.float32)
+
+texts = {
+    "generic": "The weather was warm on Saturday, so we walked to the market and bought bread, apples and a small bag of coffee beans.",
+    "legal": "The lessee shall indemnify the lessor against any claim arising from the sublessee's breach of the covenant of quiet enjoyment, notwithstanding clause 14(b).",
+    "chemistry": "Nucleophilic substitution of the tertiary alkyl halide proceeds via an SN1 pathway, forming a planar carbocation intermediate before solvolysis.",
+}
+for kind, text in texts.items():
+    ids = tok(text, return_tensors="pt").input_ids
+    with torch.no_grad():
+        loss = model(ids, labels=ids).loss.item()
+    print(kind, ids.shape[1], "tokens, loss per token", round(loss, 2))</code></pre>
+          <details>
+            <summary>Show answer</summary>
+            <p>Generic <strong>3.27</strong>, legal <strong>3.38</strong>, chemistry <strong>4.07</strong> nats per token. Legal is only about 3% higher; chemistry is about 25% higher (4.07 &divide; 3.27 = 1.25). Neither is a decision: this is 26 to 37 tokens per text, and the lesson's bar is a far higher loss on held-out domain text plus tens of millions of tokens of raw text. Use the same comparison on a few hundred held-out paragraphs before you consider CPT.</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>

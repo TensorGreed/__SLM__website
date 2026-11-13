@@ -325,6 +325,34 @@
         <p>There is a catch: every time you look at a set and change something because of it, your choices fit that set a little more, and its score drifts upward without the model getting better (adaptive overfitting). So split the gold set in two. A <strong>practice</strong> part you consult freely while iterating, and a <strong>final</strong> part you score once, at the end, for the number you report. BrewSLM models exactly this: a practice answer key and a final answer key held back for the final grade.</p>
         <p>With clean data and a trustworthy gold set in hand, you're ready to actually train. The next lessons open up the training loop, the loss, and the knobs that govern it.</p>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>A gold set is a small, carefully curated set of known-correct examples that the model never trains on; it answers whether the model, or this version, is good.</li>
+            <li>Keep it fixed across experiments and clean: coverage of hard cases, verified labels (100 impeccable rows beat 1,000 sloppy ones), a size that resolves what you care about, and isolation from training.</li>
+            <li>At 80% accuracy the 95% interval is about +/-11 points on 50 rows, +/-8 on 100 and +/-4.5 on 300; split the gold set into a practice part and a final part scored once, to avoid adaptive overfitting.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>Compute the 95% interval half-width for an 80% accuracy on 50, 100 and 300 gold rows using 1.96 &times; sqrt(p(1-p)/n). How many rows would you need for +/-2.5 points? If two runs are each scored on n rows and treated as independent samples, how large must the gap between them be before it clears the noise, at n = 50 and n = 300? Check with the script.</p>
+          <pre class="code-block"><code>import math
+
+def ci(acc, n):
+    return round(1.96 * math.sqrt(acc * (1 - acc) / n) * 100, 1)
+
+for n in (50, 100, 300):
+    print(n, "rows: +/-", ci(0.8, n), "points")
+print("rows for +/-2.5 points:", math.ceil((1.96 / 0.025) ** 2 * 0.8 * 0.2))
+for n in (50, 300):  # two runs scored on n rows each, treated as independent
+    print(n, "rows: gap between two runs needs to exceed", round(math.sqrt(2) * ci(0.8, n), 1), "points")</code></pre>
+          <details>
+            <summary>Show answer</summary>
+            <p>The half-widths are <strong>11.1</strong>, <strong>7.8</strong> and <strong>4.5</strong> points, matching the lesson. +/-2.5 points needs <strong>984</strong> rows. The gap between two runs must exceed about <strong>15.7</strong> points at 50 rows and <strong>6.4</strong> points at 300, so even 300 rows cannot reliably separate two models 5 points apart.</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>

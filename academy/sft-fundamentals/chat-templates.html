@@ -334,6 +334,36 @@
           <p>A template mismatch rarely errors. You'll see a plausible training loss and then <strong>garbage or oddly formatted outputs</strong> at inference. If a freshly fine-tuned model behaves strangely, check the chat template first — it's the usual culprit.</p>
         </div>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>An instruct model was trained on conversations laid out with special tokens, and its chat template produces exactly that layout; use it for both training and serving and never hand-format.</li>
+            <li>At inference set add_generation_prompt=True to open the assistant turn; in training the assistant turn is already the completion. When you tokenize a rendered template, pass add_special_tokens=False to avoid a double BOS.</li>
+            <li>A template mismatch rarely errors: you get a plausible loss and then odd outputs, so check the template first when a fine-tuned model misbehaves.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>Run the script: it renders the same two messages with and without add_generation_prompt. What text does the generation prompt add, how many tokens is that, does tokenizing the rendered string again change the ids, and what happens if you pass only a user message?</p>
+          <pre class="code-block"><code>from transformers import AutoTokenizer
+
+tok = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-135M-Instruct")
+msgs = [{"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Classify: I loved it"}]
+a = tok.apply_chat_template(msgs, tokenize=False)
+b = tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
+print(repr(b[len(a):]))
+print(len(tok(a, add_special_tokens=False).input_ids), len(tok(b, add_special_tokens=False).input_ids))
+print(tok(b).input_ids == tok(b, add_special_tokens=False).input_ids)
+user_only = tok.apply_chat_template(msgs[1:], tokenize=False)
+print(repr(user_only[:90]))</code></pre>
+          <details>
+            <summary>Show answer</summary>
+            <p>The generation prompt adds <code>'&lt;|im_start|&gt;assistant\n'</code>, which is <strong>4 tokens</strong> (22 become 26: <code>&lt;|im_start|&gt;</code>, <code>ass</code>, <code>istant</code>, newline). Tokenizing the rendered string again gives <strong>identical ids</strong> (<code>True</code>) because SmolLM2's tokenizer adds no BOS; the double-BOS trap needs a template and tokenizer that do. With a user-only message the template silently prepends a system prompt, <code>You are a helpful AI assistant named SmolLM, trained by Hugging Face</code>, so it ends up in your training text without you writing it.</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
