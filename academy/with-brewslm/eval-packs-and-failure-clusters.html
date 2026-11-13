@@ -113,7 +113,7 @@
             "text": "The pass/fail rules (gates) declared in the project's eval pack",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Gates in the eval pack compare metrics to thresholds. They block anything only at export, and only when the project's gate_policy is switched on (off by default)."
+              "text": "Gates in the eval pack compare metrics to thresholds. They block anything only at export, and only when the project's gate_policy is switched on (off for a blank project; the starter packs switch it on)."
             }
           }
         },
@@ -300,11 +300,11 @@
           </div>
         </header>
 
-        <p>In lesson 2.7 you ran a gold set by hand, computed accuracy, compared to the base, and read the misses to decide what data to fix. Stage 09 is that whole loop as a platform surface, scored against your <strong>answer key</strong> (BrewSLM's name for the gold set, under <strong>Data → Labels</strong>) — with the quality gate from Track 1 made explicit. In the workspace it lives under <strong>Results</strong> (<code>/project/&lt;id&gt;/results</code>): <strong>Verdict</strong> answers "did it work?", <strong>Failures</strong> answers "where does it fail?".</p>
+        <p>In Lesson 2.7 you ran a gold set by hand, computed accuracy, compared to the base, and read the misses to decide what data to fix. Stage 09 is that whole loop as a platform surface, scored against your <strong>answer key</strong> (BrewSLM's name for the gold set, under <strong>Data → Labels</strong>) — with the quality gate from Track 1 made explicit. In the workspace it lives under <strong>Results</strong> (<code>/project/&lt;id&gt;/results</code>): <strong>Verdict</strong> answers "did it work?", <strong>Failures</strong> answers "where does it fail?".</p>
 
         <h2>The eval pack and its gates</h2>
         <p>This lesson explains what the pieces do. For every field of the pack and of a failure-cluster row, see the <a class="inline-link" href="eval-pack-and-failure-cluster-reference.html">eval pack &amp; failure cluster schema reference (Evaluation Contract v2)</a>.</p>
-        <p>Evaluate takes the trained model, the held-out test split (the manifest's <code>test.jsonl</code> — the <strong>test examples</strong> in the UI), and an <strong>eval pack</strong>. The eval pack declares the metrics to compute and the <strong>gates</strong> — the pass thresholds a model must clear. Together they turn an eval result into <strong>PASS / FAIL</strong> on <strong>Results → Verdict</strong>. This is precisely the Track 1 quality gate, now a declared object the platform checks for you rather than a number you remember to check. A FAIL does not by itself stop anything: gates block only at <strong>export</strong>, and only when the project's <code>gate_policy</code> is switched on (<code>must_pass</code>, <code>min_score</code> or <code>blocked_if_missing</code>; all off by default). The UI calls the pack a <strong>rule set</strong> and its gates <strong>pass/fail rules</strong> (the API, the pack ids such as <code>evalpack.general.default</code> and the JSON keys keep the old names): <strong>Results → Verdict</strong> shows a <em>Pass/fail rules</em> card with the run, the rule set, when it was checked and which required rules failed; <strong>Results → Failures</strong> has the rule-set card where you pick the project's rule set and review each rule for the selected run.</p>
+        <p>Evaluate takes the trained model, the held-out test split (the manifest's <code>test.jsonl</code> — the <strong>test examples</strong> in the UI), and an <strong>eval pack</strong>. The eval pack declares the metrics to compute and the <strong>gates</strong> — the pass thresholds a model must clear. Together they turn an eval result into <strong>PASS / FAIL</strong> on <strong>Results → Verdict</strong>. This is precisely the Track 1 quality gate, now a declared object the platform checks for you rather than a number you remember to check. A FAIL does not by itself stop anything: gates block only at <strong>export</strong>, and only when the project's <code>gate_policy</code> is switched on (<code>must_pass</code>, <code>min_score</code> or <code>blocked_if_missing</code>; all off for a blank project, while the four starter packs switch them on). The UI calls the pack a <strong>rule set</strong> and its gates <strong>pass/fail rules</strong> (the API, the pack ids such as <code>evalpack.general.default</code> and the JSON keys keep the old names): <strong>Results → Verdict</strong> shows a <em>Pass/fail rules</em> card with the run, the rule set, when it was checked and which required rules failed; <strong>Results → Failures</strong> has the rule-set card where you pick the project's rule set and review each rule for the selected run.</p>
         <figure class="academy-figure"><img src="../../assets/screens/workspace/results-verdict-rules.png" alt="The Pass/fail rules card on Results → Verdict: FAIL, Run #1 · v09-narrated-run, Rule set General Default Gates, the time it was checked, and Failed required rules: min_exact_match, min_f1" loading="lazy" width="1600" height="188" /><figcaption>Results → Verdict: the pass/fail rules card names the run, the rule set and the required rules that failed. Here run #1 beat its base model on the judged lift and still fails min_exact_match and min_f1.</figcaption></figure>
         <pre class="code-block"><code># evalpack.general.default, its classification task spec (real values)
 "task_profile": "classification",
@@ -314,20 +314,25 @@
   {"gate_id": "min_macro_f1",        "metric_id": "macro_f1",         "operator": "gte", "threshold": 0.5, "required": true},
   {"gate_id": "min_safety_pass_rate","metric_id": "safety_pass_rate", "operator": "gte", "threshold": 0.9, "required": false}
 ]</code></pre>
-        <p>Each gate is a JSON dict: only <code>metric_id</code> is needed (<code>gate_id</code> defaults to <code>min_&lt;metric&gt;</code>, <code>operator</code> to <code>gte</code>, <code>required</code> to true). Lift over the base model is not a gate field: the automatic lift check (Lesson 3.7) reports it on Results → Verdict.</p>
+        <p>Each gate is a JSON dict: only <code>metric_id</code> is needed (<code>gate_id</code> defaults to <code>min_&lt;metric&gt;</code>, <code>operator</code> to <code>gte</code>, <code>required</code> to true). <code>evalpack.general.default</code> is only the fallback; which rule set actually scores your project is decided by a short resolution order.</p>
+        <!-- box:which-rule-set -->
+        <p>Lift over the base model is not a gate field: the automatic lift check (Lesson 3.7) reports it on Results → Verdict. Before you read a lift or a gate miss as real, check how many test examples it rests on: a few points on a small test set can be noise.</p>
+        <!-- box:small-test-sets -->
         <h2>Task-aware metrics</h2>
         <p>You computed accuracy because yours was a classification task. BrewSLM computes whatever the <strong>handler's <code>score()</code></strong> defines for the task shape — so the metric fits the task automatically:</p>
         <pre class="code-block"><code>classification   →  per-class precision / recall / F1, accuracy
+QA               →  exact_match, f1 (token overlap with the reference answer)
 extraction       →  span-set / field-match scores
 RAG              →  faithfulness
-alignment        →  preference margin
+alignment        →  preference_accuracy, mean_alignment_margin
 seq2seq          →  BLEU / ROUGE
-transcription    →  WER</code></pre>
+transcription    →  WER, CER</code></pre>
         <p>The result is a pass rate plus task-aware metrics, recorded as an <code>eval</code> / info "Evaluation completed" RunEvent parented to the experiment (<code>exp-&lt;id&gt;</code>). That is the only eval RunEvent today: the declared <code>eval_*</code> failure codes (such as <code>eval_dataset_missing</code>) are not emitted.</p>
 
         <h2>Failure clusters — your misses, grouped</h2>
         <p>Reading individual wrong predictions (what you did by hand) doesn't scale to thousands of eval rows. BrewSLM groups the misses of one eval result into <strong>failure clusters</strong> on <strong>Results → Failures</strong> (with the remediation planner and the slice breakdown). A cluster is keyed by two things: a <strong>root-cause reason</strong> (<code>safety_failure</code>, <code>hallucination</code>, <code>coverage_gap</code> or <code>formatting_mismatch</code>) and an <strong>output-pattern fingerprint</strong> of the model's prediction — its length bucket, how it starts and whether it has digits, e.g. <code>len-short:lead-prose:digits-n</code>. Instead of skimming a list, you see "formatting_mismatch · short prose answers · 37 rows". Note what it does <em>not</em> group by: the input's wording or a confused class pair — that reading is still yours, from the cluster's example rows.</p>
-        <p><strong>Ship → Monitor</strong> has a different feature with the same name: <strong>RunEvent clusters</strong>. Those group error events from the run timeline (import, training, export…) by stage, reason code and a short signature of the event summary with the digits stripped, are stored in their own table, and are recomputed when you press the button. They are about pipeline failures, not eval misses.</p>
+        <h3>Not the same thing: RunEvent clusters on Ship → Monitor</h3>
+        <p><strong>Ship → Monitor</strong> has a different feature with the same name: <strong>RunEvent clusters</strong>. Those group error events from the run timeline (import, training, export…) by stage, reason code and a short signature of the event summary with the digits stripped, are stored in their own table, and are recomputed when you press the button. They are about pipeline failures, not eval misses, and nothing in this lesson's augment loop reads them. Lesson 3.13 has both schemas side by side.</p>
 
         <div class="callout callout--note">
           <p class="callout__label">From Track 2</p>
@@ -335,7 +340,16 @@ transcription    →  WER</code></pre>
         </div>
 
         <h2>Remediation — close the loop</h2>
-        <p>Each cluster comes with a <strong>remediation plan</strong>: the recommended fix, often "augment from this cluster" — generate or import more rows like the ones failing (generated rows land pending in the review queue, lesson 3.3; imported rows skip it and go straight to training), re-split, and re-train. This is the <code>augment_from_cluster</code> action — the <em>Augment N rows for this cluster</em> button on the Coach notice at the top of Results, or <em>Augment from this cluster</em> on a cluster card under <strong>Results → Failures</strong> — and it's the data-centric iteration of Track 1 turned into a button. If the model <em>cleared the pass/fail rules</em>, Verdict shows PASS and you move on to Ship. If it didn't — and especially if more data won't fix it — the platform's next move is to ask whether fine-tuning is even the right tool, which is the next lesson.</p>
+        <p>Each cluster comes with a <strong>remediation plan</strong>: the recommended fix, often "augment from this cluster" — generate or import more rows like the ones failing (generated rows land pending in the review queue, lesson 3.3; imported rows skip it and go straight to training), re-split, and re-train. This is the <code>augment_from_cluster</code> action — the <em>Augment N rows for this cluster</em> button on the Coach notice at the top of Results (the Coach suggests 30), or <em>Augment from this cluster</em> on a cluster card under <strong>Results → Failures</strong>, where you set N yourself (20 to start, up to 500) — and it's the data-centric iteration of Track 1 turned into a button. If the model <em>cleared the pass/fail rules</em>, Verdict shows PASS and you move on to Ship. If it didn't — and especially if more data won't fix it — the platform's next move is to ask whether fine-tuning is even the right tool, which is the next lesson.</p>
+
+        <h2>The other tools on the Failures tab</h2>
+        <p>Clusters and remediation plans are not the only panels under <strong>Results → Failures</strong>. Four more look at the model from angles your answer key cannot:</p>
+        <ul>
+          <li><strong>Built-in checks</strong> (the API calls them the probe pack): platform-written probes that test properties any model of your task shape should have, such as staying stable on a reworded input, declining an injection, not inventing an answer the input does not support, and not refusing a harmless request. You can add your own probes there too, and <em>Enforce as a pass/fail rule</em> turns the result into a gate.</li>
+          <li><strong>Your custom checks</strong> (behavioral tests): small tests you write in the rule-set draft, of three kinds: a minimum capability, an invariance ("changing the name must not change the label") and a directional expectation. Each run's results show next to its rules.</li>
+          <li><strong>Eval gaps</strong>: read-only warnings about the evaluation itself, for example an answer key whose label mix differs from the training data, or no promoted checkpoint to compare new runs against.</li>
+          <li><strong>Suggested answer-key rows</strong>: new trap rows generated from recent failure patterns; you accept the ones you want in the final answer key and reject the rest.</li>
+        </ul>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
@@ -367,7 +381,7 @@ transcription    →  WER</code></pre>
                   "The number of failure clusters on the Failures tab"
                 ],
                 "answer": 2,
-                "explanation": "Gates in the eval pack compare metrics to thresholds. They block anything only at export, and only when the project's gate_policy is switched on (off by default)."
+                "explanation": "Gates in the eval pack compare metrics to thresholds. They block anything only at export, and only when the project's gate_policy is switched on (off for a blank project; the starter packs switch it on)."
               },
               {
                 "q": "Where does the shape of the metrics come from?",
@@ -415,7 +429,7 @@ transcription    →  WER</code></pre>
                   <li>The pass/fail rules (gates) declared in the project's eval pack</li>
                   <li>The number of failure clusters on the Failures tab</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The pass/fail rules (gates) declared in the project's eval pack</strong> Gates in the eval pack compare metrics to thresholds. They block anything only at export, and only when the project's gate_policy is switched on (off by default).</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. The pass/fail rules (gates) declared in the project's eval pack</strong> Gates in the eval pack compare metrics to thresholds. They block anything only at export, and only when the project's gate_policy is switched on (off for a blank project; the starter packs switch it on).</p></details></li>
               <li><p class="quiz__q-text">Where does the shape of the metrics come from?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>The training preset picked on the Train form</li>
