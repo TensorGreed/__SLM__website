@@ -300,17 +300,31 @@
           </div>
         </header>
 
-        <p>Track 0 taught the choice between fine-tuning and retrieval; Track 2 lesson 2.7 ended with "if there's no lift, revisit the data." But sometimes the honest answer is that the task is knowledge-bound, not behavior-bound — no amount of fine-tuning teaches facts the model should be <em>looking up</em>. BrewSLM has surfaces for exactly that.</p>
+        <p>Track 0 taught the choice between fine-tuning and retrieval; Track 2 lesson 2.7 ended with "if there's no lift, revisit the data." But sometimes the honest answer is that the task is knowledge-bound, not behavior-bound. Fine-tuning is reliable for behaviour and an unreliable, hallucination-prone way to add new facts, so when the failures are facts the model should be <em>looking up</em>, retrieval is the usual first fix. BrewSLM has surfaces for exactly that.</p>
 
         <h2>Two signals: a heuristic lead and a measured verdict</h2>
         <p>After evaluation, a <strong>post-eval decision engine</strong> recommends a next move: <code>stay_the_course</code>, <code>try_rag</code>, <code>try_prompt_engineering</code> or <code>expand_data</code>. It is a heuristic. When the pass rate is 0.5 or more it says <code>stay_the_course</code>; below that it looks at three signals — retrieval-style phrases in the project's brief, how unique the answer-key answers are from each other, and how short the outputs are compared with the inputs — and recommends retrieval when the task <em>looks</em> retrieval-shaped. It does not read the failure clusters or the model's wrong answers. You meet it as the reroute panel on <strong>Results → Failures</strong> (hidden on <code>stay_the_course</code>) and, for <code>try_rag</code>, as a Coach notice at the top of <strong>Results</strong>.</p>
         <p>The evidence-based signal is a Coach notice of its own, <code>eval:passages-beat-finetune</code>: "Retrieval over your documents beats the fine-tune". It fires when the <strong>base model answering from your document passages</strong> scores higher than your fine-tune <strong>under the same judge</strong> — the platform telling you, with a measurement, that you're holding the wrong tool. Treat the first as a lead to test and the second as the result of the test.</p>
 
         <h2>Auto-RAG — retrieval bolted onto your model</h2>
-        <p>At training completion, the auto-RAG service builds a <strong>BM25 index</strong> over the project's <strong>training rows</strong> — never the answer key or the validation / test split. (It used to index the answer key, so retrieval could hand the model the scored question together with its answer: a leak that inflated the score.) Document passages, when the project has documents, are indexed too. Then the chat on <strong>Results → Try it</strong> <strong>prepends the top-K retrieved passages</strong> to the prompt before generation, so the model answers with relevant context in front of it. You can compare side by side — same model, with retrieval vs without — from the <em>Auto-RAG comparison</em> card on <strong>Results → Compare</strong>, which starts the same harness as a background Job (tracked in the bell) and shows the two arms as cards:</p>
-        <pre class="code-block"><code>$ python -m scripts.auto_rag_ab --project 1
-# builds/loads the BM25 index, runs the held-out split with and without
-# top-K retrieval, and reports the metric delta from retrieval</code></pre>
+        <p>At training completion, the auto-RAG service builds a <strong>BM25 index</strong> over the project's <strong>training rows</strong> — never the answer key or the validation / test split. (It used to index the answer key, so retrieval could hand the model the scored question together with its answer: a leak that inflated the score.) Document passages, when the project has documents, are indexed too. Then the chat on <strong>Results → Try it</strong> <strong>prepends the top-K retrieved passages</strong> (K is 3 by default; the project's retrieval settings take 1 to 10) to the prompt before generation, so the model answers with relevant context in front of it. You can compare side by side — same model, with retrieval vs without — from the <em>Auto-RAG comparison</em> card on <strong>Results → Compare</strong>, which starts the same harness as a background Job (tracked in the bell) and shows the two arms as cards:</p>
+        <pre class="code-block"><code>$ cd backend &amp;&amp; python -m scripts.auto_rag_ab --project 1
+# builds/loads the BM25 index, scores the latest completed run with and
+# without top-K retrieval, and reports the metric delta from retrieval</code></pre>
+        <p>The script lives in <code>backend/scripts/</code>, so run it from <code>backend/</code>. With <code>--project</code>, the flags you are most likely to want:</p>
+        <table class="comparison-table">
+          <thead><tr><th>Flag</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>--base-only</code></td><td>Score the <em>base</em> model with and without retrieval, no fine-tuned run needed: "does retrieval alone help?"</td></tr>
+            <tr><td><code>--corpus qa|documents</code></td><td>What the retrieval arm searches: the training rows (<code>qa</code>, the default) or the project's document passages.</td></tr>
+            <tr><td><code>--k N</code></td><td>Top-K for the retrieval arm (default: the project's retrieval setting, else 3).</td></tr>
+            <tr><td><code>--reranker ID</code></td><td>Rerank BM25 candidates with a cross-encoder (<code>default</code> picks a small MS MARCO one); <code>--pool</code> sets how many candidates it sees.</td></tr>
+            <tr><td><code>--sweep-retrieval</code></td><td>Try top-3 / top-5 with and without the reranker, then pool and passage sizes, and keep the best setting that beats noise.</td></tr>
+            <tr><td><code>--decoding neutral|model</code></td><td>Plain decoding (default) or the model's own generation config.</td></tr>
+            <tr><td><code>--experiment-id</code>, <code>--split val|test</code></td><td>Score a specific run, or pick the rows scored.</td></tr>
+          </tbody>
+        </table>
+        <p>Source: <code>backend/scripts/auto_rag_ab.py</code> on public BrewSLM main.</p>
         <figure class="academy-figure"><img src="../../assets/screens/workspace/results-compare.png" alt="The Results page on the Compare tab: a hint to pick a run under Verdict and press 'Compare to #…', an External benchmarks card with '+ Add a benchmark', a Run picker showing the baseline and the trained run, and the top of an Auto-RAG comparison card." loading="lazy" width="1600" height="1000" /><figcaption>Results → Compare: external benchmarks, the run picker, then the <em>Auto-RAG comparison</em> card that runs the with-vs-without-retrieval check.</figcaption></figure>
         <div class="callout callout--note">
           <p class="callout__label">From Track 1</p>
@@ -318,11 +332,11 @@
         </div>
 
         <h2>Reroute-to-RAG — a retrieval-first sibling</h2>
-        <p>If retrieval is clearly the right architecture, <strong>reroute-to-RAG</strong> goes further: it clones the project into a sibling with <code>runtime_config.rag_first=True</code>. That sibling's <strong>Results → Try it</strong> chat uses the <strong>base model plus retrieval — no LoRA adapter at all</strong>. You keep the original fine-tuning project intact for comparison, and the new project pursues the retrieval path cleanly. The clone runs as a background Job (the <code>reroute_to_rag</code> kind), so it's tracked in the bell like everything else.</p>
+        <p>If retrieval is clearly the right architecture, <strong>reroute-to-RAG</strong> goes further: it clones the project into a sibling with <code>runtime_config.rag_first=True</code>. It works only from a <code>qa-sft</code> (Q&amp;A) project; other task types are refused. The panel that offers it on <strong>Results → Failures</strong> hides itself when the decision engine says <code>stay_the_course</code>. That sibling's <strong>Results → Try it</strong> chat uses the <strong>base model plus retrieval — no LoRA adapter at all</strong>. You keep the original fine-tuning project intact for comparison, and the new project pursues the retrieval path cleanly. The clone runs as a background Job (the <code>reroute_to_rag</code> kind), so it's tracked in the bell like everything else.</p>
 
         <div class="callout callout--warning">
           <p class="callout__label">The honest-metrics point</p>
-          <p>A retrieval verdict is not a failure of your fine-tune — it's the platform, once it has measured base + passages against your run, refusing to let you grind epochs against a problem training can't solve. Knowing <em>when not to fine-tune</em> is as valuable as knowing how, and it's the through-line from Track 0's pretraining-vs-fine-tuning-vs-RAG lesson.</p>
+          <p>A retrieval verdict is not a failure of your fine-tune — it's the platform, once it has measured base + passages against your run, steering you away from grinding epochs against a problem training is poorly suited to. Knowing <em>when not to fine-tune</em> is as valuable as knowing how, and it's the through-line from Track 0's pretraining-vs-fine-tuning-vs-RAG lesson.</p>
         </div>
 
         <p>Whichever path clears the pass/fail rules — a fine-tuned adapter or a retrieval-first project — the last stage is getting it out into the world. Export, deploy, and the assistant that's been guiding the whole flow are the final lesson.</p>
