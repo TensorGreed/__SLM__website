@@ -492,7 +492,6 @@
   "dataset_split": { "train": 0.8, "val": 0.1, "test": 0.1, "seed": 42 },
   "training_defaults": {
     "training_mode": "sft",
-    "chat_template": "llama3",
     "num_epochs": 3,
     "batch_size": 4,
     "learning_rate": 0.0002,
@@ -506,7 +505,7 @@
     }
   }
 }</code></pre>
-            Vs the platform default (staging F1 0.65, production F1 0.70, regression cap 0.03), the legal pack tightens every gate. The gates name only <code>f1</code> and <code>exact_match</code> because those are metrics a rag-protocol project's eval produces; a gate on a metric the project never produces (an LLM-judge or safety pass rate, say) fails promotion as <code>missing_metric</code>. One caution on <code>training_defaults</code>: <code>chat_template: "llama3"</code> is copied from the seeded <code>general-pack-v1</code> overlay, not a platform-wide default, and it can override SmolLM2-Instruct's own ChatML template — check it before you pin it (<a class="inline-link" href="building-domain-packs-finance-example.html">Tutorial 9</a>'s "tight coupling" pitfall). Promoting a regression — even small — into production legal-QA is exactly the decision an auditor will ask about; raising the bar at the pack layer puts it through review by default.
+            Vs the platform default (staging F1 0.65, production F1 0.70, regression cap 0.03), the legal pack tightens every gate. The gates name only <code>f1</code> and <code>exact_match</code> because those are metrics a rag-protocol project's eval produces; a gate on a metric the project never produces (an LLM-judge or safety pass rate, say) fails promotion as <code>missing_metric</code>. One note on <code>training_defaults</code>: the seeded <code>general-pack-v1</code> also sets <code>chat_template: "llama3"</code>, and this pack leaves it out on purpose. It is only a fallback preset: by default, question → answer rows train in the base model's own chat template (ChatML for SmolLM2-Instruct), and rag-protocol rows carry their handler's prompt. The Llama-3 preset would take over, in the wrong format for SmolLM2, only if that default were switched off (<a class="inline-link" href="building-domain-packs-finance-example.html#anatomy-overlay">Tutorial 9, the overlay block</a>). Promoting a regression — even small — into production legal-QA is exactly the decision an auditor will ask about; raising the bar at the pack layer puts it through review by default.
           </li>
           <li><strong>Save Pack.</strong> The panel validates against the <code>slm.domain-pack/v1</code> schema. Common errors: typo'd hook IDs, missing <code>default_profile_id</code>, non-semver <code>version</code>.</li>
           <li><strong>Assign to your project.</strong> Pick <code>legal-contracts-v1</code> from the pack dropdown and click <em>Assign to Project</em>. The project now points at the legal pack instead of the general pack; its overlay applies from the next split, training run or promotion.</li>
