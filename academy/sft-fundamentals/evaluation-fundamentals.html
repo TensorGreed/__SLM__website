@@ -358,6 +358,34 @@
         <p>Run the metric on the held-out <strong>gold set</strong> (never the training data), read the failures, and feed them back into the data-centric loop (Lesson 0.11): the classes and slices where the model loses tell you exactly which examples to add or fix before the next run.</p>
         <p>That completes the core loop of Track 1: objectives, data, the loss mask and chat templates, the training loop and its loss, learning rate and batch, LoRA and memory, and how to read and evaluate the result. The four lessons of <strong>1C · Beyond the core loop</strong> come next — decoding controls, dataset formats, continued pretraining and catastrophic forgetting — and then <strong>Track 2</strong>, where you'll do all of it <em>by hand</em> in PyTorch and Transformers.</p>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>Pick a metric that fits the task shape, always report the base model's score on the same gold set next to the fine-tuned one, and set the pass threshold before you see results.</li>
+            <li>A gold set is a sample, so scores carry noise; a paired row-by-row comparison with a confidence interval tells you whether a lift is real or within noise.</li>
+            <li>Report where the model loses as well as where it wins, and feed those failures back into the data.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>A 40-row gold set gives these results: the base model gets 24 right, the fine-tuned model gets 29, and row by row 7 rows got better, 2 got worse and 31 stayed the same. By hand: what are the two accuracies and the lift? Then run the paired interval below. Is the lift evidence, or within noise?</p>
+          <pre class="code-block"><code>import math, statistics
+
+# per-row change: +1 fine-tuned right and base wrong, -1 the reverse, 0 same
+d = [1] * 7 + [-1] * 2 + [0] * 31
+n = len(d)
+mean = statistics.mean(d)
+se = statistics.stdev(d) / math.sqrt(n)
+t = 2.023                                  # two-sided 95% t value for 39 degrees of freedom
+print("base", 24 / n, "fine-tuned", 29 / n, "change", mean * 100, "points")
+print("95% interval:", (mean - t * se) * 100, "to", (mean + t * se) * 100)</code></pre>
+          <details>
+            <summary>Show answer</summary>
+            <p>Base: 24 / 40 = <strong>60%</strong>; fine-tuned: 29 / 40 = <strong>72.5%</strong>; lift <strong>+12.5 points</strong> (7 better minus 2 worse is 5 rows, and 5 / 40 = 12.5). The 95% paired t-interval on the mean change is <strong>-2.3 to +27.3 points</strong>. It includes zero, so a lift that looks large is still within noise at this size: the data cannot tell a gain from a loss.</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>

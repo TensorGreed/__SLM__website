@@ -380,6 +380,38 @@ print(f"activations: {sum(n for ptr, n in saved.items() if ptr not in params) / 
         <p>Activations are the lever you control at run time. For a given model, they grow with <strong>batch size × sequence length</strong> — how many tokens flow through per step — so the two biggest knobs for fitting a run are exactly those. <strong>Gradient checkpointing</strong> (next lesson) trades compute to shrink activation memory dramatically. Combined with the earlier lessons: pick the maximum sequence length from your data (<code>max_length</code> in TRL's <code>SFTConfig</code>, Lesson 2.10), set a per-device batch that fits, and recover the effective batch with gradient accumulation. Leave headroom for the CUDA context (roughly 0.5–1&nbsp;GB) and allocator fragmentation.</p>
         <p>You now have a mental calculator: weights + gradients + optimizer state + activations (with the logits), scaled by precision. When the sum exceeds your GPU, you get an OOM — and the next lesson is the field guide to surviving exactly that.</p>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>Training memory is weights plus gradients plus optimizer state plus activations; AdamW state alone is 8 bytes per trained parameter.</li>
+            <li>Full fine-tuning in mixed precision costs about 16 to 18 bytes per parameter; LoRA with a frozen bf16 base costs 2 bytes per base parameter plus 16 bytes per adapter parameter.</li>
+            <li>LoRA does not shrink activations or the batch × sequence × vocabulary logits tensor, so for a small model with a big vocabulary, batch × sequence decides whether the run fits.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>Use the memory table above to estimate SmolLM2-135M three ways, then check your arithmetic with the script: (1) a full fine-tune in plain fp32 on a CPU, (2) LoRA r=16 on all linear layers with the frozen base loaded in bf16, and (3) the fp32 logits tensor for one batch of 4 sequences of 512 tokens (vocabulary 49,152). Which of the three is the biggest surprise?</p>
+          <pre class="code-block"><code>import torch
+from transformers import AutoModelForCausalLM
+from peft import LoraConfig, get_peft_model
+
+model = AutoModelForCausalLM.from_pretrained("HuggingFaceTB/SmolLM2-135M-Instruct", dtype=torch.float32)
+P, V = sum(p.numel() for p in model.parameters()), model.config.vocab_size
+model = get_peft_model(model, LoraConfig(r=16, lora_alpha=32, target_modules="all-linear",
+                                         task_type="CAUSAL_LM"))
+A = sum(p.numel() for p in model.parameters() if p.requires_grad)
+print("base params", P, "| adapter params", A, "| vocab", V)
+
+print("full fine-tune, plain fp32 (16 B/param):", P * 16 / 1e9, "GB")
+print("LoRA, bf16 base:", P * 2 / 1e9, "GB + adapter", A * 16 / 1e9, "GB")
+print("fp32 logits, batch 4 x 512 tokens:", 4 * 512 * V * 4 / 1e9, "GB")</code></pre>
+          <details>
+            <summary>Show answer</summary>
+            <p>The model has <strong>134,515,008</strong> parameters and the adapter <strong>4,884,480</strong>. (1) Plain fp32 full fine-tune: 134,515,008 × 16 B = <strong>2.15 GB</strong>. (2) LoRA: 134,515,008 × 2 B = <strong>0.27 GB</strong> for the base plus 4,884,480 × 16 B = <strong>0.08 GB</strong> for the adapter, 0.35 GB in all. (3) Logits: 4 × 512 × 49,152 × 4 B = <strong>0.40 GB</strong>, more than the weights, gradients and optimizer state of the whole LoRA run put together. All three match the SmolLM2-135M column of the table.</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>

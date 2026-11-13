@@ -326,6 +326,41 @@
         <p>You'll often see <strong>perplexity</strong> reported alongside loss. Perplexity is just the exponential of the cross-entropy, and it has an intuitive reading: roughly "how many tokens is the model effectively choosing among?" A perplexity of 1 means perfect certainty about the next token; higher means more confusion. It moves in lockstep with the loss (lower is better) but is sometimes easier to reason about. Don't over-index on it, though — for an SFT task what ultimately matters is the gold-set metric, not the loss or perplexity per se.</p>
         <p>Now you can read a training curve meaningfully. Next we tune the single knob that most controls whether that curve descends nicely: the learning rate.</p>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>Cross-entropy at a position is the negative logarithm of the probability the model gave the one correct next token, averaged over the unmasked completion tokens.</li>
+            <li>Confident mistakes are punished harshly: a probability near 0 on the right token sends the loss toward infinity, which pushes the model to be well-calibrated.</li>
+            <li>Perplexity is the exponential of the cross-entropy, roughly how many tokens the model is choosing among; the gold-set metric still matters more.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>Compute cross-entropy by hand for one sentence and compare it with the number PyTorch reports. The script below feeds <code>The capital of France is Paris.</code> to SmolLM2-135M, takes the probability of each correct next token from the softmax, and averages the negative logs. Before running it, guess: which of the six predicted tokens will have the largest loss, and will the by-hand mean match <code>out.loss</code>?</p>
+          <pre class="code-block"><code>import math, torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+name = "HuggingFaceTB/SmolLM2-135M-Instruct"
+tok = AutoTokenizer.from_pretrained(name)
+model = AutoModelForCausalLM.from_pretrained(name, dtype=torch.float32).eval()
+ids = tok("The capital of France is Paris.", return_tensors="pt").input_ids
+with torch.no_grad():
+    out = model(input_ids=ids, labels=ids)
+
+probs = torch.softmax(out.logits[0, :-1], dim=-1)   # position i predicts token i+1
+targets = ids[0, 1:]
+p = probs[torch.arange(len(targets)), targets]       # probability of the correct token
+for t, pt in zip(targets, p):
+    print(repr(tok.decode(t)), f"p={pt:.5f}", f"loss={-math.log(pt):.3f}")
+mean = (-p.log()).mean().item()
+print("by hand", round(mean, 4), "| torch", round(out.loss.item(), 4), "| perplexity", round(math.exp(mean), 2))</code></pre>
+          <details>
+            <summary>Show answer</summary>
+            <p>The by-hand mean and PyTorch's loss agree: <strong>2.7321</strong>, which gives a perplexity of <strong>15.37</strong>. The first predicted token, <code> capital</code> (the model sees only <code>The</code>), had probability about 0.00002 and a loss of <strong>10.72</strong>; the other five losses run from 0.62 (<code>.</code>, p = 0.54) to 1.98 (<code> France</code>, p = 0.14). That one near-zero probability is most of the total: the mean of the other five is 1.13. This is the negative-log shape from the lesson at work.</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>

@@ -329,6 +329,41 @@
         <h2>Interaction with the learning rate</h2>
         <p>Batch size and learning rate are linked: larger effective batches give cleaner gradients that can tolerate (and often want) a somewhat larger learning rate, and vice versa. You don't need a precise formula at this stage — just know that if you substantially change the effective batch, you may need to revisit the LR. With the loop, loss, LR, and batch understood, the next question is <em>which parameters</em> you update — full fine-tuning or LoRA.</p>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>Batch size is often capped by what fits in GPU memory, not by what you want; a larger batch gives a smoother, less noisy gradient.</li>
+            <li>Gradient accumulation runs several micro-batches, adds up their gradients, and takes one optimizer step, trading wall-clock time for memory.</li>
+            <li>effective_batch = per_device_batch_size × gradient_accumulation_steps × num_devices; think in that number, and revisit the learning rate if you change it a lot.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>A run uses 2,400 examples, a per-device batch of 6, 4 accumulation steps and one GPU. By hand: what is the effective batch size and how many optimizer steps is one epoch? Then you move to 2 GPUs with a per-device batch of 8 and 2 accumulation steps: how do both numbers change? The script also checks that 4 accumulated micro-batches of 6 give the same gradient as one batch of 24, using the loss scaling from the lesson's loop.</p>
+          <pre class="code-block"><code>import math, torch
+
+torch.manual_seed(0)
+model = torch.nn.Linear(8, 1)
+x, y = torch.randn(24, 8), torch.randn(24, 1)
+
+((model(x) - y) ** 2).mean().backward()                 # one batch of 24
+full = model.weight.grad.clone(); model.zero_grad()
+
+accum = 4
+for i in range(accum):                                  # 4 micro-batches of 6
+    xb, yb = x[i * 6:(i + 1) * 6], y[i * 6:(i + 1) * 6]
+    (((model(xb) - yb) ** 2).mean() / accum).backward()
+print("max gradient difference", (model.weight.grad - full).abs().max().item())
+
+print("effective batch", 6 * 4 * 1, "| steps per epoch", math.ceil(2400 / 24))
+print("2 GPUs, per-device 8, accum 2:", 8 * 2 * 2, "-&gt;", math.ceil(2400 / 32), "steps per epoch")</code></pre>
+          <details>
+            <summary>Show answer</summary>
+            <p>Effective batch = 6 × 4 × 1 = <strong>24</strong>, so one epoch is 2,400 / 24 = <strong>100</strong> steps. On 2 GPUs with 8 × 2 × 2 = <strong>32</strong>, an epoch is 2,400 / 32 = 75 steps, so the same data gives fewer, cleaner updates, and the LR may need a second look. The accumulated gradient differs from the full-batch gradient by at most 6e-08, which is float rounding: the two are the same gradient.</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>

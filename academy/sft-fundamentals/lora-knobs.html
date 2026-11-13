@@ -322,6 +322,34 @@
         </div>
         <p>These knobs spend memory. To set them — and the batch size — without crashing, you need to estimate the GPU memory a run will use, which is the next lesson.</p>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>Rank r sets the adapter's capacity, alpha scales its contribution by alpha / r, and a common starting point is r = 16, alpha = 32, dropout 0.05.</li>
+            <li>Target modules choose where adapters go; attention-only LoRA under-fits, so start from all linear layers and treat q/v as the cheaper option for a large model.</li>
+            <li>QLoRA quantises the frozen base to 4-bit to save memory, at the price of slower steps; embeddings and norms stay 16-bit, so small models save less.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>See how the knobs move the adapter's size. Keep <code>lora_alpha=32</code> and target all linear layers, and try r = 8, 16 and 32 on SmolLM2-135M. Before running, predict how the trainable parameter count changes each time r doubles, and what multiplier alpha / r the adapter gets at each rank.</p>
+          <pre class="code-block"><code>import torch
+from transformers import AutoModelForCausalLM
+from peft import LoraConfig, get_peft_model
+
+for r in (8, 16, 32):
+    base = AutoModelForCausalLM.from_pretrained("HuggingFaceTB/SmolLM2-135M-Instruct", dtype=torch.float32)
+    model = get_peft_model(base, LoraConfig(r=r, lora_alpha=32, target_modules="all-linear",
+                                            task_type="CAUSAL_LM"))
+    print(f"r={r}, alpha/r={32 / r}")
+    model.print_trainable_parameters()</code></pre>
+          <details>
+            <summary>Show answer</summary>
+            <p>The count is linear in r: <strong>2,442,240</strong> at r=8, <strong>4,884,480</strong> at r=16 and <strong>9,768,960</strong> at r=32, which is 1.78%, 3.50% and 6.77% of the total parameters. The multiplier alpha / r is <strong>4, 2 and 1</strong>, so with alpha fixed, doubling r halves the strength of each update, which is why r and alpha are usually moved together.</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>

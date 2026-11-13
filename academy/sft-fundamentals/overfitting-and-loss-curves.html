@@ -341,6 +341,36 @@
           <p>Training loss alone can fool you — it almost always goes down. The <em>relationship</em> between training and validation loss is the diagnosis. And remember: the loss is a proxy; the final verdict is the gold-set metric, which the next lesson makes precise.</p>
         </div>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>Healthy curves fall and flatten close together, underfitting leaves both losses high, and overfitting shows training loss still falling while validation loss flattens and then rises.</li>
+            <li>Responses to overfitting, roughly in order: keep an earlier checkpoint, train fewer epochs, add more varied data, add regularisation, or lower the capacity.</li>
+            <li>Training loss almost always goes down, so the train/validation relationship is the diagnosis, and the gold-set task metric, not the loss, picks the final checkpoint.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>Here is the log of a 6-epoch run (illustrative numbers). Which of the three shapes is it? At which epoch does validation loss bottom out, and how big is the generalization gap there and at the end? What would you do next, according to the lesson?</p>
+          <pre class="code-block"><code>epoch  train  val
+1      2.10   2.12
+2      1.52   1.61
+3      1.18   1.49
+4      0.91   1.52
+5      0.66   1.66
+6      0.45   1.88</code></pre>
+          <pre class="code-block"><code>train = [2.10, 1.52, 1.18, 0.91, 0.66, 0.45]
+val   = [2.12, 1.61, 1.49, 1.52, 1.66, 1.88]
+for epoch, (t, v) in enumerate(zip(train, val), start=1):
+    print(epoch, t, v, "gap", round(v - t, 2))
+print("lowest validation loss at epoch", val.index(min(val)) + 1)</code></pre>
+          <details>
+            <summary>Show answer</summary>
+            <p>It is <strong>overfitting</strong>: training loss falls every epoch while validation loss bottoms out at <strong>epoch 3 (1.49)</strong> and then climbs. The generalization gap (val minus train) is 0.31 at epoch 3 and widens to <strong>1.43</strong> at epoch 6. The loss alone doesn't pick the checkpoint: take the saved checkpoints around epoch 3 and compare them on the dev split's task metric, and train for fewer epochs next time. The script prints the gaps and the epoch of the lowest validation loss.</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>

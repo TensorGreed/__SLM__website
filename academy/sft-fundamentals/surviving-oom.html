@@ -326,6 +326,50 @@
         <h2>A caution</h2>
         <p>Don't fix OOM by silently truncating completions or dropping hard examples — that trades a crash for a quieter quality bug (recall the truncation warning from the tokenization lesson). The levers above shrink memory without corrupting your data; reach for those first. With memory under control, the next two lessons turn to reading the result: spotting overfitting, and evaluating properly.</p>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>An OOM means weights, gradients, optimizer state and activations summed to more than the GPU has; the longest batch sets the peak, so smoke-test with your longest examples first.</li>
+            <li>Try the cheap levers first: lower the per-device batch and restore the effective batch with accumulation, then gradient checkpointing; escalate to QLoRA or a smaller rank only when those run out.</li>
+            <li>Don't fix an OOM by silently truncating completions or dropping hard examples; that trades a crash for a quiet quality bug.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>Measure two of the levers instead of taking them on trust. The script counts the activation memory autograd keeps for the backward pass on SmolLM2-135M with LoRA, for sequences of 256 tokens. Run it and see what per-device batch 8, 4 and 2 cost, and what gradient checkpointing does at batch 8. Then work out the accumulation setting that keeps an effective batch of 16 when you drop from per-device 8 to per-device 4. (This takes a minute or two on a CPU and about 3 GB of RAM.)</p>
+          <pre class="code-block"><code>import torch
+from transformers import AutoModelForCausalLM
+from peft import LoraConfig, get_peft_model
+
+model = AutoModelForCausalLM.from_pretrained("HuggingFaceTB/SmolLM2-135M-Instruct", dtype=torch.float32)
+model = get_peft_model(model, LoraConfig(r=16, lora_alpha=32, target_modules="all-linear",
+                                         task_type="CAUSAL_LM"))
+model.train()
+params = {p.untyped_storage().data_ptr() for p in model.parameters()}
+
+def activations_gb(batch, checkpointing=False):
+    if checkpointing:
+        model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+    saved = {}
+    def keep(t):                       # autograd calls this for every tensor it saves for backward
+        st = t.untyped_storage()
+        saved[st.data_ptr()] = st.nbytes()
+        return t
+    ids = torch.randint(0, model.config.vocab_size, (batch, 256))
+    with torch.autograd.graph.saved_tensors_hooks(keep, lambda t: t):
+        model(input_ids=ids, labels=ids)
+    return sum(n for ptr, n in saved.items() if ptr not in params) / 1e9
+
+for batch in (8, 4, 2):
+    print("batch", batch, f"{activations_gb(batch):.2f} GB")
+print("batch 8 with checkpointing", f"{activations_gb(8, checkpointing=True):.2f} GB")</code></pre>
+          <details>
+            <summary>Show answer</summary>
+            <p>Activations are <strong>2.89 GB</strong> at batch 8, <strong>1.44 GB</strong> at batch 4 and <strong>0.72 GB</strong> at batch 2: they halve each time the batch does. Gradient checkpointing at batch 8 brings them down to <strong>0.55 GB</strong>, most of which is the logits and the loss. If per-device 8 used 2 accumulation steps (effective 16), then per-device 4 needs <strong>4</strong> accumulation steps (4 × 4 = 16), so the training dynamics are unchanged while peak activation memory halves.</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>

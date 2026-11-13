@@ -320,6 +320,37 @@
         <p>LoRA trains far fewer parameters, so in principle it's slightly less expressive than full fine-tuning — for very large datasets or when you're reshaping the model deeply, full fine-tuning can edge ahead. In practice, for the narrow SFT tasks this Academy targets, <strong>LoRA matches full fine-tuning closely while costing a fraction</strong>, which is why it's the default. (You'll also hear <strong>QLoRA</strong> — LoRA on top of a quantized base — which cuts memory even further; that and LoRA's knobs are the next lesson.)</p>
         <p>LoRA, full fine-tuning, and the optimizer all consume GPU memory in specific ways. To choose batch sizes and avoid crashes, you need to be able to estimate that memory — which is exactly where we go next.</p>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>Full fine-tuning updates every parameter, which is the most expressive option but needs gradients and optimizer state for all of them, and each variant is a full model copy.</li>
+            <li>LoRA freezes the base and trains a small low-rank add-on, so only the adapter needs gradients and optimizer state, and each fine-tune is a small adapter file.</li>
+            <li>You can keep adapters separate to swap tasks or merge one into the base for a standalone model; on narrow SFT tasks LoRA comes close to full fine-tuning at a fraction of the cost.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>Measure what LoRA saves on SmolLM2-135M. The script counts the parameters a full fine-tune would train, wraps the model with LoRA (r=16 on all linear layers), prints the trainable count, and saves the adapter to a temporary folder to get its file size. How big is the adapter compared with the 538 MB the base takes in fp32 (134,515,008 parameters × 4 bytes)?</p>
+          <pre class="code-block"><code>import os, tempfile, torch
+from transformers import AutoModelForCausalLM
+from peft import LoraConfig, get_peft_model
+
+model = AutoModelForCausalLM.from_pretrained("HuggingFaceTB/SmolLM2-135M-Instruct", dtype=torch.float32)
+print("full fine-tune would train", sum(p.numel() for p in model.parameters()))
+model = get_peft_model(model, LoraConfig(r=16, lora_alpha=32, target_modules="all-linear",
+                                         task_type="CAUSAL_LM"))
+model.print_trainable_parameters()
+
+out = tempfile.mkdtemp()
+model.save_pretrained(out)
+print("adapter file:", os.path.getsize(f"{out}/adapter_model.safetensors") / 1e6, "MB")</code></pre>
+          <details>
+            <summary>Show answer</summary>
+            <p>A full fine-tune trains all <strong>134,515,008</strong> parameters. LoRA trains <strong>4,884,480</strong>, which <code>print_trainable_parameters()</code> reports as 3.5039% of 139,399,488 (adapter included). That is above the "often well under 1%" quoted earlier, which holds for larger models and for fewer target layers, but it is still about 1/28 of the weights. The saved adapter is <strong>19.6 MB</strong> in fp32 (PEFT's default; about half that in bf16), around 3.6% of the 538 MB base.</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
