@@ -1,9 +1,14 @@
 <!--
 Shared box: "Which rule set am I scored against?" (PROPOSAL CC10). Pages insert it with a box:which-rule-set marker.
-Sources, PUBLIC BrewSLM main (origin/main 27b058a):
+Sources, PUBLIC BrewSLM main (580e616, rechecked 2026-11-13):
   backend/app/services/evaluation_pack_service.py  resolve_project_evaluation_pack (preference -> domain-profile
     pack -> evalpack.general.default); _default_task_specs_for_pack (general.default thresholds);
-    _domain_profile_pack_from_contract
+    _domain_profile_pack_from_contract; evalpack.classification.default (3c4bd54: general specs, default task
+    profile classification; named by recipe_service classification recipe and the ticket-router / log-triage
+    templates' manifests)
+  backend/app/services/goal_service.py  _gating_pack / _eval_rules_provenance (22fcae3, 7496f09): the ledger's
+    eval_pass_rate breakdown uses the resolved pack and names it; recipe_pack_id only when task-specific and
+    different (GoalLedgerCard: "Rules from ... Your recipe suggests ...")
   backend/app/services/domain_runtime_service.py   effective contract always starts from the platform default profile
   backend/app/services/domain_profile_service.py   generic-domain-v1 evaluation.metrics (EM 0.55, F1 0.65, judge 0.75,
     safety 0.90; required: f1, llm_judge_pass_rate, safety_pass_rate)
@@ -23,7 +28,7 @@ thresholds, which the platform default profile always supplies.
   <p class="sbox__label">Which rule set am I scored against?</p>
   <p>Each project's pass/fail rules come from one <strong>rule set</strong> (an eval pack). BrewSLM takes the first of these that applies:</p>
   <ol class="sbox__steps">
-    <li><strong>The rule set chosen for the project.</strong> Clicking <strong>Use scaffold</strong> saves the drafted rules and makes them the choice (<code>evalpack.project.scaffolded</code>). Picking a built-in pack, such as <code>evalpack.quality.strict</code> or <code>evalpack.domain.legal</code>, or applying a pipeline recipe also sets it.</li>
+    <li><strong>The rule set chosen for the project.</strong> Clicking <strong>Use scaffold</strong> saves the drafted rules and makes them the choice (<code>evalpack.project.scaffolded</code>). Picking a built-in pack, such as <code>evalpack.quality.strict</code>, <code>evalpack.classification.default</code> or <code>evalpack.domain.legal</code>, or applying a pipeline recipe also sets it. A project made from the <em>Ticket Router SLM</em> or <em>Log Triage Assistant</em> template starts with <code>evalpack.classification.default</code> chosen.</li>
     <li><strong>The domain profile's thresholds</strong> (<code>evalpack.domain-profile</code>). Every project resolves a profile, at least the platform default <code>generic-domain-v1</code>, so with nothing chosen this is the rule set: F1 &ge; 0.65, LLM-judge pass rate &ge; 0.75 and safety pass rate &ge; 0.90 are required; exact match &ge; 0.55 is reported but not required.</li>
     <li><strong><code>evalpack.general.default</code></strong>, only for a profile with no thresholds: accuracy and macro-F1 &ge; 0.5 for classification; exact match &ge; 0.4 and F1 &ge; 0.5 for instruction tasks.</li>
   </ol>
@@ -33,5 +38,5 @@ thresholds, which the platform default profile always supplies.
     <li>A <strong>domain preset</strong> picked at project creation (Legal, Customer Support, Healthcare, Finance) sets the base model, adapter defaults and an export gate, which decides whether export must pass the rule set. It does not choose the rule set.</li>
     <li>A <strong>domain pack</strong> (the only built-in one is <code>general-pack-v1</code>) carries defaults such as the split ratios and a default profile. Packs apply live: editing one changes every project that uses it, so duplicate a pack before you edit it.</li>
   </ul>
-  <p class="sbox__note">To see which one is active, look at the <strong>Pass/fail rules</strong> card in evaluation: it names the <strong>Active Pack</strong> and its <strong>Source</strong>, for example "domain profile default".</p>
+  <p class="sbox__note">To see which one is active, look at the <strong>Pass/fail rules</strong> card in evaluation: it names the <strong>Active Pack</strong> and its <strong>Source</strong>, for example "domain profile default". The Readiness overview's pass/fail rule breakdown names the same rule set ("Rules from …"), and says so when your task type suggests a task-specific rule set the project isn't using.</p>
 </aside>

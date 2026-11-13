@@ -301,7 +301,7 @@
         </header>
 
         <p>This last reference catalogues the two surfaces the evaluation lifecycle exposes: the <strong>eval pack</strong> (gates that score whether a trained model meets its bar) and the <strong>failure cluster</strong> (the grouping of similar errors that drives the data-iteration loop). <a class="inline-link" href="eval-packs-and-failure-clusters.html">Lesson 3.8</a> explained what they do and where they live in the workspace; this reference documents the schema. One naming note before the JSON: the workspace calls an eval pack a <strong>rule set</strong> and a gate a <strong>pass/fail rule</strong> (<strong>Results → Verdict</strong>'s <em>Pass/fail rules</em> card; the rule-set card on <strong>Results → Failures</strong>). The field names, pack ids and keys below are the API's and are unchanged.</p>
-        <p>This is a <strong>verified-contract</strong> page: every row was checked against public BrewSLM main at commit <code>27b058a</code> (31 Oct 2026). Tables say what is <em>enforced</em> or <em>applied</em> today in their own column and name the file that does it; most of the gate logic lives in <code>services/evaluation_pack_service.py</code>.</p>
+        <p>This is a <strong>verified-contract</strong> page: every row was checked against public BrewSLM main at commit <code>580e616</code> (13 Nov 2026). Tables say what is <em>enforced</em> or <em>applied</em> today in their own column and name the file that does it; most of the gate logic lives in <code>services/evaluation_pack_service.py</code>.</p>
 
         <h2>Eval pack — the envelope</h2>
         <p>An eval pack is identified by id (e.g. <code>evalpack.general.default</code>, <code>evalpack.domain-profile</code>) and conforms to the <strong>Evaluation Contract v2</strong> (<code>slm.evaluation-pack/v2</code>). The pack carries per-task specs and a backward-compatible top-level gate list.</p>
@@ -397,6 +397,7 @@
           </thead>
           <tbody>
             <tr><td><code>evalpack.general.default</code></td><td>The fallback. Per-profile specs; e.g. instruction SFT exact match ≥ 0.4 and F1 ≥ 0.5 (required), classification accuracy and macro-F1 ≥ 0.5 (required).</td></tr>
+            <tr><td><code>evalpack.classification.default</code></td><td>Label prediction: the general default's specs with the task profile defaulting to classification, so accuracy and macro-F1 ≥ 0.5 (required), safety pass rate ≥ 0.9 (optional).</td></tr>
             <tr><td><code>evalpack.quality.strict</code></td><td>Higher bars for release candidates; every gate required.</td></tr>
             <tr><td><code>evalpack.fast.iteration</code></td><td>Low bars for quick loops.</td></tr>
             <tr><td><code>evalpack.domain.legal</code>, <code>.support</code>, <code>.healthcare</code>, <code>.finance</code></td><td>Small domain-flavoured gate sets (e.g. support: accuracy ≥ 0.8 and hallucination rate ≤ 0.05).</td></tr>
@@ -411,7 +412,7 @@
           <p class="sbox__label">Which rule set am I scored against?</p>
           <p>Each project's pass/fail rules come from one <strong>rule set</strong> (an eval pack). BrewSLM takes the first of these that applies:</p>
           <ol class="sbox__steps">
-            <li><strong>The rule set chosen for the project.</strong> Clicking <strong>Use scaffold</strong> saves the drafted rules and makes them the choice (<code>evalpack.project.scaffolded</code>). Picking a built-in pack, such as <code>evalpack.quality.strict</code> or <code>evalpack.domain.legal</code>, or applying a pipeline recipe also sets it.</li>
+            <li><strong>The rule set chosen for the project.</strong> Clicking <strong>Use scaffold</strong> saves the drafted rules and makes them the choice (<code>evalpack.project.scaffolded</code>). Picking a built-in pack, such as <code>evalpack.quality.strict</code>, <code>evalpack.classification.default</code> or <code>evalpack.domain.legal</code>, or applying a pipeline recipe also sets it. A project made from the <em>Ticket Router SLM</em> or <em>Log Triage Assistant</em> template starts with <code>evalpack.classification.default</code> chosen.</li>
             <li><strong>The domain profile's thresholds</strong> (<code>evalpack.domain-profile</code>). Every project resolves a profile, at least the platform default <code>generic-domain-v1</code>, so with nothing chosen this is the rule set: F1 &ge; 0.65, LLM-judge pass rate &ge; 0.75 and safety pass rate &ge; 0.90 are required; exact match &ge; 0.55 is reported but not required.</li>
             <li><strong><code>evalpack.general.default</code></strong>, only for a profile with no thresholds: accuracy and macro-F1 &ge; 0.5 for classification; exact match &ge; 0.4 and F1 &ge; 0.5 for instruction tasks.</li>
           </ol>
@@ -421,12 +422,12 @@
             <li>A <strong>domain preset</strong> picked at project creation (Legal, Customer Support, Healthcare, Finance) sets the base model, adapter defaults and an export gate, which decides whether export must pass the rule set. It does not choose the rule set.</li>
             <li>A <strong>domain pack</strong> (the only built-in one is <code>general-pack-v1</code>) carries defaults such as the split ratios and a default profile. Packs apply live: editing one changes every project that uses it, so duplicate a pack before you edit it.</li>
           </ul>
-          <p class="sbox__note">To see which one is active, look at the <strong>Pass/fail rules</strong> card in evaluation: it names the <strong>Active Pack</strong> and its <strong>Source</strong>, for example "domain profile default".</p>
+          <p class="sbox__note">To see which one is active, look at the <strong>Pass/fail rules</strong> card in evaluation: it names the <strong>Active Pack</strong> and its <strong>Source</strong>, for example "domain profile default". The Readiness overview's pass/fail rule breakdown names the same rule set ("Rules from …"), and says so when your task type suggests a task-specific rule set the project isn't using.</p>
         </aside>
         <!-- /box:which-rule-set -->
         <div class="callout callout--note">
-          <p class="callout__label">Fix coming</p>
-          <p>The classification recipe names <code>evalpack.classification.default</code>, which main does not define yet: a project that asks for it gets the warning "not available; falling back" and is scored by the next pack in the chain. A change that adds the pack is merged but not yet released.</p>
+          <p class="callout__label">Classification projects</p>
+          <p>The classification recipe suggests <code>evalpack.classification.default</code>, and the <em>Ticket Router SLM</em> and <em>Log Triage Assistant</em> templates and the sentiment demo choose it, so those projects are gated on accuracy and macro-F1. Picking the classification task type on a project does not choose it: with nothing chosen, the project is still scored by its domain profile's rule set, which is written for free-text answers (a classification eval reports no LLM-judge pass rate, so that required rule cannot pass). Pick it, or a scaffold, in the rule-set picker; the Readiness overview's rule breakdown points this out.</p>
         </div>
 
         <div class="callout callout--note">
