@@ -176,16 +176,16 @@
             <p><strong>Where:</strong> <strong>Data → Split</strong> — train / validation / test, the dataset adapter, dedup, and <em>Keep the current test examples</em> on every later split.</p>
             <p><strong>Inputs:</strong> cleaned + accepted synthetic rows; the project's dataset-adapter preset.</p>
             <p><strong>Outputs:</strong> <code>prepared/manifest.json</code> + <code>train.jsonl</code> / <code>val.jsonl</code> / <code>test.jsonl</code>, plus a versioned snapshot of each split. Carries <code>task_profile</code> + <code>output_schema.scoring_mode</code>.</p>
-            <p><strong>Contract:</strong> the manifest is the source of truth for everything downstream; nothing reads from disk paths directly. Keeping the test examples means a new run is scored on the same rows as the last one.</p>
+            <p><strong>Contract:</strong> the manifest is the record of the split (row counts, task profile, scoring mode, file hashes); training reads the split files themselves. Keeping the test examples means a new run is scored on the same rows as the last one.</p>
             <p><strong>RunEvent:</strong> none; the manifest and the split snapshot are the record.</p>
           </article>
           <article class="workflow-step reveal">
             <div class="step-head"><span>07</span><h3>Train</h3></div>
             <p><strong>Where:</strong> <strong>Train</strong> — one form: base model (+ Browse), task, one run or three seeds, run name, a readiness line, and <strong>Train</strong>. Epochs, LoRA, checks, cloud burst, presets and the plan-vs-data gaps wait under <em>More options</em>. The runs list with each run's live dashboard sits below the form.</p>
             <p><strong>Inputs:</strong> prepared manifest + base model + the resolved config (shown in a confirm dialog with an estimate before Launch).</p>
-            <p><strong>Outputs:</strong> checkpoints + per-step loss / eval traces + adapter weights (or a full model for encoders). Preflight runs first: dependency, memory-fit, capability and rule-policy checks; strict mode blocks, fail-open emits warnings.</p>
+            <p><strong>Outputs:</strong> checkpoints + per-step loss / eval traces + adapter weights (or a full model for encoders). Preflight runs first and returns errors and warnings: an error blocks the launch, a warning does not (the readiness line on the form shows both).</p>
             <p><strong>Contract:</strong> preflight → a training job queued to the Celery worker (Redis plus a worker are required with the default <code>TRAINING_BACKEND=external</code>) → checkpoints → when a real run completes, a <code>post_training_lift_eval</code> Job scores the base model and the run on the same test split. Tokenizing and loss masking happen in the trainer. Cancel stops the process.</p>
-            <p><strong>RunEvent:</strong> <code>training</code> / info when a run starts (and on completion for simulate runs; payload: experiment_id, backend). <code>training_dispatch_error</code> and <code>training_timeout</code> on failure (<code>training_runtime_error</code> for simulate runs); other failures of a real run (a crash, a non-zero exit, a kill signal) show on the experiment's failure banner but do not reach the timeline yet. A <code>training_time_limit_projected</code> warning fires when a run is on pace to hit its time limit.</p>
+            <p><strong>RunEvent:</strong> <code>training</code> / info when a run starts (payload: experiment_id, runtime_id, base_model, training_mode, epochs, total_steps). <code>training_dispatch_error</code> when the job cannot be queued. Simulate runs also write a completion event, or <code>training_runtime_error</code>. A real run that fails later (a crash, a non-zero exit, a timeout) is marked failed on the run but writes no timeline event today. <em>Fix coming:</em> a change that records why a real run failed, puts it on the timeline and offers to continue from the last checkpoint is merged but not yet released.</p>
           </article>
           <article class="workflow-step reveal">
             <div class="step-head"><span>08</span><h3>Results</h3></div>
@@ -208,10 +208,43 @@
             <p><strong>Where:</strong> <strong>Ship → Deploy</strong> (serve / deploy plans, served versions) and <strong>Ship → Monitor</strong> (run events, failure clusters, drift).</p>
             <p><strong>Inputs:</strong> an export + a target (vLLM endpoint / local runner / cloud burst).</p>
             <p><strong>Outputs:</strong> a versioned <code>DeploymentVersion</code> with promote / reject / rollback / drift-check actions.</p>
-            <p><strong>Contract:</strong> smoke checks run at export time; promote marks a pending version live and supersedes the previous one. The drift check runs on demand: it scores the answer key by exact match, from predictions you post or from a live endpoint, and compares the pass rate with the training-time baseline.</p>
+            <p><strong>Contract:</strong> smoke checks run at export time; promote marks a pending version live and supersedes the previous one. The drift check runs on demand: it scores the answer key by exact match, from predictions you post or from a live endpoint, and compares the pass rate with the latest eval of the run the export came from; a change of more than 0.05 (the default tolerance) flags drift.</p>
             <p><strong>RunEvent:</strong> <code>deployment</code> / info per action (record, promote, reject, rollback).</p>
           </article>
         </div>
+        <div class="section-head reveal">
+          <h3>What each stage records and enforces today</h3>
+          <p>
+            The audit-log taxonomy declares 35 reason codes; the public code emits 9 of them today. This table lists
+            only what the released code does. Sources: the <code>emit_event()</code> call sites and
+            <code>models/reason_codes.py</code> in the BrewSLM backend; the gate check in <code>services/export_service.py</code>.
+          </p>
+        </div>
+        <div class="table-wrap reveal">
+          <table class="compare-table" aria-label="What each stage emits and enforces today">
+            <thead>
+              <tr>
+                <th>Stage</th>
+                <th>Emitted to the audit log today</th>
+                <th>Applied or enforced today</th>
+                <th>Declared, not emitted yet</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>01 Sources</td><td><code>ingestion</code> / info per uploaded document</td><td>A file that cannot be parsed is an error, never accepted text</td><td><code>ingest_io_error</code>, <code>ingest_unsupported_format</code>, <code>ingest_validation_failed</code></td></tr>
+              <tr><td>02 Introspect &amp; map</td><td><code>dataset_import_run</code> (info) or <code>dataset_import_failed</code> (error), from the run only</td><td>The 0.80 confidence gate; imported rows are written as accepted and skip the review queue</td><td>—</td></tr>
+              <tr><td>03 Prepare</td><td>Nothing (a background Job the bell follows)</td><td>—</td><td><code>cleaning_pii_block</code>, <code>cleaning_outlier_threshold_exceeded</code></td></tr>
+              <tr><td>04 Labels</td><td>Labelling jobs: <code>annotation_job_created</code>, <code>annotation_label_submitted</code>, <code>annotation_rows_promoted</code> (info)</td><td>The answer key is kept out of training</td><td>—</td></tr>
+              <tr><td>05 Generate</td><td>Nothing (a background Job per batch)</td><td>Pending and rejected rows never train</td><td>—</td></tr>
+              <tr><td>06 Split</td><td>Nothing; the manifest and the split snapshot are the record</td><td>Keep the current test examples, when you ask for it</td><td><code>adapter_field_resolution_failed</code>, <code>adapter_schema_mismatch</code></td></tr>
+              <tr><td>07 Train</td><td>Start (info); <code>training_dispatch_error</code>; simulate runs: completion or <code>training_runtime_error</code>; <code>distillation_teacher_capture</code> (info) when teacher logits are captured</td><td>Preflight errors block the launch; warnings do not</td><td><code>training_oom</code>, <code>training_timeout</code>, <code>training_cancelled</code> (and <code>training_runtime_error</code> for real runs)</td></tr>
+              <tr><td>08 Results</td><td><code>eval</code> / info per completed eval</td><td>The pass/fail verdict is shown on Verdict; on its own it blocks nothing</td><td><code>eval_dataset_missing</code>, <code>eval_judge_unavailable</code>, <code>eval_runtime_error</code></td></tr>
+              <tr><td>09 Package</td><td><code>export</code> / info, or <code>export_run_failed</code></td><td>Required rules block an export only when the project's gate policy is set (off by default)</td><td><code>export_artifact_missing</code>, <code>export_quantization_failed</code></td></tr>
+              <tr><td>10 Deploy &amp; monitor</td><td><code>deployment</code> / info per action</td><td>The drift check runs on demand, by exact match, tolerance 0.05</td><td><code>deployment_drift_detected</code>, <code>deployment_promote_blocked</code>, <code>deployment_rollback_no_predecessor</code>, <code>deployment_smoke_failed</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="form-note reveal">Also declared and not emitted: the <code>autopilot_*</code>, <code>extension_*</code> and <code>system_*</code> codes. The full list, code by code, is in <a class="inline-link" href="./academy/with-brewslm/runevent-and-coach-catalogue.html">Lesson 3.12, the RunEvent and Coach catalogue</a>.</p>
       </section>
 
       <section class="section">
@@ -238,15 +271,15 @@
         <article class="architecture-shell reveal" aria-label="RunEvent stream feeds">
           <div class="arch-lane">
             <span>Producers</span>
-            <p>Imports, document uploads, training (starts, timeouts and dispatch errors), eval, export and deployment write <code>RunEvent</code> rows via <code>emit_event()</code>; the stage cards above say which. Severity is one of info / warning / error / critical, and an error or critical row must carry a reason code from the taxonomy or it is rejected. The taxonomy declares more codes than the stages emit today.</p>
+            <p>Document uploads, imports, annotation, teacher-logit capture, training (starts and dispatch errors), eval, export and deployment write <code>RunEvent</code> rows via <code>emit_event()</code>; the table above says which. Severity is one of info / warning / error / critical, and an error or critical row must carry a reason code from the taxonomy or it is rejected. The taxonomy declares more codes than the stages emit today.</p>
           </div>
           <div class="arch-lane">
             <span>Consumers</span>
-            <p>The run timeline and the failure-cluster surface on Ship → Monitor. The support bundle. The audit explorer. The notification bell for anything still running.</p>
+            <p>The run timeline and the failure-cluster surface on Ship → Monitor, and the support bundle. (Background Jobs are a separate stream: the notification bell follows anything still running.)</p>
           </div>
           <div class="arch-lane">
             <span>Why this matters</span>
-            <p>Adding a new pipeline stage is just: pick a stage constant, add a reason code, emit an event. Every downstream view picks it up automatically.</p>
+            <p>Adding a new pipeline stage is just: pick a stage constant, register a reason code, emit an event. Every downstream view picks it up automatically. A stage that emits nothing (Prepare, Labels, Split, preflight today) leaves no trace there, which is why the table above says what is emitted today rather than what the taxonomy declares.</p>
           </div>
           <div class="arch-note">
             <p>
