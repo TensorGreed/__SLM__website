@@ -50,7 +50,7 @@
       "learningResourceType": "Lesson",
       "educationalLevel": "Beginner",
       "timeRequired": "PT9M",
-      "teaches": "After this lesson you can build an SFT dataset as (prompt, completion) pairs, load it into a datasets.Dataset, check class balance, and make a train/validation split.",
+      "teaches": "After this lesson you can build an SFT dataset as (prompt, completion) pairs, load real rows into a datasets.Dataset, deduplicate them, check class balance, make a stratified gold / train / validation split, and save the gold set to a file.",
       "isAccessibleForFree": true,
       "isPartOf": {
         "@type": "Course",
@@ -291,7 +291,7 @@
         <header class="lesson-header">
           <span class="lesson-header__badge">Track 2 · Hands-on · Lesson 3</span>
           <h1>Build a tiny SFT dataset</h1>
-          <p class="lesson-header__outcome">After this lesson you can build an SFT dataset as (prompt, completion) pairs, load it into a datasets.Dataset, check class balance, and make a train/validation split.</p>
+          <p class="lesson-header__outcome">After this lesson you can build an SFT dataset as (prompt, completion) pairs, load real rows into a datasets.Dataset, deduplicate them, check class balance, make a stratified gold / train / validation split, and save the gold set to a file.</p>
           <div class="lesson-meta">
             <span><strong>Level:</strong> beginner</span>
             <span><strong>Read time:</strong> ~9 min</span>
@@ -300,44 +300,90 @@
           </div>
         </header>
 
-        <p>The model is loaded; now it needs examples. We'll use a tiny, hand-built <strong>sentiment classification</strong> dataset so the whole pipeline is fast and inspectable. In a real project you'd have hundreds to thousands of rows; the mechanics are identical. Be warned that six rows only prove the code runs: with the batch settings in Lesson 2.5 they give a single optimizer step per epoch, so you will not see the model learn, or any lift in Lesson 2.7, until you swap in a few hundred real rows.</p>
+        <p>The model is loaded; now it needs examples. We'll build a <strong>sentiment classification</strong> dataset from a small public source, so you see real rows, real duplicates and a real class balance, and so the training in Lesson 2.5 has enough steps to actually learn. Then we clean it, split it three ways and save the gold set to a file that Lesson 2.7 reads back.</p>
 
         <h2>The shape: (prompt, completion)</h2>
-        <p>From Track 1: an SFT example is a prompt paired with the target completion. For classification the completion is just the label. We keep the prompt instruction identical across examples so the model learns the <em>task</em>, not the wording. That is the right call when production always sends that exact prompt; if real users will phrase the request in different ways, vary the instruction in training too, or the model may only respond well to the one phrasing it saw.</p>
+        <p>From Track 1: an SFT example is a prompt paired with the target completion. For classification the completion is just the label. Two hand-written rows show the shape:</p>
         <pre class="code-block"><code>raw = [
     {"prompt": "Classify the sentiment as positive or negative: I loved this movie.", "completion": "positive"},
-    {"prompt": "Classify the sentiment as positive or negative: A complete waste of time.", "completion": "negative"},
-    {"prompt": "Classify the sentiment as positive or negative: Best purchase I've made all year.", "completion": "positive"},
     {"prompt": "Classify the sentiment as positive or negative: It broke after one use.", "completion": "negative"},
-    {"prompt": "Classify the sentiment as positive or negative: Absolutely delightful from start to finish.", "completion": "positive"},
-    {"prompt": "Classify the sentiment as positive or negative: I want a refund.", "completion": "negative"},
-    # ... in practice, hundreds more, covering the hard and edge cases
 ]</code></pre>
-        <h2>Wrap it in a datasets.Dataset</h2>
-        <p>The <code>datasets</code> library gives us a fast, memory-mapped table with <code>.map()</code>, <code>.filter()</code>, and splitting — the standard container the <code>Trainer</code> expects.</p>
-        <pre class="code-block"><code>from datasets import Dataset
+        <p>We keep the prompt instruction identical across examples so the model learns the <em>task</em>, not the wording. That is the right call when production always sends that exact prompt; if real users will phrase the request in different ways, vary the instruction in training too, or the model may only respond well to the one phrasing it saw.</p>
 
-ds = Dataset.from_list(raw)
-print(ds)
+        <h2>Load real rows into a datasets.Dataset</h2>
+        <p>The <code>datasets</code> library gives us a fast, memory-mapped table with <code>.map()</code>, <code>.filter()</code>, and splitting — the standard container the <code>Trainer</code> expects. Six hand-written rows would only prove the code runs: with Lesson 2.5's batch settings they make one optimizer step per epoch, and the model learns nothing you could measure. So we take 1,200 rows from <a class="inline-link" href="https://huggingface.co/datasets/cornell-movie-review-data/rotten_tomatoes" target="_blank" rel="noopener noreferrer">rotten_tomatoes</a>, a classic set of one-sentence movie-review snippets labelled positive or negative (about 1&nbsp;MB to download).</p>
+        <pre class="code-block"><code>from datasets import load_dataset
+
+INSTRUCTION = "Classify the sentiment as positive or negative: "
+WORDS = {"neg": "negative", "pos": "positive"}
+
+src = load_dataset("cornell-movie-review-data/rotten_tomatoes", split="train")   # 8,530 rows
+names = src.features["label"].names          # ['neg', 'pos']
+
+def to_pair(row):
+    return {"prompt": INSTRUCTION + row["text"],
+            "completion": WORDS[names[row["label"]]]}
+
+ds = src.shuffle(seed=42).select(range(1200)).map(to_pair, remove_columns=["text"])
+print(ds)       # columns: label, prompt, completion (label is kept for the stratified split)
 print(ds[0])</code></pre>
+        <p>The dataset card lists the licence as <em>unknown</em>: it is Pang and Lee's 2005 research release. That is fine for learning; check the terms before you build anything you ship on it. With your own data, <code>Dataset.from_list(raw)</code> or <code>load_dataset("json", data_files="rows.jsonl")</code> gives you the same kind of table.</p>
+
+        <h2>Deduplicate</h2>
+        <p>Track 1 told you to remove duplicates; here is the code. Normalise each prompt (lower case, collapse whitespace), keep the first row for each normalised prompt, and drop the rest. Exact duplicates waste steps and, worse, can land on both sides of a split, which inflates every score you measure later.</p>
+        <pre class="code-block"><code>def norm(text):
+    return " ".join(text.lower().split())
+
+first = {}
+for i, prompt in enumerate(ds["prompt"]):
+    first.setdefault(norm(prompt), i)      # index of the first row with this prompt
+print(len(ds) - len(first), "duplicate prompts dropped")   # 0 for this sample; see the try-it
+ds = ds.select(sorted(first.values()))</code></pre>
+        <p>This only catches exact duplicates after normalisation. Near-duplicates (the same review with one word changed) need fuzzy matching (MinHash is a common choice); Lesson 1.7 explains why they matter.</p>
+
         <h2>Check class balance</h2>
         <p>Track 1 warned that imbalance lets a model cheat. Check it in one line:</p>
         <pre class="code-block"><code>from collections import Counter
-print(Counter(ds["completion"]))   # e.g. Counter({'positive': 3, 'negative': 3})</code></pre>
+print(Counter(ds["completion"]))   # Counter({'negative': 610, 'positive': 590})</code></pre>
         <div class="callout callout--note">
           <p class="callout__label">Apply what you learned</p>
-          <p>Before training, also <strong>deduplicate</strong> (no identical prompts), confirm labels are correct, and make sure the examples resemble the inputs you'll really see. Garbage in, garbage out — the data lessons of Track 1 are where most of your quality comes from.</p>
+          <p>Before training, also <strong>confirm the labels are correct</strong> (read 20 random rows; public datasets carry label noise too) and make sure the examples resemble the inputs you'll really see. Garbage in, garbage out — the data lessons of Track 1 are where most of your quality comes from.</p>
         </div>
 
-        <h2>Split into train and validation</h2>
-        <p>We hold out a slice to watch for overfitting during training (Track 1). <code>datasets</code> makes this one call:</p>
-        <pre class="code-block"><code>split = ds.train_test_split(test_size=0.2, seed=42)
-train_ds, val_ds = split["train"], split["test"]
-print(len(train_ds), "train /", len(val_ds), "val")</code></pre>
-        <p>Keep a separate, hand-checked <strong>gold set</strong> too (Lesson 1.8) — a handful of examples you will <em>never</em> train on, used in Lesson 2.7 to judge whether fine-tuning actually helped. With data in hand, the next step is turning these strings into the token tensors the model consumes.</p>
+        <h2>Split three ways: gold, train, validation</h2>
+        <p>We need three disjoint sets. A <strong>gold set</strong> (Lesson 1.8) that you never train on and never use to pick a checkpoint; Lesson 2.7 judges the fine-tune on it. A <strong>validation</strong> slice to watch for overfitting during training. And the <strong>training</strong> rows. Cut the gold set first, then split the rest. <code>stratify_by_column</code> keeps the positive/negative ratio the same in every part, which a random cut only does on average; it needs a class-label column, which is why we kept <code>label</code>.</p>
+        <pre class="code-block"><code>cut = ds.train_test_split(test_size=200, stratify_by_column="label", seed=42)
+gold_ds = cut["test"]                                  # 200 rows, never trained on
+rest = cut["train"].train_test_split(test_size=0.1, stratify_by_column="label", seed=42)
+train_ds, val_ds = rest["train"], rest["test"]
+print(len(train_ds), "train /", len(val_ds), "val /", len(gold_ds), "gold")   # 900 train / 100 val / 200 gold
+
+# save the gold set as a file: Lesson 2.7 reads it back
+gold_ds.select_columns(["prompt", "completion"]) \
+       .rename_column("completion", "label") \
+       .to_json("gold.jsonl")                          # one JSON object per line</code></pre>
+        <p>Open <code>gold.jsonl</code> and read it before you rely on it. A gold set is supposed to be <em>hand-checked</em>: fix or drop any row whose label you disagree with, and keep the file fixed from now on so that scores from different runs stay comparable. With data in hand, the next step is turning these strings into the token tensors the model consumes.</p>
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>Data work is the real work. A <code>Dataset</code> of clean, balanced, representative (prompt, completion) pairs — plus an untouched gold set — is what makes the rest of the pipeline meaningful.</p>
+          <p>Data work is the real work. A <code>Dataset</code> of clean, deduplicated, balanced, representative (prompt, completion) pairs — plus a gold set saved to a file and never trained on — is what makes the rest of the pipeline meaningful.</p>
+        </div>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>An SFT row is a (prompt, completion) pair; for classification the completion is the label.</li>
+            <li>Deduplicate on normalised prompts and check class balance before you split.</li>
+            <li>Cut the gold set first, then train and validation, all stratified; save <code>gold.jsonl</code>, hand-check it and never train on it.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>Prove the dedup step works. Append a copy of the first row with its prompt upper-cased and padded with spaces, then rerun the dedup cell: <code>from datasets import concatenate_datasets</code>, <code>dup = ds.select([0]).map(lambda r: {"prompt": "  " + r["prompt"].upper() + "  "})</code>, <code>ds = concatenate_datasets([ds, dup])</code>. How many rows does it drop? Would it still catch the copy without <code>norm()</code>?</p>
+          <details>
+            <summary>Show answer</summary>
+            <p>It drops 1 row: <code>norm()</code> lower-cases and collapses whitespace, so the copy maps to the same key as row 0. Without <code>norm()</code> the two strings differ and both stay, and if they land on different sides of a split, the gold score is inflated by a row the model trained on. (The 1,200 rows drawn here have no exact duplicates of their own; real merged or scraped data usually does.)</p>
+          </details>
         </div>
 
         <section class="key-terms">
