@@ -300,7 +300,7 @@
           </div>
         </header>
 
-        <p>&quot;Reasoning training&quot; arrived as a single banner after the first reasoning-focused hosted models in late 2024, DeepSeek-R1 (DeepSeek-AI 2025, arXiv 2501.12948), and the wave of distilled reasoning SLMs that followed. The label covers at least three different techniques that get cited interchangeably — chain-of-thought SFT, process-supervised RL with a step-level reward model, and outcome-supervised RL with a verifier — and they don&#x27;t optimise the same thing, don&#x27;t need the same data, and don&#x27;t fail in the same ways. For an SLM team, the difference between picking the right one and picking the wrong one is roughly the difference between a model that does multi-step work and a model that has learned to look like it does.</p>
+        <p>&quot;Reasoning training&quot; arrived as a single banner after the first reasoning-focused hosted models in late 2024 and DeepSeek-R1's open release in January 2025 (DeepSeek-AI 2025, arXiv 2501.12948), and the wave of distilled reasoning SLMs that followed. The label covers at least three different techniques that get cited interchangeably — chain-of-thought SFT, process-supervised RL with a step-level reward model, and outcome-supervised RL with a verifier — and they don&#x27;t optimise the same thing, don&#x27;t need the same data, and don&#x27;t fail in the same ways. For an SLM team, the difference between picking the right one and picking the wrong one is roughly the difference between a model that does multi-step work and a model that has learned to look like it does.</p>
 
         <h2>The three techniques the label covers</h2>
         <ul>
@@ -392,11 +392,11 @@ args = GRPOConfig(
     max_completion_length=512,
     learning_rate=1e-6,                # the default; RL steps are small
     beta=0.0,                          # the default: no KL term, no reference model loaded
-    loss_type="dapo",                  # the default; "dr_grpo" and "grpo" are the alternatives
+    loss_type="dapo",                  # the default; "dr_grpo" and "grpo" are among the alternatives
     scale_rewards="group",             # the default; "none" drops the std division (Dr. GRPO)
     epsilon=0.2, epsilon_high=0.28,    # DAPO's "clip-higher"; epsilon_high defaults to epsilon
     mask_truncated_completions=True,   # DAPO: truncated completions don't count in the loss
-    bf16=use_bf16,                     # GRPOConfig defaults to bf16=True; off on CPU
+    bf16=use_bf16,                     # GRPOConfig resolves to bf16=True unless fp16; off on CPU
     report_to=[],
 )
 print(args.beta, args.loss_type, args.scale_rewards, args.temperature)   # 0.0 dapo group 1.0</code></pre>
@@ -407,11 +407,11 @@ print(args.beta, args.loss_type, args.scale_rewards, args.temperature)   # 0.0 d
         <pre class="code-block"><code>import statistics as st
 
 def advantages(rewards, eps=1e-4):
-    mean, std = st.fmean(rewards), st.pstdev(rewards)
+    mean, std = st.fmean(rewards), st.stdev(rewards)   # sample std, as TRL computes it
     return [round((r - mean) / (std + eps), 2) for r in rewards]
 
 print(advantages([0, 0, 0, 0, 0, 0, 0, 0]))   # all wrong: [0.0, ...] -&gt; no gradient
-print(advantages([1, 0, 0, 0, 0, 0, 0, 0]))   # one right: [2.64, -0.38, -0.38, ...]
+print(advantages([1, 0, 0, 0, 0, 0, 0, 0]))   # one right: [2.47, -0.35, -0.35, ...]
 for p in (0.05, 0.1, 0.5, 0.9):                # per-sample pass rate
     print(p, round((1 - p) ** 8 + p ** 8, 2))  # chance a group of 8 is all-same
 # 0.05 0.66 | 0.1 0.43 | 0.5 0.01 | 0.9 0.43</code></pre>
