@@ -57,7 +57,8 @@
           { "@type": "HowToStep", "name": "Step 4 — Start the frontend (port 5173)", "url": "https://brewslm.com/academy/tutorials/setup-brewslm.html#frontend" },
           { "@type": "HowToStep", "name": "Step 5 — Log in as the bootstrap admin user", "url": "https://brewslm.com/academy/tutorials/setup-brewslm.html#login" },
           { "@type": "HowToStep", "name": "Step 6 — Create your first project", "url": "https://brewslm.com/academy/tutorials/setup-brewslm.html#first-project" },
-          { "@type": "HowToStep", "name": "Step 7 — Tour the main surfaces", "url": "https://brewslm.com/academy/tutorials/setup-brewslm.html#tour" }
+          { "@type": "HowToStep", "name": "Step 7 — Tour the main surfaces", "url": "https://brewslm.com/academy/tutorials/setup-brewslm.html#tour" },
+          { "@type": "HowToStep", "name": "Step 8 — Smoke-test training on a starter demo", "url": "https://brewslm.com/academy/tutorials/setup-brewslm.html#smoke-test" }
         ],
         "isPartOf": { "@type": "Course", "name": "BrewSLM Academy", "url": "https://brewslm.com/academy/" },
         "author": { "@type": "Organization", "name": "TensorGreed", "url": "https://github.com/TensorGreed" }
@@ -217,8 +218,8 @@
           "@type": "Question",
           "eduQuestionType": "Multiple choice",
           "learningResourceType": "Practice problem",
-          "name": "You click Train on a starter demo. The run sits at Queued for ten minutes and the bell never moves. What is most likely missing?",
-          "text": "You click Train on a starter demo. The run sits at Queued for ten minutes and the bell never moves. What is most likely missing?",
+          "name": "You click Train on a starter demo. Ten minutes later the bell still says initializing and the run has no steps, no loss and no log lines. What is most likely missing?",
+          "text": "You click Train on a starter demo. Ten minutes later the bell still says initializing and the run has no steps, no loss and no log lines. What is most likely missing?",
           "suggestedAnswer": [
             {
               "@type": "Answer",
@@ -242,7 +243,7 @@
             "text": "A running Celery worker to pick the run up",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "The shipped .env sets TRAINING_BACKEND=\"external\", which hands training to a Celery worker through Redis, and preflight does not check that a worker is up. With Redis up but no worker, the run stays queued forever. (With Redis down the hand-off itself fails and the run is marked Failed instead.) Start Redis and the worker alongside the backend and frontend. CPU-only machines still train, just slower; synth and eval Jobs run in-process and don't need the worker."
+              "text": "The shipped .env sets TRAINING_BACKEND=\"external\", which hands training to a Celery worker through Redis, and preflight does not check that a worker is up. With Redis up but no worker, the task waits in Redis: the run reads RUNNING but never makes progress. (With Redis down the hand-off itself fails and the run is marked Failed instead.) Start Redis and the worker alongside the backend and frontend. CPU-only machines still train, just slower; synth and eval Jobs run in-process and don't need the worker."
             }
           }
         }
@@ -340,7 +341,7 @@
           </div>
         </header>
 
-        <p>This is the unglamorous tutorial that every other tutorial leans on. We're going to clone the repo, get the backend running on port 8000, start Redis and the Celery worker that runs training, get the frontend running on port 5173, log in, and click through the workspace so you know where things are. No machine learning yet — just enough to land you in front of a working empty project, ready to import data in Tutorial 1.</p>
+        <p>This is the unglamorous tutorial that every other tutorial leans on. We're going to clone the repo, get the backend running on port 8000, start Redis and the Celery worker that runs training, get the frontend running on port 5173, log in, click through the workspace so you know where things are, and send one smoke-test training run through the stack. No machine learning to learn yet — just enough to land you in front of a working empty project, ready to import data in Tutorial 1.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
@@ -357,7 +358,7 @@ git --version        # any modern version
         <p>If <code>python3</code> reports 3.10 or earlier: install Python 3.11 from <a class="inline-link" href="https://www.python.org/downloads/" target="_blank" rel="noopener noreferrer">python.org</a> or via your package manager (<code>brew install python@3.12</code> on macOS, <code>apt install python3.12</code> on Debian/Ubuntu). If Node is too old: <a class="inline-link" href="https://nodejs.org/" target="_blank" rel="noopener noreferrer">nodejs.org</a> or <code>nvm install 22</code> (Vite 7 needs Node 20.19+ or 22.12+). If Redis is missing: <code>brew install redis</code> on macOS, <code>apt install redis-server</code> on Debian/Ubuntu, or run it in Docker (Step 3).</p>
         <p>Required for training:</p>
         <ul>
-          <li><strong>Redis.</strong> The shipped <code>.env</code> sets <code>TRAINING_BACKEND="external"</code>, which hands every training run to a Celery worker through Redis. Without Redis, a run you start fails at once (the hand-off to the worker raises, and the run is marked <em>Failed</em>). With Redis up but no worker, the run stays <em>queued</em> forever, and the training checks don't warn you. Step 3 starts both.</li>
+          <li><strong>Redis.</strong> The shipped <code>.env</code> sets <code>TRAINING_BACKEND="external"</code>, which hands every training run to a Celery worker through Redis. Without Redis, a run you start fails at once (the hand-off to the worker raises, and the run is marked <em>Failed</em>). With Redis up but no worker, the run reads RUNNING but never makes progress, and the training checks don't warn you. Step 3 starts both.</li>
         </ul>
         <p>Optional:</p>
         <ul>
@@ -401,7 +402,7 @@ INFO:     Application startup complete.</code></pre>
         </div>
 
         <h2 id="worker">Step 3 — Start Redis and the Celery worker</h2>
-        <p>Training runs don't execute inside the backend. The backend hands each run to a Celery worker through Redis, and the worker launches the training script. Skip this step and every <strong>Train</strong> click in the later tutorials goes nowhere: with no Redis the run is marked <em>Failed</em> straight away; with Redis but no worker it stays <em>queued</em> forever. Synthetic generation and evaluation Jobs run inside the backend and don't need the worker, so the rest of the UI works either way, which makes the missing worker easy to miss.</p>
+        <p>Training runs don't execute inside the backend. The backend hands each run to a Celery worker through Redis, and the worker launches the training script. Skip this step and every <strong>Train</strong> click in the later tutorials goes nowhere: with no Redis the run is marked <em>Failed</em> straight away; with Redis but no worker the run reads RUNNING while its task waits in Redis, and it never makes progress. Synthetic generation and evaluation Jobs run inside the backend and don't need the worker, so the rest of the UI works either way, which makes the missing worker easy to miss.</p>
         <p>First start Redis on its default port 6379 (the <code>.env</code> points <code>REDIS_URL</code> and <code>CELERY_BROKER_URL</code> at <code>redis://localhost:6379/0</code>). Pick one:</p>
         <pre class="code-block"><code>redis-server                                  # in its own terminal
 # or: brew services start redis               (macOS)
@@ -482,6 +483,28 @@ npm run dev</code></pre>
         <figure class="academy-figure"><img src="../../assets/screens/workspace/data-sources.png" alt="The Data destination on step 1 Sources: a step bar 1 Sources, 2 Prepare, 3 Labels, 4 Generate, 5 Split; a tip line with Watch the walkthrough; two Coach notices with action buttons; cards for Write sample documents and Import dataset (auto-mapping)." loading="lazy" width="1600" height="1000" /><figcaption><strong>Data → Sources</strong>. Every Data step has the same shape: step bar, tip line, Coach notices, the step's form, and a Details drawer below.</figcaption></figure>
         <p>You don't have to memorise this — the tutorials reference these destinations and steps by exact name, and the Overview's Next step button always points at the one that matters now.</p>
 
+        <h2 id="smoke-test">Step 8 — Smoke-test training on a starter demo</h2>
+        <p>Everything so far works without the training path: an install with no Redis or no worker still shows every page. This step sends one real run through it, so a missing piece shows up now and not halfway through Tutorial 1. It takes about five minutes plus the first download of the base model.</p>
+        <!-- box:stack-diagram -->
+        <ol>
+          <li><strong>Open the demo.</strong> Back on the projects home (click the BrewSLM logo), under <strong>"Or begin with a starter project"</strong>, click <strong>Open demo</strong> on <strong>Demo · Support FAQ</strong>. It arrives with 150 question → answer rows already split into train, validation and test, so there is nothing to prepare.</li>
+          <li><strong>Go to Train.</strong> The <strong>Base model</strong> field already reads <code>HuggingFaceTB/SmolLM2-135M-Instruct</code>. Leave every other field alone.</li>
+          <li><strong>Click Train</strong>, read the confirm dialog (resolved config and estimate) and click <strong>Launch</strong>.</li>
+          <li><strong>Watch three places.</strong>
+            <ul>
+              <li><strong>The bell</strong> gets an entry <code>Train · exp #&lt;n&gt; · HuggingFaceTB/SmolLM2-135M-Instruct</code> whose line reads <code>initializing · 5s elapsed</code>. That proves the backend accepted the run and handed it to Redis. It does <em>not</em> prove a worker took it: the line counts up the same way while the run waits in Redis.</li>
+              <li><strong>The worker terminal</strong> (Step 3) logs that it received a <code>run_training_job</code> task, then <code>Starting training job for experiment &lt;n&gt;</code>. This is the proof that the worker has the run.</li>
+              <li><strong>The run's dashboard</strong> below the Train form shows the status badge <strong>RUNNING</strong> and, once the worker has started, the training script's log lines streaming in. When the first checkpoint is saved the bell line changes to <code>step N/M · loss=… · …s elapsed</code>.</li>
+            </ul>
+          </li>
+          <li><strong>Stop or keep it.</strong> Click <strong>Cancel</strong> on the run if you only wanted the check, or let it finish: when it completes, BrewSLM queues a second Job in the bell that scores the base model and the trained one on the held-out split (Tutorial 1 explains that comparison).</li>
+        </ol>
+        <p><strong>✓ Checkpoint:</strong> the worker terminal shows <code>Starting training job for experiment &lt;n&gt;</code>, the run's log is streaming, and the bell entry for the run is in progress. Two failures are common, and each points at one box in the diagram above:</p>
+        <ul>
+          <li><strong>The run is marked Failed at once, with a dispatch error:</strong> Redis isn't running. Start it (Step 3) and click <strong>Train</strong> again.</li>
+          <li><strong>The run says RUNNING but the worker terminal stays silent</strong> and the bell line never gets past <code>initializing</code>: no worker is connected. Start the worker (Step 3); a waiting run is picked up once it connects.</li>
+        </ul>
+
         <h2 id="api-docs">Optional — Browse the API docs</h2>
         <p>With the backend running, <a class="inline-link" href="http://localhost:8000/docs" target="_blank" rel="noopener noreferrer"><code>http://localhost:8000/docs</code></a> serves Swagger UI for every endpoint. Useful when you want to know what's available behind a panel ("what does that 'Run prepare now' button POST to?") or you're scripting BrewSLM from a notebook. The right side of the page shows endpoint groups: Projects, Datasets, Training, Evaluation, Synthetic, Coach, Jobs, etc. Each endpoint has a "Try it out" button — handy for sanity checks.</p>
 
@@ -495,14 +518,14 @@ npm run dev</code></pre>
           <dd>First check <code>node --version</code>: Vite 7 needs Node 20.19+ or 22.12+, and older versions fail with an engine or syntax error. Peer-dependency <em>warnings</em> are usually safe to ignore. If npm errors hard on peer dependencies, try <code>npm install --legacy-peer-deps</code>.</dd>
           <dt>Login succeeds but the project list is empty</dt>
           <dd>You logged in with a non-admin username. New usernames are created as ENGINEER users: they can create their own projects but don't see projects owned by <code>admin</code>, including the starter demos. Sign out (top-right user menu) and sign back in with <code>admin</code> as the username — that user has full bootstrap access.</dd>
-          <dt>A training run stays "queued" and never starts</dt>
-          <dd>No Celery worker is picking it up: the worker isn't running (Step 3). Start it; a run that is still queued is picked up once the worker connects. (If Redis itself is down, the run doesn't queue at all: it is marked <em>Failed</em> with a dispatch error. Start Redis and click <strong>Train</strong> again.) Compression and remote imports go through the same worker. A synthetic-generation or evaluation Job stuck in "queued" is a different problem: those run inside the backend, so it usually means the backend restarted mid-run. Start the action again.</dd>
+          <dt>A training run says RUNNING but never makes progress</dt>
+          <dd>No Celery worker is picking it up: the worker isn't running (Step 3). The run's badge reads RUNNING as soon as the backend hands it to Redis, so the tell is a silent worker terminal and a bell line stuck on <code>initializing</code>. Start the worker; a waiting run is picked up once it connects. (If Redis itself is down, the hand-off fails and the run is marked <em>Failed</em> with a dispatch error. Start Redis and click <strong>Train</strong> again.) Compression and remote imports go through the same worker. A synthetic-generation or evaluation Job stuck in "queued" is a different problem: those run inside the backend, so it usually means the backend restarted mid-run. Start the action again.</dd>
           <dt>The frontend can't talk to the backend (network errors in the browser console)</dt>
           <dd>Confirm both processes are running. Open <code>http://localhost:8000/docs</code> directly to verify the backend; open <code>http://localhost:5173</code> to verify the frontend. If both load but the frontend's <code>/api/...</code> calls fail, the dev proxy isn't reaching the backend: if the backend isn't on port 8000, restart Vite with <code>VITE_API_PROXY_TARGET</code> set to its URL.</dd>
         </dl>
 
         <h2 id="whats-next">What's next</h2>
-        <p>You have BrewSLM running, an admin user, and an empty project. The other tutorials assume exactly this state. Pick one:</p>
+        <p>You have BrewSLM running, an admin user, an empty project, and proof that a training run reaches the worker. The other tutorials assume exactly this state. Pick one:</p>
         <dl>
           <dt><a class="inline-link" href="support-faq-rag-protocol.html">Tutorial 1 — Support FAQ assistant with rag-protocol</a></dt>
           <dd>The canonical workflow. Build a small model that grounds answers in your FAQ corpus, cites the source chunk, and refuses cleanly off-topic. Best first tutorial if you want to ship a customer-facing retrieval-grounded assistant.</dd>
@@ -573,7 +596,7 @@ npm run dev</code></pre>
                 "explanation": "The bell polls the active Jobs and shows progress for in-flight jobs and a deep link when one finishes; it survives page navigation. Synth and eval Jobs run inside the backend process rather than on the Celery worker, so the worker log is not where all of them report."
               },
               {
-                "q": "You click Train on a starter demo. The run sits at Queued for ten minutes and the bell never moves. What is most likely missing?",
+                "q": "You click Train on a starter demo. Ten minutes later the bell still says initializing and the run has no steps, no loss and no log lines. What is most likely missing?",
                 "options": [
                   "A GPU — training waits in the queue until CUDA is detected",
                   "Admin rights — runs from ENGINEER users wait for approval",
@@ -581,7 +604,7 @@ npm run dev</code></pre>
                   "A Hugging Face token to download the base model weights"
                 ],
                 "answer": 2,
-                "explanation": "The shipped .env sets TRAINING_BACKEND=\"external\", which hands training to a Celery worker through Redis, and preflight does not check that a worker is up. With Redis up but no worker, the run stays queued forever. (With Redis down the hand-off itself fails and the run is marked Failed instead.) Start Redis and the worker alongside the backend and frontend. CPU-only machines still train, just slower; synth and eval Jobs run in-process and don't need the worker."
+                "explanation": "The shipped .env sets TRAINING_BACKEND=\"external\", which hands training to a Celery worker through Redis, and preflight does not check that a worker is up. With Redis up but no worker, the task waits in Redis: the run reads RUNNING but never makes progress. (With Redis down the hand-off itself fails and the run is marked Failed instead.) Start Redis and the worker alongside the backend and frontend. CPU-only machines still train, just slower; synth and eval Jobs run in-process and don't need the worker."
               }
             ]
           </script>
@@ -613,14 +636,14 @@ npm run dev</code></pre>
                   <li>The Celery worker log, which every background job writes to</li>
                 </ol>
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The notification bell in the top bar</strong> The bell polls the active Jobs and shows progress for in-flight jobs and a deep link when one finishes; it survives page navigation. Synth and eval Jobs run inside the backend process rather than on the Celery worker, so the worker log is not where all of them report.</p></details></li>
-              <li><p class="quiz__q-text">You click Train on a starter demo. The run sits at Queued for ten minutes and the bell never moves. What is most likely missing?</p>
+              <li><p class="quiz__q-text">You click Train on a starter demo. Ten minutes later the bell still says initializing and the run has no steps, no loss and no log lines. What is most likely missing?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>A GPU — training waits in the queue until CUDA is detected</li>
                   <li>Admin rights — runs from ENGINEER users wait for approval</li>
                   <li>A running Celery worker to pick the run up</li>
                   <li>A Hugging Face token to download the base model weights</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. A running Celery worker to pick the run up</strong> The shipped .env sets TRAINING_BACKEND="external", which hands training to a Celery worker through Redis, and preflight does not check that a worker is up. With Redis up but no worker, the run stays queued forever. (With Redis down the hand-off itself fails and the run is marked Failed instead.) Start Redis and the worker alongside the backend and frontend. CPU-only machines still train, just slower; synth and eval Jobs run in-process and don't need the worker.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: C. A running Celery worker to pick the run up</strong> The shipped .env sets TRAINING_BACKEND="external", which hands training to a Celery worker through Redis, and preflight does not check that a worker is up. With Redis up but no worker, the task waits in Redis: the run reads RUNNING but never makes progress. (With Redis down the hand-off itself fails and the run is marked Failed instead.) Start Redis and the worker alongside the backend and frontend. CPU-only machines still train, just slower; synth and eval Jobs run in-process and don't need the worker.</p></details></li>
             </ol>
           </noscript>
           <!-- /site:quiz -->
