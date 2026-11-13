@@ -379,6 +379,7 @@ print(f"activations: {sum(n for ptr, n in saved.items() if ptr not in params) / 
         <h2>Managing activations</h2>
         <p>Activations are the lever you control at run time. For a given model, they grow with <strong>batch size × sequence length</strong> — how many tokens flow through per step — so the two biggest knobs for fitting a run are exactly those. <strong>Gradient checkpointing</strong> (next lesson) trades compute to shrink activation memory dramatically. Combined with the earlier lessons: pick the maximum sequence length from your data (<code>max_length</code> in TRL's <code>SFTConfig</code>, Lesson 2.10), set a per-device batch that fits, and recover the effective batch with gradient accumulation. Leave headroom for the CUDA context (roughly 0.5–1&nbsp;GB) and allocator fragmentation.</p>
         <p>You now have a mental calculator: weights + gradients + optimizer state + activations (with the logits), scaled by precision. When the sum exceeds your GPU, you get an OOM — and the next lesson is the field guide to surviving exactly that.</p>
+        <p>To run the arithmetic for a particular model and batch, use the <a class="inline-link" href="../../tools/fine-tuning-memory-calculator.html">fine-tuning memory calculator</a>. It applies this table, adds the activations and the fp32 logits, and is tested against the worked example above and the measured 30B mixture-of-experts run.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Recap</p>

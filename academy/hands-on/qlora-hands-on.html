@@ -384,6 +384,7 @@ trainer.save_model("qlora-out/adapter")</code></pre>
           <li><strong>Activations</strong> at sequence length 512, batch 4 — this is the part that varies most with sequence length, batch size and gradient checkpointing. Measure it on your card with <code>torch.cuda.max_memory_allocated()</code> rather than trusting an estimate.</li>
         </ul>
         <p>Weights plus adapter come to about 2 GB, which leaves most of a consumer GPU for activations. For scale: <em>full</em> fine-tuning of this model with AdamW in mixed precision needs about 16–18 bytes per parameter, ~24–27 GB before activations (the first row of the memory table), while plain LoRA on a bf16 base needs about 3 GB of weights. At 1.5B, QLoRA's saving over LoRA is a couple of GB; it starts to decide what fits at 7B and up, where the bf16 base alone is around 15 GB.</p>
+        <p>The <a class="inline-link" href="../../tools/fine-tuning-memory-calculator.html">fine-tuning memory calculator</a> puts these terms together for any model size, with the activations and fp32 logits for your sequence length and batch. It counts the adapter in peft's default fp32, the larger of the two adapter figures above.</p>
 
         <div class="callout callout--warning">
           <p class="callout__label">Honest beat — 4-bit isn't free</p>
