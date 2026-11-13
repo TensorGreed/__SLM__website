@@ -137,6 +137,30 @@
         },
         {
           "@type": "Question",
+          "name": "How do I know a fine-tune helped?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Compare it with the model you started from, on the same rows. When a real training run finishes, BrewSLM queues a lift check in the bell: it scores the base model and the fine-tuned model on the same held-out test split and pairs them row by row (the base model is scored with neutral decoding and, when its own generation settings differ, with those too; the higher score is the bar). The summary card on Results → Verdict then says whether the run is better or worse than the base model, and its evidence line says whether that change is beyond row noise, within noise or based on too few rows to tell, with the average change per row and its 95% range. Check across 3 seeds repeats the run to see whether the gain survives a new seed. For document Q&A, the honest bar is the base model reading your passages, not the base model alone. Whether the run is good enough to ship is a separate question, answered by the pass/fail rule set. Simulated runs are not checked, and a project can switch the check off (auto_lift_eval=false)."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Should I fine-tune or use retrieval?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Measure before you choose. For knowledge that lives in documents, especially documents that change or answers that must cite a source, retrieval is usually the stronger first step; research on knowledge injection found the same (Ovadia et al. 2023, arXiv:2312.05934). On IRS Publication 17, the base model scored 0.17, the base model with retrieved passages 0.73, and a fine-tune on 405 generated pairs 0.02. Fine-tuning earns its place for a format or a behaviour: a fixed JSON record, a tagger, or a reader trained to answer from passages. BrewSLM's documents → Q&A flow judges the base model with your passages before it trains and stops when retrieval is already good enough; the Auto-RAG comparison puts the base model, base + passages and the fine-tune side by side on the same questions. See Lesson 3.9 and the Pub 17 run."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What does \"within noise\" mean?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "That the test set can't tell the two models apart. A score on n test rows is a sample, so two runs differ a little by chance. BrewSLM pairs the rows, takes the mean per-row difference and its 95% confidence interval; when that interval includes zero, the result is within noise (on the Compare tab that reads, for example, \"B is within noise of A: 2 better, 7 worse, 69 same of 78 rows; change −6.4 pts (95% CI −14 to +1)\"). Under five paired rows it says too few rows to tell. It does not mean \"no effect\", only \"not measurable with this many rows\". The verdict also states the smallest gap the test set could detect and how many rows a smaller gap would need. To get a clearer answer, add test rows or check across seeds; don't read a two-point gain on 40 rows as progress."
+          }
+        },
+        {
+          "@type": "Question",
           "name": "How do I prove what happened in a training run?",
           "acceptedAnswer": {
             "@type": "Answer",
@@ -371,6 +395,69 @@
             </p>
           </details>
         </div>
+      </section>
+
+      <section class="section faq" id="did-it-work">
+        <div class="section-head reveal">
+          <p class="eyebrow">Reading results</p>
+          <h2>Did the fine-tune actually help?</h2>
+        </div>
+        <div class="faq-grid">
+          <details class="faq-item reveal">
+            <summary>How do I know a fine-tune helped?</summary>
+            <p>
+              Compare it with the model you started from, on the same rows. When a real training
+              run finishes, BrewSLM queues a lift check in the bell: it scores the base model and
+              the fine-tuned model on the same held-out test split and pairs them row by row (the
+              base model is scored with neutral decoding and, when its own generation settings
+              differ, with those too; the higher score is the bar). The summary card on
+              <strong>Results → Verdict</strong> then says whether the run is better or worse than
+              the base model, and its evidence line says whether that change is <em>beyond row
+              noise</em>, <em>within noise</em> or based on <em>too few rows to tell</em>, with the
+              average change per row and its 95% range.
+              <em>Check across 3 seeds</em> repeats the run to see whether the gain survives a new
+              seed. For document Q&amp;A, the honest bar is the base model <em>reading your
+              passages</em>, not the base model alone. Whether the run is good enough to ship is a
+              separate question, answered by the pass/fail rule set. Simulated runs are not
+              checked, and a project can switch the check off (<code>auto_lift_eval=false</code>).
+            </p>
+          </details>
+          <details class="faq-item reveal">
+            <summary>Should I fine-tune or use retrieval?</summary>
+            <p>
+              Measure before you choose. For knowledge that lives in documents, especially
+              documents that change or answers that must cite a source, retrieval is usually the
+              stronger first step; research on knowledge injection found the same (Ovadia et al.
+              2023, arXiv:2312.05934). On IRS Publication 17, the base model scored 0.17, the base
+              model with retrieved passages 0.73, and a fine-tune on 405 generated pairs 0.02.
+              Fine-tuning earns its place for a format or a behaviour: a fixed JSON record, a
+              tagger, or a reader trained to answer <em>from</em> passages. BrewSLM's documents
+              → Q&amp;A flow judges the base model with your passages before it trains and stops
+              when retrieval is already good enough; the Auto-RAG comparison puts the base model,
+              base + passages and the fine-tune side by side on the same questions. See
+              <a class="inline-link" href="./academy/with-brewslm/auto-rag-and-reroute.html">Lesson 3.9</a>
+              and
+              <a class="inline-link" href="./blog-irs-pub17-fine-tune-lost-retrieval-won.html">the Pub 17 run</a>.
+            </p>
+          </details>
+          <details class="faq-item reveal">
+            <summary>What does "within noise" mean?</summary>
+            <p>
+              That the test set can't tell the two models apart. A score on n test rows is a
+              sample, so two runs differ a little by chance. BrewSLM pairs the rows, takes the
+              mean per-row difference and its 95% confidence interval; when that interval
+              includes zero, the result is <em>within noise</em> (on the Compare tab that reads, for
+              example, "B is within noise of A: 2 better, 7 worse, 69 same of 78 rows; change
+              −6.4 pts (95% CI −14 to +1)"). Under five paired rows it says <em>too few rows to
+              tell</em>. It does
+              not mean "no effect", only "not measurable with this many rows". The verdict also
+              states the smallest gap the test set could detect and how many rows a smaller gap
+              would need. To get a clearer answer, add test rows or check across seeds; don't
+              read a two-point gain on 40 rows as progress.
+            </p>
+          </details>
+        </div>
+        <!-- box:small-test-sets -->
       </section>
 
       <section class="section faq">
