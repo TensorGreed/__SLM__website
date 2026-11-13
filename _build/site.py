@@ -14,6 +14,10 @@ The hand-written HTML stays the source of truth. This script only:
   * rewrites the <!-- site:quiz --> region after each lesson's quiz JSON (a
     static, no-JavaScript copy of the quiz in its authored order) and the
     certificate's <span data-cert-total> lesson count (from its manifest);
+  * writes each lesson's and tutorial's <!-- site:verified --> "Verified:"
+    date at the end of its lesson-meta row (and the same date as JSON-LD
+    dateModified): [pages."<path>"].verified in site.toml when set, else the
+    date of the page's last content commit;
   * writes whole generated files: sitemap.xml, feed.xml, 404.html.
 
 Usage:
@@ -21,7 +25,11 @@ Usage:
   python3 _build/site.py check    # exit 1 if build would change anything, or a
                                  # link is broken, a page lacks a title, a
                                  # JSON-LD node lacks a required property or
-                                 # disagrees with the visible page, ...
+                                 # disagrees with the visible page, the lesson
+                                 # order (track index -> badge numbers, pagers,
+                                 # hub, certificate) disagrees, a "Lesson X.Y"
+                                 # names no lesson or the wrong one, ...; it
+                                 # warns on pages verified > 180 days ago
   python3 _build/site.py check -v # ... and list over-budget pages and the
                                  # JSON-LD node count per type
   python3 _build/site.py rebalance-quizzes
@@ -495,6 +503,7 @@ class Facts:
         except ValueError:
             self.quiz = None   # check reports it (Visible parses the same data)
         self.quiz_title = text_of(first(r'class="quiz__title"[^>]*>(.*?)</h2>', body) or "") or None
+        self.verified = None   # set by render() (git / site.toml), not read from the page
 
     def _crumbs(self, body: str) -> list[tuple[str, str]]:
         nav = first(r'<nav class="breadcrumb[^"]*"[^>]*>(.*?)</nav>', body)
@@ -664,12 +673,11 @@ def jsonld_blocks(rel: str, facts: dict[str, "Facts"], pages: list[str]) -> list
                    else {"@type": "CollectionPage", "name": facts[track].h1, "url": url_of(track)}
                    if track in facts else academy_ref())
         mins = duration_minutes(f.time)
-        # No datePublished/dateModified and no image: lessons show no date and
-        # have no raster image yet. Dates (from git lastmod) can come once the
-        # page shows them (T10); the image with the T6 social cards.
+        # dateModified is the visible "Verified" date (site:verified region);
+        # no datePublished (the page shows none) and no image yet (T6 cards).
         lr = {"@type": ["LearningResource", "Article"], "@id": f.url + "#lesson",
               "name": f.h1, "headline": f.h1, "description": f.description, "url": f.url,
-              "mainEntityOfPage": f.url, "inLanguage": "en",
+              "mainEntityOfPage": f.url, "inLanguage": "en", "dateModified": f.verified,
               "learningResourceType": "Tutorial" if pt == "tutorial" else "Lesson",
               "educationalLevel": f.level.capitalize() if f.level else None,
               "timeRequired": iso_duration(mins) if mins else None,
@@ -978,6 +986,53 @@ def build_cert_total(text: str) -> str:
     return re.sub(r"(<span\b[^>]*\bdata-cert-total\b[^>]*>)[^<]*(</span>)", rf"\g<1>{n}\g<2>", text)
 
 
+# ── freshness (site:verified region) ───────────────────────────────────────
+# Every lesson and tutorial shows when it was last verified, as a span at the
+# end of its lesson-meta row. The date is [pages."<path>"].verified in
+# site.toml when set (a re-check that changed nothing), else the date of the
+# page's last content commit (lastmod: the regions this script writes do not
+# count). The same date is the JSON-LD dateModified; `check` warns when it is
+# older than [academy].stale_after_days.
+
+VERIFIED_REGION_RE = re.compile(r"<!--\s*site:verified\b.*?<!--\s*/site:verified\s*-->", re.S)
+LESSON_META_RE = re.compile(r'(<div class="lesson-meta"[^>]*>)(.*?)(\n?[ \t]*)(</div>)', re.S)
+STALE_AFTER_DAYS = int(CFG.get("academy", {}).get("stale_after_days", 180))
+
+
+def has_verified(rel: str) -> bool:
+    return page_type(rel) in ("lesson", "tutorial")
+
+
+def verified_date(rel: str, text: str) -> str | None:
+    """The page's verified date (ISO), or None for pages that show none."""
+    if not has_verified(rel) or not LESSON_META_RE.search(text):
+        return None
+    d = CFG.get("pages", {}).get(rel, {}).get("verified")
+    return str(d) if d else lastmod(rel, text)
+
+
+def human_date(iso: str) -> str:
+    d = dt.date.fromisoformat(iso)
+    return f"{d.day} {d.strftime('%b')} {d.year}"
+
+
+def build_verified(rel: str, text: str, date: str | None) -> str:
+    """Write the region inside the lesson-meta row, replacing any earlier one."""
+    if date is None:
+        return text
+    m = LESSON_META_RE.search(text)
+    inner = VERIFIED_REGION_RE.sub("", m.group(2)).rstrip()
+    indent = (re.findall(r"\n([ \t]*)<span", inner) or [m.group(3).lstrip("\n") + "  "])[-1]
+    region = (f"<!-- site:verified: generated by _build/site.py from git or site.toml -->"
+              f'<span class="lesson-meta__verified"><strong>Verified:</strong> '
+              f'<time datetime="{date}">{human_date(date)}</time></span><!-- /site:verified -->')
+    return text[:m.start(2)] + inner + "\n" + indent + region + m.group(3) + m.group(4) + text[m.end(4):]
+
+
+def stale_days(date: str, today: dt.date | None = None) -> int:
+    return ((today or dt.date.today()) - dt.date.fromisoformat(date)).days
+
+
 # ── generated files ────────────────────────────────────────────────────────
 
 def git(*args) -> subprocess.CompletedProcess:
@@ -992,7 +1047,7 @@ def git_show(rev: str, rel: str):
 def content_key(text: str) -> str:
     """Page text minus everything this script owns (and all JSON-LD, which is
     metadata, not content), whitespace-collapsed."""
-    text = LD_SCRIPT_RE.sub("", LD_REGION_RE.sub("", text))
+    text = LD_SCRIPT_RE.sub("", LD_REGION_RE.sub("", VERIFIED_REGION_RE.sub("", text)))
     m = re.search(r"<head\b[^>]*>(.*?)</head>", text, re.S | re.I)
     if m:
         head = m.group(1)
@@ -1002,12 +1057,22 @@ def content_key(text: str) -> str:
     return " ".join(text.split())
 
 
+_LASTMOD: dict[tuple[str, str], str] = {}
+
+
 def lastmod(rel: str, new_text: str) -> str:
     """Date of the last commit that changed the page's content (not just the
     regions and tags this script generates); today if the working copy does."""
+    key = (rel, content_key(new_text))
+    if key not in _LASTMOD:
+        _LASTMOD[key] = _lastmod(rel, key[1])
+    return _LASTMOD[key]
+
+
+def _lastmod(rel: str, key: str) -> str:
     today = dt.date.today().isoformat()
     head = git_show("HEAD", rel)
-    if head is None or content_key(head) != content_key(new_text):
+    if head is None or content_key(head) != key:
         return today
     for ln in git("log", "--format=%H %cs", "--", rel).stdout.splitlines():
         sha, date = ln.split()
@@ -1180,6 +1245,8 @@ class Visible(HTMLParser):
         self.headings: dict[str, str] = {}
         self.crumbs: list[tuple[str, str | None]] = []
         self.level = self.time = self.published = None
+        self.verified = None             # <time datetime> in the lesson-meta "Verified" span
+        self.verified_count = 0
         self.quiz_raw: str | None = None
         self.quiz_count = 0   # the build reads only the first quiz; check fails on a second
         self.faq: list[tuple[str, str]] = []
@@ -1249,6 +1316,11 @@ class Visible(HTMLParser):
             self._open("meta")
         if tag == "time" and any(c["kind"] == "postmeta" for c in self._caps) and self.published is None:
             self.published = a.get("datetime")
+        if tag == "time" and any(c["kind"] == "verified" for c in self._caps):
+            self.verified_count += 1
+            self.verified = self.verified or a.get("datetime")
+        if tag == "span" and "lesson-meta__verified" in cls:
+            self._open("verified")
         if tag == "p" and "blog-post-meta" in cls:
             self._open("postmeta")
         if self._in_main:
@@ -1547,6 +1619,8 @@ def check_jsonld(rel: str, text: str, vis: dict, pages: set[str], texts: dict) -
                 err(f"educationalLevel {n.get('educationalLevel')!r} is not the visible level {v.level!r}")
             if duration_minutes(n.get("timeRequired")) != duration_minutes(v.time):
                 err(f"timeRequired {n.get('timeRequired')!r} is not the visible time {v.time!r}")
+            if n.get("dateModified") != v.verified:
+                err(f"dateModified {n.get('dateModified')!r} is not the visible Verified date {v.verified!r}")
         if "HowTo" in types:
             if duration_minutes(n.get("totalTime")) != duration_minutes(v.time):
                 err(f"HowTo.totalTime {n.get('totalTime')!r} is not the visible time {v.time!r}")
@@ -1677,6 +1751,204 @@ def check_quizzes(vis: dict) -> list[str]:
     return errs + quiz_balance_errors({r: q for r, q in quizzes.items() if r.startswith("academy/")})
 
 
+def track_lessons(vis: dict, pages) -> dict[str, list[str]]:
+    """{track folder: its lessons in the order its index page links them}, for
+    the course tracks in syllabus order. This order is the one source of truth
+    for lesson numbers, pagers, the hub and the certificate manifest."""
+    out = {}
+    for t in CFG["academy"]["course_tracks"]:
+        idx, ks = f"academy/{t}/index.html", []
+        for href in vis[idx].main_links if idx in vis else []:
+            k = resolve_link(idx, html.unescape(href))
+            if k in pages and k.startswith(f"academy/{t}/") and page_type(k) == "lesson" and k not in ks:
+                ks.append(k)
+        out[t] = ks
+    return out
+
+
+def lesson_numbers(vis: dict, pages) -> dict[str, str]:
+    """{"X.Y": lesson rel}: track X (its place in course_tracks), lesson Y."""
+    return {f"{ti}.{li}": k for ti, ks in enumerate(track_lessons(vis, pages).values())
+            for li, k in enumerate(ks, 1)}
+
+
+STOP = {"with", "from", "that", "this", "your", "what", "when", "into", "over", "the", "and", "lesson",
+        "lessons", "track", "part", "here", "where", "which", "about", "their", "they", "them", "then",
+        "same", "also", "only", "more", "very", "just", "even", "much", "back", "covers", "covered"}
+
+
+def sig_words(s: str) -> set[str]:
+    """Words of 4+ letters, lower-cased, crudely de-pluralised; stop words dropped."""
+    out = set()
+    for w in re.findall(r"[a-z][a-z0-9-]{3,}", html.unescape(s).lower()):
+        for part in [w] + w.split("-"):
+            if len(part) >= 4 and part not in STOP:
+                out.add(re.sub(r"(?:es|s)$", "", part) if len(part) > 4 else part)
+    return out
+
+
+def names_lesson(hint: str, vis: dict, rel: str) -> bool:
+    """Does a title hint ("Capstone C", "next-token prediction") name this page?
+    True when the hint has no significant words (nothing to compare)."""
+    want = sig_words(hint)
+    if not want:
+        return True
+    v = vis.get(rel)
+    have = sig_words(" ".join([v.h1 or "" if v else "", rel.rsplit("/", 1)[-1][:-5]]))
+    return bool(want & have)
+
+
+def pager_links(text: str) -> tuple[tuple[str, str] | None, tuple[str, str] | None]:
+    """((prev href, prev title), (next href, next title)) from <nav class="lesson-nav">."""
+    nav = first(r'<nav class="lesson-nav"[^>]*>(.*?)</nav>', text)
+    prev = nxt = None
+    for attrs, inner in re.findall(r"<a\b([^>]*)>(.*?)</a>", nav or "", re.S):
+        href = html.unescape(first(r'href="([^"]*)"', attrs) or "")
+        title = text_of(first(r'class="lesson-nav__title"[^>]*>(.*?)</span>', inner) or "")
+        if "lesson-nav__next" in attrs:
+            nxt = (href, title)
+        elif prev is None:
+            prev = (href, title)
+    return prev, nxt
+
+
+BADGE_RE = re.compile(r'class="lesson-header__badge"[^>]*>\s*Track (\d+) · [^<]*?\bLesson (\d+)\b')
+INDEX_ITEM_RE = re.compile(r'<a\b[^>]*class="track-index-lessons__title"[^>]*href="([^"]+)"[^>]*>\s*(\d+)\.\s*([^<]*)<')
+
+
+def check_sequence(vis: dict, pages: dict[str, str]) -> list[str]:
+    """Lesson order is the track index order: each index item's number, each
+    lesson's badge, each pager's prev/next (crossing tracks; the first lesson
+    goes back to the Academy, the last on to the certificate) and the hub's
+    per-track lesson list must agree with it."""
+    errs = []
+    tracks = track_lessons(vis, pages)
+    order = [k for ks in tracks.values() for k in ks]
+    start, end = "academy/index.html", next((r for r in pages if page_type(r) == "certificate"), None)
+    for ti, (t, ks) in enumerate(tracks.items()):
+        idx = f"academy/{t}/index.html"
+        if idx not in pages:
+            continue
+        for href, num, title in INDEX_ITEM_RE.findall(pages[idx]):
+            k = resolve_link(idx, html.unescape(href))
+            if k in ks and int(num) != ks.index(k) + 1:
+                errs.append(f"{idx}: item {num}. links {k}, which is lesson {ks.index(k) + 1} of the track")
+            if k in ks and not names_lesson(title, vis, k):
+                errs.append(f"{idx}: item {num}. {title!r} does not name {k} ({vis[k].h1!r})")
+        for li, k in enumerate(ks, 1):
+            m = BADGE_RE.search(pages[k])
+            if not m:
+                errs.append(f"{k}: no 'Track N · ... Lesson M' badge")
+            elif (int(m.group(1)), int(m.group(2))) != (ti, li):
+                errs.append(f"{k}: badge says Track {m.group(1)}, Lesson {m.group(2)}; "
+                            f"the track index makes it Track {ti}, Lesson {li}")
+    for i, k in enumerate(order):
+        prev, nxt = pager_links(pages[k])
+        for got, want, what in ((prev, order[i - 1] if i else start, "Previous"),
+                                (nxt, order[i + 1] if i + 1 < len(order) else end, "Next")):
+            target = resolve_link(k, got[0]) if got else None
+            if target != want:
+                errs.append(f"{k}: pager {what} goes to {target}, want {want} (the track index order)")
+            elif want in vis and page_type(want) == "lesson" and not names_lesson(got[1], vis, want):
+                errs.append(f"{k}: pager {what} title {got[1]!r} does not name {want} ({vis[want].h1!r})")
+    hub = pages.get(start, "")
+    for t, ks in tracks.items():
+        card = first(rf'<div class="track-card"[^>]*data-track="{re.escape(t)}"[^>]*>(.*?)</ul>', hub) or ""
+        got = re.findall(r'data-lesson="([^"]+)"', card)
+        want = [k[len("academy/"):-len(".html")] for k in ks]
+        if card and got != want:
+            errs.append(f"{start}: the {t} card lists {len(got)} lessons that differ from the track index "
+                        f"(or are in another order)")
+    return errs
+
+
+# "Lesson 2.5", "Lessons 4.2–4.4", "lessons 4.11–4.15".
+LESSON_REF_RE = re.compile(r"\b[Ll]essons? (\d+)\.(\d+)(?:\s*[–-]\s*(?:(\d+)\.)?(\d+))?")
+# A title right after a single reference: "Lesson 4.10 (Capstone C)", or the
+# rest of a parenthesis: "(Lesson 1.22, catastrophic forgetting)", "(Lesson 4.8 — serving)".
+REF_HINT_RE = re.compile(r"\s*(?:\(([^()]{3,60})\)|,\s+([^,.;:()]{3,50}?)\s*\)|\s+[—–]\s+([^,.;:()]{3,50}?)\s*\))")
+# Undotted lesson numbers outside a track's own index: "Track 0, Lesson 9", "(lesson 8)".
+UNDOTTED_RE = re.compile(r"(?<!· )\b[Ll]essons? (\d+)\b(?![.,]?\d)")
+
+
+def check_lesson_refs(vis: dict, pages: dict[str, str]) -> list[str]:
+    """Every "Lesson X.Y" on any page names an existing lesson (track X, lesson
+    Y in index order); a linked reference links that lesson; a title right
+    after it names that lesson; "Track N, Lesson X.Y" has N = X; and outside a
+    track's own index page, lesson numbers carry their track ("Lesson 3.8",
+    not "lesson 8")."""
+    nums = lesson_numbers(vis, pages)
+    errs: list[str] = []
+    for rel, text in sorted(pages.items()):
+        seen = set()
+
+        def err(msg):
+            if msg not in seen:
+                seen.add(msg)
+                errs.append(f"{rel}: {msg}")
+        for href, inner in re.findall(r'<a\b[^>]*href="([^"]*)"[^>]*>(.*?)</a>', text, re.S):
+            refs = LESSON_REF_RE.findall(text_of(inner))
+            if len(refs) == 1 and not refs[0][3]:
+                n = f"{refs[0][0]}.{refs[0][1]}"
+                target = resolve_link(rel, html.unescape(href))
+                if n in nums and target != nums[n]:
+                    err(f"a link reading Lesson {n} goes to {target}, not {nums[n]}")
+        plain = html.unescape(re.sub(r"<[^>]+>", "", re.sub(r"<!--.*?-->", "", text, flags=re.S)))
+        for m in LESSON_REF_RE.finditer(plain):
+            a = f"{m.group(1)}.{m.group(2)}"
+            b = f"{m.group(3) or m.group(1)}.{m.group(4)}" if m.group(4) else None
+            for n in filter(None, (a, b)):
+                if n not in nums:
+                    err(f"Lesson {n} does not exist (track {n.split('.')[0]} has "
+                        f"{sum(k.startswith(n.split('.')[0] + '.') for k in nums)} lessons)")
+            if b and (b.split(".")[0] != a.split(".")[0] or int(b.split(".")[1]) <= int(a.split(".")[1])):
+                err(f"Lessons {a}–{b} is not a range inside one track")
+            pre = plain[max(0, m.start() - 12):m.start()]
+            t = re.search(r"Track (\d+),\s*$", pre)
+            if t and t.group(1) != m.group(1):
+                err(f"'Track {t.group(1)}, Lesson {a}': the track and the lesson number disagree")
+            h = REF_HINT_RE.match(plain, m.end()) if not b else None
+            hint = h and next(g for g in h.groups() if g)
+            if hint and a in nums and len(hint.split()) <= 6 and not names_lesson(hint, vis, nums[a]):
+                err(f"'Lesson {a}' is followed by {hint.strip()!r}, but Lesson {a} is "
+                    f"{nums[a]} ({vis[nums[a]].h1!r})")
+        if page_type(rel) != "track_index":
+            for m in UNDOTTED_RE.finditer(plain_body(text)):
+                err(f"{m.group(0)!r}: write the track too (Lesson X.Y)")
+    return errs
+
+
+def plain_body(text: str) -> str:
+    body = re.sub(r"<script\b.*?</script>|<!--.*?-->", "", body_of(text), flags=re.S)
+    body = re.sub(r'<span class="lesson-header__badge"[^>]*>.*?</span>', "", body, flags=re.S)
+    return html.unescape(re.sub(r"<[^>]+>", "", body))
+
+
+def check_freshness(vis: dict, today: dt.date | None = None) -> tuple[list[str], list[str]]:
+    """(errors, stale pages): every lesson and tutorial shows one Verified date;
+    pages verified more than STALE_AFTER_DAYS ago are listed for a warning."""
+    errs, stale = [], []
+    for rel, v in sorted(vis.items()):
+        if not has_verified(rel):
+            continue
+        if v.verified_count > 1:
+            errs.append(f"{rel}: {v.verified_count} Verified dates (want 1)")
+        if v.verified is None:
+            if v.level or v.time:
+                errs.append(f"{rel}: no Verified date in the lesson-meta row (run build)")
+            continue
+        try:
+            days = stale_days(v.verified, today)
+        except ValueError:
+            errs.append(f"{rel}: Verified date {v.verified!r} is not YYYY-MM-DD")
+            continue
+        if days > STALE_AFTER_DAYS:
+            stale.append(f"{rel} ({v.verified}, {days} days)")
+        elif days < 0:
+            errs.append(f"{rel}: Verified date {v.verified} is in the future")
+    return errs, stale
+
+
 def check_certificate(vis: dict, pages: dict[str, str]) -> list[str]:
     """The certificate's lesson manifest must be the lessons the course track
     pages list, in order, with each lesson's own data-lesson-id."""
@@ -1691,13 +1963,7 @@ def check_certificate(vis: dict, pages: dict[str, str]) -> list[str]:
     if not isinstance(manifest, list) or not manifest:
         return [f"{rel}: no lesson manifest"]
     errs = []
-    want = []
-    for t in CFG["academy"]["course_tracks"]:
-        idx = f"academy/{t}/index.html"
-        for href in vis[idx].main_links if idx in vis else []:
-            k = resolve_link(idx, html.unescape(href))
-            if k in pages and k.startswith(f"academy/{t}/") and page_type(k) == "lesson" and k not in want:
-                want.append(k)
+    want = [k for ks in track_lessons(vis, pages).values() for k in ks]
     got = ["academy/" + str(e.get("url", "")) for e in manifest]
     if got != want:
         missing, extra = sorted(set(want) - set(got)), sorted(set(got) - set(want))
@@ -1722,8 +1988,11 @@ def render() -> tuple[dict[str, str], dict[str, str], dict[str, "Facts"]]:
     pages = discover()
     old = {p: (ROOT / p).read_text(encoding="utf-8") for p in pages}
     facts = {p: Facts(p, t) for p, t in old.items()}
+    for p, f in facts.items():
+        f.verified = verified_date(p, old[p])
     pset = set(pages)
-    new = {p: build_head(p, build_jsonld(p, build_cert_total(build_quiz_static(t)), facts, pset))
+    new = {p: build_head(p, build_jsonld(p, build_verified(p, build_cert_total(build_quiz_static(t)),
+                                                           facts[p].verified), facts, pset))
            for p, t in old.items()}
     gen = {
         CFG["sitemap"]["path"]: build_sitemap(pages, new),
@@ -1756,6 +2025,14 @@ def strip_lastmod(x: str) -> str:
     return re.sub(r"<lastmod>[^<]*</lastmod>", "", x)
 
 
+def strip_verified(x: str) -> str:
+    """A page minus the dates the Verified line drives (region, dateModified,
+    article:modified_time), to tell a date-only drift from real staleness."""
+    x = VERIFIED_REGION_RE.sub("", x)
+    x = re.sub(r'"dateModified": "[^"]*"', "", x)
+    return re.sub(r'<meta property="article:modified_time" content="[^"]*" />', "", x)
+
+
 def resolve_link(rel: str, href: str):
     href = href.strip()
     if not href or href.startswith(("#", "mailto:", "tel:", "javascript:", "data:")):
@@ -1782,6 +2059,14 @@ def cmd_check(args) -> int:
             ld_types_seen[t] = ld_types_seen.get(t, 0) + 1
     errors += check_quizzes(vis)
     errors += check_certificate(vis, pages)
+    errors += check_sequence(vis, pages)
+    errors += check_lesson_refs(vis, pages)
+    ferr, stale = check_freshness(vis)
+    errors += ferr
+    if stale:
+        warns.append(f"{len(stale)} page(s) not verified in over {STALE_AFTER_DAYS} days (re-check them, then "
+                     f"set [pages.\"<path>\"].verified in _build/site.toml)"
+                     + (": " + ", ".join(stale) if args.verbose else ""))
     for rel, text in list(pages.items()) + list(gen.items()):
         p = ROOT / rel
         cur = p.read_text(encoding="utf-8") if p.exists() else None
@@ -1789,6 +2074,8 @@ def cmd_check(args) -> int:
             continue
         if rel == CFG["sitemap"]["path"] and cur is not None and strip_lastmod(cur) == strip_lastmod(text):
             warns.append(f"{rel}: lastmod dates differ from git (run build after committing to refresh)")
+        elif cur is not None and strip_verified(cur) == strip_verified(text):
+            warns.append(f"{rel}: Verified date differs from git (run build after committing to refresh)")
         else:
             errors.append(f"{rel}: out of date, run `python3 _build/site.py build`")
     for rel, text in gen.items():

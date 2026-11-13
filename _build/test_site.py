@@ -1,4 +1,5 @@
-"""Mutation tests for the quiz and certificate checks in _build/site.py.
+"""Mutation tests for the quiz, certificate, lesson-order, "Lesson X.Y" and
+freshness checks in _build/site.py.
 
 Each test breaks a copy of the real pages in memory (never on disk) and
 asserts that `check` would catch it. Run with:
@@ -7,6 +8,7 @@ asserts that `check` would catch it. Run with:
 """
 from __future__ import annotations
 
+import datetime as dt
 import importlib.util
 import json
 import re
@@ -180,6 +182,188 @@ class PageChecks(unittest.TestCase):
         # the visible count follows the manifest
         self.assertEqual(set(re.findall(r"data-cert-total>(\d+)<", S.build_cert_total(dropped))),
                          {str(len(manifest) - 1)})
+
+
+class SequenceChecks(unittest.TestCase):
+    """Lesson order, pagers, badges, the hub, and "Lesson X.Y" references."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.pages, _, _ = S.render()
+        cls.vis = {r: S.Visible(r, t) for r, t in cls.pages.items()}
+
+    def mutate(self, rel, old, new, count=1):
+        text = self.pages[rel]
+        self.assertIn(old, text, rel)
+        text = text.replace(old, new, count)
+        return {**self.pages, rel: text}, {**self.vis, rel: S.Visible(rel, text)}
+
+    def seq(self, pages, vis):
+        return S.check_sequence(vis, pages)
+
+    def refs(self, pages, vis):
+        return S.check_lesson_refs(vis, pages)
+
+    def test_real_site_passes(self):
+        self.assertEqual(self.seq(self.pages, self.vis), [])
+        self.assertEqual(self.refs(self.pages, self.vis), [])
+        self.assertEqual(S.check_freshness(self.vis)[0], [])
+
+    def test_numbers_follow_the_track_index(self):
+        nums = S.lesson_numbers(self.vis, self.pages)
+        self.assertEqual(nums["0.6"], "academy/foundations/from-n-grams-to-transformers.html")
+        self.assertEqual(nums["0.8"], "academy/foundations/how-language-models-work.html")
+        self.assertEqual(nums["4.10"], "academy/advanced/capstone-graduating.html")
+        self.assertEqual(nums["1.22"], "academy/sft-fundamentals/catastrophic-forgetting.html")
+
+    def test_reordered_index_breaks_pagers_badges_and_numbers(self):
+        rel = "academy/foundations/index.html"
+        text = self.pages[rel]
+        a = text.index('href="from-n-grams-to-transformers.html"')
+        b = text.index('href="architecture-taxonomy.html"')
+        swapped = (text[:a] + 'href="architecture-taxonomy.html"' + text[a + len('href="from-n-grams-to-transformers.html"'):b]
+                   + 'href="from-n-grams-to-transformers.html"' + text[b + len('href="architecture-taxonomy.html"'):])
+        pages = {**self.pages, rel: swapped}
+        vis = {**self.vis, rel: S.Visible(rel, swapped)}
+        errs = self.seq(pages, vis)
+        self.assertTrue(any("pager Next" in e for e in errs), errs)
+        self.assertTrue(any("badge says Track 0, Lesson 6" in e for e in errs), errs)
+        self.assertTrue(any("item 6." in e for e in errs), errs)
+        self.assertTrue(any("the foundations card" in e for e in errs), errs)
+
+    def test_pager_to_the_wrong_lesson_fails(self):
+        rel = "academy/foundations/attention-and-the-transformer.html"
+        pages, vis = self.mutate(rel, 'href="from-n-grams-to-transformers.html" class="lesson-nav__next"',
+                                 'href="how-language-models-work.html" class="lesson-nav__next"')
+        errs = self.seq(pages, vis)
+        self.assertTrue(any(e.startswith(rel + ": pager Next") for e in errs), errs)
+
+    def test_pager_title_must_name_the_target(self):
+        rel = "academy/foundations/attention-and-the-transformer.html"
+        pages, vis = self.mutate(rel, '<span class="lesson-nav__title">From n-grams to Transformers</span>',
+                                 '<span class="lesson-nav__title">How language models work</span>')
+        errs = self.seq(pages, vis)
+        self.assertTrue(any("title 'How language models work' does not name" in e for e in errs), errs)
+
+    def test_last_lesson_goes_to_the_certificate(self):
+        rel = "academy/advanced/reasoning-training.html"
+        pages, vis = self.mutate(rel, 'href="../certificate.html" class="lesson-nav__next"',
+                                 'href="../index.html" class="lesson-nav__next"')
+        self.assertTrue(any("want academy/certificate.html" in e for e in self.seq(pages, vis)))
+
+    def test_badge_number_fails(self):
+        rel = "academy/advanced/structured-pruning.html"
+        pages, vis = self.mutate(rel, "Track 4 · Advanced · Lesson 13", "Track 4 · Advanced · Lesson 12")
+        self.assertTrue(any("badge says Track 4, Lesson 12" in e for e in self.seq(pages, vis)))
+
+    def test_unknown_lesson_number_fails(self):
+        rel = "academy/advanced/production-feedback-loop.html"
+        pages, vis = self.mutate(rel, "(Lesson 1.22)", "(Lesson 1.29)")
+        self.assertTrue(any("Lesson 1.29 does not exist" in e for e in self.refs(pages, vis)))
+
+    def test_backwards_range_fails(self):
+        rel = "academy/advanced/structured-pruning.html"
+        pages, vis = self.mutate(rel, "Lessons 4.2–4.4", "Lessons 4.4–4.2")
+        self.assertTrue(any("not a range inside one track" in e for e in self.refs(pages, vis)))
+
+    def test_title_after_a_reference_must_match(self):
+        rel = "academy/advanced/speculative-decoding.html"
+        pages, vis = self.mutate(rel, "Lesson 4.8 — serving and inference", "Lesson 4.7 — serving and inference")
+        errs = self.refs(pages, vis)
+        self.assertTrue(any("'Lesson 4.7' is followed by 'serving and inference'" in e for e in errs), errs)
+
+    def test_linked_reference_must_link_that_lesson(self):
+        rel = "academy/with-brewslm/eval-pack-and-failure-cluster-reference.html"
+        pages, vis = self.mutate(rel, 'href="eval-packs-and-failure-clusters.html">Lesson 3.8</a>',
+                                 'href="eval-packs-and-failure-clusters.html">Lesson 3.9</a>')
+        self.assertTrue(any("a link reading Lesson 3.9 goes to" in e for e in self.refs(pages, vis)))
+
+    def test_track_and_number_must_agree(self):
+        rel = "academy/foundations/base-vs-instruct-models.html"
+        pages, vis = self.mutate(rel, "(Track 4, Lesson 4.5)", "(Track 3, Lesson 4.5)")
+        self.assertTrue(any("'Track 3, Lesson 4.5'" in e for e in self.refs(pages, vis)))
+
+    def test_undotted_number_outside_a_track_index_fails(self):
+        rel = "academy/with-brewslm/preflight-and-trainability.html"
+        pages, vis = self.mutate(rel, "after evaluation (Lesson 3.8).", "after evaluation (lesson 8).")
+        self.assertTrue(any("'lesson 8'" in e for e in self.refs(pages, vis)))
+        pages, vis = self.mutate(rel, "after evaluation (Lesson 3.8).", "after evaluation (Track 3, Lesson 8).")
+        self.assertTrue(any("'Lesson 8'" in e for e in self.refs(pages, vis)))
+
+    def test_certificate_order_follows_the_index(self):
+        rel = "academy/certificate.html"
+        m = S.MANIFEST_RE.search(self.pages[rel])
+        manifest = json.loads(m.group(1))
+        manifest[5], manifest[7] = manifest[7], manifest[5]
+        text = self.pages[rel][:m.start(1)] + json.dumps(manifest) + self.pages[rel][m.end(1):]
+        pages = {**self.pages, rel: text}
+        errs = S.check_certificate({**self.vis, rel: S.Visible(rel, text)}, pages)
+        self.assertTrue(any("order differs" in e for e in errs), errs)
+
+
+class FreshnessChecks(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.pages, _, _ = S.render()
+        cls.lesson = "academy/foundations/what-is-a-model.html"
+
+    def test_every_lesson_and_tutorial_shows_one_verified_date(self):
+        for rel, text in self.pages.items():
+            if S.page_type(rel) in ("lesson", "tutorial"):
+                v = S.Visible(rel, text)
+                self.assertIsNotNone(v.verified, rel)
+                self.assertEqual(v.verified_count, 1, rel)
+                self.assertIn(f'"dateModified": "{v.verified}"', text, rel)
+
+    def test_build_is_idempotent_and_replaces_the_date(self):
+        text = self.pages[self.lesson]
+        self.assertEqual(S.build_verified(self.lesson, text, S.Visible(self.lesson, text).verified), text)
+        moved = S.build_verified(self.lesson, text, "2025-01-02")
+        self.assertEqual(S.Visible(self.lesson, moved).verified, "2025-01-02")
+        self.assertEqual(S.Visible(self.lesson, moved).verified_count, 1)
+        self.assertIn(">2 Jan 2025</time>", moved)
+        self.assertEqual(S.build_verified(self.lesson, moved, "2025-01-02"), moved)
+
+    def test_the_date_is_not_content(self):
+        # lastmod reads content_key; if the Verified line counted, every build
+        # would move the date it writes.
+        text = self.pages[self.lesson]
+        moved = S.build_verified(self.lesson, text, "2025-01-02")
+        self.assertEqual(S.content_key(moved), S.content_key(text))
+        self.assertEqual(S.strip_verified(moved),
+                         S.strip_verified(re.sub(r'"dateModified": "[^"]*"', '"dateModified": "2025-01-02"', text)))
+
+    def test_jsonld_date_must_match_the_visible_date(self):
+        text = self.pages[self.lesson]
+        moved = S.build_verified(self.lesson, text, "2025-01-02")   # JSON-LD keeps the old date
+        pages = {**self.pages, self.lesson: moved}
+        vis = {r: S.Visible(r, t) for r, t in pages.items()}
+        errs, _ = S.check_jsonld(self.lesson, moved, vis, set(pages), pages)
+        self.assertTrue(any("is not the visible Verified date '2025-01-02'" in e for e in errs), errs)
+
+    def test_stale_and_future_dates(self):
+        text = self.pages[self.lesson]
+        today = dt.date(2026, 11, 13)
+        old = S.Visible(self.lesson, S.build_verified(self.lesson, text, "2026-05-01"))
+        fresh = S.Visible(self.lesson, S.build_verified(self.lesson, text, "2026-06-01"))
+        future = S.Visible(self.lesson, S.build_verified(self.lesson, text, "2026-12-01"))
+        self.assertEqual(S.check_freshness({self.lesson: old}, today), ([], [f"{self.lesson} (2026-05-01, 196 days)"]))
+        self.assertEqual(S.check_freshness({self.lesson: fresh}, today), ([], []))
+        self.assertTrue(any("in the future" in e for e in S.check_freshness({self.lesson: future}, today)[0]))
+        missing = S.Visible(self.lesson, S.VERIFIED_REGION_RE.sub("", text))
+        self.assertTrue(any("no Verified date" in e for e in S.check_freshness({self.lesson: missing}, today)[0]))
+
+    def test_site_toml_override_wins(self):
+        pages_cfg = S.CFG.setdefault("pages", {})
+        saved = pages_cfg.get(self.lesson)
+        pages_cfg[self.lesson] = {**(saved or {}), "verified": "2026-10-01"}
+        try:
+            self.assertEqual(S.verified_date(self.lesson, self.pages[self.lesson]), "2026-10-01")
+        finally:
+            if saved is None:
+                del pages_cfg[self.lesson]
+            else:
+                pages_cfg[self.lesson] = saved
 
 
 if __name__ == "__main__":
