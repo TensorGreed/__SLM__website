@@ -316,6 +316,7 @@
 
         <h2>QLoRA: LoRA on a quantized base</h2>
         <p><strong>QLoRA</strong> shrinks memory further by <strong>quantizing</strong> the frozen base model — storing its weights in 4 bits instead of 16 — while still training a normal LoRA adapter on top. Since the base is frozen anyway, quantizing it costs little quality and cuts the quantized layers' memory to about a quarter, letting you fine-tune a model that wouldn't otherwise fit. Embeddings, the output head and norms usually stay in 16-bit, so small models save less (in SmolLM2-135M the tied embedding alone is about a fifth of the parameters; <a class="inline-link" href="gpu-memory-math.html#memory-table">the memory table</a> in the next lesson has the per-parameter figures). The trade is noticeably slower steps, since weights are dequantized on every matmul, and a small quality risk. Reach for QLoRA when memory is the binding constraint.</p>
+        <p>To see what the rank, the target modules and a 4-bit base do to a particular model's memory, try them in the <a class="inline-link" href="../../tools/fine-tuning-memory-calculator.html">fine-tuning memory calculator</a>.</p>
         <div class="callout callout--key">
           <p class="callout__label">Sensible starting point</p>
           <p><code>r = 16</code>, <code>alpha = 32</code>, dropout <code>0.05</code>, target all linear layers (<code>"all-linear"</code>), a 16-bit base if it fits (QLoRA if not). Change one thing at a time and measure on the gold set.</p>
