@@ -393,6 +393,14 @@ class BoxChecks(unittest.TestCase):
         self.assertEqual(S.build_boxes(once, self.BOXES), once)
         self.assertEqual(S.check_boxes({"p.html": once}, self.BOXES), [])
 
+    def test_indented_marker_indents_the_box(self):
+        text = "<main>\n    <!-- box:demo-box -->\n</main>\n"
+        once = S.build_boxes(text, self.BOXES)
+        self.assertIn("\n    " + S.box_begin("demo-box") + "\n    <aside", once)
+        self.assertIn("</aside>\n    " + S.box_end("demo-box") + "\n</main>", once)
+        self.assertEqual(S.build_boxes(once, self.BOXES), once)
+        self.assertEqual(S.check_boxes({"p.html": once}, self.BOXES), [])
+
     def test_changed_box_rewrites_the_region_in_place(self):
         once = S.build_boxes(self.page("<!-- box:demo-box -->"), self.BOXES)
         v2 = {"demo-box": self.BOXES["demo-box"].replace("Demo v1", "Demo v2")}

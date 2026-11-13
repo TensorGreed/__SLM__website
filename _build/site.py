@@ -1044,8 +1044,18 @@ def box_body(raw: str) -> str:
     return BOX_DOC_RE.sub("", raw, count=1).strip("\n")
 
 
-def box_region(name: str, raw: str) -> str:
-    return box_begin(name) + "\n" + box_body(raw) + "\n" + box_end(name)
+def box_region(name: str, raw: str, indent: str = "") -> str:
+    """The region for a marker indented by `indent`: the box's lines and the
+    end marker take the same indent, so the page source stays tidy."""
+    body = "\n".join(indent + ln if ln.strip() else "" for ln in box_body(raw).split("\n"))
+    return box_begin(name) + "\n" + body + "\n" + indent + box_end(name)
+
+
+def marker_indent(text: str, start: int) -> str:
+    """The whitespace before a marker when it starts its line, else ''."""
+    line_start = text.rfind("\n", 0, start) + 1
+    lead = text[line_start:start]
+    return lead if lead.strip(" \t") == "" else ""
 
 
 def build_boxes(text: str, boxes: dict[str, str] | None = None) -> str:
@@ -1054,7 +1064,9 @@ def build_boxes(text: str, boxes: dict[str, str] | None = None) -> str:
 
     def sub(m: re.Match) -> str:
         name = m.group("rname") or m.group("bname")
-        return box_region(name, boxes[name]) if name in boxes else m.group(0)
+        if name not in boxes:
+            return m.group(0)
+        return box_region(name, boxes[name], marker_indent(m.string, m.start()))
     return BOX_RE.sub(sub, text)
 
 
@@ -1089,7 +1101,7 @@ def check_boxes(pages: dict[str, str], boxes: dict[str, str]) -> list[str]:
             good.append((m.start(), m.end()))
             if name not in boxes:
                 errs.append(f"{rel}:{line}: unknown box {name!r} (no _build/boxes/{name}.html)")
-            elif m.group("rname") and m.group(0) != box_region(name, boxes[name]):
+            elif m.group("rname") and m.group(0) != box_region(name, boxes[name], marker_indent(text, m.start())):
                 errs.append(f"{rel}:{line}: box {name!r} was edited in the page; edit "
                             f"_build/boxes/{name}.html instead, then run build")
         for m in BOX_ANY_RE.finditer(text):
