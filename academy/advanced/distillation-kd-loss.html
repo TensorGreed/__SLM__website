@@ -319,6 +319,11 @@
 
         <h2>Alpha: how much teacher vs how much truth</h2>
         <p><code>alpha</code> in [0,1] balances the two terms. <strong>alpha → 1</strong> leans on the gold labels (closer to plain SFT); <strong>alpha → 0</strong> leans on the teacher's soft targets. A middle value is a common start: learn from the teacher's nuance while staying pinned to the ground truth. BrewSLM's offline KD recipes (<code>recipe.kd.*</code>) default to <code>alpha=0.5</code>, <code>T=2.0</code>. Tune the two together on a dev split, not on the gold set you report.</p>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Fix coming</p>
+          <p>In public BrewSLM the training script runs offline KD and the <code>recipe.kd.*</code> presets set it up, but the experiment API rejects <code>training_mode: distillation</code> and drops the offline keys, so a normal run cannot reach it yet. Live-teacher KD (an <code>sft</code> run with <code>distillation_enabled</code>) works today. A fix that lets the experiment API accept offline distillation is merged but not yet released (Lesson 3.11).</p>
+        </div>
         <p>That balance only holds if both terms are measured per scored token. Mask the prompt and padding out of <em>both</em> terms; if the KL term sums over every position while the CE term averages over answer tokens, the KL term is many times larger and <code>alpha=0.5</code> no longer means half and half.</p>
 
         <h2>In code</h2>

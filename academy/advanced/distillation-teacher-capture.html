@@ -336,6 +336,11 @@ GET  /api/projects/&lt;id&gt;/distillation/tasks/&lt;task_id&gt;  → its progre
 
         <p>With the teacher's knowledge frozen into <code>teacher_capture.jsonl</code>, the student never needs the teacher again. The next lesson is the loss that actually transfers that knowledge — the KD objective.</p>
 
+        <div class="callout callout--note">
+          <p class="callout__label">Fix coming</p>
+          <p>In public BrewSLM the training script runs offline KD and the <code>recipe.kd.*</code> presets set it up, but the experiment API rejects <code>training_mode: distillation</code> and drops the offline keys, so a normal run cannot reach it yet. Live-teacher KD (an <code>sft</code> run with <code>distillation_enabled</code>) works today. A fix that lets the experiment API accept offline distillation is merged but not yet released (Lesson 3.11).</p>
+        </div>
+
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
           <p>Distillation trains a small student on the teacher's <strong>soft targets</strong> — the full probability distribution, which carries 'dark knowledge' hard labels lack. BrewSLM captures it <strong>offline</strong> — the teacher's answer plus <strong>top-k logprobs</strong> per token — so the costly teacher runs once. A <strong>shared tokenizer</strong> gives the cleanest soft targets; a mismatch lowers the map rate and weakens them.</p>
