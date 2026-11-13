@@ -365,8 +365,8 @@ $ curl -X POST localhost:8000/api/projects/1/training/autopilot/one-click-run \
         <!-- /box:small-test-sets -->
 
         <h2>When a run fails</h2>
-        <p>A real run that doesn't complete is marked <strong>failed</strong> in the runs list. The run's live console shows the training log as it streamed, and the full log is kept with the run's output (its path is recorded on the experiment). On public BrewSLM main that is the whole record: the run does not save a failure reason or the step it stopped at, so the log is where you diagnose it — an out-of-memory kill, for example, shows up as the process dying, with no separate OOM code.</p>
-        <p>The run's <strong>Checkpoints</strong> panel lists the checkpoints it saved (every <code>save_steps</code>), with <em>Promote</em> to make one the run's best and <em>Resume from…</em>, which creates a new, not-yet-started run with the same config and a pointer to that checkpoint. On public main only the simulate runtime actually continues from that step; the real trainer does not read the pointer, so for a real run the new run trains from the start.</p>
+        <p>A real run that doesn't complete is marked <strong>failed</strong> in the runs list. The run's live console shows the training log as it streamed, and the full log is kept with the run's output (its path is recorded on the experiment). In the released BrewSLM code that is the whole record: the run does not save a failure reason or the step it stopped at, so the log is where you diagnose it — an out-of-memory kill, for example, shows up as the process dying, with no separate OOM code.</p>
+        <p>The run's <strong>Checkpoints</strong> panel lists the checkpoints it saved (every <code>save_steps</code>), with <em>Promote</em> to make one the run's best and <em>Resume from…</em>, which creates a new, not-yet-started run with the same config and a pointer to that checkpoint. In the released code only the simulate runtime actually continues from that step; the real trainer does not read the pointer, so for a real run the new run trains from the start.</p>
         <div class="callout callout--note">
           <p class="callout__label">Fix coming</p>
           <p>Changes that save a failure reason with the step and last checkpoint, show it on the run, and let a real run continue from its checkpoint are merged but not yet released.</p>
@@ -426,7 +426,7 @@ $ curl -X POST localhost:8000/api/projects/1/training/autopilot/one-click-run \
                   "The preflight report, rerun after the failure"
                 ],
                 "answer": 0,
-                "explanation": "On public BrewSLM main a failed real run is marked failed and keeps its log; there is no OOM code. training_oom and training_cancelled are declared but never emitted, and a real run that fails emits no RunEvent."
+                "explanation": "In the released BrewSLM code a failed real run is marked failed and keeps its log; there is no OOM code. training_oom and training_cancelled are declared but never emitted, and a real run that fails emits no RunEvent."
               },
               {
                 "q": "Why hold a strong reference to the running task?",
