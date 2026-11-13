@@ -578,7 +578,7 @@
           <p class="sbox__note">To see which one is active, look at the <strong>Pass/fail rules</strong> card in evaluation: it names the <strong>Active Pack</strong> and its <strong>Source</strong>, for example "domain profile default".</p>
         </aside>
         <!-- /box:which-rule-set -->
-        <p>Picking the qa-sft task does <em>not</em> pick its rules. Until you act, you're scored against the general default (<code>evalpack.general.default</code>), whose Instruction / QA rules are exact match ≥ 0.40 and F1 ≥ 0.50 required, LLM-judge ≥ 0.65 and safety ≥ 0.90 optional. To use the qa-sft rules:</p>
+        <p>Picking the qa-sft task does <em>not</em> pick its rules. Until you act, you're scored against the domain profile's thresholds (<code>evalpack.domain-profile</code>, from the platform default profile <code>generic-domain-v1</code>): F1 ≥ 0.65, LLM-judge ≥ 0.75 and safety ≥ 0.90 required, exact match ≥ 0.55 optional (see the box above). To use the qa-sft rules:</p>
         <ol>
           <li>Open <strong>Results → Failures</strong> with your run selected and find the <strong>Pass/fail rules</strong> card.</li>
           <li>Leave <strong>Project rule set</strong> on <em>Auto (domain profile fallback)</em>; the <strong>Scaffolded pass/fail rule set</strong> panel appears below it, auto-generated from the qa-sft task type.</li>
@@ -661,7 +661,7 @@
             <dt>qa-sft recipe</dt><dd>BrewSLM recipe that trains a small model to directly answer questions from memorised facts. No retrieval index, no citation marker, no canonical refusal phrase. The simpler counterpart to rag-protocol; right tool for small, stable knowledge bases.</dd>
             <dt>Canonical answer</dt><dd>The single official version of an answer to a question. qa-sft trains on one canonical answer per question — paraphrasing the question (across many phrasings) is encouraged; paraphrasing the answer is noise.</dd>
             <dt>field_match scoring</dt><dd>The eval-handler mode qa-sft uses. Compares prediction to a single <code>expected</code> field via exact_match + F1; the scaffolded rule set adds a required LLM-judge rule for semantic equivalence.</dd>
-            <dt>LLM-judge pass rate</dt><dd>The gate that actually matters for natural-language QA — a judge model reads (gold, prediction) and scores whether they say the same thing. Catches paraphrase that exact_match misses; required at ≥ 0.75 in the qa-sft scaffolded rule set once you click Use scaffold (optional at ≥ 0.65 in the general default).</dd>
+            <dt>LLM-judge pass rate</dt><dd>The gate that actually matters for natural-language QA — a judge model reads (gold, prediction) and scores whether they say the same thing. Catches paraphrase that exact_match misses; required at ≥ 0.75 in the qa-sft scaffolded rule set once you click Use scaffold (also required at ≥ 0.75 in the domain-profile rule set you get before that).</dd>
             <dt>Reroute-to-RAG</dt><dd>One-click platform flow that clones the qa-sft project as a RAG-first sibling. The clone has <code>runtime_config.rag_first=True</code> (base model plus retrieval, not the rag-protocol recipe), carries the gold set forward, and builds the BM25 index immediately. Only qa-sft projects can be cloned this way. The original qa-sft project stays put. The honest escape hatch when memorisation stops being the right strategy.</dd>
             <dt>Memorisation pressure</dt><dd>The trade-off qa-sft makes. Every gold row is a fact the model commits to weights. A small model handles a modest number of facts cleanly; as the count grows it starts dropping signal on earlier rows to make room for new ones (where that happens depends on the model and the facts; the ~100 / ~500 figures above are rough guides, not measured limits). That ceiling is the natural reroute-to-RAG trigger.</dd>
           </dl>
@@ -686,13 +686,13 @@
               {
                 "q": "You picked the qa-sft task but never clicked Use scaffold under Results → Failures → Pass/fail rules. Which rule set does Results → Verdict score you against?",
                 "options": [
-                  "evalpack.general.default, where the LLM-judge rule is optional",
+                  "The domain-profile rule set, where exact match is optional",
                   "The qa-sft scaffold: exact match, F1 and LLM-judge all required",
                   "None — Verdict shows no rules until a scaffold has been saved",
                   "The recipe's own pack, applied automatically when you pick the task"
                 ],
                 "answer": 0,
-                "explanation": "Choosing a recipe or task does not switch the rule set. The scaffold (exact match ≥ 0.45, F1 ≥ 0.60, LLM-judge ≥ 0.75 required) is only a draft until you click Use scaffold. Until then Verdict falls back to evalpack.general.default: exact match and F1 required, LLM-judge and safety optional. The scaffold adds a required judge rule because exact match misses correct paraphrases ('Go to Settings, then Security')."
+                "explanation": "Choosing a recipe or task does not switch the rule set. The scaffold (exact match ≥ 0.45, F1 ≥ 0.60, LLM-judge ≥ 0.75 required) is only a draft until you click Use scaffold. Until then Verdict uses the domain profile's thresholds (evalpack.domain-profile, from the platform default profile generic-domain-v1): F1 ≥ 0.65, LLM-judge ≥ 0.75 and safety ≥ 0.90 required, exact match ≥ 0.55 optional. The scaffold makes exact match required too and keeps the judge rule required, because exact match misses correct paraphrases ('Go to Settings, then Security')."
               },
               {
                 "q": "The post-eval decision engine shows 'This task looks more like a RAG fit' on your qa-sft project. What does it mean, and what happens if you click 'Switch to RAG (keeps your answer key)'?",
