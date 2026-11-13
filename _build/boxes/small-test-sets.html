@@ -1,0 +1,39 @@
+<!--
+Shared box: paired comparisons, confidence intervals, why small test sets mislead (PROPOSAL CC12).
+Sources, PUBLIC BrewSLM main (origin/main 27b058a):
+  backend/app/services/paired_comparison_stats.py  paired_difference_evidence: 95% paired t-interval on the mean
+    per-row change; verdict better / worse / within_noise; too_few_rows under MIN_ROWS_FOR_VERDICT = 5;
+    seed_spread_evidence (MIN_SEEDS_FOR_VERDICT = 2)
+  backend/app/services/eval_sizing_service.py  paired_sizing: detectable gap at 95% confidence and 80% power
+  agent-notes/evaluation.md  Compare: no verdict when answer key / judge / scoring differ; decoding adds a caveat;
+    answer key practice (GOLD_DEV) vs final (GOLD_TEST)
+Worked example run through those two functions (CPU, 2026-11-13): 50 rows, before 22/50, after 26/50,
+6 better / 2 worse / 42 same -> mean +0.08, CI -0.032 .. +0.192, within_noise; paired_sizing -> detectable gap
+0.1569 (~16 pts), 493 rows for 5 pts (its line rounds to ~500).
+Reference: E. Miller, "Adding Error Bars to Evals", arXiv 2411.00640.
+-->
+<aside class="sbox" aria-label="Small test sets: is the difference real?">
+  <p class="sbox__label">Small test sets: is the difference real?</p>
+  <p>Score both models on the <strong>same rows</strong> and look at the change row by row (a paired comparison), not just at the two headline numbers. On a small test set one answer moves the score a lot: one row in 20 is 5 points, one in 50 is 2.</p>
+  <p>BrewSLM pairs the rows, counts how many got better, worse or stayed the same, and puts a 95% confidence interval (a paired t-interval) around the mean change. If the interval includes zero, the change is <strong>within noise</strong>: the data cannot tell a gain from a loss. Under 5 paired rows it gives no verdict.</p>
+  <div class="table-wrap">
+    <table class="mini-table">
+      <caption class="sbox__caption">Worked example: 50 test rows</caption>
+      <tbody>
+        <tr><th scope="row">Base model</th><td>22 right (44%)</td></tr>
+        <tr><th scope="row">Fine-tuned</th><td>26 right (52%): +8 points</td></tr>
+        <tr><th scope="row">Row by row</th><td>6 better, 2 worse, 42 the same</td></tr>
+        <tr><th scope="row">95% interval</th><td>&minus;3 to +19 points: within noise</td></tr>
+        <tr><th scope="row">Visible gap</th><td>about 16 points at this size; about 500 rows to see a 5-point change</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Habits that keep a small test honest:</p>
+  <ul class="sbox__list">
+    <li><strong>Compare like with like:</strong> same rows, same answer key, same scoring and decoding settings. BrewSLM's Compare gives no verdict when the answer key, judge or scoring differ.</li>
+    <li><strong>Practice, then final:</strong> iterate against the practice answer key and score the final one rarely. A set you consult on every decision ends up fitted to your choices.</li>
+    <li><strong>Small slices are noise:</strong> a per-class or per-entity score on a handful of rows swings on one row. Show the row count next to it.</li>
+    <li><strong>Seeds:</strong> two or three training seeds show how much runs vary; with that few the interval is wide, so read the spread as a rough sign of the noise, not as a test.</li>
+  </ul>
+  <p class="sbox__note">Further reading: Evan Miller, <a href="https://arxiv.org/abs/2411.00640">"Adding Error Bars to Evals"</a> (arXiv 2411.00640).</p>
+</aside>
