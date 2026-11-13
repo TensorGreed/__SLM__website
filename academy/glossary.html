@@ -535,7 +535,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#vram",
           "name": "VRAM",
-          "description": "GPU memory; weights need ≈ params × bytes-per-param (2 bytes in bf16). Full fine-tuning with mixed-precision AdamW needs about 16–18 bytes per parameter before activations; LoRA and QLoRA need far less. See GPU memory math.",
+          "description": "GPU memory; weights need ≈ params × bytes-per-param (2 bytes in bf16). Full fine-tuning with mixed-precision AdamW needs about 16–18 bytes per parameter before activations; LoRA and QLoRA need far less. See the memory table (Lesson 1.15).",
           "url": "https://brewslm.com/academy/glossary.html#vram",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -755,7 +755,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#adamw",
           "name": "AdamW (optimizer)",
-          "description": "The standard optimizer; adapts the step per-parameter for stable training, at the cost of ~8 bytes/param of state.",
+          "description": "The standard optimizer; adapts the step per-parameter for stable training, at the cost of ~8 bytes/param of state (two fp32 moments; see the memory table).",
           "url": "https://brewslm.com/academy/glossary.html#adamw",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -865,7 +865,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#grad-checkpointing",
           "name": "Gradient checkpointing",
-          "description": "Re-computing activations during backprop instead of storing them — trades roughly a third more compute for large activation-memory savings. BrewSLM's default auto leaves it off up to ~2B parameters and turns it on above that, or when the longest training row exceeds 1,024 tokens.",
+          "description": "Re-computing activations during backprop instead of storing them — trades roughly a third more compute for large activation-memory savings. BrewSLM's default auto leaves it off up to ~2B parameters and turns it on above that, or when the longest training row exceeds 1,024 tokens. Measured savings: Lesson 1.15's memory table.",
           "url": "https://brewslm.com/academy/glossary.html#grad-checkpointing",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -915,7 +915,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#mixed-precision",
           "name": "Mixed precision (bf16)",
-          "description": "Running most matmuls in 16-bit (bf16/fp16) while keeping fp32 master weights. It saves activation memory and speeds up training; it does not halve weight memory. Loading a frozen base in bf16 (as LoRA does) is what halves the weights.",
+          "description": "Running most matmuls in 16-bit (bf16/fp16) while keeping fp32 master weights. It saves activation memory and speeds up training; it does not halve weight memory. Loading a frozen base in bf16 (as LoRA does) is what halves the weights. See the memory table.",
           "url": "https://brewslm.com/academy/glossary.html#mixed-precision",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
@@ -2105,7 +2105,7 @@
           "@type": "DefinedTerm",
           "@id": "https://brewslm.com/academy/glossary.html#recipe",
           "name": "Recipe",
-          "description": "Three different things in BrewSLM. (1) A task-shape recipe, shown as the task type (qa-sft, classification, span-extraction, json-extraction, summarization, …): task profile, adapter, scoring mode, default eval pack and a suggested base model, no hyperparameters; Train → More options → Task type (services/recipe_service.py). (2) A training recipe, shown as a Training preset: a reusable config patch such as recipe.sft.safe (services/training_recipe_service.py). (3) A pipeline recipe, shown as a Pipeline preset: a project-level blueprint wiring domain pack, dataset adapter, training recipe, eval gate pack and export targets (services/pipeline_recipe_service.py). The hyperparameters themselves live in TrainingConfig. See Recipes & handlers.",
+          "description": "Three different things in BrewSLM. (1) A task-shape recipe, shown as the task type (qa-sft, classification, span-extraction, json-extraction, summarization, …): task profile, adapter, scoring mode, a suggested eval pack (picking the recipe does not apply it; it shapes the scaffold draft) and a suggested base model, no hyperparameters; Train → More options → Task type (services/recipe_service.py). (2) A training recipe, shown as a Training preset: a reusable config patch such as recipe.sft.safe (services/training_recipe_service.py). (3) A pipeline recipe, shown as a Pipeline preset: a project-level blueprint wiring domain pack, dataset adapter, training recipe, eval gate pack and export targets (services/pipeline_recipe_service.py). The hyperparameters themselves live in TrainingConfig. See Recipes & handlers.",
           "url": "https://brewslm.com/academy/glossary.html#recipe",
           "inDefinedTermSet": {
             "@id": "https://brewslm.com/academy/glossary.html#terms"
