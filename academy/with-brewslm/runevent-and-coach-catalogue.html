@@ -301,7 +301,7 @@
         </header>
 
         <p>BrewSLM's audit spine has two reference surfaces a developer reads daily: the <strong>RunEvent</strong> stream (what already happened) and the <strong>Coach</strong> suggestions (what to do next — the inline "Coach · warning" notices on each destination). This catalogue documents both as they exist in the codebase — schema, taxonomy, action kinds — so the labels you see in the UI map straight to fields you can grep for. (Backend names keep the old <em>Coach Mode</em> label; the UI just says Coach.)</p>
-        <p>This is a <strong>verified-contract</strong> page: every row was checked against public BrewSLM main at commit <code>27b058a</code> (31 Oct 2026). Where the code declares more than it does today, the tables say so in their own column ("Emitted today?", "Available today?"), and each row names the file that does the work.</p>
+        <p>This is a <strong>verified-contract</strong> page: every row was checked against public BrewSLM main at commit <code>580e616</code> (13 Nov 2026). Where the code declares more than it does today, the tables say so in their own column ("Emitted today?", "Available today?"), and each row names the file that does the work.</p>
 
         <h2>The RunEvent row</h2>
         <p>One canonical row per "interesting thing happened" across every stage. The schema is append-only — corrections are new rows, never updates. Every row carries:</p>
@@ -333,7 +333,7 @@ system        DB / config / extension load (catch-all)</code></pre>
         <h2>The four severities</h2>
         <ul>
           <li><strong><code>info</code></strong> — normal lifecycle ("Training started", "Evaluation completed", "Deployment v2 promote"). The vast majority of RunEvents.</li>
-          <li><strong><code>warning</code></strong> — soft issue worth surfacing but not blocking. Declared; nothing emits a warning today.</li>
+          <li><strong><code>warning</code></strong> — soft issue worth surfacing but not blocking. One emitter today: a real training run on pace to need more time than its time limit writes a <code>training</code> / warning event with the code <code>training_time_limit_projected</code> (<code>services/training_time_limit_service.py</code>). That code is not in the taxonomy, which <code>emit_event</code> allows for a warning.</li>
           <li><strong><code>error</code></strong> — operation failed; must carry a reason code from the taxonomy.</li>
           <li><strong><code>critical</code></strong> — pager-worthy. Reserved; nothing emits it today. Must carry a reason code.</li>
         </ul>
@@ -348,7 +348,7 @@ system        DB / config / extension load (catch-all)</code></pre>
         <p>Every call site wraps <code>emit_event</code> in a try/except, so a rejected event is <strong>dropped and logged</strong>, and the operation itself carries on.</p>
 
         <h2>The reason-code taxonomy</h2>
-        <p>The taxonomy declares 35 codes. Nine have an emitter on main today; the other 26 are reserved names, and grepping the timeline for them returns nothing. "Emitter" names the file that calls <code>emit_event</code> with that code (searched across <code>backend/app</code> and <code>backend/scripts</code>).</p>
+        <p>The taxonomy declares 38 codes. Thirteen have an emitter on main today; the other 25 are reserved names, and grepping the timeline for them returns nothing. "Emitter" names the file that calls <code>emit_event</code> with that code (searched across <code>backend/app</code> and <code>backend/scripts</code>; the four real-run failure codes are built as <code>training_&lt;code&gt;</code> from the saved failure record).</p>
         <table class="comparison-table">
           <thead>
             <tr><th>Code</th><th>Stage</th><th>Emitted today?</th><th>Emitter</th></tr>
@@ -370,8 +370,11 @@ system        DB / config / extension load (catch-all)</code></pre>
             <tr><td><code>training_dispatch_error</code></td><td>training</td><td><strong>emitted</strong> (error)</td><td><code>services/training_service.py</code> (the run could not be handed to the runtime)</td></tr>
             <tr><td><code>training_runtime_error</code></td><td>training</td><td><strong>emitted</strong> (error), simulate runtime only</td><td><code>services/training_service.py</code></td></tr>
             <tr><td><code>training_oom</code></td><td>training</td><td>declared, not emitted</td><td>—</td></tr>
-            <tr><td><code>training_timeout</code></td><td>training</td><td>declared, not emitted</td><td>—</td></tr>
+            <tr><td><code>training_timeout</code></td><td>training</td><td><strong>emitted</strong> (error), real runs</td><td><code>services/training_failure_service.py</code> (the run hit its time limit)</td></tr>
             <tr><td><code>training_cancelled</code></td><td>training</td><td>declared, not emitted</td><td>—</td></tr>
+            <tr><td><code>training_signal</code></td><td>training</td><td><strong>emitted</strong> (error), real runs</td><td><code>services/training_failure_service.py</code> (stopped by a signal it did not ask for, e.g. <code>SIGKILL</code>)</td></tr>
+            <tr><td><code>training_exit</code></td><td>training</td><td><strong>emitted</strong> (error), real runs</td><td><code>services/training_failure_service.py</code> (non-zero exit)</td></tr>
+            <tr><td><code>training_error</code></td><td>training</td><td><strong>emitted</strong> (error), real runs</td><td><code>services/training_failure_service.py</code> (the run could not be monitored)</td></tr>
             <tr><td><code>eval_runtime_error</code></td><td>eval</td><td>declared, not emitted</td><td>—</td></tr>
             <tr><td><code>eval_dataset_missing</code></td><td>eval</td><td>declared, not emitted</td><td>—</td></tr>
             <tr><td><code>eval_judge_unavailable</code></td><td>eval</td><td>declared, not emitted</td><td>—</td></tr>
@@ -394,11 +397,7 @@ system        DB / config / extension load (catch-all)</code></pre>
         <p>Some events carry no reason code at all: "Document ingested" (<code>services/ingestion_service.py</code>), "Training started" and, on the simulate runtime only, "Training completed" (<code>services/training_service.py</code>), "Evaluation completed" (<code>services/evaluation_service.py</code>), a successful export (<code>services/export_service.py</code>), and the deployment record / promote / reject / rollback events (<code>services/deployment_version_service.py</code>).</p>
 
         <h3>What reaches the timeline when a real training run fails</h3>
-        <p>Nothing, today. On the default external runtime the worker marks the run <em>failed</em>, and you read why on <strong>Train</strong> (the run's status and logs), but no RunEvent is written. The only training failures on the timeline are <code>training_dispatch_error</code> (the run could not be handed to the worker at all) and <code>training_runtime_error</code> from the simulate runtime. <code>training_oom</code>, <code>training_timeout</code> and <code>training_cancelled</code> are declared and unused.</p>
-        <div class="callout callout--note">
-          <p class="callout__label">Fix coming</p>
-          <p>A change that saves a failed run's reason, shows it on Train and writes a training failure event to the timeline is merged but not yet released.</p>
-        </div>
+        <p>One error event. On the default external runtime, when a run stops without finishing, the worker saves a failure record on the run (<code>config._runtime.failure</code>: a <code>code</code>, a one-sentence <code>message</code>, the step reached and the last resumable checkpoint) and writes a <code>training_&lt;code&gt;</code> event: <code>training_timeout</code> (the run hit its time limit), <code>training_signal</code> (stopped by a signal; <code>SIGKILL</code> is often the system running out of memory), <code>training_exit</code> (non-zero exit; the payload's <code>failure.error_line</code> quotes the last error) or <code>training_error</code> (the run could not be monitored). Its summary is "Training failed: &lt;run&gt; — &lt;message&gt;", the same sentence the run page's failure banner and the bell show. Writing the event is best effort and never changes the run's status. A cancelled run writes nothing, and an out-of-memory kill arrives as <code>training_signal</code>, so <code>training_oom</code> and <code>training_cancelled</code> stay declared and unused. <code>training_dispatch_error</code> (the run could not be handed to the worker at all) and the simulate runtime's <code>training_runtime_error</code> are unchanged.</p>
 
         <div class="callout callout--note">
           <p class="callout__label">Stable vs evolving</p>

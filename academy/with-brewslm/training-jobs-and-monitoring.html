@@ -176,10 +176,10 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 0,
-            "text": "The run's training log, kept with its output",
+            "text": "A failure banner on the run, naming the signal",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "In the released BrewSLM code a failed real run is marked failed and keeps its log; there is no OOM code. training_oom and training_cancelled are declared but never emitted, and a real run that fails emits no RunEvent."
+              "text": "A real run that stops without finishing saves why: the run's failure banner says it was stopped by SIGKILL (often the system running out of memory), with the step it reached and its last checkpoint, and the timeline gets a training_signal event. There is no OOM-specific code: training_oom and training_cancelled are declared but never emitted. The full log is still kept with the run's output."
             }
           }
         },
@@ -365,17 +365,14 @@ $ curl -X POST localhost:8000/api/projects/1/training/autopilot/one-click-run \
         <!-- /box:small-test-sets -->
 
         <h2>When a run fails</h2>
-        <p>A real run that doesn't complete is marked <strong>failed</strong> in the runs list. The run's live console shows the training log as it streamed, and the full log is kept with the run's output (its path is recorded on the experiment). In the released BrewSLM code that is the whole record: the run does not save a failure reason or the step it stopped at, so the log is where you diagnose it — an out-of-memory kill, for example, shows up as the process dying, with no separate OOM code.</p>
-        <p>The run's <strong>Checkpoints</strong> panel lists the checkpoints it saved (every <code>save_steps</code>), with <em>Promote</em> to make one the run's best and <em>Resume from…</em>, which creates a new, not-yet-started run with the same config and a pointer to that checkpoint. In the released code only the simulate runtime actually continues from that step; the real trainer does not read the pointer, so for a real run the new run trains from the start.</p>
-        <div class="callout callout--note">
-          <p class="callout__label">Fix coming</p>
-          <p>Changes that save a failure reason with the step and last checkpoint, show it on the run, and let a real run continue from its checkpoint are merged but not yet released.</p>
-        </div>
-        <p>On the RunEvent timeline (<strong>Ship → Monitor</strong>) a real run emits one event, "Training started" (info). If handing the run to the worker throws, you get <code>training_dispatch_error</code>. A real run that fails later emits nothing to the timeline. The <code>training</code> / info "Training completed" event (with <code>final_train_loss</code>) and <code>training_runtime_error</code> come from the simulate runtime only. Other training codes such as <code>training_oom</code> and <code>training_cancelled</code> are declared but not emitted today: cancelling a run from its row stops the training process and changes its status, with no event. With a trained adapter and its traces recorded, the next stage asks the real question: is it good enough to ship? That's evaluation — <strong>Results</strong>.</p>
+        <p>A real run that doesn't complete is marked <strong>failed</strong> in the runs list, and BrewSLM saves why. The run page shows a banner above the metrics with one sentence, for example "Stopped at step 60 of 250: reached the 6-hour limit (EXTERNAL_COMMAND_TIMEOUT_SECONDS). Last checkpoint: step 50." The reason is one of four codes: <code>timeout</code> (the run hit its time limit), <code>signal</code> (the process was stopped by a signal BrewSLM did not send; <code>SIGKILL</code> is often the system running out of memory), <code>exit</code> (a non-zero exit, quoting the last error line from the log, never a metric line) or <code>error</code> (the run could not be monitored). The record is saved as <code>config._runtime.failure</code>, with the step reached, the total steps and the last checkpoint a run can continue from; the <code>training_start</code> Job in the notification bell shows the same sentence. The live console and the full log, kept with the run's output, are still there for the detail. A cancelled run gets no failure record.</p>
+        <p>A real run stops at its <strong>time limit</strong>: the server's <code>EXTERNAL_COMMAND_TIMEOUT_SECONDS</code> (6 hours by default), or the run's own <strong>Time limit (hours)</strong> under <em>Model and hyperparameters</em> (<code>external_timeout_seconds</code>, 60 seconds to 7 days; blank keeps the server's). Once its real speed is known, a run on pace to need more time than its limit gets one warning in its log and above its metrics; the run is not stopped.</p>
+        <p>When the failed run has a checkpoint it can continue from, the banner offers <strong>Continue from step N</strong>. That creates a new run that carries on at that step with the checkpoint's weights, optimizer, scheduler and random state; the failed run stays as the record, and you start the new run from the runs list. The run's <strong>Checkpoints</strong> panel does the same from any checkpoint: it lists the checkpoints the run saved (every <code>save_steps</code>, including a run that was cancelled, timed out or crashed), with <em>Promote</em> to make one the run's best and <em>Resume from…</em>. If a checkpoint's training state or weights are missing on disk, the panel says so and no run is created.</p>
+        <p>On the RunEvent timeline (<strong>Ship → Monitor</strong>) a real run emits "Training started" (info). If handing the run to the worker throws, you get <code>training_dispatch_error</code>. A real run that fails later writes a <code>training_timeout</code>, <code>training_signal</code>, <code>training_exit</code> or <code>training_error</code> error event carrying the same sentence, and the pace warning is a <code>training_time_limit_projected</code> warning event. The <code>training</code> / info "Training completed" event (with <code>final_train_loss</code>) and <code>training_runtime_error</code> come from the simulate runtime only. <code>training_oom</code> and <code>training_cancelled</code> are declared but not emitted today: an out-of-memory kill shows up as <code>training_signal</code>, and cancelling a run from its row stops the training process and changes its status, with no event. With a trained adapter and its traces recorded, the next stage asks the real question: is it good enough to ship? That's evaluation — <strong>Results</strong>.</p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
-          <p>Stage 08 is your training loop, <strong>watched</strong>: one Train form, a background Job with bell progress, a live dashboard per run (with a <strong>delta-from-baseline</strong> curve for warm starts), an automatic base-vs-fine-tune lift check on completion (over seeds when you train three, against the strongest baseline), and, when a run fails, its status, its log and its checkpoints.</p>
+          <p>Stage 08 is your training loop, <strong>watched</strong>: one Train form, a background Job with bell progress, a live dashboard per run (with a <strong>delta-from-baseline</strong> curve for warm starts), an automatic base-vs-fine-tune lift check on completion (over seeds when you train three, against the strongest baseline), and, when a run fails, the reason it stopped and a way to continue from its last checkpoint.</p>
         </div>
 
         <section class="key-terms">
@@ -386,7 +383,8 @@ $ curl -X POST localhost:8000/api/projects/1/training/autopilot/one-click-run \
             <dt>delta-from-baseline curve</dt><dd>On a warm-started run's dashboard: the live loss plotted relative to the checkpoint's first recorded loss on your data as the zero line.</dd>
             <dt>seed group</dt><dd>The same config trained with several seeds (Three seeds = 3); a leader record holds the children, and the lift is reported over seeds.</dd>
             <dt>strongest-baseline rule</dt><dd>When a base model's own decoding config differs from plain decoding, the lift check scores the base both ways and uses the higher score as the bar.</dd>
-            <dt>training RunEvents</dt><dd>Real runs: "Training started" (info), and training_dispatch_error if the hand-off to the worker throws; a real run that fails later emits nothing. The completion event and training_runtime_error are simulate-only; training_oom / training_cancelled are declared, not emitted.</dd>
+            <dt>training RunEvents</dt><dd>Real runs: "Training started" (info); training_dispatch_error if the hand-off to the worker throws; training_timeout / training_signal / training_exit / training_error when a run fails later; a training_time_limit_projected warning when a run is on pace to pass its time limit. The completion event and training_runtime_error are simulate-only; training_oom / training_cancelled are declared, not emitted.</dd>
+            <dt>failure banner</dt><dd>The note above a failed real run's metrics: why it stopped (timeout, signal, exit or error), the step it reached and its last resumable checkpoint, with <em>Continue from step N</em>.</dd>
           </dl>
         </section>
 
@@ -420,13 +418,13 @@ $ curl -X POST localhost:8000/api/projects/1/training/autopilot/one-click-run \
               {
                 "q": "A real run is killed partway through, most likely by the system running out of memory. Where do you learn the cause?",
                 "options": [
-                  "The run's training log, kept with its output",
+                  "A failure banner on the run, naming the signal",
                   "A training_oom RunEvent on Ship → Monitor",
                   "A training_cancelled entry in the notification bell",
                   "The preflight report, rerun after the failure"
                 ],
                 "answer": 0,
-                "explanation": "In the released BrewSLM code a failed real run is marked failed and keeps its log; there is no OOM code. training_oom and training_cancelled are declared but never emitted, and a real run that fails emits no RunEvent."
+                "explanation": "A real run that stops without finishing saves why: the run's failure banner says it was stopped by SIGKILL (often the system running out of memory), with the step it reached and its last checkpoint, and the timeline gets a training_signal event. There is no OOM-specific code: training_oom and training_cancelled are declared but never emitted. The full log is still kept with the run's output."
               },
               {
                 "q": "Why hold a strong reference to the running task?",
@@ -463,12 +461,12 @@ $ curl -X POST localhost:8000/api/projects/1/training/autopilot/one-click-run \
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. How far the training loss has moved from its starting value</strong> The starting loss is the zero line; the curve shows how much the run improves on it. The base-vs-fine-tune verdict itself is on Results → Verdict.</p></details></li>
               <li><p class="quiz__q-text">A real run is killed partway through, most likely by the system running out of memory. Where do you learn the cause?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The run's training log, kept with its output</li>
+                  <li>A failure banner on the run, naming the signal</li>
                   <li>A training_oom RunEvent on Ship → Monitor</li>
                   <li>A training_cancelled entry in the notification bell</li>
                   <li>The preflight report, rerun after the failure</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The run's training log, kept with its output</strong> In the released BrewSLM code a failed real run is marked failed and keeps its log; there is no OOM code. training_oom and training_cancelled are declared but never emitted, and a real run that fails emits no RunEvent.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. A failure banner on the run, naming the signal</strong> A real run that stops without finishing saves why: the run's failure banner says it was stopped by SIGKILL (often the system running out of memory), with the step it reached and its last checkpoint, and the timeline gets a training_signal event. There is no OOM-specific code: training_oom and training_cancelled are declared but never emitted. The full log is still kept with the run's output.</p></details></li>
               <li><p class="quiz__q-text">Why hold a strong reference to the running task?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>So the garbage collector can't silently kill it mid-run</li>

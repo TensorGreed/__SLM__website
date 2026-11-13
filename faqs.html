@@ -164,7 +164,7 @@
           "name": "How do I prove what happened in a training run?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "The run_events table is the audit spine. Imports, document uploads, training starts and dispatch errors, eval, export and deployment actions emit events, and every error event carries a stable reason code; the support bundle exports them as JSON. Other failures of a real training run (a crash, a non-zero exit, a timeout, a kill signal) mark the run failed but do not reach the timeline yet; a fix that saves the reason, shows it on the run and puts it on the timeline is merged but not yet released. The training manifest captures every input that produced the run, so you can replay an experiment from a frozen artifact."
+            "text": "The run_events table is the audit spine. Imports, document uploads, training starts and dispatch errors, eval, export and deployment actions emit events, and every error event carries a stable reason code; the support bundle exports them as JSON. A real training run that fails later (a time limit, a kill signal, a non-zero exit) saves why it stopped, shows it on the run with the step and last checkpoint, and writes a training_timeout, training_signal, training_exit or training_error event. The training manifest captures every input that produced the run, so you can replay an experiment from a frozen artifact."
           }
         },
         {
@@ -499,10 +499,11 @@
               The <code>run_events</code> table is the audit spine. Imports, document uploads,
               training starts and dispatch errors, eval, export and deployment actions emit
               events, and every error event carries a stable reason code; the support bundle
-              exports them as JSON. Other failures of a real training run (a crash, a non-zero
-              exit, a timeout, a kill signal) mark the run failed but do not reach the timeline
-              yet; a fix that saves the reason, shows it on the run and puts it on the timeline
-              is merged but not yet released. The
+              exports them as JSON. A real training run that fails later (a time limit, a kill
+              signal, a non-zero exit) saves why it stopped, shows it on the run with the step
+              and last checkpoint, and writes a <code>training_timeout</code>,
+              <code>training_signal</code>, <code>training_exit</code> or
+              <code>training_error</code> event. The
               training manifest captures every input that produced the run, so you can replay
               an experiment from a frozen artifact.
             </p>
