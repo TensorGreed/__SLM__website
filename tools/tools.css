@@ -1,0 +1,378 @@
+/* Calculator pages under /tools/ (loaded only by them, after styles.css).
+ *
+ * Colours come only from the site tokens in styles.css: no literals, no
+ * colour functions other than color-mix over tokens. The dark theme below is
+ * scoped to the tools pages by living in this file: it maps the semantic
+ * tokens (--bg-*, --text-*, --border-*, --accent) onto the other end of the
+ * grey ramp when the reader's system asks for dark. The rest of the site
+ * stays light-only (user decision, 2026-11-12). */
+
+:root {
+  color-scheme: light dark;
+  --tool-ok: var(--color-success);
+  --tool-warn: var(--color-warning);
+  --tool-bad: var(--color-error);
+  --tool-bar: var(--text-primary);
+  --tool-bar-track: var(--bg-recessed);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: var(--gray-1000);
+    --bg-secondary: var(--gray-1000);
+    --bg-tertiary: var(--gray-900);
+    --bg-recessed: var(--gray-800);
+    --text-primary: var(--gray-50);
+    --text-secondary: var(--gray-300);
+    --text-tertiary: var(--gray-400);
+    --border: var(--gray-800);
+    --border-strong: var(--gray-600);
+    --border-muted: var(--gray-800);
+    --accent: var(--gray-50);
+    --accent-hover: var(--gray-200);
+    --tool-ok: color-mix(in srgb, var(--color-success) 45%, var(--gray-0));
+    --tool-warn: color-mix(in srgb, var(--color-warning) 40%, var(--gray-0));
+    --tool-bad: color-mix(in srgb, var(--color-error) 45%, var(--gray-0));
+  }
+  .tool-page .site-header { background-color: var(--bg-primary); }
+  .tool-page .brand-logo { filter: invert(1); }
+  .tool-page .btn-solid { color: var(--bg-primary); }
+  .tool-page .cluster-card:hover { background-color: var(--bg-tertiary); }
+}
+
+/* ── layout ── */
+
+.tool {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2xl);
+  align-items: start;
+}
+
+@media (min-width: 960px) {
+  .tool { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); }
+  .tool__results { position: sticky; top: calc(var(--header-height) + var(--space-lg)); }
+}
+
+.tool__form,
+.tool__results {
+  min-width: 0;
+}
+
+.tool__results {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-secondary);
+  padding: var(--space-xl);
+}
+
+.tool__noscript {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  background-color: var(--bg-tertiary);
+}
+
+/* ── form ── */
+
+.tool fieldset {
+  margin: 0 0 var(--space-xl);
+  padding: var(--space-lg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  min-width: 0;
+}
+
+.tool legend {
+  padding: 0 var(--space-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+
+.field:last-child { margin-bottom: 0; }
+
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.field-row .field { margin-bottom: 0; }
+
+.tool label,
+.choice-label {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.field-help {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+.tool input[type="number"],
+.tool select {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  font-size: var(--fs-md);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+}
+
+.tool input:focus-visible,
+.tool select:focus-visible,
+.tool button:focus-visible,
+.tool .btn:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+.tool input[aria-invalid="true"] { border-color: var(--tool-bad); }
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-lg);
+  margin: 0 0 var(--space-md);
+  padding: 0;
+  border: 0;
+}
+
+.choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+}
+
+.choice input { margin: 0; accent-color: var(--text-primary); }
+
+.tool fieldset.choices { padding: 0; margin-bottom: var(--space-md); border: 0; border-radius: 0; }
+.tool fieldset > .field-help { margin-bottom: var(--space-md); }
+.page-hero + .section { padding-top: var(--space-xl); }
+.tool fieldset.choices legend { padding: 0; margin-bottom: var(--space-xs); font-size: var(--fs-sm); font-weight: 500; }
+
+.tool-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
+.tool-status {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  min-height: 1.5em;
+  margin: var(--space-sm) 0 0;
+}
+
+.linklike {
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* ── results ── */
+
+.result-head {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin: 0 0 var(--space-sm);
+}
+
+.result-big {
+  font-size: var(--fs-3xl);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-xs);
+  line-height: 1.15;
+}
+
+.result-sub { margin: 0 0 var(--space-lg); }
+
+.result-lines { list-style: none; padding: 0; margin: var(--space-lg) 0 0; }
+.result-lines li { margin: 0 0 var(--space-sm); font-size: var(--fs-sm); }
+
+.notes { margin: var(--space-md) 0 0; padding-left: var(--space-xl); }
+.notes li { font-size: var(--fs-sm); }
+
+.verdict {
+  display: inline-block;
+  font-weight: 600;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
+}
+
+.verdict--lift { color: var(--tool-ok); border-color: var(--tool-ok); }
+.verdict--drop { color: var(--tool-bad); border-color: var(--tool-bad); }
+.verdict--noise,
+.verdict--few { color: var(--tool-warn); border-color: var(--tool-warn); }
+
+.tool-error {
+  color: var(--tool-bad);
+  font-weight: 500;
+}
+
+.tool .mini-table th[scope="row"] {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  background-color: transparent;
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.mini-table td.num,
+.mini-table th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mini-table td.num .ci { display: block; color: var(--text-tertiary); font-size: var(--fs-xs); }
+.tool__results .mini-table { margin-top: 0; border: 0; }
+
+@media (max-width: 480px) {
+  .tool__results .mini-table td.num { white-space: normal; }
+  .tool__results .mini-table th[scope="row"] { min-width: 7.5em; }
+}
+
+.mini-table tr.total th,
+.mini-table tr.total td { font-weight: 600; color: var(--text-primary); }
+
+.tool-caption {
+  caption-side: top;
+  text-align: left;
+  padding: var(--space-md) var(--space-md) var(--space-sm);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Per-consumer bar: share of the training peak, snapped to 2% buckets. */
+.bar {
+  display: block;
+  height: 8px;
+  margin-top: var(--space-xs);
+  border-radius: var(--radius-full);
+  background-color: var(--tool-bar-track);
+  overflow: hidden;
+  min-width: 60px;
+}
+
+.bar__fill {
+  display: block;
+  height: 100%;
+  background-color: var(--tool-bar);
+  border-radius: var(--radius-full);
+  width: 0;
+}
+
+/* ── prose below the tool ── */
+
+.tool-doc { max-width: 760px; }
+.tool-doc h2 { font-size: var(--fs-3xl); margin: 0 0 var(--space-lg); }
+.tool-doc h3 { font-size: var(--fs-xl); margin: var(--space-xl) 0 var(--space-sm); }
+.tool-doc p,
+.tool-doc li { font-size: var(--fs-md); }
+.tool-doc ul { margin: 0 0 var(--space-md); }
+.tool-doc .table-wrap { margin: var(--space-md) 0 var(--space-lg); }
+.tool-doc .mini-table { margin-top: 0; border: 0; }
+.tool-doc .mini-table th { text-transform: none; letter-spacing: 0; font-size: var(--fs-sm); color: var(--text-primary); }
+.tool-doc .mini-table th[scope="row"] { background-color: transparent; font-weight: 500; }
+
+.formula {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  overflow-wrap: anywhere;
+}
+
+
+@media (max-width: 720px) {
+  .tool__results { padding: var(--space-lg); }
+  .result-big { font-size: var(--fs-2xl); }
+  .tool fieldset { padding: var(--space-md); }
+}
+
+@media print {
+  .tool__form, .tool-actions { display: none; }
+}
+
+/* width buckets for .bar__fill (generated, 2% steps) */
+.bar__fill--w-0 { width: 0%; }
+.bar__fill--w-2 { width: 2%; }
+.bar__fill--w-4 { width: 4%; }
+.bar__fill--w-6 { width: 6%; }
+.bar__fill--w-8 { width: 8%; }
+.bar__fill--w-10 { width: 10%; }
+.bar__fill--w-12 { width: 12%; }
+.bar__fill--w-14 { width: 14%; }
+.bar__fill--w-16 { width: 16%; }
+.bar__fill--w-18 { width: 18%; }
+.bar__fill--w-20 { width: 20%; }
+.bar__fill--w-22 { width: 22%; }
+.bar__fill--w-24 { width: 24%; }
+.bar__fill--w-26 { width: 26%; }
+.bar__fill--w-28 { width: 28%; }
+.bar__fill--w-30 { width: 30%; }
+.bar__fill--w-32 { width: 32%; }
+.bar__fill--w-34 { width: 34%; }
+.bar__fill--w-36 { width: 36%; }
+.bar__fill--w-38 { width: 38%; }
+.bar__fill--w-40 { width: 40%; }
+.bar__fill--w-42 { width: 42%; }
+.bar__fill--w-44 { width: 44%; }
+.bar__fill--w-46 { width: 46%; }
+.bar__fill--w-48 { width: 48%; }
+.bar__fill--w-50 { width: 50%; }
+.bar__fill--w-52 { width: 52%; }
+.bar__fill--w-54 { width: 54%; }
+.bar__fill--w-56 { width: 56%; }
+.bar__fill--w-58 { width: 58%; }
+.bar__fill--w-60 { width: 60%; }
+.bar__fill--w-62 { width: 62%; }
+.bar__fill--w-64 { width: 64%; }
+.bar__fill--w-66 { width: 66%; }
+.bar__fill--w-68 { width: 68%; }
+.bar__fill--w-70 { width: 70%; }
+.bar__fill--w-72 { width: 72%; }
+.bar__fill--w-74 { width: 74%; }
+.bar__fill--w-76 { width: 76%; }
+.bar__fill--w-78 { width: 78%; }
+.bar__fill--w-80 { width: 80%; }
+.bar__fill--w-82 { width: 82%; }
+.bar__fill--w-84 { width: 84%; }
+.bar__fill--w-86 { width: 86%; }
+.bar__fill--w-88 { width: 88%; }
+.bar__fill--w-90 { width: 90%; }
+.bar__fill--w-92 { width: 92%; }
+.bar__fill--w-94 { width: 94%; }
+.bar__fill--w-96 { width: 96%; }
+.bar__fill--w-98 { width: 98%; }
+.bar__fill--w-100 { width: 100%; }
+
+/* The hidden attribute must win over the layout classes above. */
+.tool [hidden] { display: none !important; }

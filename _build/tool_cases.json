@@ -1,0 +1,110 @@
+{
+  "_doc": "Validation cases for tools/memcalc.js and tools/liftstats.js, run by _build/test_tools.py through _build/run_tools.cjs. memcalc: measured values with their source and the tolerance the estimate must meet; 'show' is the rounded estimate the calculator page prints in its validation table (the test fails when the page and the formulas drift apart). lift: inputs only; the reference values come from scipy/statsmodels via _build/lift_reference.py (written to _build/lift_reference.json).",
+  "memcalc": [
+    {
+      "id": "smollm-lora-saved",
+      "what": "135M dense, LoRA r=16 on all linear layers, fp32 on a CPU, batch 8 x 256 tokens: bytes kept for backward",
+      "source": "Lesson 1.15 worked example (saved-tensor count, measured)",
+      "preset": "135m", "set": {"method": "lora", "prec": "fp32", "r": 16, "targets": ["q", "k", "v", "o", "gate", "up", "down"], "seq": 256, "batch": 8, "gc": false},
+      "field": "savedActivations", "unit": "GB", "measured": 2.89, "tolerance": 0.03, "show": "2.89 GB"
+    },
+    {
+      "id": "smollm-lora-gc-saved",
+      "what": "the same run with gradient checkpointing",
+      "source": "Lesson 1.15 worked example (measured)",
+      "preset": "135m", "set": {"method": "lora", "prec": "fp32", "r": 16, "targets": ["q", "k", "v", "o", "gate", "up", "down"], "seq": 256, "batch": 8, "gc": true},
+      "field": "savedActivations", "unit": "GB", "measured": 0.55, "tolerance": 0.03, "show": "0.54 GB"
+    },
+    {
+      "id": "smollm-full-saved",
+      "what": "the same batch as a full fine-tune",
+      "source": "Lesson 1.15 worked example (measured)",
+      "preset": "135m", "set": {"method": "full", "prec": "fp32", "seq": 256, "batch": 8, "gc": false},
+      "field": "savedActivations", "unit": "GB", "measured": 3.16, "tolerance": 0.03, "show": "3.16 GB"
+    },
+    {
+      "id": "smollm-lora-trainable",
+      "what": "adapter parameters, LoRA r=16 on all linear layers",
+      "source": "Lesson 1.15 (peft count)",
+      "preset": "135m", "set": {"method": "lora", "prec": "fp32", "r": 16, "targets": ["q", "k", "v", "o", "gate", "up", "down"]},
+      "field": "trainable", "unit": "count", "measured": 4884480, "tolerance": 0, "show": "4,884,480"
+    },
+    {
+      "id": "smollm-full-fp32-states",
+      "what": "weights + gradients + AdamW, full fine-tune in plain fp32",
+      "source": "Lesson 1.15 memory table (16 B/param)",
+      "preset": "135m", "set": {"method": "full", "prec": "fp32"},
+      "field": "parameterStates", "unit": "GB", "measured": 2.15, "tolerance": 0.01, "show": "2.15 GB"
+    },
+    {
+      "id": "table-mixed",
+      "what": "bytes per parameter, full fine-tune in mixed precision with AdamW",
+      "source": "Lesson 1.15 memory table (16-18 B)",
+      "preset": "1.5b", "set": {"method": "full", "prec": "mixed", "opt": "adamw"},
+      "field": "bytesPerParam", "unit": "B", "measured": 18, "tolerance": 0, "show": "18 B"
+    },
+    {
+      "id": "table-fp32",
+      "what": "bytes per parameter, full fine-tune in plain fp32 with AdamW",
+      "source": "Lesson 1.15 memory table (16 B)",
+      "preset": "1.5b", "set": {"method": "full", "prec": "fp32", "opt": "adamw"},
+      "field": "bytesPerParam", "unit": "B", "measured": 16, "tolerance": 0, "show": "16 B"
+    },
+    {
+      "id": "table-pure-bf16",
+      "what": "bytes per parameter, full fine-tune in pure bf16 with PyTorch AdamW",
+      "source": "Lesson 1.15 memory table (8 B)",
+      "preset": "1.5b", "set": {"method": "full", "prec": "bf16", "opt": "adamw"},
+      "field": "bytesPerParam", "unit": "B", "measured": 8, "tolerance": 0, "show": "8 B"
+    },
+    {
+      "id": "moe-trainable",
+      "what": "30B-A3B mixture of experts, LoRA r=16 on q, k, v, o: adapter parameters",
+      "source": "measured run (peft count)",
+      "preset": "30b-a3b", "set": {"method": "lora", "prec": "bf16", "r": 16, "targets": ["q", "k", "v", "o"], "opt": "paged8", "seq": 1504, "batch": 2, "gc": true, "hw": "unified"},
+      "field": "trainable", "unit": "count", "measured": 13369344, "tolerance": 0, "show": "13,369,344"
+    },
+    {
+      "id": "moe-weights",
+      "what": "the same run: bf16 weights",
+      "source": "measured run (~57 GiB)",
+      "preset": "30b-a3b", "set": {"method": "lora", "prec": "bf16", "r": 16, "targets": ["q", "k", "v", "o"], "opt": "paged8", "seq": 1504, "batch": 2, "gc": true, "hw": "unified"},
+      "field": "weights", "unit": "GiB", "measured": 57, "tolerance": 0.02, "show": "56.9 GiB"
+    },
+    {
+      "id": "moe-allocated",
+      "what": "the same run: GPU memory allocated at the training peak",
+      "source": "measured run (torch max allocated, 63.6 GiB)",
+      "preset": "30b-a3b", "set": {"method": "lora", "prec": "bf16", "r": 16, "targets": ["q", "k", "v", "o"], "opt": "paged8", "seq": 1504, "batch": 2, "gc": true, "hw": "unified"},
+      "field": "allocated", "unit": "GiB", "measured": 63.6, "tolerance": 0.05, "show": "63.1 GiB"
+    },
+    {
+      "id": "moe-peak",
+      "what": "the same run: whole unified-memory pool at the training peak",
+      "source": "measured run (about 77-78 GiB; midpoint used)",
+      "preset": "30b-a3b", "set": {"method": "lora", "prec": "bf16", "r": 16, "targets": ["q", "k", "v", "o"], "opt": "paged8", "seq": 1504, "batch": 2, "gc": true, "hw": "unified"},
+      "field": "peak", "unit": "GiB", "measured": 77.5, "tolerance": 0.05, "show": "76.4 GiB"
+    },
+    {
+      "id": "moe-eval",
+      "what": "the same model evaluated at the same length, batch 1: whole pool",
+      "source": "measured run (about 69.5 GiB)",
+      "preset": "30b-a3b", "set": {"method": "lora", "prec": "bf16", "r": 16, "targets": ["q", "k", "v", "o"], "opt": "paged8", "seq": 1504, "batch": 2, "gc": true, "hw": "unified"},
+      "field": "inference", "unit": "GiB", "measured": 69.5, "tolerance": 0.05, "show": "69.7 GiB"
+    }
+  ],
+  "lift": [
+    {"id": "box-50", "why": "the small-test-sets box example", "n": 50, "base": 22, "tuned": 26, "baseOnly": 2, "tunedOnly": 6},
+    {"id": "lesson-1-18", "why": "Lesson 1.18 try-it", "n": 40, "base": 24, "tuned": 29, "baseOnly": 2, "tunedOnly": 7},
+    {"id": "faq-78", "why": "the FAQ's within-noise example", "n": 78, "base": 28, "tuned": 23, "baseOnly": 7, "tunedOnly": 2},
+    {"id": "all-wrong", "why": "edge: 0 of n both sides", "n": 20, "base": 0, "tuned": 0, "baseOnly": 0, "tunedOnly": 0},
+    {"id": "all-right", "why": "edge: n of n both sides", "n": 20, "base": 20, "tuned": 20, "baseOnly": 0, "tunedOnly": 0},
+    {"id": "zero-to-all", "why": "edge: 0 of n to n of n", "n": 10, "base": 0, "tuned": 10, "baseOnly": 0, "tunedOnly": 10},
+    {"id": "large-lift", "why": "large n, large lift", "n": 1234, "base": 610, "tuned": 1183, "baseOnly": 7, "tunedOnly": 580},
+    {"id": "real-drop", "why": "a real drop", "n": 200, "base": 150, "tuned": 120, "baseOnly": 40, "tunedOnly": 10},
+    {"id": "five-rows", "why": "edge: the minimum for a verdict", "n": 5, "base": 2, "tuned": 4, "baseOnly": 0, "tunedOnly": 2},
+    {"id": "independent", "why": "phi = 0: paired interval equals the unpaired one", "n": 100, "base": 50, "tuned": 50, "baseOnly": 25, "tunedOnly": 25},
+    {"id": "unpaired-only", "why": "no paired counts", "n": 300, "base": 210, "tuned": 231},
+    {"id": "one-row", "why": "edge: one row", "n": 1, "base": 0, "tuned": 1, "baseOnly": 0, "tunedOnly": 1}
+  ]
+}
