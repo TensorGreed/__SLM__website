@@ -12,14 +12,14 @@
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="BrewSLM" />
     <meta property="og:title" content="Train: jobs, the bell, and the delta-from-baseline curve — BrewSLM Academy" />
-    <meta property="og:description" content="Stage 08 runs your recipe as a watched background Job from the Train form: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into each run's live dashboard (a warm-started run also gets a delta-from-baseline series), and a failed run records why it stopped (timeout, signal, exit or error) on its failure banner." />
+    <meta property="og:description" content="Stage 08 runs your recipe as a watched background Job from the Train form: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into each run's live dashboard (a warm-started run also gets a delta-from-baseline series), and the automatic lift check reports the fine-tune against the strongest baseline, over seeds when you train three." />
     <meta property="og:url" content="https://brewslm.com/academy/with-brewslm/training-jobs-and-monitoring.html" />
     <meta property="og:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
     <meta property="og:image:alt" content="BrewSLM logo" />
-    <meta property="article:modified_time" content="2026-11-12" />
+    <meta property="article:modified_time" content="2026-11-13" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Train: jobs, the bell, and the delta-from-baseline curve — BrewSLM Academy" />
-    <meta name="twitter:description" content="Stage 08 runs your recipe as a watched background Job from the Train form: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into each run's live dashboard (a warm-started run also gets a delta-from-baseline series), and a failed run records why it stopped (timeout, signal, exit or error) on its failure banner." />
+    <meta name="twitter:description" content="Stage 08 runs your recipe as a watched background Job from the Train form: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into each run's live dashboard (a warm-started run also gets a delta-from-baseline series), and the automatic lift check reports the fine-tune against the strongest baseline, over seeds when you train three." />
     <meta name="twitter:image" content="https://brewslm.com/assets/brewslm-logo.svg" />
     <meta name="twitter:image:alt" content="BrewSLM logo" />
     <script defer src="../../assets/analytics.js"></script>
@@ -42,11 +42,11 @@
       "@id": "https://brewslm.com/academy/with-brewslm/training-jobs-and-monitoring.html#lesson",
       "name": "Train: jobs, the bell, and the delta-from-baseline curve",
       "headline": "Train: jobs, the bell, and the delta-from-baseline curve",
-      "description": "Stage 08 runs your recipe as a watched background Job from the Train form: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into each run's live dashboard (a warm-started run also gets a delta-from-baseline series), and a failed run records why it stopped (timeout, signal, exit or error) on its failure banner.",
+      "description": "Stage 08 runs your recipe as a watched background Job from the Train form: the notification bell polls active jobs every few seconds, per-step loss and eval traces stream into each run's live dashboard (a warm-started run also gets a delta-from-baseline series), and the automatic lift check reports the fine-tune against the strongest baseline, over seeds when you train three.",
       "url": "https://brewslm.com/academy/with-brewslm/training-jobs-and-monitoring.html",
       "mainEntityOfPage": "https://brewslm.com/academy/with-brewslm/training-jobs-and-monitoring.html",
       "inLanguage": "en",
-      "dateModified": "2026-11-12",
+      "dateModified": "2026-11-13",
       "learningResourceType": "Lesson",
       "educationalLevel": "Intermediate",
       "timeRequired": "PT9M",
@@ -176,10 +176,10 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "position": 0,
-            "text": "The failure banner (code signal) and log tail",
+            "text": "The run's training log, kept with its output",
             "answerExplanation": {
               "@type": "Comment",
-              "text": "Real runs record a failure code — timeout, signal, exit or error — and the banner says 'the process was stopped by SIGKILL (often the system running out of memory)'. training_oom and training_cancelled are declared but never emitted, and the training_signal event doesn't reach the timeline today."
+              "text": "On public BrewSLM main a failed real run is marked failed and keeps its log; there is no OOM code. training_oom and training_cancelled are declared but never emitted, and a real run that fails emits no RunEvent."
             }
           }
         },
@@ -296,7 +296,7 @@
             <span><strong>Level:</strong> intermediate</span>
             <span><strong>Read time:</strong> ~9 min</span>
             <span><strong>Prerequisites:</strong> <a class="inline-link" href="preflight-and-trainability.html">Preflight and the trainability forecast</a></span>
-            <!-- site:verified: generated by _build/site.py from git or site.toml --><span class="lesson-meta__verified"><strong>Verified:</strong> <time datetime="2026-11-12">12 Nov 2026</time></span><!-- /site:verified -->
+            <!-- site:verified: generated by _build/site.py from git or site.toml --><span class="lesson-meta__verified"><strong>Verified:</strong> <time datetime="2026-11-13">13 Nov 2026</time></span><!-- /site:verified -->
           </div>
         </header>
 
@@ -437,12 +437,12 @@ $ curl -X POST localhost:8000/api/projects/1/training/autopilot/one-click-run \
                 <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. How far the training loss has moved from its starting value</strong> The starting loss is the zero line; the curve shows how much the run improves on it. The base-vs-fine-tune verdict itself is on Results → Verdict.</p></details></li>
               <li><p class="quiz__q-text">A real run is killed partway through, most likely by the system running out of memory. Where do you learn the cause?</p>
                 <ol class="quiz__static-options" type="A">
-                  <li>The failure banner (code signal) and log tail</li>
+                  <li>The run's training log, kept with its output</li>
                   <li>A training_oom RunEvent on Ship → Monitor</li>
                   <li>A training_cancelled entry in the notification bell</li>
                   <li>The preflight report, rerun after the failure</li>
                 </ol>
-                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The failure banner (code signal) and log tail</strong> Real runs record a failure code — timeout, signal, exit or error — and the banner says 'the process was stopped by SIGKILL (often the system running out of memory)'. training_oom and training_cancelled are declared but never emitted, and the training_signal event doesn't reach the timeline today.</p></details></li>
+                <details class="quiz__static-answer"><summary>Show answer</summary><p><strong>Answer: A. The run's training log, kept with its output</strong> On public BrewSLM main a failed real run is marked failed and keeps its log; there is no OOM code. training_oom and training_cancelled are declared but never emitted, and a real run that fails emits no RunEvent.</p></details></li>
               <li><p class="quiz__q-text">Why hold a strong reference to the running task?</p>
                 <ol class="quiz__static-options" type="A">
                   <li>So the garbage collector can't silently kill it mid-run</li>
