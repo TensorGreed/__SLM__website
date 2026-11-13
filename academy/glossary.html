@@ -3199,7 +3199,7 @@
           <dt id="transformer">Transformer block</dt><dd>Self-attention + feed-forward network + residual connections + layer norm; stacked many times.</dd>
           <dt id="split">Train/validation/test split</dt><dd>Partitioning data so you train on one part and measure on data the model hasn't seen. In BrewSLM the split is made on <strong>Data → Split</strong>; the test part is shown as the <a class="inline-link" href="#test-examples">test examples</a>.</dd>
           <dt id="vocabulary">Vocabulary</dt><dd>The fixed set of tokens a tokenizer knows; each has an integer ID.</dd>
-          <dt id="vram">VRAM</dt><dd>GPU memory; weights need ≈ params × bytes-per-param (2 bytes in bf16). Full fine-tuning with mixed-precision AdamW needs about 16–18 bytes per parameter before activations; LoRA and QLoRA need far less. See <a class="inline-link" href="sft-fundamentals/gpu-memory-math.html">GPU memory math</a>.</dd>
+          <dt id="vram">VRAM</dt><dd>GPU memory; weights need ≈ params × bytes-per-param (2 bytes in bf16). Full fine-tuning with mixed-precision AdamW needs about 16–18 bytes per parameter before activations; LoRA and QLoRA need far less. See the <a class="inline-link" href="sft-fundamentals/gpu-memory-math.html#memory-table">memory table</a> (Lesson 1.15).</dd>
         </dl>
 
         <h2>Track 0 — Foundations (extended)</h2>
@@ -3229,7 +3229,7 @@
 
         <h2>Track 1 — SFT fundamentals</h2>
         <dl>
-          <dt id="adamw">AdamW (optimizer)</dt><dd>The standard optimizer; adapts the step per-parameter for stable training, at the cost of ~8 bytes/param of state.</dd>
+          <dt id="adamw">AdamW (optimizer)</dt><dd>The standard optimizer; adapts the step per-parameter for stable training, at the cost of ~8 bytes/param of state (two fp32 moments; see the <a class="inline-link" href="sft-fundamentals/gpu-memory-math.html#memory-table">memory table</a>).</dd>
           <dt id="batch-size">Batch size</dt><dd>How many examples a step processes at once; larger = smoother gradient but more memory.</dd>
           <dt id="chat-template">Chat template</dt><dd>The tokenizer rule that renders a messages list into the exact formatted string (with role/special tokens) a model expects. See <a class="inline-link" href="sft-fundamentals/chat-templates.html">Chat templates</a>.</dd>
           <dt id="checkpoint">Checkpoint</dt><dd>Saved parameters (or LoRA adapter) on disk, for resuming and keeping the best version by validation.</dd>
@@ -3240,12 +3240,12 @@
           <dt id="f1">F1 (precision, recall)</dt><dd>Precision = right / flagged; recall = caught / should-have-found; F1 is their harmonic mean.</dd>
           <dt id="generalization-gap">Generalization gap</dt><dd>The distance between training and validation loss; a widening gap signals overfitting.</dd>
           <dt id="grad-accum">Gradient accumulation</dt><dd>Accumulating (averaging) gradients over several micro-batches before one optimizer step, to simulate a larger batch on a small GPU.</dd>
-          <dt id="grad-checkpointing">Gradient checkpointing</dt><dd>Re-computing activations during backprop instead of storing them — trades roughly a third more compute for large activation-memory savings. BrewSLM&#x27;s default <code>auto</code> leaves it off up to ~2B parameters and turns it on above that, or when the longest training row exceeds 1,024 tokens.</dd>
+          <dt id="grad-checkpointing">Gradient checkpointing</dt><dd>Re-computing activations during backprop instead of storing them — trades roughly a third more compute for large activation-memory savings. BrewSLM&#x27;s default <code>auto</code> leaves it off up to ~2B parameters and turns it on above that, or when the longest training row exceeds 1,024 tokens. Measured savings: Lesson 1.15&#x27;s <a class="inline-link" href="sft-fundamentals/gpu-memory-math.html#memory-table">memory table</a>.</dd>
           <dt id="loss-mask">Loss mask</dt><dd>Computing the loss only on completion tokens so the model learns to produce the answer, not echo the prompt. See <a class="inline-link" href="sft-fundamentals/anatomy-of-an-sft-example.html">Anatomy of an SFT example</a>.</dd>
           <dt id="lora-alpha">LoRA alpha</dt><dd>Scales the adapter&#x27;s contribution (scale = alpha/r). Setting alpha = 2×r is a community convention, not a rule (the QLoRA paper used r=64, alpha=16).</dd>
           <dt id="lora-rank">LoRA rank (r)</dt><dd>The adapter's inner dimension / capacity; higher = more room (and more overfit risk). Common: 16.</dd>
           <dt id="max-seq-length">max_length (formerly max_seq_length)</dt><dd>The per-example token cap. Current TRL calls it <code>max_length</code> in <code>SFTConfig</code> (default 1024; the old <code>max_seq_length</code> name is gone) and truncates longer rows from the end by default. Set it from the data&#x27;s length distribution so completions are never clipped.</dd>
-          <dt id="mixed-precision">Mixed precision (bf16)</dt><dd>Running most matmuls in 16-bit (bf16/fp16) while keeping fp32 master weights. It saves activation memory and speeds up training; it does not halve weight memory. Loading a frozen base in bf16 (as LoRA does) is what halves the weights.</dd>
+          <dt id="mixed-precision">Mixed precision (bf16)</dt><dd>Running most matmuls in 16-bit (bf16/fp16) while keeping fp32 master weights. It saves activation memory and speeds up training; it does not halve weight memory. Loading a frozen base in bf16 (as LoRA does) is what halves the weights. See the <a class="inline-link" href="sft-fundamentals/gpu-memory-math.html#memory-table">memory table</a>.</dd>
           <dt id="orpo">ORPO</dt><dd>See <a class="inline-link" href="#orpo-advanced">ORPO</a> in Track 4.</dd>
           <dt id="overfitting">Overfitting / underfitting</dt><dd>Training loss falls while validation rises (memorizing) / both stay high (hasn't learned enough). See <a class="inline-link" href="sft-fundamentals/overfitting-and-loss-curves.html">Reading a loss curve</a>.</dd>
           <dt id="perplexity">Perplexity</dt><dd>The exponential of cross-entropy; roughly how many tokens the model is choosing among (1 = certain).</dd>
