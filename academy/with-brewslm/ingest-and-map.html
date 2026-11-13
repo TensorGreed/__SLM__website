@@ -330,7 +330,8 @@ web:https://docs.example.com/guide/    # crawls the site, one row per page</code
             <tr><td><code>chat_messages_passthrough</code></td><td>a multi-turn <code>messages</code> list</td><td>chat SFT</td></tr>
             <tr><td><code>rag_passthrough</code></td><td>question + context + answer</td><td>grounded (RAG) Q&amp;A</td></tr>
             <tr><td><code>preference_pair</code></td><td>prompt + chosen + rejected</td><td>preference tuning (DPO / ORPO)</td></tr>
-            <tr><td><code>bio_to_spans</code></td><td>BIO-tagged tokens</td><td>span extraction</td></tr>
+            <tr><td><code>bio_to_spans</code></td><td>BIO-tagged tokens</td><td>span extraction (writes an <code>entities</code> list)</td></tr>
+            <tr><td><code>span_offsets_passthrough</code></td><td>text + a list of <code>{type, start, end, text}</code> spans (character offsets)</td><td>span extraction (offsets kept exactly; an empty list is a negative row)</td></tr>
             <tr><td><code>kv_to_structured</code></td><td>flat key-value fields</td><td>structured extraction</td></tr>
             <tr><td><code>code_label_to_findings</code>, <code>fix_pair</code>, <code>contrast_functions</code></td><td>labelled code, before/after code pairs, files with bad/good functions</td><td>findings (structured extraction)</td></tr>
           </tbody>
@@ -345,7 +346,8 @@ web:https://docs.example.com/guide/    # crawls the site, one row per page</code
 
 --auto picked mapper 'label_to_classification': detected text column 'text' + categorical column 'label' with 2 distinct values (0, 1)
 source=hf  mapper=label_to_classification  target_task_profile=classification
-accepted=5  rejected=188  dry_run=True
+accepted=4812  rejected=188  dry_run=True
+scanned=5000 source rows (stopped at the preview limit of 5000; the source may hold more — `run` imports all of them)
 rejection breakdown:
   missing_text             121
   label_not_allowed        54
@@ -353,7 +355,7 @@ rejection breakdown:
 first 5 accepted rows:
   [1] {"text": "I rented I AM CURIOUS-YELLOW from my video store …", "label": "0"}
   ...</code></pre>
-        <p>Read <code>accepted=</code> with care: in a preview it is the number of sample rows kept, capped at <code>--sample-cap</code> (default 5), not the number of rows that would be accepted. The rejected count and its breakdown do cover every row read (here up to <code>--limit</code>), so the would-be accepted count is the rows read minus the rejections. The wizard has the same quirk: its <em>Accepted</em> card and the <em>Import N row(s) to project</em> button show the sample size (at most 5), while the import itself writes every accepted row. (A fix that reports the true accepted count in the preview is merged but not yet released.)</p>
+        <p>The counts cover the rows the preview read: up to <code>--limit</code>, or 20 × <code>--sample-cap</code> (at least 50) when you give no limit. <code>accepted=</code> counts every accepted row among them, while the row list shows only the first <code>--sample-cap</code> (default 5). The <code>scanned=</code> line says whether the preview stopped at its limit; <code>run</code> reads every row. The wizard shows the same numbers: the <em>Accepted</em> card, a note under the cards saying how many source rows the counts cover, the sample heading "Sample transformed rows (5 of N)", and a button that reads <em>Import N+ row(s) to project</em> when the preview stopped at its limit.</p>
         <p>The <code>run</code> subcommand takes the same flags but has no dry-run mode: it <em>writes</em> the accepted rows (and needs <code>--project</code>). Preview first, then run.</p>
         <div class="callout callout--note">
           <p class="callout__label">A pattern you'll see everywhere</p>
