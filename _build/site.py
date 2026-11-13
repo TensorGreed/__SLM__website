@@ -14,9 +14,10 @@ The hand-written HTML stays the source of truth. This script only:
   * rewrites the <!-- site:quiz --> region after each lesson's quiz JSON (a
     static, no-JavaScript copy of the quiz in its authored order) and the
     certificate's <span data-cert-total> lesson count (from its manifest);
-  * writes each lesson's and tutorial's <!-- site:verified --> "Verified:"
-    date at the end of its lesson-meta row (and the same date as JSON-LD
-    dateModified): [pages."<path>"].verified in site.toml when set, else the
+  * writes each lesson's and tutorial's <!-- site:verified --> date at the
+    end of its lesson-meta row (and the same date as JSON-LD dateModified):
+    "Verified: <date>" only when [pages."<path>"].verified is set by hand in
+    site.toml (someone re-checked the facts), else "Updated: <date>", the
     date of the page's last content commit;
   * expands each <!-- box:NAME --> marker from _build/boxes/NAME.html into a
       <!-- box:NAME generated ... -->  ...  <!-- /box:NAME -->
@@ -34,8 +35,9 @@ Usage:
                                  # hub, certificate) disagrees, a "Lesson X.Y"
                                  # names no lesson or the wrong one, a box
                                  # marker names no box file or a box region
-                                 # was hand-edited, ...; it
-                                 # warns on pages verified > 180 days ago
+                                 # was hand-edited or copied in by hand, ...;
+                                 # it warns on pages updated / verified
+                                 # > 180 days ago
   python3 _build/site.py check -v # ... and list over-budget pages and the
                                  # JSON-LD node count per type
   python3 _build/site.py rebalance-quizzes
@@ -679,7 +681,7 @@ def jsonld_blocks(rel: str, facts: dict[str, "Facts"], pages: list[str]) -> list
                    else {"@type": "CollectionPage", "name": facts[track].h1, "url": url_of(track)}
                    if track in facts else academy_ref())
         mins = duration_minutes(f.time)
-        # dateModified is the visible "Verified" date (site:verified region);
+        # dateModified is the visible "Updated" / "Verified" date (site:verified region);
         # no datePublished (the page shows none) and no image yet (T6 cards).
         lr = {"@type": ["LearningResource", "Article"], "@id": f.url + "#lesson",
               "name": f.h1, "headline": f.h1, "description": f.description, "url": f.url,
@@ -1082,6 +1084,10 @@ def box_file_errors(boxes: dict[str, str]) -> list[str]:
             continue
         if BOX_ANY_RE.search(body):
             errs.append(f"{where}: a box cannot contain box markers")
+        root = re.match(r"<[a-z][a-z0-9-]*\b[^>]*>", body)
+        if not root or f'data-box="{name}"' not in root.group(0):
+            errs.append(f'{where}: the box\'s root element needs data-box="{name}" (check uses it to '
+                        f"find hand-copied boxes)")
         offset = raw.find(body)
         for rx, what in BOX_FILE_FORBIDDEN:
             for m in rx.finditer(body):
@@ -1104,25 +1110,52 @@ def check_boxes(pages: dict[str, str], boxes: dict[str, str]) -> list[str]:
             elif m.group("rname") and m.group(0) != box_region(name, boxes[name], marker_indent(text, m.start())):
                 errs.append(f"{rel}:{line}: box {name!r} was edited in the page; edit "
                             f"_build/boxes/{name}.html instead, then run build")
+            if open_paragraph(text, m.start()):
+                errs.append(f"{rel}:{line}: box {name!r} sits inside a <p>; put its marker on a line "
+                            f"of its own between blocks")
         for m in BOX_ANY_RE.finditer(text):
             if any(a <= m.start() < b for a, b in good):
                 continue
             line = text[:m.start()].count("\n") + 1
             errs.append(f"{rel}:{line}: malformed or unpaired box marker {m.group(0)[:70]!r} "
                         f"(want <!-- box:NAME -->, NAME lower-case words joined by hyphens)")
+        # A box copied into a page by hand (its region comments removed) keeps
+        # its data-box id and box classes; outside a region they are a fork.
+        for m in BOX_COPY_RE.finditer(text):
+            if any(a <= m.start() < b for a, b in good):
+                continue
+            line = text[:m.start()].count("\n") + 1
+            what = (f"a copy of box {m.group('id')!r}" if m.group("id") else
+                    f"box markup ({m.group(0)[:40]!r})")
+            errs.append(f"{rel}:{line}: {what} outside a generated box region; replace it with "
+                        f"<!-- box:NAME --> and run build (edit _build/boxes/, never a page copy)")
     return errs
+
+
+# The box id every box root carries, and the classes only boxes use.
+BOX_COPY_RE = re.compile(rf'\bdata-box="(?P<id>{BOX_NAME})"|\bclass="(?:[^"]*\s)?sbox(?:-fig)?(?:\s[^"]*)?"')
+
+
+def open_paragraph(text: str, pos: int) -> bool:
+    """Is pos inside a <p> element (an opened, not yet closed paragraph)?"""
+    start = text.rfind("<p", 0, pos)
+    while start != -1 and not re.match(r"<p[\s>]", text[start:start + 3]):
+        start = text.rfind("<p", 0, start)
+    return start != -1 and text.find("</p>", start, pos) == -1 and \
+        not re.search(r"<(?:div|aside|figure|section|h[1-6]|ul|ol|pre|table)\b", text[start:pos])
 
 
 BOXES = load_boxes()
 
 
 # ── freshness (site:verified region) ───────────────────────────────────────
-# Every lesson and tutorial shows when it was last verified, as a span at the
-# end of its lesson-meta row. The date is [pages."<path>"].verified in
-# site.toml when set (a re-check that changed nothing), else the date of the
-# page's last content commit (lastmod: the regions this script writes do not
-# count). The same date is the JSON-LD dateModified; `check` warns when it is
-# older than [academy].stale_after_days.
+# Every lesson and tutorial shows a freshness date as a span at the end of its
+# lesson-meta row. "Verified: <date>" only when [pages."<path>"].verified is
+# set by hand in site.toml (someone re-checked the facts); otherwise
+# "Updated: <date>", the date of the page's last content commit (lastmod: the
+# regions this script writes do not count), which says nothing about whether
+# the facts were re-checked. The same date is the JSON-LD dateModified; `check`
+# warns when it is older than [academy].stale_after_days.
 
 VERIFIED_REGION_RE = re.compile(r"<!--\s*site:verified\b.*?<!--\s*/site:verified\s*-->", re.S)
 LESSON_META_RE = re.compile(r'(<div class="lesson-meta"[^>]*>)(.*?)(\n?[ \t]*)(</div>)', re.S)
@@ -1133,12 +1166,22 @@ def has_verified(rel: str) -> bool:
     return page_type(rel) in ("lesson", "tutorial")
 
 
+def verified_by_hand(rel: str) -> str | None:
+    """[pages."<path>"].verified from site.toml (ISO), or None."""
+    d = CFG.get("pages", {}).get(rel, {}).get("verified")
+    return str(d) if d else None
+
+
+def freshness_label(rel: str) -> str:
+    """"Verified" only for a hand-set re-check date, else "Updated"."""
+    return "Verified" if verified_by_hand(rel) else "Updated"
+
+
 def verified_date(rel: str, text: str) -> str | None:
-    """The page's verified date (ISO), or None for pages that show none."""
+    """The page's freshness date (ISO), or None for pages that show none."""
     if not has_verified(rel) or not LESSON_META_RE.search(text):
         return None
-    d = CFG.get("pages", {}).get(rel, {}).get("verified")
-    return str(d) if d else lastmod(rel, text)
+    return verified_by_hand(rel) or lastmod(rel, text)
 
 
 def human_date(iso: str) -> str:
@@ -1154,7 +1197,7 @@ def build_verified(rel: str, text: str, date: str | None) -> str:
     inner = VERIFIED_REGION_RE.sub("", m.group(2)).rstrip()
     indent = (re.findall(r"\n([ \t]*)<span", inner) or [m.group(3).lstrip("\n") + "  "])[-1]
     region = (f"<!-- site:verified: generated by _build/site.py from git or site.toml -->"
-              f'<span class="lesson-meta__verified"><strong>Verified:</strong> '
+              f'<span class="lesson-meta__verified"><strong>{freshness_label(rel)}:</strong> '
               f'<time datetime="{date}">{human_date(date)}</time></span><!-- /site:verified -->')
     return text[:m.start(2)] + inner + "\n" + indent + region + m.group(3) + m.group(4) + text[m.end(4):]
 
@@ -1375,7 +1418,8 @@ class Visible(HTMLParser):
         self.headings: dict[str, str] = {}
         self.crumbs: list[tuple[str, str | None]] = []
         self.level = self.time = self.published = None
-        self.verified = None             # <time datetime> in the lesson-meta "Verified" span
+        self.verified = None             # <time datetime> in the lesson-meta "Updated"/"Verified" span
+        self.verified_label = None       # "Updated" or "Verified"
         self.verified_count = 0
         self.quiz_raw: str | None = None
         self.quiz_count = 0   # the build reads only the first quiz; check fails on a second
@@ -1514,6 +1558,9 @@ class Visible(HTMLParser):
                 self.level = m.group(2)
             elif m:
                 self.time = m.group(2)
+        elif k == "verified":
+            m = re.match(r"(\w+):", text)
+            self.verified_label = self.verified_label or (m.group(1) if m else text)
         elif k == "quiz":
             self.quiz_count += 1
             if self.quiz_raw is None:
@@ -1750,7 +1797,7 @@ def check_jsonld(rel: str, text: str, vis: dict, pages: set[str], texts: dict) -
             if duration_minutes(n.get("timeRequired")) != duration_minutes(v.time):
                 err(f"timeRequired {n.get('timeRequired')!r} is not the visible time {v.time!r}")
             if n.get("dateModified") != v.verified:
-                err(f"dateModified {n.get('dateModified')!r} is not the visible Verified date {v.verified!r}")
+                err(f"dateModified {n.get('dateModified')!r} is not the visible Updated/Verified date {v.verified!r}")
         if "HowTo" in types:
             if duration_minutes(n.get("totalTime")) != duration_minutes(v.time):
                 err(f"HowTo.totalTime {n.get('totalTime')!r} is not the visible time {v.time!r}")
@@ -1917,15 +1964,35 @@ def sig_words(s: str) -> set[str]:
     return out
 
 
+def title_words(vis: dict, rel: str) -> set[str]:
+    """Significant words of a page's h1 and file name."""
+    v = vis.get(rel)
+    return sig_words(" ".join([(v.h1 or "") if v else "", rel.rsplit("/", 1)[-1][:-5]]))
+
+
 def names_lesson(hint: str, vis: dict, rel: str) -> bool:
     """Does a title hint ("Capstone C", "next-token prediction") name this page?
-    True when the hint has no significant words (nothing to compare)."""
+    It must share a significant word with the page's title or file name, and no
+    other lesson may match it better. Words are weighted by rarity (1 / the
+    number of lessons whose title uses them), so "Lesson 0.12 (picking a base
+    model)" fails: "base" and "model" fit 0.12 too, but "picking" fits only
+    0.13. Ties pass ("QLoRA" fits two lessons equally). True when the hint has
+    no significant words (nothing to compare)."""
     want = sig_words(hint)
     if not want:
         return True
-    v = vis.get(rel)
-    have = sig_words(" ".join([v.h1 or "" if v else "", rel.rsplit("/", 1)[-1][:-5]]))
-    return bool(want & have)
+    words = {r: title_words(vis, r) for r in vis if page_type(r) == "lesson"}
+    words.setdefault(rel, title_words(vis, rel))
+    if not want & words[rel]:
+        return False
+    df: dict[str, int] = {}
+    for ws in words.values():
+        for w in ws & want:
+            df[w] = df.get(w, 0) + 1
+
+    def score(r: str) -> float:
+        return sum(1 / df[w] for w in want & words[r])
+    return score(rel) >= max(score(r) for r in words) - 1e-9
 
 
 def pager_links(text: str) -> tuple[tuple[str, str] | None, tuple[str, str] | None]:
@@ -2055,27 +2122,35 @@ def plain_body(text: str) -> str:
 
 
 def check_freshness(vis: dict, today: dt.date | None = None) -> tuple[list[str], list[str]]:
-    """(errors, stale pages): every lesson and tutorial shows one Verified date;
-    pages verified more than STALE_AFTER_DAYS ago are listed for a warning."""
+    """(errors, stale pages): every lesson and tutorial shows one freshness
+    date, labelled "Verified" exactly when site.toml sets a hand-checked
+    [pages."<path>"].verified (and then showing that date), else "Updated";
+    pages dated more than STALE_AFTER_DAYS ago are listed for a warning."""
     errs, stale = [], []
     for rel, v in sorted(vis.items()):
         if not has_verified(rel):
             continue
         if v.verified_count > 1:
-            errs.append(f"{rel}: {v.verified_count} Verified dates (want 1)")
+            errs.append(f"{rel}: {v.verified_count} Updated/Verified dates (want 1)")
         if v.verified is None:
             if v.level or v.time:
-                errs.append(f"{rel}: no Verified date in the lesson-meta row (run build)")
+                errs.append(f"{rel}: no Updated/Verified date in the lesson-meta row (run build)")
             continue
+        want, by_hand = freshness_label(rel), verified_by_hand(rel)
+        if v.verified_label != want:
+            errs.append(f"{rel}: the date is labelled {v.verified_label!r}, want {want!r} (\"Verified\" only "
+                        f"when [pages.\"{rel}\"].verified is set by hand in _build/site.toml)")
+        elif by_hand and v.verified != by_hand:
+            errs.append(f"{rel}: Verified date {v.verified} is not site.toml's {by_hand} (run build)")
         try:
             days = stale_days(v.verified, today)
         except ValueError:
-            errs.append(f"{rel}: Verified date {v.verified!r} is not YYYY-MM-DD")
+            errs.append(f"{rel}: {v.verified_label} date {v.verified!r} is not YYYY-MM-DD")
             continue
         if days > STALE_AFTER_DAYS:
             stale.append(f"{rel} ({v.verified}, {days} days)")
         elif days < 0:
-            errs.append(f"{rel}: Verified date {v.verified} is in the future")
+            errs.append(f"{rel}: {v.verified_label} date {v.verified} is in the future")
     return errs, stale
 
 
@@ -2116,7 +2191,7 @@ def render() -> tuple[dict[str, str], dict[str, str], dict[str, "Facts"]]:
     """Return ({rel: new text} for pages, {rel: new text} for generated files,
     {rel: visible facts} for pages)."""
     pages = discover()
-    # Boxes expand first: they are page content, so the Verified date (from
+    # Boxes expand first: they are page content, so the Updated/Verified date (from
     # git) must see the expanded page, or the build after a box change would
     # move the date a second time.
     old = {p: build_boxes((ROOT / p).read_text(encoding="utf-8")) for p in pages}
@@ -2159,7 +2234,7 @@ def strip_lastmod(x: str) -> str:
 
 
 def strip_verified(x: str) -> str:
-    """A page minus the dates the Verified line drives (region, dateModified,
+    """A page minus the dates the Updated/Verified line drives (region, dateModified,
     article:modified_time), to tell a date-only drift from real staleness."""
     x = VERIFIED_REGION_RE.sub("", x)
     x = re.sub(r'"dateModified": "[^"]*"', "", x)
@@ -2199,7 +2274,7 @@ def cmd_check(args) -> int:
     ferr, stale = check_freshness(vis)
     errors += ferr
     if stale:
-        warns.append(f"{len(stale)} page(s) not verified in over {STALE_AFTER_DAYS} days (re-check them, then "
+        warns.append(f"{len(stale)} page(s) not updated or verified in over {STALE_AFTER_DAYS} days (re-check them, then "
                      f"set [pages.\"<path>\"].verified in _build/site.toml)"
                      + (": " + ", ".join(stale) if args.verbose else ""))
     for rel, text in list(pages.items()) + list(gen.items()):
@@ -2210,7 +2285,7 @@ def cmd_check(args) -> int:
         if rel == CFG["sitemap"]["path"] and cur is not None and strip_lastmod(cur) == strip_lastmod(text):
             warns.append(f"{rel}: lastmod dates differ from git (run build after committing to refresh)")
         elif cur is not None and strip_verified(cur) == strip_verified(text):
-            warns.append(f"{rel}: Verified date differs from git (run build after committing to refresh)")
+            warns.append(f"{rel}: Updated/Verified date differs from git (run build after committing to refresh)")
         else:
             errors.append(f"{rel}: out of date, run `python3 _build/site.py build`")
     for rel, text in gen.items():

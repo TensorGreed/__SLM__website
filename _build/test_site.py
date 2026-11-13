@@ -272,6 +272,23 @@ class SequenceChecks(unittest.TestCase):
         errs = self.refs(pages, vis)
         self.assertTrue(any("'Lesson 4.7' is followed by 'serving and inference'" in e for e in errs), errs)
 
+    def test_title_hint_with_overlapping_words_but_wrong_lesson_fails(self):
+        # R1 S4: "base" and "model" also fit 0.12 (base vs instruct), but the
+        # hint names 0.13 (picking a base model); overlap alone used to pass.
+        rel = "academy/advanced/speculative-decoding.html"
+        nums = S.lesson_numbers(self.vis, self.pages)
+        self.assertTrue(S.names_lesson("picking a base model", self.vis, nums["0.13"]))
+        self.assertFalse(S.names_lesson("picking a base model", self.vis, nums["0.12"]))
+        self.assertTrue(S.names_lesson("base vs instruct", self.vis, nums["0.12"]))
+        self.assertFalse(S.names_lesson("base vs instruct", self.vis, nums["0.13"]))
+        pages, vis = self.mutate(rel, "Lesson 4.8 — serving and inference",
+                                 "Lesson 0.12 (picking a base model) and Lesson 4.8 — serving and inference")
+        errs = self.refs(pages, vis)
+        self.assertTrue(any("'Lesson 0.12' is followed by 'picking a base model'" in e for e in errs), errs)
+        pages, vis = self.mutate(rel, "Lesson 4.8 — serving and inference",
+                                 "Lesson 0.13 (picking a base model) and Lesson 4.8 — serving and inference")
+        self.assertEqual(self.refs(pages, vis), [])
+
     def test_linked_reference_must_link_that_lesson(self):
         rel = "academy/with-brewslm/eval-pack-and-failure-cluster-reference.html"
         pages, vis = self.mutate(rel, 'href="eval-packs-and-failure-clusters.html">Lesson 3.8</a>',
@@ -339,7 +356,7 @@ class FreshnessChecks(unittest.TestCase):
         pages = {**self.pages, self.lesson: moved}
         vis = {r: S.Visible(r, t) for r, t in pages.items()}
         errs, _ = S.check_jsonld(self.lesson, moved, vis, set(pages), pages)
-        self.assertTrue(any("is not the visible Verified date '2025-01-02'" in e for e in errs), errs)
+        self.assertTrue(any("is not the visible Updated/Verified date '2025-01-02'" in e for e in errs), errs)
 
     def test_stale_and_future_dates(self):
         text = self.pages[self.lesson]
@@ -351,7 +368,18 @@ class FreshnessChecks(unittest.TestCase):
         self.assertEqual(S.check_freshness({self.lesson: fresh}, today), ([], []))
         self.assertTrue(any("in the future" in e for e in S.check_freshness({self.lesson: future}, today)[0]))
         missing = S.Visible(self.lesson, S.VERIFIED_REGION_RE.sub("", text))
-        self.assertTrue(any("no Verified date" in e for e in S.check_freshness({self.lesson: missing}, today)[0]))
+        self.assertTrue(any("no Updated/Verified date" in e for e in S.check_freshness({self.lesson: missing}, today)[0]))
+
+    def test_git_date_is_labelled_updated(self):
+        # R1 S5: the last content-commit date is not a verification.
+        text = self.pages[self.lesson]
+        self.assertIsNone(S.verified_by_hand(self.lesson))
+        self.assertIn("<strong>Updated:</strong> <time", text)
+        self.assertNotIn("<strong>Verified:</strong>", text)
+        self.assertEqual(S.Visible(self.lesson, text).verified_label, "Updated")
+        relabelled = text.replace("<strong>Updated:</strong>", "<strong>Verified:</strong>")
+        errs = S.check_freshness({self.lesson: S.Visible(self.lesson, relabelled)}, dt.date(2026, 11, 13))[0]
+        self.assertTrue(any("labelled 'Verified', want 'Updated'" in e for e in errs), errs)
 
     def test_site_toml_override_wins(self):
         pages_cfg = S.CFG.setdefault("pages", {})
@@ -359,6 +387,18 @@ class FreshnessChecks(unittest.TestCase):
         pages_cfg[self.lesson] = {**(saved or {}), "verified": "2026-10-01"}
         try:
             self.assertEqual(S.verified_date(self.lesson, self.pages[self.lesson]), "2026-10-01")
+            built = S.build_verified(self.lesson, self.pages[self.lesson], "2026-10-01")
+            self.assertIn('<strong>Verified:</strong> <time datetime="2026-10-01">1 Oct 2026</time>', built)
+            v = S.Visible(self.lesson, built)
+            self.assertEqual(v.verified_label, "Verified")
+            self.assertEqual(S.check_freshness({self.lesson: v}, dt.date(2026, 11, 13))[0], [])
+            # a hand-set date the page doesn't show yet, or an "Updated" label, fails
+            stale = S.Visible(self.lesson, self.pages[self.lesson])
+            errs = S.check_freshness({self.lesson: stale}, dt.date(2026, 11, 13))[0]
+            self.assertTrue(any("labelled 'Updated', want 'Verified'" in e for e in errs), errs)
+            wrong = S.Visible(self.lesson, S.build_verified(self.lesson, self.pages[self.lesson], "2026-10-02"))
+            errs = S.check_freshness({self.lesson: wrong}, dt.date(2026, 11, 13))[0]
+            self.assertTrue(any("is not site.toml's 2026-10-01" in e for e in errs), errs)
         finally:
             if saved is None:
                 del pages_cfg[self.lesson]
@@ -367,7 +407,7 @@ class FreshnessChecks(unittest.TestCase):
 
 
 class BoxChecks(unittest.TestCase):
-    BOXES = {"demo-box": "<!--\nsources: here\n-->\n<aside class=\"sbox\"><p>Demo v1</p></aside>\n"}
+    BOXES = {"demo-box": "<!--\nsources: here\n-->\n<aside class=\"sbox\" data-box=\"demo-box\"><p>Demo v1</p></aside>\n"}
 
     def page(self, marker: str) -> str:
         return f"<main>\n<p>Before</p>\n{marker}\n<p>After</p>\n</main>\n"
@@ -447,7 +487,7 @@ class BoxChecks(unittest.TestCase):
             self.assertEqual(S.build_boxes(self.page(marker), self.BOXES), self.page(marker))
 
     def test_box_file_rules(self):
-        ok = '<figure class="sbox-fig"><svg class="sbox-svg"><rect class="sv-node" fill="none"></rect></svg>' \
+        ok = '<figure class="sbox-fig" data-box="fine"><svg class="sbox-svg"><rect class="sv-node" fill="none"></rect></svg>' \
              '<a href="#abc">x</a> &#123;</figure>'
         self.assertEqual(S.box_file_errors({"fine": ok}), [])
         bad = {
@@ -460,12 +500,42 @@ class BoxChecks(unittest.TestCase):
             "nested": "<p>x</p><!-- box:other -->",
             "empty": "<!-- only a doc comment -->\n",
             "Bad_Name": "<p>x</p>",
+            "no-id": '<aside class="sbox"><p>x</p></aside>',
+            "wrong-id": '<aside class="sbox" data-box="other"><p>x</p></aside>',
         }
         for name, body in bad.items():
             self.assertTrue(S.box_file_errors({name: body}), name)
 
     def test_doc_comment_is_not_scanned_for_colours(self):
-        self.assertEqual(S.box_file_errors({"doc": "<!-- was #000000, style=\"x\" -->\n<p>x</p>"}), [])
+        self.assertEqual(S.box_file_errors({"doc": "<!-- was #000000, style=\"x\" -->\n<p data-box=\"doc\">x</p>"}), [])
+
+    def test_hand_copied_box_without_its_region_fails(self):
+        # R1 S3: strip the region comments, then edit the copy: still caught.
+        once = S.build_boxes(self.page("<!-- box:demo-box -->"), self.BOXES)
+        forked = once.replace(S.box_begin("demo-box"), "").replace(S.box_end("demo-box"), "")
+        forked = forked.replace("Demo v1", "Demo (forked)")
+        errs = S.check_boxes({"p.html": forked}, self.BOXES)
+        self.assertTrue(any("a copy of box 'demo-box' outside a generated box region" in e for e in errs), errs)
+        # ... and with the id removed too, the box classes still give it away
+        no_id = forked.replace(' data-box="demo-box"', "")
+        errs = S.check_boxes({"p.html": no_id}, self.BOXES)
+        self.assertTrue(any("box markup" in e and "outside a generated box region" in e for e in errs), errs)
+
+    def test_real_page_with_a_forked_box_fails(self):
+        rel = "academy/sft-fundamentals/evaluation-fundamentals.html"
+        text = real_pages()[rel]
+        self.assertIn(S.box_begin("small-test-sets"), text)
+        forked = text.replace(S.box_begin("small-test-sets"), "").replace(S.box_end("small-test-sets"), "")
+        forked = forked.replace("22 right (44%)", "23 right (46%)", 1)
+        errs = S.check_boxes({rel: forked}, S.BOXES)
+        self.assertTrue(any(e.startswith(rel) and "a copy of box 'small-test-sets'" in e for e in errs), errs)
+
+    def test_marker_inside_a_paragraph_fails(self):
+        text = "<main>\n<p>Before <!-- box:demo-box --> after</p>\n</main>\n"
+        errs = S.check_boxes({"p.html": text}, self.BOXES)
+        self.assertTrue(any("sits inside a <p>" in e for e in errs), errs)
+        multi = "<main>\n<p>Before\n  <!-- box:demo-box -->\nafter</p>\n</main>\n"
+        self.assertTrue(any("sits inside a <p>" in e for e in S.check_boxes({"p.html": multi}, self.BOXES)))
 
 
 if __name__ == "__main__":
