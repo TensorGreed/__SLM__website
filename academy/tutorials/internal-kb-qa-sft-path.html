@@ -512,6 +512,11 @@
           <dt><code>qa_sft_cluster_targeted</code> — for iteration 2 (CLUSTER_TARGETED mode)</dt>
           <dd>After your first training pass + eval, the platform's failure-cluster surface will identify question-types the model is weak on. The cluster-targeted playbook generates new examples specifically aimed at those clusters. <strong>Don't run this on iteration 1</strong> — there's no failure cluster yet. It's the right tool for round 2.</dd>
         </dl>
+        <div class="callout callout--warning">
+          <p class="callout__label">Known leak: the paraphrase playbook also reads your final answer key</p>
+          <p>Today <code>qa_sft_paraphrase</code> picks its seed rows from <em>both</em> halves of the answer key, the <strong>Practice answer key</strong> (<code>gold_dev</code>) and the <strong>Final answer key</strong> (<code>gold_test</code>), and every row it writes keeps the seed's answer word for word. Accepted rows train, so reworded final-answer-key questions go into training with their answers, and a later score on that final set is inflated. Until a product fix ships, seed from practice rows only: run the playbook while the <strong>Final answer key</strong> is still empty and add the final rows afterwards, or skip the playbook. Rows you add by hand go to the Practice answer key unless you pick Final in the card's selector.</p>
+        </div>
+
         <p>Open <strong>Data → Generate → Details → Playbooks</strong>. The qa-sft recipe surfaces the paraphrase card; click it, set target count to 3-5× your answer-key size, pick a backend (a local model, a cloud provider key or any OpenAI-compatible endpoint). Generation runs as a background Job — the notification bell tracks progress, and <strong>Details → Playbook center</strong> keeps the run history.</p>
 
         <div class="callout callout--key">
@@ -646,7 +651,7 @@
         <p>You have an exported direct-answer internal-KB assistant. Three obvious next moves:</p>
         <dl>
           <dt>Refresh every N weeks when the KB changes</dt>
-          <dd>qa-sft memorises facts. When facts change, you retrain. Set a recurring calendar item — every 4-8 weeks for an internal-IT helpdesk. Update the answer key with new canonical answers, re-run the paraphrase playbook on the new rows, retrain. &lt; 30 minutes once you've done it once.</dd>
+          <dd>qa-sft memorises facts. When facts change, you retrain. Set a recurring calendar item — every 4-8 weeks for an internal-IT helpdesk. Update the answer key with new canonical answers, re-run the paraphrase playbook on the new rows (until the leak noted in the synthetic-drills section is fixed, that re-run also seeds from your final answer key; skip it, or treat the next final score as optimistic), retrain. &lt; 30 minutes once you've done it once.</dd>
           <dt>Grow the corpus thoughtfully (don't just dump everything in)</dt>
           <dd>The temptation when the model works is to throw every Confluence page at it. Resist. Each added row is a fact the model has to keep memorised; pile on too many and the memorisation pressure costs accuracy on the original rows. Add new answer-key rows when you have a real "we got this question N times and didn't have a good answer" signal.</dd>
           <dt>Watch the reroute signal — the honest "you've outgrown qa-sft" tripwire</dt>
