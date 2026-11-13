@@ -119,10 +119,10 @@
           <p class="eyebrow">Open-source small language model fine-tuning platform</p>
           <h1>Fine-tune small language models from a base model on your own data.</h1>
           <p class="hero-sub">
-            Start from your documents. BrewSLM first measures the base model, with and without
-            your passages, so you know whether retrieval alone is enough. If it isn't, it writes
-            training data from those passages with a local or cloud model you choose, trains a
-            small model on your machine, and tells you whether the result beat the base model or
+            Start from your documents. BrewSLM writes training pairs and a held-out answer key
+            from your passages with a local or cloud model you choose, then measures the base
+            model with and without those passages, so you know whether retrieval alone is enough
+            before you train. If it isn't, it trains a small model on your machine, and tells you whether the result beat the base model or
             sits within noise. Then it exports an artifact you can ship and inspect. Existing
             labelled datasets import too.
           </p>
@@ -158,7 +158,7 @@
             <span>status: ready</span>
           </div>
           <div class="terminal-block">
-            <p># 1. Data → Sources: upload your PDFs, clean them into passages</p>
+            <p># 1. Data → Sources: upload PDFs, clean into passages</p>
             <p># 2. Documents → Q&amp;A: pairs from each passage, plus a</p>
             <p>#    held-out answer key the model never trains on</p>
             <p># 3. Pre-training check, judged on the test split:</p>
@@ -448,7 +448,7 @@
           </div>
           <div class="arch-note">
             <p>
-              <strong>Audit spine:</strong> imports, document uploads, training starts, timeouts
+              <strong>Audit spine:</strong> imports, document uploads, training starts
               and dispatch errors, eval runs, exports and deployment actions emit a RunEvent with stage,
               structured payload, and (on errors) a reason code from a fixed taxonomy. Same stream feeds the run timeline and failure clusters on
               Ship → Monitor, and the support bundle.
@@ -489,9 +489,9 @@
             <summary>Where does my data go?</summary>
             <p>
               Into the project's local directory on your machine. SQLite metadata, JSONL row
-              storage, file artifacts. The only call that sends your data out is the optional
-              teacher model (for synthetic generation), if you point it at a hosted endpoint —
-              local Ollama works fine. Downloads from Hugging Face, Kaggle, git or web sources and
+              storage, file artifacts. Your data leaves only when you point a model (the data
+              writer for synthetic generation, an LLM judge, or an answer-key drafter) at a hosted
+              endpoint; local Ollama works for all three. Downloads from Hugging Face, Kaggle, git or web sources and
               a Hub publish also use the network.
             </p>
           </details>
