@@ -308,8 +308,8 @@
 
         <h2>What scale costs: memory, latency, money</h2>
         <ul>
-          <li><strong>Memory (VRAM).</strong> Parameters live in GPU memory. A rough rule: bytes ≈ parameters × bytes-per-parameter. At 2 bytes each (bf16), a 135M model needs ~0.27&nbsp;GB just for weights; a 70B model needs ~140&nbsp;GB — many GPUs. Full fine-tuning needs several times more: about 16 bytes per parameter with the usual mixed-precision AdamW setup (weights, gradients and optimizer state), before activations. That is why fine-tuning a giant model is a data-center activity and fine-tuning an SLM fits on one consumer GPU.</li>
-          <li><strong>Latency.</strong> Generating each token runs the whole network. More parameters → more arithmetic per token → slower responses. Small models reply faster, which matters for interactive and high-volume use. A useful upper bound: generating one token at a time, a model must read all its weights from memory for each token, so tokens per second ≈ memory bandwidth ÷ bytes of weights read per token.</li>
+          <li><strong>Memory (VRAM).</strong> Parameters live in GPU memory. A rough rule: bytes ≈ parameters × bytes-per-parameter. At 2 bytes each (bf16), a 135M model needs ~0.27&nbsp;GB just for weights; a 70B model needs ~140&nbsp;GB — many GPUs. Full fine-tuning needs several times more: about 16 bytes per parameter with the usual mixed-precision AdamW setup (weights, gradients and optimizer state), before activations (a rule of thumb from the ZeRO paper, Rajbhandari et al. 2019, arXiv 1910.02054; the exact figure depends on the optimizer and precision). That is why fine-tuning a giant model is a data-center activity and fine-tuning an SLM fits on one consumer GPU.</li>
+          <li><strong>Latency.</strong> Generating each token runs the whole network. More parameters → more arithmetic per token → slower responses. Small models reply faster, which matters for interactive and high-volume use. A useful upper bound: generating one token at a time, a model must read all its weights from memory for each token, so tokens per second ≈ memory bandwidth ÷ bytes of weights read per token. Worked example on a GPU with 1,000&nbsp;GB/s of memory bandwidth: SmolLM2-135M in bf16 is 0.27&nbsp;GB, so at most about 1,000 ÷ 0.27 ≈ 3,700 tokens/s; a 7B model in bf16 is 14&nbsp;GB, so at most about 70 tokens/s. Real numbers are lower (the KV cache and other overheads are also read), so treat this as a ceiling, not a forecast.</li>
           <li><strong>Cost.</strong> Whether you pay an API per token or rent a GPU per hour, cost tracks compute, which tracks size. A task served billions of times is dramatically cheaper on a small model.</li>
         </ul>
 
@@ -340,15 +340,33 @@
         <h2>When to pick which</h2>
         <ul>
           <li><strong>Pick a large general model</strong> when you need broad, open-ended capability, low volume, and don't want to train anything — a do-everything assistant, exploratory work, or the first prototype.</li>
-          <li><strong>Pick a fine-tuned small model</strong> when you have one repeatable task at meaningful volume, care about cost/latency/privacy, or need to run locally/offline. This is BrewSLM's target: take a small base, fine-tune it on your data, and ship something cheap and fast that's good enough — and then <em>prove</em> it's good enough (Track 4's SLM-vs-frontier report does exactly this).</li>
+          <li><strong>Pick a fine-tuned small model</strong> when you have one repeatable task at meaningful volume, care about cost/latency/privacy, or need to run locally/offline. This is BrewSLM's target: take a small base, fine-tune it on your data, and ship something cheap and fast that's good enough — and then <em>prove</em> it's good enough. BrewSLM's SLM-vs-frontier report does exactly this: it compares your model with a frontier model evaluated on the same eval set, and puts cost and latency next to quality. The Track 4 <a class="inline-link" href="../advanced/capstone-graduating.html">capstone</a> shows how to stack that evidence into a ship decision.</li>
         </ul>
         <div class="callout callout--note">
           <p class="callout__label">A useful habit</p>
-          <p>Frame the decision as quality-per-dollar (or per-millisecond) <em>for your task</em>, not quality in the abstract. A model that's 95% as good at 2% of the cost is usually the better engineering choice — and you can only know those numbers by evaluating, which is why evaluation gets its own lessons.</p>
+          <p>Frame the decision as quality-per-dollar (or per-millisecond) <em>for your task</em>, not quality in the abstract. A model that's 95% as good at 2% of the cost is usually the better engineering choice (a heuristic: it depends on what the missing 5% costs you) — and you can only know those numbers by evaluating, which is why evaluation gets its own lessons.</p>
         </div>
 
         <h2>Where we go next</h2>
         <p>You now have the whole mental model: what a model is, how it learns, how text becomes math, how the Transformer and next-token prediction produce language, the four levers for steering a model, and why small models are worth fine-tuning. The next lesson zooms all the way out to the shape of a real SLM project — the loop you'll execute for the rest of the course.</p>
+
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>LLMs and SLMs share the same machinery; the difference is the parameter count, and this course calls up to roughly 10B "small".</li>
+            <li>Size drives memory (≈ params × bytes per param for weights, about 16 bytes per param for full fine-tuning), latency (bounded by bandwidth ÷ bytes read per token) and cost.</li>
+            <li>A fine-tuned SLM can match a much larger model on one narrow task, and can also lose; only a measured comparison on your task tells you which.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>You are sizing a 1.7B model for a GPU with 24&nbsp;GB of memory and 300&nbsp;GB/s of bandwidth. (1) How much memory do the bf16 weights need, and what is the decode ceiling in tokens/s at batch size 1? (2) Same questions for a 4-bit version (about 0.5 bytes per parameter). (3) Does full fine-tuning in mixed-precision AdamW fit, by the 16-bytes rule?</p>
+          <details>
+            <summary>Show answer</summary>
+            <p>(1) 1.7B × 2 bytes = 3.4&nbsp;GB; 300 ÷ 3.4 ≈ 88 tokens/s at most. (2) 1.7B × 0.5 bytes ≈ 0.85&nbsp;GB (a little more in practice, for scales and unquantised layers); 300 ÷ 0.85 ≈ 350 tokens/s at most. (3) 1.7B × 16 bytes ≈ 27&nbsp;GB before activations, so no: it does not fit in 24&nbsp;GB. That is why Track 1 reaches for LoRA, which trains a small adapter and keeps the base weights frozen.</p>
+          </details>
+        </div>
 
         <section class="key-terms">
           <h2>Key terms</h2>
@@ -357,6 +375,7 @@
             <dt>Small language model (SLM)</dt><dd>A model with relatively few parameters (up to roughly 10 billion; this course uses 135 million).</dd>
             <dt>VRAM</dt><dd>GPU memory; weights need ≈ params × bytes-per-param, full fine-tuning about 16 bytes per parameter plus activations.</dd>
             <dt>Latency</dt><dd>Time to produce output; rises with model size since each token runs the whole network.</dd>
+            <dt>Memory bandwidth</dt><dd>How fast the GPU reads memory; at batch size 1, tokens/s ≤ bandwidth ÷ bytes of weights read per token.</dd>
             <dt>Cost per token</dt><dd>The price of generating output, which tracks compute and therefore size.</dd>
             <dt>Narrow vs general task</dt><dd>A single repeatable job vs open-ended capability; narrow tasks favor fine-tuned SLMs.</dd>
           </dl>

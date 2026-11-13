@@ -320,7 +320,7 @@
         <p>
           There is no universal "best" SLM. There are constraints, and the smallest model that
           meets your constraints is the right one to start with. The previous lesson sorted out
-          <em>which flavour</em> of a family to use (almost always: instruct). This lesson is
+          <em>which flavour</em> of a family to use (usually: instruct). This lesson is
           the checklist for picking <em>which family</em> in the first place.
         </p>
 
@@ -335,16 +335,65 @@
           <li><strong>Instruct quality</strong> — how aligned is the starting point already?</li>
           <li><strong>Context length</strong> — how long is your input plus output?</li>
           <li><strong>Size &amp; latency budget</strong> — what fits, what's fast enough, what costs what?</li>
-          <li><strong>Community</strong> — does the ecosystem support what you want to do next?</li>
+          <li><strong>Community</strong> — does the ecosystem, including your serving stack, support what you want to do next?</li>
         </ul>
+        <figure class="diagram">
+          <svg viewBox="0 0 640 290" role="img" aria-label="A decision flow for picking a base model. Check the licence, then tokenizer and language fit, then context length; a no at any of these drops the candidate. Then take the smallest size on the ladder 135M, 360M, 1B, 3B, 7B, run a baseline eval and fine-tune. If it clears the bar, ship; if not after honest data work, step up one size.">
+            <defs><marker id="pk6" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" style="fill:var(--text-secondary)"></path></marker></defs>
+            <g style="fill:var(--bg-tertiary);stroke:var(--border-strong)">
+              <rect x="150" y="16" width="260" height="38" rx="6"></rect>
+              <rect x="150" y="70" width="260" height="38" rx="6"></rect>
+              <rect x="150" y="124" width="260" height="38" rx="6"></rect>
+              <rect x="150" y="178" width="260" height="38" rx="6"></rect>
+              <rect x="150" y="232" width="260" height="38" rx="6" style="stroke:var(--text-primary)"></rect>
+            </g>
+            <g font-family="Geist, sans-serif" font-size="12" text-anchor="middle" style="fill:var(--text-primary)">
+              <text x="280" y="40">Licence (model + data) allows your use?</text>
+              <text x="280" y="94">Tokenizer and language fit your data?</text>
+              <text x="280" y="148">Context fits your real input + output?</text>
+              <text x="280" y="196">Smallest size on the ladder</text>
+              <text x="280" y="250">Baseline eval, then fine-tune:</text>
+              <text x="280" y="264">clears your bar?</text>
+            </g>
+            <text x="280" y="210" text-anchor="middle" font-family="Geist Mono, monospace" font-size="11" style="fill:var(--text-secondary)">135M → 360M → 1B → 3B → 7B</text>
+            <g style="stroke:var(--text-secondary)">
+              <line x1="280" y1="54" x2="280" y2="66" marker-end="url(#pk6)"></line>
+              <line x1="280" y1="108" x2="280" y2="120" marker-end="url(#pk6)"></line>
+              <line x1="280" y1="162" x2="280" y2="174" marker-end="url(#pk6)"></line>
+              <line x1="280" y1="216" x2="280" y2="228" marker-end="url(#pk6)"></line>
+              <line x1="410" y1="35" x2="436" y2="35" marker-end="url(#pk6)"></line>
+              <line x1="410" y1="89" x2="436" y2="89" marker-end="url(#pk6)"></line>
+              <line x1="410" y1="143" x2="436" y2="143" marker-end="url(#pk6)"></line>
+              <line x1="410" y1="251" x2="436" y2="251" marker-end="url(#pk6)"></line>
+            </g>
+            <path d="M150,251 C104,251 104,197 146,197" style="fill:none;stroke:var(--text-tertiary)" stroke-dasharray="4 4" marker-end="url(#pk6)"></path>
+            <g font-family="Geist, sans-serif" font-size="11" style="fill:var(--text-tertiary)">
+              <text x="444" y="39">no: drop the candidate</text>
+              <text x="444" y="93">no: drop the candidate</text>
+              <text x="444" y="147">no: drop the candidate</text>
+              <text x="444" y="255">yes: ship it</text>
+              <text x="52" y="220" text-anchor="middle">no, after</text>
+              <text x="52" y="234" text-anchor="middle">data work:</text>
+              <text x="52" y="248" text-anchor="middle">step up</text>
+            </g>
+          </svg>
+          <figcaption>The checklist as a flow. The first three checks remove candidates; size is a ladder you climb one rung at a time, and only a measured result moves you up.</figcaption>
+        </figure>
 
         <h2>License: can you ship this commercially?</h2>
         <p>
           Check the license <em>before</em> training, not at deploy. Permissive licences
           (Apache 2.0, MIT) let you fine-tune and ship a commercial product without much
           friction. Others — research-only, non-commercial, "acceptable use" addenda — restrict
-          what you can do with derivatives. A fine-tune doesn't reset the licence; the parent
+          what you can do with derivatives. Several popular open families use a custom community
+          licence with its own conditions, such as a user-count threshold or an acceptable-use
+          policy, so read it rather than assume. A fine-tune doesn't reset the licence; the parent
           model's terms travel with it.
+        </p>
+        <p>
+          Data carries terms too. The datasets you fine-tune on have licences, and text generated
+          by another model can come with that model's terms of use. Record where every training
+          row came from, so you can answer the question when someone asks.
         </p>
         <p>
           For this Academy we use a permissively licensed family (Apache 2.0) so every reader
@@ -381,6 +430,12 @@
           two or three candidate instruct models, hand them a few of your real prompts, and
           look at the raw outputs. Baseline quality is your starting line. A fine-tune lifts it,
           but starting closer to the answer means cheaper, faster lifts.
+        </p>
+        <p>
+          Then make it a number: score each candidate, untouched, on your held-out examples. That
+          baseline is what any fine-tune has to beat. BrewSLM records it for you: after each real
+          training run it scores the base model on the same held-out split and reports the lift
+          (Lesson 0.9 explains why this comes first).
         </p>
 
         <h2>Context length: how long is your input?</h2>
@@ -428,6 +483,13 @@
           is fine if you have a strong reason; otherwise the safe pick is one the ecosystem
           already knows.
         </p>
+        <p>
+          Check the serving side too. A brand-new architecture, such as a hybrid that mixes
+          attention with linear-attention layers (Lesson 0.7), can train fine in Transformers
+          but not yet convert to GGUF for llama.cpp, or not yet run in your inference server.
+          Support usually arrives, but sometimes weeks or months later. Before you commit, export
+          and serve the untouched base model once in the runtime you plan to ship on.
+        </p>
 
         <h2>Why this Academy uses SmolLM2-135M-Instruct</h2>
         <p>
@@ -461,6 +523,24 @@
           supervised fine-tuning itself.
         </p>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>Filter candidates by hard constraints first: model and data licence, tokenizer and language fit, context length, and serving-stack support.</li>
+            <li>Start with the smallest size that plausibly works and step up one rung only when a measured result says so.</li>
+            <li>Score each candidate's untouched baseline on your held-out set; that is the bar the fine-tune must beat.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>You are building a commercial email router for German and English mail. Inputs are up to 1,500 tokens. Four candidates: (A) 360M, Apache 2.0, English-only tokenizer, 8k context; (B) 1.5B, research-only licence, multilingual, 32k context; (C) 1B, Apache 2.0, multilingual tokenizer, 32k context; (D) 3B, Apache 2.0, multilingual, 32k context. Walk the flow: which candidates drop out, and which do you baseline first?</p>
+          <details>
+            <summary>Show answer</summary>
+            <p>B drops at the licence check: research-only rules out a commercial product. A is doubtful at the tokenizer check: an English-only tokenizer splits German into many more tokens and the model saw little German, so check its token counts and a few outputs on real German mail before keeping it. Context is fine for all of them (1,500 tokens plus a short label). So baseline C first, the smallest candidate that clearly passes, and keep D as the next rung if C plateaus below your bar after honest data work. If A's German outputs look usable, its baseline costs little to add.</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
@@ -469,6 +549,8 @@
             <dt>Instruct quality</dt><dd>How well an instruct model already follows instructions and respects formats before any fine-tuning; the starting line a fine-tune lifts from.</dd>
             <dt>Context length</dt><dd>The maximum tokens the model can take in plus produce; pick to match your real input/output distribution, not the worst case.</dd>
             <dt>Small first</dt><dd>Default to the smallest model that plausibly works; step up only when the eval makes the case.</dd>
+            <dt>Baseline</dt><dd>The untouched candidate's score on your held-out set; the bar the fine-tune must beat.</dd>
+            <dt>Data licence</dt><dd>The terms on your training data, including data generated by another model; they travel with the fine-tune too.</dd>
             <dt>Community support</dt><dd>Active fine-tunes, shared evals, tools that work day one; the practical reason to favour well-known families when other constraints tie.</dd>
           </dl>
         </section>

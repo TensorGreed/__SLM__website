@@ -316,35 +316,48 @@
 
         <h2>Lever 4: (Continued) pretraining (build base ability)</h2>
         <p>The heaviest lever: train on a very large corpus of raw text to build broad capability or deep domain fluency (e.g., adapting a general model to legal or biomedical language). This is what creates base models in the first place. <strong>Continued pretraining</strong> extends a base model on a big domain corpus before any task-specific fine-tuning. It's expensive — lots of data, lots of compute — and rarely the first thing you reach for. Most practitioners never need it; they start from someone else's pretrained base and fine-tune.</p>
+        <h2>Two more ways to change the parameters</h2>
+        <p>Two variants of "train the model" come up often enough that you should know their names now. Both change the parameters, like SFT, but learn from a different signal:</p>
+        <ul>
+          <li><strong>Preference tuning</strong> (for example DPO, Rafailov et al. 2023, arXiv 2305.18290) learns from pairs of answers to the same prompt, one marked better than the other. It is usually run <em>after</em> SFT, to polish tone, safety or helpfulness that is easier to judge than to write. <a class="inline-link" href="../advanced/preference-tuning-dpo-orpo.html">Lesson 4.5</a> covers it.</li>
+          <li><strong>Distillation</strong> trains a small student on a bigger teacher's outputs: its answers, or its full next-token probabilities (Hinton et al. 2015, arXiv 1503.02531). It is how many small models get most of a big model's skill on one task. Lessons 4.2–4.4 cover it.</li>
+        </ul>
 
         <figure class="diagram">
-          <svg viewBox="0 0 640 230" role="img" aria-label="A 2x2 framing: prompting and RAG leave parameters unchanged; fine-tuning and pretraining change parameters. RAG and prompting act at inference; fine-tuning and pretraining act in advance.">
-            <line x1="320" y1="20" x2="320" y2="210" stroke="#d4d4d4"></line>
-            <line x1="40" y1="115" x2="600" y2="115" stroke="#d4d4d4"></line>
-            <text x="180" y="16" text-anchor="middle" font-family="Geist, sans-serif" font-size="11" fill="#737373">leaves model unchanged</text>
-            <text x="460" y="16" text-anchor="middle" font-family="Geist, sans-serif" font-size="11" fill="#737373">changes parameters</text>
-            <text x="35" y="70" text-anchor="end" font-family="Geist, sans-serif" font-size="11" fill="#737373" transform="rotate(-90 35 70)">acts at inference</text>
-            <text x="35" y="170" text-anchor="end" font-family="Geist, sans-serif" font-size="11" fill="#737373" transform="rotate(-90 35 170)">acts in advance</text>
-            <g font-family="Geist, sans-serif">
-              <text x="180" y="70" text-anchor="middle" font-size="14" fill="#171717">Prompting</text>
-              <text x="180" y="90" text-anchor="middle" font-size="11" fill="#a3a3a3">better input; in-context examples</text>
-              <text x="460" y="70" text-anchor="middle" font-size="14" fill="#171717">RAG</text>
-              <text x="460" y="90" text-anchor="middle" font-size="11" fill="#a3a3a3">retrieve docs into the prompt</text>
-              <text x="180" y="165" text-anchor="middle" font-size="14" fill="#171717">— (n/a)</text>
-              <text x="460" y="160" text-anchor="middle" font-size="14" fill="#171717">Fine-tuning · Pretraining</text>
-              <text x="460" y="180" text-anchor="middle" font-size="11" fill="#a3a3a3">train on examples / large corpora</text>
+          <svg viewBox="0 0 640 230" role="img" aria-label="A 2x2 framing: prompting and RAG leave parameters unchanged and act at inference; fine-tuning and pretraining change parameters and act in advance.">
+            <line x1="320" y1="20" x2="320" y2="210" style="stroke:var(--border-strong)"></line>
+            <line x1="40" y1="115" x2="600" y2="115" style="stroke:var(--border-strong)"></line>
+            <g font-family="Geist, sans-serif" font-size="11" style="fill:var(--text-tertiary)">
+              <text x="180" y="16" text-anchor="middle">leaves model unchanged</text>
+              <text x="460" y="16" text-anchor="middle">changes parameters</text>
+              <text x="35" y="67" text-anchor="middle" transform="rotate(-90 35 67)">acts at inference</text>
+              <text x="35" y="163" text-anchor="middle" transform="rotate(-90 35 163)">acts in advance</text>
+            </g>
+            <g font-family="Geist, sans-serif" text-anchor="middle">
+              <text x="180" y="62" font-size="14" style="fill:var(--text-primary)">Prompting · RAG</text>
+              <text x="180" y="82" font-size="11" style="fill:var(--text-secondary)">better input; examples or</text>
+              <text x="180" y="97" font-size="11" style="fill:var(--text-secondary)">retrieved docs in the prompt</text>
+              <text x="460" y="70" font-size="14" style="fill:var(--text-tertiary)">(rare)</text>
+              <text x="180" y="165" font-size="14" style="fill:var(--text-tertiary)">(n/a)</text>
+              <text x="460" y="155" font-size="14" style="fill:var(--text-primary)">Fine-tuning · Pretraining</text>
+              <text x="460" y="175" font-size="11" style="fill:var(--text-secondary)">train on examples, preference</text>
+              <text x="460" y="190" font-size="11" style="fill:var(--text-secondary)">pairs or large corpora</text>
             </g>
           </svg>
           <figcaption>Two axes: does it change the parameters, and does it act in advance or at inference time? RAG adds knowledge at call time; fine-tuning bakes behavior in beforehand.</figcaption>
         </figure>
 
         <h2>A decision guide</h2>
+        <p>Start every project the same way: <strong>measure the base model first</strong>. Run it, with a decent prompt, on a held-out set of examples you trust. That number is the bar every other lever has to beat, and sometimes it already clears your gate. BrewSLM does this for you: after each real training run it scores the untouched base model on the same held-out split and reports the fine-tune's lift over it. Then:</p>
         <ul>
           <li><strong>Wrong format / tone / task behavior</strong>, repeated at volume → <strong>fine-tune (SFT)</strong>.</li>
           <li><strong>Needs private or fresh facts</strong> → <strong>RAG</strong>.</li>
           <li><strong>Quick experiment, or the base can nearly do it</strong> → <strong>prompting</strong>.</li>
           <li><strong>A whole new domain's language</strong>, and you have data + budget → <strong>continued pretraining</strong>.</li>
+          <li><strong>Outputs are mostly right but you can say which of two is better</strong>, after SFT → <strong>preference tuning</strong>.</li>
+          <li><strong>A big model already does the task, but it is too slow or costly</strong> → <strong>distillation</strong> into a small one.</li>
         </ul>
+        <p>Treat this list as a heuristic, not a law: the measured baseline, not the list, decides.</p>
         <p>These combine. A common production stack is RAG <em>plus</em> a fine-tuned model: fine-tune so the model reliably uses retrieved context and outputs your format, and use RAG to supply the facts. BrewSLM treats both as first-class — but the skill this Academy builds, the one that most changes what a small model can do, is fine-tuning.</p>
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
@@ -354,6 +367,24 @@
         <h2>Where we go next</h2>
         <p>You now know <em>why</em> you'd fine-tune. The next lesson asks a money question: given that fine-tuning a small model is so effective for a narrow task, when should you pick a small model over a giant one at all?</p>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>Prompting and RAG change the input of a fixed model; fine-tuning, preference tuning, distillation and pretraining change its parameters.</li>
+            <li>Use RAG for knowledge (fresh or private facts) and fine-tuning for behaviour (format, labels, tone); production systems often combine them.</li>
+            <li>Measure the base model on held-out examples first; every lever has to beat that number.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>Pick a lever for each case, and say whether the parameters change. (a) A support bot must answer from a policy manual that is revised every month. (b) A ticket router must always reply with one of 12 labels in strict JSON; the base model gets the JSON right 60% of the time on 200 held-out tickets. (c) You have a working fine-tuned model, and reviewers can easily say which of two replies sounds better but cannot write the ideal reply. (d) The base model already scores 97% on your held-out set with a good prompt.</p>
+          <details>
+            <summary>Show answer</summary>
+            <p>(a) RAG: the facts change monthly, so update the document store, not the weights (no parameter change). (b) Fine-tuning (SFT): a fixed format and label set is behaviour; the 60% baseline is the bar the fine-tune must beat (parameters change). (c) Preference tuning such as DPO, on top of the SFT model (parameters change). (d) Prompting: the measured baseline already clears the bar, so ship the prompt and keep measuring (no parameter change).</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
@@ -362,6 +393,9 @@
             <dt>RAG (retrieval-augmented generation)</dt><dd>Retrieving relevant documents at inference and adding them to the prompt; supplies knowledge, not behavior.</dd>
             <dt>Fine-tuning / SFT</dt><dd>Continuing training on your input→output examples; changes parameters to bake in behavior/format.</dd>
             <dt>Continued pretraining</dt><dd>Training on a large domain corpus to build broad ability; expensive, rarely the first choice.</dd>
+            <dt>Preference tuning (DPO)</dt><dd>Training on pairs of better/worse answers, usually after SFT.</dd>
+            <dt>Distillation</dt><dd>Training a small student on a bigger teacher's outputs or probabilities.</dd>
+            <dt>Baseline</dt><dd>The untouched base model's score on your held-out set; the bar every lever must beat.</dd>
           </dl>
         </section>
 
