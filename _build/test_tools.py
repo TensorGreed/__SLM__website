@@ -4,12 +4,15 @@ They run the page's own formula modules (tools/memcalc.js, tools/liftstats.js)
 under node via _build/run_tools.cjs, so what is tested is what visitors run:
 
   * memory calculator: each case in _build/tool_cases.json against its measured
-    value (Lesson 1.15's SmolLM2-135M counts, the measured 30B-A3B run, the
-    memory table's bytes per parameter) within the stated tolerance, and the
+    value (Lesson 1.15's SmolLM2-135M counts, the measured 30B-A3B run, small
+    fused-expert and 4-bit models counted on a CPU, and the memory table's bytes
+    per parameter, kept apart as "derived") within the stated tolerance, and the
     calculator page shows the same rounded estimates in its validation table;
+    hostile URLs (bad %-escapes, prototype keys) must not break either tool;
   * lift calculator: every case against _build/lift_reference.json (scipy /
     statsmodels values written by _build/lift_reference.py); when scipy and
-    statsmodels are installed the reference is recomputed too.
+    statsmodels are installed the reference is recomputed too; a scan checks that a
+    paired lift or drop always comes with an exact McNemar p below 0.05.
 
 Skipped (not failed) when node is missing. Run with:
 
@@ -76,6 +79,21 @@ class MemoryCalculator(unittest.TestCase):
         for r in self.js["roundTrip"]:
             self.assertTrue(r["same"], r["preset"])
 
+    def test_hostile_urls_do_not_break(self):
+        """Malformed %-escapes and prototype keys (?preset=constructor) parse to finite numbers."""
+        for r in self.js["urlSafety"]:
+            self.assertTrue(r["ok"], f"{r['q']}: {r['why']}")
+        self.assertTrue(self.js["legacySeq"], "old links with s= must still set the tokens per row; seq= wins")
+
+    def test_derived_rows_are_not_called_measurements(self):
+        """Rows that are the memory table's arithmetic sit under the consistency heading, not in the measured tables."""
+        page = (ROOT / "tools" / "fine-tuning-memory-calculator.html").read_text(encoding="utf-8")
+        split = page.index('id="consistency"')
+        for c in CASES["memcalc"]:
+            with self.subTest(case=c["id"]):
+                at = page.index(f'data-case="{c["id"]}"')
+                self.assertEqual(at > split, c.get("kind") == "derived", c["id"])
+
 
 @unittest.skipUnless(NODE, "node is not installed")
 class LiftCalculator(unittest.TestCase):
@@ -108,6 +126,16 @@ class LiftCalculator(unittest.TestCase):
                 cell = re.search(rf'data-lift-case="{re.escape(cid)}"[^>]*>(.*?)</td>', page, re.S)
                 self.assertIsNotNone(cell, cid)
                 self.assertEqual(cell.group(1).strip(), f"{pts(ci[0])} to {pts(ci[1])}")
+
+    def test_lift_needs_the_exact_test_to_agree(self):
+        """Review M1: no paired 'lift' or 'drop' with exact McNemar p >= 0.05, over a scan of small tables."""
+        js = run_js()
+        self.assertGreater(js["scanned"], 10000)
+        self.assertEqual(js["verdictViolations"], [])
+        ref = {r["id"]: r for r in json.loads((HERE / "lift_reference.json").read_text(encoding="utf-8"))}
+        self.assertEqual(ref["five-3-0"]["verdict"], "borderline")
+        self.assertEqual(ref["fifty-4-0"]["verdict"], "borderline")
+        self.assertEqual(ref["fifty-6-0"]["verdict"], "lift")
 
     def test_at_least_eight_cases_with_edges(self):
         lift = CASES["lift"]

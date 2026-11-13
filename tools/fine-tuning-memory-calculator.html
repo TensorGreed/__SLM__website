@@ -96,7 +96,7 @@
           "name": "What does QLoRA save?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "The frozen base: 4-bit NF4 weights take about a quarter of their bf16 size (4.127 bits per parameter with double quantization). Embeddings and norms stay 16-bit, so on a small model with a large vocabulary the saving is smaller. Activations and logits are unchanged, so QLoRA helps most on large models with modest batches."
+            "text": "The frozen base: 4-bit NF4 weights take about a quarter of their bf16 size (4.127 bits per parameter with double quantization). Only the linear layers are quantized. The embeddings, an untied output head and the norms are not, and prepare_model_for_kbit_training, the recipe in Lesson 2.11, casts them to fp32, which also makes the activations fp32. So on a small model with a large vocabulary the saving is small: a 7B model with an untied 152k vocabulary keeps about 1.1 billion parameters in fp32, about 4 GiB. On a fused-expert mixture of experts the experts are not quantized at all. QLoRA helps most on large dense models with modest batches."
           }
         },
         {
@@ -213,10 +213,10 @@
                 </div>
                 <div class="field">
                   <label for="mc-active">Active per token (billions)</label>
-                  <input id="mc-active" name="active" type="number" min="0.001" step="any" inputmode="decimal" aria-describedby="mc-params-help" />
+                  <output id="mc-active" class="field-output" for="mc-params mc-topK mc-experts mc-expertFfn" aria-describedby="mc-params-help"></output>
                 </div>
               </div>
-              <p class="field-help" id="mc-params-help">Weights count every parameter, all experts included; active is what one token passes through (the same as total for a dense model).</p>
+              <p class="field-help" id="mc-params-help">Weights count every parameter, all experts included. Active is what one token passes through, worked out from the architecture (experts per token); on a mixture of experts it sets the activations.</p>
               <div class="field">
                 <label for="mc-vocab">Vocabulary size</label>
                 <input id="mc-vocab" name="vocab" type="number" min="1" step="1" inputmode="numeric" aria-describedby="mc-vocab-help" />
@@ -270,6 +270,10 @@
               <div class="choices" id="mc-dq-row">
                 <label class="choice"><input type="checkbox" id="mc-dq" name="dq" /> Double quantization (QLoRA)</label>
               </div>
+              <div class="choices" id="mc-kbit-row">
+                <label class="choice"><input type="checkbox" id="mc-kbit" name="kbit" aria-describedby="mc-kbit-help" /> prepare_model_for_kbit_training (Lesson 2.11)</label>
+                <p class="field-help" id="mc-kbit-help">The recipe in Lesson 2.11. It casts every parameter bitsandbytes did not quantize to fp32, which also makes the activations fp32.</p>
+              </div>
               <div class="field" id="mc-r-field">
                 <label for="mc-r">LoRA rank r</label>
                 <input id="mc-r" name="r" type="number" min="1" step="1" inputmode="numeric" />
@@ -285,7 +289,7 @@
                 <label class="choice"><input type="checkbox" name="targets" value="down" /> down</label>
                 <button type="button" class="linklike" id="mc-all-linear">All linear</button>
               </fieldset>
-              <p class="field-help" id="mc-targets-help">On a mixture of experts, gate, up and down adapt every expert.</p>
+              <p class="field-help" id="mc-targets-help">On a fused-expert mixture of experts, gate and up are one tensor and are adapted together; gate, up and down adapt every expert at once, and without gradient checkpointing each layer then keeps a full copy of its expert weights for backward.</p>
               <div class="field">
                 <label for="mc-opt">Optimizer</label>
                 <select id="mc-opt" name="opt">
@@ -325,7 +329,8 @@
             </fieldset>
           </form>
 
-          <div class="tool__results" id="mc-results" aria-live="polite">
+          <div class="tool__results" id="mc-results">
+            <p class="sr-only" id="mc-summary" aria-live="polite" aria-atomic="true"></p>
             <p class="result-head">Training peak</p>
             <p class="result-big" id="mc-peak">Fill in the form</p>
             <p class="result-sub" id="mc-fit"></p>
@@ -374,13 +379,13 @@
             <caption class="tool-caption">Terms, formulas and sources</caption>
             <thead><tr><th scope="col">Term</th><th scope="col">Formula</th><th scope="col">Source</th></tr></thead>
             <tbody>
-              <tr><th scope="row">Weights</th><td><span class="formula">P × 4 (fp32), × 2 (bf16, fp16), × 6 (mixed precision: fp32 master + 16-bit copy)</span><span class="formula">8-bit: 1 B, NF4: 4.127 bits with double quantization, 4.5 without, for the quantized layers; embeddings and norms stay 16-bit</span></td><td>Lesson 1.15 memory table; QLoRA, Dettmers et al. 2023, <a class="inline-link" href="https://arxiv.org/abs/2305.14314">arXiv:2305.14314</a>, §3</td></tr>
-              <tr><th scope="row">Full fine-tune: gradients, optimizer</th><td><span class="formula">gradients P × 4 (2 in pure 16-bit); AdamW P × 8 (P × 4 in pure 16-bit, where PyTorch keeps its moments in bf16); 8-bit AdamW P × 2</span></td><td>ZeRO, Rajbhandari et al. 2019, <a class="inline-link" href="https://arxiv.org/abs/1910.02054">arXiv:1910.02054</a>, §3.1; 8-bit optimizers, Dettmers et al. 2021, <a class="inline-link" href="https://arxiv.org/abs/2110.02861">arXiv:2110.02861</a></td></tr>
-              <tr><th scope="row">LoRA adapter</th><td><span class="formula">T = L × Σ r × (d_in + d_out) over the adapted matrices (× experts for expert MLPs)</span><span class="formula">adapter weights T × 4, gradients T × 4, AdamW T × 8 (8-bit: T × 2)</span></td><td>LoRA, Hu et al. 2021, <a class="inline-link" href="https://arxiv.org/abs/2106.09685">arXiv:2106.09685</a>; peft keeps adapters in fp32</td></tr>
-              <tr><th scope="row">Activations, per layer and token (no checkpointing)</th><td><span class="formula">full: e(6h + 2q + 2kv + 4f) + 2(4 − e)h + 4·heads</span><span class="formula">LoRA: e(2h + 2q + 2kv + 3f) + 2(4 − e)h + 4·heads + the adapters' inputs</span><span class="formula">e = 4 bytes in fp32, 2 in bf16/fp16; 2(4 − e)h is the RMSNorms computing in fp32</span></td><td>Counted, not assumed: bytes autograd keeps for backward (<code>saved_tensors_hooks</code>, the method of Lesson 1.15) on Llama-style decoder layers with SDPA attention, for 8 shapes in fp32 and bf16, with transformers 5.22, peft 0.21 and torch 2.15 on a CPU; the formula reproduces every count. Korthikanti et al. 2022, <a class="inline-link" href="https://arxiv.org/abs/2205.05198">arXiv:2205.05198</a>, gives the classic analytic version; with SDPA or flash attention its sequence² term is gone</td></tr>
+              <tr><th scope="row">Weights</th><td><span class="formula">P × 4 (fp32), × 2 (bf16, fp16), × 6 (mixed precision: fp32 master + 16-bit copy)</span><span class="formula">8-bit: 1 B, NF4: 4.127 bits with double quantization, 4.5 without, for the layers bitsandbytes quantizes (nn.Linear only)</span><span class="formula">the rest (embeddings, an untied output head, norms, biases, the router and fused expert tensors) × 4 after <code>prepare_model_for_kbit_training</code>, × 2 without it</span></td><td>Lesson 1.15 memory table; QLoRA, Dettmers et al. 2023, <a class="inline-link" href="https://arxiv.org/abs/2305.14314">arXiv:2305.14314</a>, §3; the fp32 cast is peft 0.21's <code>prepare_model_for_kbit_training</code>, the recipe of <a class="inline-link" href="../academy/hands-on/qlora-hands-on.html">Lesson 2.11</a>. Counted on small models loaded in 4-bit on a CPU (bitsandbytes 0.50): within 0.03%</td></tr>
+              <tr><th scope="row">Full fine-tune: gradients, optimizer</th><td><span class="formula">gradients P × 4 (2 in pure 16-bit); AdamW P × 8 (P × 4 in pure 16-bit, where PyTorch keeps its moments in bf16); 8-bit AdamW P × 2</span><span class="formula">mixed precision with AdamW: 6 + 4 + 8 = 18 B per parameter</span></td><td>The 18 B, with fp32 gradients, is Hugging Face's <a class="inline-link" href="https://huggingface.co/docs/transformers/model_memory_anatomy">model memory anatomy</a> count. ZeRO (Rajbhandari et al. 2019, <a class="inline-link" href="https://arxiv.org/abs/1910.02054">arXiv:1910.02054</a>, §3.1) counts fp16 gradients, 2 + 2 + 12 = 16 B; Lesson 1.15 gives both. 8-bit optimizers: Dettmers et al. 2021, <a class="inline-link" href="https://arxiv.org/abs/2110.02861">arXiv:2110.02861</a></td></tr>
+              <tr><th scope="row">LoRA adapter</th><td><span class="formula">T = L × Σ r × (d_in + d_out) over the adapted matrices</span><span class="formula">fused experts (E experts, expert width f), as peft adapts them: gate and up together 2·E·r·(h + 2f), down E·r·(f + h), per layer</span><span class="formula">adapter weights T × 4, gradients T × 4, AdamW T × 8 (8-bit: T × 2)</span></td><td>LoRA, Hu et al. 2021, <a class="inline-link" href="https://arxiv.org/abs/2106.09685">arXiv:2106.09685</a>; peft keeps adapters in fp32</td></tr>
+              <tr><th scope="row">Activations, per layer and token (no checkpointing)</th><td><span class="formula">full: e(6h + 2q + 2kv + 4f) + 2(4 − e)h + 4·heads</span><span class="formula">LoRA: e(2h + 2q + 2kv + 3f) + 2(4 − e)h + 4·heads + the adapters' inputs</span><span class="formula">e = 4 bytes in fp32, 2 in bf16/fp16, and 4 on a quantized base after <code>prepare_model_for_kbit_training</code> (its fp32 embeddings make the residual stream fp32); 2(4 − e)h is the RMSNorms computing in fp32</span><span class="formula">mixture of experts: the routed tokens' expert MLP (top-k × expert width), routing indices and router probabilities, and q/k norms, from separate counts; on expert adapters, plus a full copy of the layer's expert tensors (e bytes each) whatever the batch</span></td><td>Counted, not assumed: bytes autograd keeps for backward (<code>saved_tensors_hooks</code>, the method of Lesson 1.15) on decoder layers with RMSNorm, a SwiGLU MLP and grouped-query attention with SDPA, for 8 shapes in fp32 and bf16, and on fused-expert layers for 8 more shapes, full and five LoRA target sets, with transformers 5.22, peft 0.21 and torch 2.15 on a CPU; the formulas reproduce every count. Counted without autocast: under bf16 autocast a LoRA run keeps 16-bit copies of the adapters' inputs, so the estimate is on the high side (by about 15–20% on small models). Korthikanti et al. 2022, <a class="inline-link" href="https://arxiv.org/abs/2205.05198">arXiv:2205.05198</a>, gives the classic analytic version; with SDPA or flash attention its sequence² term is gone</td></tr>
               <tr><th scope="row">Adapter inputs (LoRA)</th><td><span class="formula">fp32 base: 4h if any of q, k, v; 4h if gate or up; 4f if down</span><span class="formula">16-bit base: an fp32 copy of each adapted matrix's input (4h for q, k, v, gate, up; 4q for o; 4f for down); plus 4r per adapter</span></td><td>Same counts</td></tr>
               <tr><th scope="row">With gradient checkpointing</th><td><span class="formula">L × e × h × n (each layer's input) + one layer rebuilt during backward</span></td><td>Same counts; Chen et al. 2016, <a class="inline-link" href="https://arxiv.org/abs/1604.06174">arXiv:1604.06174</a></td></tr>
-              <tr><th scope="row">Logits and loss</th><td><span class="formula">n × V × 12: fp32 log-probabilities kept for the loss (4) + the fp32 gradients of the log-probabilities and of the logits while the loss backpropagates (8)</span></td><td>Same counts for the 4 B; Wijmans et al. 2024, <a class="inline-link" href="https://arxiv.org/abs/2411.09009">arXiv:2411.09009</a></td></tr>
+              <tr><th scope="row">Logits and loss</th><td><span class="formula">n × V × 12: fp32 log-probabilities kept for the loss (4) + the fp32 gradients of the log-probabilities and of the logits while the loss backpropagates (8)</span><span class="formula">that is Hugging Face's loss path; it is 14 if your code still holds <code>outputs.logits</code> (16-bit) during backward, 16 if those logits are fp32</span></td><td>Same counts for the 4 B; Wijmans et al. 2024, <a class="inline-link" href="https://arxiv.org/abs/2411.09009">arXiv:2411.09009</a></td></tr>
               <tr><th scope="row">Overhead</th><td><span class="formula">0.10 × allocated + 1 GiB (own GPU memory) or + 7 GiB (unified memory)</span></td><td>A rule of thumb calibrated on the one measured run below, not a law</td></tr>
               <tr><th scope="row">Evaluation</th><td><span class="formula">(weights + KV cache) × 1.10 + the same constant; KV cache = 2 × L × kv × 2 B × tokens</span></td><td>PagedAttention, Kwon et al. 2023, <a class="inline-link" href="https://arxiv.org/abs/2309.06180">arXiv:2309.06180</a>, §2</td></tr>
             </tbody>
@@ -391,7 +396,7 @@
       <section class="section tool-doc" aria-labelledby="validation">
         <h2 id="validation">Validation: the formulas against measured runs</h2>
         <p>
-          Every row is a measurement made outside this calculator. The 135M rows are the model of
+          Every row in the first two tables is a measurement made outside this calculator. The 135M rows are the model of
           <a class="inline-link" href="../academy/sft-fundamentals/gpu-memory-math.html#worked-example">the worked example in Lesson 1.15</a>
           (bytes autograd keeps for backward, fp32 on a CPU, batch 8 × 256 tokens). The 30B-A3B rows are
           one LoRA run on a 128 GB unified-memory GPU box: r = 16 on q, k, v and o, bf16 weights, paged 8-bit
@@ -400,22 +405,57 @@
         </p>
         <div class="table-wrap">
           <table class="mini-table">
-            <caption class="tool-caption">Estimate vs measurement</caption>
+            <caption class="tool-caption">Estimate vs measurement: real runs</caption>
             <thead><tr><th scope="col">Run and quantity</th><th scope="col" class="num">Measured</th><th scope="col" class="num">Calculator</th><th scope="col" class="num">Error</th><th scope="col" class="num">Tolerance</th></tr></thead>
             <tbody>
-              <tr><th scope="row">135M, LoRA r=16 all linear, kept for backward</th><td class="num">2.89 GB</td><td class="num" data-case="smollm-lora-saved">2.89 GB</td><td class="num">−0.1%</td><td class="num">±3%</td></tr>
-              <tr><th scope="row">… with gradient checkpointing</th><td class="num">0.55 GB</td><td class="num" data-case="smollm-lora-gc-saved">0.54 GB</td><td class="num">−1.1%</td><td class="num">±3%</td></tr>
+              <tr><th scope="row">135M, LoRA r=16 all linear, kept for backward</th><td class="num">2.89 GB</td><td class="num" data-case="smollm-lora-saved">2.89 GB</td><td class="num">+0.0%</td><td class="num">±3%</td></tr>
+              <tr><th scope="row">… with gradient checkpointing</th><td class="num">0.55 GB</td><td class="num" data-case="smollm-lora-gc-saved">0.55 GB</td><td class="num">−0.2%</td><td class="num">±3%</td></tr>
               <tr><th scope="row">… as a full fine-tune</th><td class="num">3.16 GB</td><td class="num" data-case="smollm-full-saved">3.16 GB</td><td class="num">−0.1%</td><td class="num">±3%</td></tr>
               <tr><th scope="row">135M, adapter parameters</th><td class="num">4,884,480</td><td class="num" data-case="smollm-lora-trainable">4,884,480</td><td class="num">exact</td><td class="num">exact</td></tr>
-              <tr><th scope="row">135M, full fine-tune in fp32: weights, gradients, AdamW</th><td class="num">2.15 GB</td><td class="num" data-case="smollm-full-fp32-states">2.15 GB</td><td class="num">+0.1%</td><td class="num">±1%</td></tr>
-              <tr><th scope="row">Bytes per parameter, mixed precision + AdamW</th><td class="num">16–18 B</td><td class="num" data-case="table-mixed">18 B</td><td class="num">table range</td><td class="num">exact</td></tr>
-              <tr><th scope="row">Bytes per parameter, plain fp32 + AdamW</th><td class="num">16 B</td><td class="num" data-case="table-fp32">16 B</td><td class="num">exact</td><td class="num">exact</td></tr>
-              <tr><th scope="row">Bytes per parameter, pure bf16 + PyTorch AdamW</th><td class="num">8 B</td><td class="num" data-case="table-pure-bf16">8 B</td><td class="num">exact</td><td class="num">exact</td></tr>
               <tr><th scope="row">30B-A3B, adapter parameters</th><td class="num">13,369,344</td><td class="num" data-case="moe-trainable">13,369,344</td><td class="num">exact</td><td class="num">exact</td></tr>
               <tr><th scope="row">30B-A3B, bf16 weights</th><td class="num">~57 GiB</td><td class="num" data-case="moe-weights">56.9 GiB</td><td class="num">−0.2%</td><td class="num">±2%</td></tr>
-              <tr><th scope="row">30B-A3B, allocated at the training peak</th><td class="num">63.6 GiB</td><td class="num" data-case="moe-allocated">63.1 GiB</td><td class="num">−0.8%</td><td class="num">±5%</td></tr>
-              <tr><th scope="row">30B-A3B, whole pool at the training peak</th><td class="num">~77–78 GiB</td><td class="num" data-case="moe-peak">76.4 GiB</td><td class="num">−1.5%</td><td class="num">±5%</td></tr>
+              <tr><th scope="row">30B-A3B, allocated at the training peak</th><td class="num">63.6 GiB</td><td class="num" data-case="moe-allocated">63.1 GiB</td><td class="num">−0.7%</td><td class="num">±5%</td></tr>
+              <tr><th scope="row">30B-A3B, whole pool at the training peak</th><td class="num">~77–78 GiB</td><td class="num" data-case="moe-peak">76.5 GiB</td><td class="num">−1.4%</td><td class="num">±5%</td></tr>
               <tr><th scope="row">30B-A3B, evaluation at the same length</th><td class="num">~69.5 GiB</td><td class="num" data-case="moe-eval">69.7 GiB</td><td class="num">+0.3%</td><td class="num">±5%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          The mixture-of-experts and quantized-base terms were counted on small models on a CPU (no GPU run behind
+          them): saved-tensor bytes per layer and per token as in Lesson 1.15, and the bytes of the loaded weights
+          including bitsandbytes' quantization state. Small shapes, so they test the formulas, not the overhead line.
+        </p>
+        <div class="table-wrap">
+          <table class="mini-table">
+            <caption class="tool-caption">Estimate vs count: small models on a CPU</caption>
+            <thead><tr><th scope="col">Run and quantity</th><th scope="col" class="num">Measured</th><th scope="col" class="num">Calculator</th><th scope="col" class="num">Error</th><th scope="col" class="num">Tolerance</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Small fused-expert MoE, bf16 full fine-tune: bytes per token per layer</th><td class="num">12,180 B</td><td class="num" data-case="moe-toy-full-layer">12,180 B</td><td class="num">exact</td><td class="num">exact</td></tr>
+              <tr><th scope="row">… LoRA r=8 on all linear, experts included</th><td class="num">13,588 B</td><td class="num" data-case="moe-toy-lora-layer">13,588 B</td><td class="num">exact</td><td class="num">exact</td></tr>
+              <tr><th scope="row">… bytes per layer whatever the batch (merged expert tensors)</th><td class="num">1,753,120 B</td><td class="num" data-case="moe-toy-lora-const">1,753,120 B</td><td class="num">exact</td><td class="num">exact</td></tr>
+              <tr><th scope="row">… the same LoRA run in fp32: bytes per token per layer</th><td class="num">16,152 B</td><td class="num" data-case="moe-toy-lora-fp32-layer">16,152 B</td><td class="num">exact</td><td class="num">exact</td></tr>
+              <tr><th scope="row">… adapter parameters, 2 layers</th><td class="num">208,896</td><td class="num" data-case="moe-toy-lora-trainable">208,896</td><td class="num">exact</td><td class="num">exact</td></tr>
+              <tr><th scope="row">Small dense model in NF4 after the kbit prep, LoRA r=8 on q, k, v, o: bytes per token per layer</th><td class="num">14,744 B</td><td class="num" data-case="kbit-toy-layer">14,736 B</td><td class="num">−0.1%</td><td class="num">±1%</td></tr>
+              <tr><th scope="row">Dense model with biases in NF4 + double quantization after the kbit prep: weights</th><td class="num">285.5 MB</td><td class="num" data-case="kbit-toy-dense-weights">285.5 MB</td><td class="num">−0.01%</td><td class="num">±0.5%</td></tr>
+              <tr><th scope="row">Fused-expert MoE loaded in NF4 (experts stay 16-bit): weights</th><td class="num">68.2 MB</td><td class="num" data-case="kbit-toy-moe-loaded">68.1 MB</td><td class="num">−0.03%</td><td class="num">±0.5%</td></tr>
+              <tr><th scope="row">… after the kbit prep (experts in fp32): weights</th><td class="num">135.0 MB</td><td class="num" data-case="kbit-toy-moe-prepared">134.9 MB</td><td class="num">−0.01%</td><td class="num">±0.5%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3 id="consistency">Consistency with Lesson 1.15's memory table</h3>
+        <p>
+          These rows are not measurements: they are the memory table's arithmetic, and the calculator is built on that
+          table, so they check that it reproduces it, not that it is right.
+        </p>
+        <div class="table-wrap">
+          <table class="mini-table">
+            <caption class="tool-caption">Calculator vs the table it was built from</caption>
+            <thead><tr><th scope="col">Quantity</th><th scope="col" class="num">Table</th><th scope="col" class="num">Calculator</th><th scope="col" class="num">Agreement</th><th scope="col" class="num">Tolerance</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">135M, full fine-tune in fp32: weights, gradients, AdamW</th><td class="num">2.15 GB</td><td class="num" data-case="smollm-full-fp32-states">2.15 GB</td><td class="num">16 B × P</td><td class="num">±1%</td></tr>
+              <tr><th scope="row">Bytes per parameter, mixed precision + AdamW</th><td class="num">16–18 B</td><td class="num" data-case="table-mixed">18 B</td><td class="num">the table's upper end (fp32 gradients)</td><td class="num">exact</td></tr>
+              <tr><th scope="row">Bytes per parameter, plain fp32 + AdamW</th><td class="num">16 B</td><td class="num" data-case="table-fp32">16 B</td><td class="num">exact</td><td class="num">exact</td></tr>
+              <tr><th scope="row">Bytes per parameter, pure bf16 + PyTorch AdamW</th><td class="num">8 B</td><td class="num" data-case="table-pure-bf16">8 B</td><td class="num">exact</td><td class="num">exact</td></tr>
             </tbody>
           </table>
         </div>
@@ -445,7 +485,8 @@
         <ul>
           <li>Attention without SDPA or flash attention ("eager"): it keeps a heads × tokens² matrix per layer, which this calculator does not add.</li>
           <li>Fused or chunked loss kernels, which shrink the logits term; and TRL casting a QLoRA adapter to bf16, which brings its states to about 8 bytes per parameter instead of 16.</li>
-          <li>Other architectures: the activation formula was counted on Llama-style decoder layers (RMSNorm, SwiGLU MLP). Mixture-of-experts routing is approximated from the same terms, so treat MoE activations as rough.</li>
+          <li>Other architectures: the activation formulas were counted on decoder layers with RMSNorm, a SwiGLU MLP and grouped-query attention, and on fused-expert mixture-of-experts layers with q/k norms (transformers 5). Other layouts, such as per-expert linear layers or no q/k norms on a mixture of experts, are approximated from the same terms.</li>
+          <li>Quantized mixtures of experts on a GPU: that bitsandbytes leaves fused experts unquantized was checked by loading a small model on a CPU, not in a GPU training run.</li>
           <li>Multi-GPU sharding (ZeRO, FSDP), CPU offload, sequence packing, and DeepSpeed or framework buffers.</li>
           <li>Short-lived buffers: a quantized layer's dequantized copy, matmul workspace, the optimizer step's temporaries.</li>
           <li>Rows shorter than the longest one in their batch: real batches vary, so this is an upper bound for the length you enter.</li>
@@ -474,7 +515,7 @@
           </details>
           <details class="faq-item">
             <summary>What does QLoRA save?</summary>
-            <p>The frozen base: 4-bit NF4 weights take about a quarter of their bf16 size (4.127 bits per parameter with double quantization). Embeddings and norms stay 16-bit, so on a small model with a large vocabulary the saving is smaller. Activations and logits are unchanged, so QLoRA helps most on large models with modest batches.</p>
+            <p>The frozen base: 4-bit NF4 weights take about a quarter of their bf16 size (4.127 bits per parameter with double quantization). Only the linear layers are quantized. The embeddings, an untied output head and the norms are not, and <code>prepare_model_for_kbit_training</code>, the recipe in Lesson 2.11, casts them to fp32, which also makes the activations fp32. So on a small model with a large vocabulary the saving is small: a 7B model with an untied 152k vocabulary keeps about 1.1 billion parameters in fp32, about 4 GiB. On a fused-expert mixture of experts the experts are not quantized at all. QLoRA helps most on large dense models with modest batches.</p>
           </details>
           <details class="faq-item">
             <summary>How accurate is this?</summary>

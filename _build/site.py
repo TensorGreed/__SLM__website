@@ -1693,7 +1693,7 @@ LD_EXPECTED = {
     "roadmap": {"WebPage", "BreadcrumbList"},
     "academy_page": {"BreadcrumbList"},
     "top_level": {"BreadcrumbList"},
-    "tool": {"WebApplication", "FAQPage", "BreadcrumbList"},
+    "tool": {"WebApplication", "BreadcrumbList"},   # + FAQPage when the page has <details> Q&As
 }
 DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?")
 
@@ -1952,7 +1952,7 @@ def check_jsonld(rel: str, text: str, vis: dict, pages: set[str], texts: dict) -
 
     have = set(found)
     want = set(LD_EXPECTED.get(pt, set()))
-    if rel == CFG["faq"]["path"]:
+    if rel == CFG["faq"]["path"] or (pt == "tool" and v.faq):
         want.add("FAQPage")
     if pt == "track_index":
         want.add("Course" if rel.split("/")[1] in CFG["academy"]["course_tracks"] else "CollectionPage")

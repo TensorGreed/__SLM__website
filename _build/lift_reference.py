@@ -18,6 +18,9 @@ Where each reference comes from:
                             scipy binomtest(k, b + c, 0.5)
   paired t-interval         scipy ttest_1samp(...).confidence_interval(0.95)
   sizing                    Z = norm.ppf(0.975) + norm.ppf(0.80)
+  verdict                   paired: lift / drop only when the paired interval excludes 0
+                            and the exact McNemar p < 0.05, else borderline (or noise);
+                            unpaired: the interval alone
 """
 from __future__ import annotations
 
@@ -92,7 +95,12 @@ def reference(case: dict) -> dict:
     out["unpairedGap"] = float(z_total * math.sqrt(v / n))
     out["unpairedRows"] = max(1, math.ceil((z_total * math.sqrt(v) / gap) ** 2 - 1e-9))
     ci = out["ciPaired"] or out["ciUnpaired"]
-    out["verdict"] = "few" if n < MIN_ROWS else "lift" if ci[0] > 0 else "drop" if ci[1] < 0 else "noise"
+    side = "lift" if ci[0] > 0 else "drop" if ci[1] < 0 else "noise"
+    if paired:
+        # Paired: a lift or drop needs the interval AND the exact McNemar test (p < 0.05) to agree.
+        p = out["mcnemarP"]
+        side = ("borderline" if p < 0.05 else "noise") if side == "noise" else (side if p < 0.05 else "borderline")
+    out["verdict"] = "few" if n < MIN_ROWS else side
     return out
 
 

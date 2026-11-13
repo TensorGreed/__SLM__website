@@ -13,7 +13,7 @@
       "what": "the same run with gradient checkpointing",
       "source": "Lesson 1.15 worked example (measured)",
       "preset": "135m", "set": {"method": "lora", "prec": "fp32", "r": 16, "targets": ["q", "k", "v", "o", "gate", "up", "down"], "seq": 256, "batch": 8, "gc": true},
-      "field": "savedActivations", "unit": "GB", "measured": 0.55, "tolerance": 0.03, "show": "0.54 GB"
+      "field": "savedActivations", "unit": "GB", "measured": 0.55, "tolerance": 0.03, "show": "0.55 GB"
     },
     {
       "id": "smollm-full-saved",
@@ -31,6 +31,7 @@
     },
     {
       "id": "smollm-full-fp32-states",
+      "kind": "derived",
       "what": "weights + gradients + AdamW, full fine-tune in plain fp32",
       "source": "Lesson 1.15 memory table (16 B/param)",
       "preset": "135m", "set": {"method": "full", "prec": "fp32"},
@@ -38,13 +39,15 @@
     },
     {
       "id": "table-mixed",
+      "kind": "derived",
       "what": "bytes per parameter, full fine-tune in mixed precision with AdamW",
-      "source": "Lesson 1.15 memory table (16-18 B)",
+      "source": "Lesson 1.15 memory table (16-18 B: ZeRO counts 16 with fp16 gradients, Hugging Face's memory anatomy 18 with fp32 gradients; the calculator uses 18)",
       "preset": "1.5b", "set": {"method": "full", "prec": "mixed", "opt": "adamw"},
       "field": "bytesPerParam", "unit": "B", "measured": 18, "tolerance": 0, "show": "18 B"
     },
     {
       "id": "table-fp32",
+      "kind": "derived",
       "what": "bytes per parameter, full fine-tune in plain fp32 with AdamW",
       "source": "Lesson 1.15 memory table (16 B)",
       "preset": "1.5b", "set": {"method": "full", "prec": "fp32", "opt": "adamw"},
@@ -52,10 +55,83 @@
     },
     {
       "id": "table-pure-bf16",
+      "kind": "derived",
       "what": "bytes per parameter, full fine-tune in pure bf16 with PyTorch AdamW",
       "source": "Lesson 1.15 memory table (8 B)",
       "preset": "1.5b", "set": {"method": "full", "prec": "bf16", "opt": "adamw"},
       "field": "bytesPerParam", "unit": "B", "measured": 8, "tolerance": 0, "show": "8 B"
+    },
+    {
+      "id": "moe-toy-full-layer",
+      "what": "small fused-expert MoE (h 256, 4 heads, 2 KV heads x 64, 8 experts, top-2, expert width 128, q/k norms), bf16 full fine-tune: bytes per token one layer keeps for backward",
+      "source": "counted 2026-11-13: saved_tensors_hooks, L=2 minus L=1 layers, sequence 32 vs 64 (transformers 5.22, CPU)",
+      "kind": "counted", "preset": "30b-a3b", "arch": {"L": 2, "h": 256, "heads": 4, "kvHeads": 2, "headDim": 64, "vocab": 1000, "experts": 8, "topK": 2, "expertFfn": 128, "tied": false, "bias": false, "qkNorm": true, "moe": true},
+      "set": {"method": "full", "prec": "bf16", "gc": false},
+      "field": "layerBytesPerToken", "unit": "B", "measured": 12180, "tolerance": 0.001, "show": "12,180 B"
+    },
+    {
+      "id": "moe-toy-lora-layer",
+      "what": "the same model, bf16, LoRA r=8 on all linear layers incl. the fused experts: bytes per token per layer",
+      "source": "counted 2026-11-13 (peft 0.21)",
+      "kind": "counted", "preset": "30b-a3b", "arch": {"L": 2, "h": 256, "heads": 4, "kvHeads": 2, "headDim": 64, "vocab": 1000, "experts": 8, "topK": 2, "expertFfn": 128, "tied": false, "bias": false, "qkNorm": true, "moe": true},
+      "set": {"method": "lora", "prec": "bf16", "r": 8, "targets": ["q", "k", "v", "o", "gate", "up", "down"], "gc": false},
+      "field": "layerBytesPerToken", "unit": "B", "measured": 13588, "tolerance": 0.001, "show": "13,588 B"
+    },
+    {
+      "id": "moe-toy-lora-const",
+      "what": "the same run: bytes per layer that do not scale with tokens (the merged expert tensors peft keeps for backward)",
+      "source": "counted 2026-11-13 (peft 0.21)",
+      "kind": "counted", "preset": "30b-a3b", "arch": {"L": 2, "h": 256, "heads": 4, "kvHeads": 2, "headDim": 64, "vocab": 1000, "experts": 8, "topK": 2, "expertFfn": 128, "tied": false, "bias": false, "qkNorm": true, "moe": true},
+      "set": {"method": "lora", "prec": "bf16", "r": 8, "targets": ["q", "k", "v", "o", "gate", "up", "down"], "gc": false},
+      "field": "layerConstBytes", "unit": "B", "measured": 1753120, "tolerance": 0.001, "show": "1,753,120 B"
+    },
+    {
+      "id": "moe-toy-lora-fp32-layer",
+      "what": "the same LoRA run in fp32: bytes per token per layer",
+      "source": "counted 2026-11-13 (peft 0.21)",
+      "kind": "counted", "preset": "30b-a3b", "arch": {"L": 2, "h": 256, "heads": 4, "kvHeads": 2, "headDim": 64, "vocab": 1000, "experts": 8, "topK": 2, "expertFfn": 128, "tied": false, "bias": false, "qkNorm": true, "moe": true},
+      "set": {"method": "lora", "prec": "fp32", "r": 8, "targets": ["q", "k", "v", "o", "gate", "up", "down"], "gc": false},
+      "field": "layerBytesPerToken", "unit": "B", "measured": 16152, "tolerance": 0.001, "show": "16,152 B"
+    },
+    {
+      "id": "moe-toy-lora-trainable",
+      "what": "the same model (2 layers), LoRA r=8 on all linear layers: adapter parameters (fused gate_up and down adapted by peft)",
+      "source": "counted 2026-11-13 (peft 0.21)",
+      "kind": "counted", "preset": "30b-a3b", "arch": {"L": 2, "h": 256, "heads": 4, "kvHeads": 2, "headDim": 64, "vocab": 1000, "experts": 8, "topK": 2, "expertFfn": 128, "tied": false, "bias": false, "qkNorm": true, "moe": true},
+      "set": {"method": "lora", "prec": "bf16", "r": 8, "targets": ["q", "k", "v", "o", "gate", "up", "down"]},
+      "field": "trainable", "unit": "count", "measured": 208896, "tolerance": 0, "show": "208,896"
+    },
+    {
+      "id": "kbit-toy-layer",
+      "what": "small dense model (h 256, 4 heads, 2 KV heads x 64, MLP 704) loaded in 4-bit NF4 and prepared with prepare_model_for_kbit_training, LoRA r=8 on q, k, v, o: bytes per token per layer",
+      "source": "counted 2026-11-13 (bitsandbytes 0.50 on a CPU, peft 0.21, no autocast)",
+      "kind": "counted", "preset": "135m", "arch": {"L": 2, "h": 256, "heads": 4, "kvHeads": 2, "headDim": 64, "ffn": 704, "vocab": 1000, "tied": false, "bias": false},
+      "set": {"method": "qlora", "prec": "nf4", "kbit": true, "r": 8, "targets": ["q", "k", "v", "o"], "gc": false},
+      "field": "layerBytesPerToken", "unit": "B", "measured": 14744, "tolerance": 0.01, "show": "14,736 B"
+    },
+    {
+      "id": "kbit-toy-dense-weights",
+      "what": "dense model with biases (4 layers, h 1,024, 16 heads, 4 KV heads x 64, MLP 2,816, untied 32k vocabulary) in NF4 + double quantization after prepare_model_for_kbit_training: parameter + quantization-state bytes",
+      "source": "counted 2026-11-13 (bitsandbytes 0.50 on a CPU, peft 0.21)",
+      "kind": "counted", "preset": "135m", "arch": {"L": 4, "h": 1024, "heads": 16, "kvHeads": 4, "headDim": 64, "ffn": 2816, "vocab": 32000, "tied": false, "bias": true},
+      "set": {"method": "qlora", "prec": "nf4", "dq": true, "kbit": true},
+      "field": "weights", "unit": "MB", "measured": 285.49592, "tolerance": 0.005, "show": "285.5 MB"
+    },
+    {
+      "id": "kbit-toy-moe-loaded",
+      "what": "fused-expert MoE (4 layers, h 512, 16 experts, top-4, expert width 256, untied 8k vocabulary) loaded in NF4: the experts stay 16-bit",
+      "source": "counted 2026-11-13 (transformers 5.22, bitsandbytes 0.50 on a CPU)",
+      "kind": "counted", "preset": "30b-a3b", "arch": {"L": 4, "h": 512, "heads": 8, "kvHeads": 2, "headDim": 64, "vocab": 8000, "experts": 16, "topK": 4, "expertFfn": 256, "tied": false, "bias": false, "qkNorm": true, "moe": true},
+      "set": {"method": "qlora", "prec": "nf4", "dq": true, "kbit": false},
+      "field": "weights", "unit": "MB", "measured": 68.161216, "tolerance": 0.005, "show": "68.1 MB"
+    },
+    {
+      "id": "kbit-toy-moe-prepared",
+      "what": "the same model after prepare_model_for_kbit_training: the experts, embeddings, head and norms in fp32",
+      "source": "counted 2026-11-13 (peft 0.21)",
+      "kind": "counted", "preset": "30b-a3b", "arch": {"L": 4, "h": 512, "heads": 8, "kvHeads": 2, "headDim": 64, "vocab": 8000, "experts": 16, "topK": 4, "expertFfn": 256, "tied": false, "bias": false, "qkNorm": true, "moe": true},
+      "set": {"method": "qlora", "prec": "nf4", "dq": true, "kbit": true},
+      "field": "weights", "unit": "MB", "measured": 134.95264, "tolerance": 0.005, "show": "134.9 MB"
     },
     {
       "id": "moe-trainable",
@@ -83,7 +159,7 @@
       "what": "the same run: whole unified-memory pool at the training peak",
       "source": "measured run (about 77-78 GiB; midpoint used)",
       "preset": "30b-a3b", "set": {"method": "lora", "prec": "bf16", "r": 16, "targets": ["q", "k", "v", "o"], "opt": "paged8", "seq": 1504, "batch": 2, "gc": true, "hw": "unified"},
-      "field": "peak", "unit": "GiB", "measured": 77.5, "tolerance": 0.05, "show": "76.4 GiB"
+      "field": "peak", "unit": "GiB", "measured": 77.5, "tolerance": 0.05, "show": "76.5 GiB"
     },
     {
       "id": "moe-eval",
@@ -105,6 +181,10 @@
     {"id": "five-rows", "why": "edge: the minimum for a verdict", "n": 5, "base": 2, "tuned": 4, "baseOnly": 0, "tunedOnly": 2},
     {"id": "independent", "why": "phi = 0: paired interval equals the unpaired one", "n": 100, "base": 50, "tuned": 50, "baseOnly": 25, "tunedOnly": 25},
     {"id": "unpaired-only", "why": "no paired counts", "n": 300, "base": 210, "tuned": 231},
-    {"id": "one-row", "why": "edge: one row", "n": 1, "base": 0, "tuned": 1, "baseOnly": 0, "tunedOnly": 1}
+    {"id": "one-row", "why": "edge: one row", "n": 1, "base": 0, "tuned": 1, "baseOnly": 0, "tunedOnly": 1},
+    {"id": "five-3-0", "why": "review M1: interval above 0 but exact McNemar p = 0.25 -> borderline", "n": 5, "base": 1, "tuned": 4, "baseOnly": 0, "tunedOnly": 3},
+    {"id": "fifty-4-0", "why": "review M1: interval above 0 but exact McNemar p = 0.125 -> borderline", "n": 50, "base": 23, "tuned": 27, "baseOnly": 0, "tunedOnly": 4},
+    {"id": "fifty-4-0-concordant-wrong", "why": "same 4/0 split, the 46 concordant rows all wrong: interval includes 0 -> within noise", "n": 50, "base": 0, "tuned": 4, "baseOnly": 0, "tunedOnly": 4},
+    {"id": "fifty-6-0", "why": "6/0 is the smallest all-one-way split with exact p < 0.05 (0.031)", "n": 50, "base": 23, "tuned": 29, "baseOnly": 0, "tunedOnly": 6}
   ]
 }

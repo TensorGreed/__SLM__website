@@ -14,6 +14,8 @@
  *     Stat Med 17:2635, method 10 (no continuity correction).
  *   McNemar exact test: the two-sided binomial test of the discordant rows
  *     against 1/2 (McNemar 1947; exact form as in statsmodels mcnemar).
+ *   Verdict: paired, "lift" / "drop" needs the interval to exclude 0 AND the
+ *     exact McNemar p < 0.05, else "borderline"; unpaired, the interval alone.
  *   Paired t-interval: what BrewSLM's lift check reports
  *     (paired_comparison_stats.py on public main).
  *   Sizing: normal approximation at 95% confidence and 80% power,
@@ -137,10 +139,17 @@
     return Math.max(1, Math.ceil(Math.pow(Z_TOTAL * sd / Math.max(1e-6, gap), 2) - 1e-9));
   }
 
-  function verdictOf(ci) {
-    if (ci[0] > 0) return "lift";
-    if (ci[1] < 0) return "drop";
-    return "noise";
+  var ALPHA = 0.05;
+
+  /** The verdict. Unpaired: the interval alone. Paired: "lift" or "drop" only when the interval
+   *  excludes 0 AND the exact McNemar p is below 0.05; when the two disagree, "borderline".
+   *  (The paired Newcombe interval is liberal with very few discordant rows: 4 better / 0 worse
+   *  gives an interval above zero while the exact p is 0.125.) */
+  function verdictOf(ci, p) {
+    var side = ci[0] > 0 ? "lift" : ci[1] < 0 ? "drop" : "noise";
+    if (p === undefined || p === null) return side;
+    if (side === "noise") return p < ALPHA ? "borderline" : "noise";
+    return p < ALPHA ? side : "borderline";
   }
 
   /**
@@ -149,10 +158,18 @@
    * Returns {error} when the counts are inconsistent.
    */
   function analyze(input) {
-    var n = Math.round(input.n), B = Math.round(input.base), T = Math.round(input.tuned);
+    var whole = function (v) { return v === undefined || v === null || v === "" || Number(v) === Math.floor(Number(v)); };
+    if (!whole(input.n) || !whole(input.base) || !whole(input.tuned) || !whole(input.baseOnly) || !whole(input.tunedOnly)) {
+      return { error: "Counts must be whole numbers of rows.", field: "count" };
+    }
+    var n = Number(input.n), B = Number(input.base), T = Number(input.tuned);
+    if (input.gap !== undefined && input.gap !== null && !(input.gap > 0)) {
+      return { error: "The smallest change worth detecting must be above 0 points.", field: "gap" };
+    }
     var gap = input.gap > 0 ? input.gap : 0.05;
-    if (!(n >= 1)) return { error: "Enter the number of rows (at least 1)." };
-    if (!(B >= 0 && B <= n && T >= 0 && T <= n)) return { error: "Correct counts must be between 0 and the number of rows." };
+    if (!(n >= 1)) return { error: "Enter the number of rows (at least 1).", field: "n" };
+    if (!(B >= 0 && B <= n)) return { error: "Correct counts must be between 0 and the number of rows.", field: "base" };
+    if (!(T >= 0 && T <= n)) return { error: "Correct counts must be between 0 and the number of rows.", field: "tuned" };
     var r = { n: n, base: B, tuned: T, gap: gap };
     r.pBase = B / n; r.pTuned = T / n; r.diff = r.pTuned - r.pBase;
     r.ciBase = wilson(B, n); r.ciTuned = wilson(T, n);
@@ -161,11 +178,11 @@
                     input.tunedOnly !== undefined && input.tunedOnly !== null && input.tunedOnly !== "";
     r.paired = false;
     if (hasPaired) {
-      var c = Math.round(input.baseOnly), b = Math.round(input.tunedOnly);
+      var c = Number(input.baseOnly), b = Number(input.tunedOnly);
       var both = B - c;
       if (!(b >= 0 && c >= 0) || both !== T - b || both < 0 || both + b + c > n) {
         return { error: "The paired counts don't fit the totals: base right = both right + base-only right, " +
-                        "tuned right = both right + tuned-only right, and the four groups add up to the rows." };
+                        "tuned right = both right + tuned-only right, and the four groups add up to the rows.", field: "paired" };
       }
       r.paired = true;
       r.both = both; r.tunedOnly = b; r.baseOnly = c; r.neither = n - both - b - c;
@@ -189,7 +206,8 @@
     r.unpairedGap = Z_TOTAL * Math.sqrt(v / n);
     r.unpairedRows = rowsFor(Math.sqrt(v), gap);
     r.ci = r.paired ? r.ciPaired : r.ciUnpaired;
-    r.verdict = n < MIN_ROWS ? "few" : verdictOf(r.ci);
+    r.verdict = n < MIN_ROWS ? "few" : verdictOf(r.ci, r.paired ? r.mcnemarP : null);
+    r.intervalSide = verdictOf(r.ci, null);
     return r;
   }
 
@@ -198,22 +216,40 @@
     var out = [];
     [["n", s.n], ["base", s.base], ["tuned", s.tuned], ["bo", s.baseOnly], ["to", s.tunedOnly], ["gap", s.gapPts]]
       .forEach(function (kv) {
-        if (kv[1] !== undefined && kv[1] !== null && kv[1] !== "") out.push(kv[0] + "=" + encodeURIComponent(kv[1]));
+        if (kv[1] !== undefined && kv[1] !== null && kv[1] !== "" && !(typeof kv[1] === "number" && isNaN(kv[1]))) out.push(kv[0] + "=" + encodeURIComponent(kv[1]));
       });
     return out.join("&");
   }
+  /** decodeURIComponent that returns null instead of throwing on a malformed escape. */
+  function decode(s) {
+    try { return decodeURIComponent(s.replace(/\+/g, " ")); } catch (e) { return null; }
+  }
+  /** Parse a query string. Keys present but not a number come back in `bad`, so the page can say so
+   *  instead of silently loading the example. */
   function fromQuery(qs) {
-    var p = {};
+    var p = Object.create(null);
     String(qs || "").replace(/^\?/, "").split("&").forEach(function (kv) {
       var i = kv.indexOf("=");
-      if (i > 0) p[decodeURIComponent(kv.slice(0, i))] = decodeURIComponent(kv.slice(i + 1));
+      if (i <= 0) return;
+      var k = decode(kv.slice(0, i)), v = decode(kv.slice(i + 1));
+      if (k !== null) p[k] = v;
     });
-    var num = function (v) { var x = Number(v); return v !== undefined && v !== "" && isFinite(x) && x >= 0 ? x : undefined; };
-    return { n: num(p.n), base: num(p.base), tuned: num(p.tuned), baseOnly: num(p.bo), tunedOnly: num(p.to), gapPts: num(p.gap) };
+    var bad = [];
+    var num = function (key) {
+      if (!(key in p)) return undefined;
+      var v = p[key], x = Number(v);
+      if (v !== null && v !== "" && isFinite(x) && x >= 0) return x;
+      bad.push(key);
+      return undefined;
+    };
+    var out = { n: num("n"), base: num("base"), tuned: num("tuned"), baseOnly: num("bo"), tunedOnly: num("to"), gapPts: num("gap") };
+    out.bad = bad;
+    out.any = ["n", "base", "tuned", "bo", "to", "gap"].some(function (k) { return k in p; });
+    return out;
   }
 
   return {
-    Z95: Z95, Z_TOTAL: Z_TOTAL, MIN_ROWS: MIN_ROWS, wilson: wilson, newcombeUnpaired: newcombeUnpaired,
+    Z95: Z95, Z_TOTAL: Z_TOTAL, MIN_ROWS: MIN_ROWS, ALPHA: ALPHA, verdictOf: verdictOf, wilson: wilson, newcombeUnpaired: newcombeUnpaired,
     newcombePaired: newcombePaired, mcnemarExact: mcnemarExact, tCrit: tCrit, pairedT: pairedT,
     rowsFor: rowsFor, analyze: analyze, toQuery: toQuery, fromQuery: fromQuery
   };

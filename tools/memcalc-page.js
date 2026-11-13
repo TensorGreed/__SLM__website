@@ -13,6 +13,12 @@
   var NUM = ["L", "h", "heads", "kvHeads", "headDim", "ffn", "vocab", "experts", "topK", "expertFfn", "r", "seq", "batch"];
   var ARCH = ["L", "h", "heads", "kvHeads", "headDim", "ffn", "vocab", "experts", "topK", "expertFfn", "tied", "moe"];
   var state = M.fromQuery(window.location.search);
+  (function () {   // a shared link may carry a combination the form would not allow (QLoRA in fp32): show what is computed
+    var n = M.normalize(state).x;
+    state.prec = n.prec;
+    state.method = n.method;
+    state.targets = n.targets;
+  })();
   var shown = {};   // the text last written to the billions fields, to tell a user edit from a round-off
 
   function fmtGiB(b) {
@@ -30,16 +36,14 @@
   function fmtCount(n) { return Math.round(n).toLocaleString("en-US"); }
 
   function writeForm() {
-    $("mc-preset").value = state.preset in M.PRESETS || state.preset === "custom" ? state.preset : "custom";
+    $("mc-preset").value = M.hasPreset(state.preset) || state.preset === "custom" ? state.preset : "custom";
     shown.params = fmtBillions(state.params);
-    shown.active = fmtBillions(state.active || state.params);
     $("mc-params").value = shown.params;
-    $("mc-active").value = shown.active;
     NUM.forEach(function (k) {
       var el = form.elements[k];
       if (el && state[k] !== undefined) { el.value = state[k]; el.removeAttribute("aria-invalid"); }
     });
-    ["tied", "moe", "dq", "gc"].forEach(function (k) { form.elements[k].checked = !!state[k]; });
+    ["tied", "moe", "dq", "kbit", "gc"].forEach(function (k) { form.elements[k].checked = !!state[k]; });
     form.querySelectorAll('input[name="method"]').forEach(function (el) { el.checked = el.value === state.method; });
     form.querySelectorAll('input[name="hw"]').forEach(function (el) { el.checked = el.value === state.hw; });
     $("mc-prec").value = state.prec;
@@ -54,8 +58,10 @@
     $("mc-targets").hidden = !lora;
     $("mc-targets-help").hidden = !lora || !state.moe;
     $("mc-dq-row").hidden = state.method !== "qlora";
+    $("mc-kbit-row").hidden = !(state.prec === "nf4" || state.prec === "int8");
     $("mc-moe-fields").hidden = !state.moe;
-    $("mc-active").disabled = !state.moe;
+    state.active = M.activeFromArch(state);
+    $("mc-active").textContent = state.moe ? fmtBillions(state.active) : "same as total (dense)";
     var allowed = { full: ["bf16", "fp16", "fp32", "mixed"], lora: ["bf16", "fp16", "fp32", "int8"], qlora: ["nf4"] }[state.method];
     Array.prototype.forEach.call($("mc-prec").options, function (o) { o.disabled = allowed.indexOf(o.value) < 0; });
     var implied = M.paramsFromArch(state);
@@ -87,14 +93,13 @@
       var v = readNumber(el);
       if (v !== null) state[k] = Math.round(v);
     });
-    ["params", "active"].forEach(function (k) {
+    ["params"].forEach(function (k) {
       var el = $("mc-" + k);
-      if (el.disabled) return;
       if (el.value === shown[k]) return;              // unchanged: keep the exact count
       var v = readNumber(el);
       if (v !== null) { state[k] = Math.round(v * 1e9); shown[k] = el.value; }
     });
-    ["tied", "moe", "dq", "gc"].forEach(function (k) { state[k] = form.elements[k].checked; });
+    ["tied", "moe", "dq", "kbit", "gc"].forEach(function (k) { state[k] = form.elements[k].checked; });
     var m = form.querySelector('input[name="method"]:checked');
     if (m) state.method = m.value;
     var hw = form.querySelector('input[name="hw"]:checked');
@@ -103,7 +108,6 @@
     state.opt = $("mc-opt").value;
     state.targets = Array.prototype.filter.call(form.querySelectorAll('input[name="targets"]'), function (el) { return el.checked; })
       .map(function (el) { return el.value; });
-    if (!state.moe) state.active = state.params;
     if (ARCH.indexOf(changed) >= 0 || changed === "params") {
       state.preset = "custom";
       $("mc-preset").value = "custom";
@@ -112,6 +116,8 @@
     var n = M.normalize(state).x;
     state.prec = n.prec;
     state.method = n.method;
+    state.targets = n.targets;
+    form.querySelectorAll('input[name="targets"]').forEach(function (el) { el.checked = state.targets.indexOf(el.value) >= 0; });
     $("mc-prec").value = state.prec;
     form.querySelectorAll('input[name="method"]').forEach(function (el) { el.checked = el.value === state.method; });
     syncVisibility();
@@ -169,11 +175,14 @@
     var tb = $("mc-rows");
     tb.textContent = "";
     var lora = x.method !== "full";
-    row(tb, "Weights", r.weights, r.peak, null, lora ? "frozen base" : (x.prec === "mixed" ? "fp32 master + 16-bit copy" : null));
+    var quant = x.prec === "nf4" || x.prec === "int8";
+    row(tb, "Weights", r.weights, r.peak, null, lora ? (quant ? (x.kbit ? "frozen base; unquantized parts in fp32" : "frozen base; unquantized parts 16-bit") +
+        (x.moe ? ", experts unquantized" : "") : "frozen base") : (x.prec === "mixed" ? "fp32 master + 16-bit copy" : null));
     row(tb, "Gradients", r.gradients, r.peak, null, lora ? "adapter only, fp32" : null);
     row(tb, "Optimizer state", r.optimizer, r.peak, null, lora ? "adapter only" : null);
     if (lora) row(tb, "Adapter weights", r.adapter, r.peak, null, fmtCount(r.trainable) + " parameters, fp32");
-    row(tb, "Activations", r.activations, r.peak, null, x.gc ? "layer inputs + one layer rebuilt in backward" : "kept for backward");
+    row(tb, "Activations", r.activations, r.peak, null, (x.gc ? "layer inputs + one layer rebuilt in backward" : "kept for backward") +
+        (r.activationBytes === 4 && x.prec !== "fp32" ? ", fp32 after the kbit prep" : ""));
     row(tb, "Logits and loss (fp32)", r.logits, r.peak, null, "batch × tokens × vocabulary");
     row(tb, "Overhead", r.overhead, r.peak, null, x.hw === "unified" ? "CUDA context, allocator, process and page cache" : "CUDA context and allocator");
     row(tb, "Training peak", r.peak, 0, "total");
@@ -181,6 +190,8 @@
     var lines = $("mc-lines");
     lines.textContent = "";
     li(lines, "Allocated by PyTorch at the peak: " + fmtGiB(r.allocated) + " GiB (what torch.cuda.max_memory_allocated() reports).");
+    if (x.moe) li(lines, "Active per token: " + fmtBillions(r.active) + "B of " + fmtBillions(x.params) + "B (top " + x.topK + " of " +
+       x.experts + " experts). The activations above follow the routed experts; the weights count all of them.");
     li(lines, "Trainable parameters: " + fmtCount(r.trainable) + (lora ? " (" + (100 * r.trainable / x.params).toFixed(2) + "% of the model)." : " (all of them)."));
     li(lines, "Evaluation at " + fmtCount(x.seq) + " tokens, batch 1: " + fmtGiB(r.inference) + " GiB (weights " +
        fmtGiB(r.inferenceWeights) + " + KV cache " + fmtGiB(r.kvCache) + " + overhead)" +
@@ -195,6 +206,10 @@
     var notes = $("mc-notes");
     notes.textContent = "";
     r.notes.forEach(function (t) { li(notes, t); });
+
+    // Screen readers hear one short line, not the rebuilt table.
+    var summary = "Training peak " + fmtGiB(r.peak) + " GiB. " + (r.trainTier ? "Fits a " + r.trainTier + " GB " + pool + "." : "More than 128 GB.");
+    if ($("mc-summary").textContent !== summary) $("mc-summary").textContent = summary;
 
     var q = "?" + M.toQuery(state);
     if (window.location.search !== q && window.history && window.history.replaceState) {

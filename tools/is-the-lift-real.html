@@ -88,7 +88,7 @@
           "name": "The interval and the McNemar p-value disagree. Which do I trust?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Neither more than the other: they answer the same question in two slightly different ways, and the exact test is a little conservative. They only disagree near the edge, where the honest reading is \"borderline\". Add rows rather than picking the answer you prefer."
+            "text": "Neither on its own: the tool calls a lift or a drop only when both agree. They answer the same question in two slightly different ways, and the exact test is a little conservative. They disagree in two places: near p = 0.05, and when very few rows changed, where the interval can clear zero on 3 or 4 rows all one way while the exact p is 0.125 or more. The tool calls both \"borderline\" and asks for more rows; don't pick the answer you prefer."
           }
         },
         {
@@ -231,7 +231,8 @@
             </fieldset>
           </form>
 
-          <div class="tool__results" id="lc-results" aria-live="polite">
+          <div class="tool__results" id="lc-results">
+            <p class="sr-only" id="lc-summary" aria-live="polite" aria-atomic="true"></p>
             <p class="result-head">Verdict</p>
             <p class="result-big"><span class="verdict" id="lc-verdict">Fill in the form</span></p>
             <p class="result-sub" id="lc-sentence"></p>
@@ -275,13 +276,16 @@
           equally good, each disagreement would be a coin flip. The p-value is the chance of a split at least as
           lopsided as yours under that coin flip (an exact binomial test, as McNemar's test is computed for small
           counts). A small p-value, conventionally under 0.05, says the split is unlikely to be luck. The exact
-          form is a little conservative (Fagerland, Lydersen and Laake 2013), so near 0.05 it and the interval can
-          disagree; read that as "borderline, add rows".
+          form is a little conservative (Fagerland, Lydersen and Laake 2013). With very few disagreeing rows it is
+          also the honest one: 3 rows all one way give p = 0.25 and 4 give 0.125, however the other rows fall, and it
+          takes at least 6 all one way (p = 0.031) to get under 0.05. The paired interval can already sit above zero
+          on 3 or 4 such rows, so the tool asks both to agree before it calls a lift.
         </p>
         <h3>The verdict</h3>
         <ul>
-          <li><strong>Real lift</strong>: the whole interval for the change is above zero.</li>
-          <li><strong>Real drop</strong>: the whole interval is below zero.</li>
+          <li><strong>Real lift</strong>: the whole interval for the change is above zero and, when you give the row-by-row counts, the exact McNemar p is under 0.05.</li>
+          <li><strong>Real drop</strong>: the same, below zero.</li>
+          <li><strong>Borderline: add rows</strong>: with the row-by-row counts, the interval and the exact test disagree. Usually the interval clears zero on a handful of changed rows while p is 0.125 or more: too few rows changed to rule out luck.</li>
           <li><strong>Within noise</strong>: the interval includes zero. That does not mean "no effect"; it means this many rows cannot tell a gain from a loss.</li>
           <li><strong>Too few rows</strong>: under 5 rows, where BrewSLM also gives no verdict.</li>
         </ul>
@@ -289,7 +293,10 @@
           BrewSLM's lift check puts a paired t-interval on the mean per-row change (+1, −1 or 0) instead; the
           tool shows that interval too, so you can set it next to a BrewSLM run (BrewSLM reads its t value from a
           rounded table above 30 rows, so the ends can differ in the last digit). On a few dozen rows the two
-          intervals differ by a point or two and agree on the verdict except near the edge.
+          intervals differ by a point or two. The 50-row example in the box below is the same case as the first
+          validation row: its "−3 to +19" is BrewSLM's t-interval, the tool's paired interval is −2.7 to +18.3.
+          On its own the t-interval, like the paired interval, can clear zero on 3 or 4 changed rows all one way;
+          this tool does not call that a lift without the exact test.
         </p>
         <h3>How many rows you need</h3>
         <p>
@@ -355,6 +362,10 @@
             <thead><tr><th scope="col">Counts</th><th scope="col" class="num">Change, 95% interval (points)</th><th scope="col" class="num">McNemar p</th><th scope="col">Verdict</th></tr></thead>
             <tbody>
               <tr><th scope="row">50 rows: base 22, tuned 26; 6 better, 2 worse</th><td class="num" data-lift-case="box-50">−2.7 to +18.3</td><td class="num">0.289</td><td>within noise</td></tr>
+              <tr><th scope="row">50 rows: base 23, tuned 27; 4 better, 0 worse</th><td class="num" data-lift-case="fifty-4-0">+0.6 to +15.1</td><td class="num">0.125</td><td>borderline</td></tr>
+              <tr><th scope="row">50 rows: base 0, tuned 4; 4 better, 0 worse</th><td class="num" data-lift-case="fifty-4-0-concordant-wrong">−0.6 to +18.8</td><td class="num">0.125</td><td>within noise</td></tr>
+              <tr><th scope="row">50 rows: base 23, tuned 29; 6 better, 0 worse</th><td class="num" data-lift-case="fifty-6-0">+3.0 to +20.4</td><td class="num">0.031</td><td>real lift</td></tr>
+              <tr><th scope="row">5 rows: base 1, tuned 4; 3 better, 0 worse</th><td class="num" data-lift-case="five-3-0">+8.0 to +80.1</td><td class="num">0.250</td><td>borderline</td></tr>
               <tr><th scope="row">40 rows: base 24, tuned 29; 7 better, 2 worse</th><td class="num" data-lift-case="lesson-1-18">−1.7 to +26.0</td><td class="num">0.180</td><td>within noise</td></tr>
               <tr><th scope="row">78 rows: base 28, tuned 23; 2 better, 7 worse</th><td class="num" data-lift-case="faq-78">−13.8 to +1.0</td><td class="num">0.180</td><td>within noise</td></tr>
               <tr><th scope="row">20 rows: base 0, tuned 0</th><td class="num" data-lift-case="all-wrong">−16.1 to +16.1</td><td class="num">1.000</td><td>within noise</td></tr>
@@ -372,7 +383,9 @@
         <p>
           The 300-row case is worth a second look: unpaired, a 7-point gain is just inside the noise. With the
           row-by-row counts it is a real lift whenever the models agree on most rows: 25 better and 4 worse gives
-          +3.6 to +10.5 points, and even 60 better and 39 worse gives +0.5 to +13.4. Collect the paired counts.
+          +3.6 to +10.5 points (McNemar p &lt; 0.001), and even 60 better and 39 worse gives +0.5 to +13.4 (p = 0.044).
+          Collect the paired counts. The 4-better, 0-worse rows show the other side: the interval clears zero, but
+          four changed rows are too few for the exact test, so the verdict is borderline.
         </p>
         <h3>Sources</h3>
         <ul>
@@ -400,7 +413,7 @@
           </details>
           <details class="faq-item">
             <summary>The interval and the McNemar p-value disagree. Which do I trust?</summary>
-            <p>Neither more than the other: they answer the same question in two slightly different ways, and the exact test is a little conservative. They only disagree near the edge, where the honest reading is "borderline". Add rows rather than picking the answer you prefer.</p>
+            <p>Neither on its own: the tool calls a lift or a drop only when both agree. They answer the same question in two slightly different ways, and the exact test is a little conservative. They disagree in two places: near p = 0.05, and when very few rows changed, where the interval can clear zero on 3 or 4 rows all one way while the exact p is 0.125 or more. The tool calls both "borderline" and asks for more rows; don't pick the answer you prefer.</p>
           </details>
           <details class="faq-item">
             <summary>Does a real lift mean the model is ready to ship?</summary>
