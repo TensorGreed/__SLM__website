@@ -164,13 +164,23 @@
     list.appendChild(item);
   }
 
+  /** The levers not already pulled, in Lesson 1.16's order. */
+  function levers(x) {
+    var out = ["shorten the rows", "lower the micro-batch"];
+    if (!x.gc) out.push("turn on gradient checkpointing");
+    if (x.method === "full") out.push("use LoRA or QLoRA");
+    else if (x.method === "lora" && x.prec !== "int8" && !x.moe) out.push("use QLoRA");
+    return out.slice(0, -1).join(", ") + " or " + out[out.length - 1] +
+      (x.moe && (x.prec === "nf4" || x.prec === "int8") ? ". The experts are counted unquantized here; see the note below" : "");
+  }
+
   function render() {
     var r = M.estimate(state), x = r.input;
     var pool = x.hw === "unified" ? "unified-memory machine" : "GPU";
     $("mc-peak").textContent = fmtGiB(r.peak) + " GiB (" + fmtGB(r.peak) + " GB)";
     $("mc-fit").textContent = r.trainTier
       ? "Fits a " + r.trainTier + " GB " + pool + " (the smallest of " + M.TIERS_GB.join(", ") + " GB that holds it)."
-      : "More than 128 GB: shorten the rows, lower the micro-batch, turn on gradient checkpointing, or use LoRA / QLoRA.";
+      : "More than 128 GB: " + levers(x) + ".";
 
     var tb = $("mc-rows");
     tb.textContent = "";
