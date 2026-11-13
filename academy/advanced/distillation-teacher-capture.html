@@ -337,8 +337,8 @@ GET  /api/projects/&lt;id&gt;/distillation/tasks/&lt;task_id&gt;  → its progre
         <p>With the teacher's knowledge frozen into <code>teacher_capture.jsonl</code>, the student never needs the teacher again. The next lesson is the loss that actually transfers that knowledge — the KD objective.</p>
 
         <div class="callout callout--note">
-          <p class="callout__label">Fix coming</p>
-          <p>In public BrewSLM the training script runs offline KD and the <code>recipe.kd.*</code> presets set it up, but the experiment API rejects <code>training_mode: distillation</code> and drops the offline keys, so a normal run cannot reach it yet. Live-teacher KD (an <code>sft</code> run with <code>distillation_enabled</code>) works today. A fix that lets the experiment API accept offline distillation is merged but not yet released (Lesson 3.11).</p>
+          <p class="callout__label">On the platform</p>
+          <p>A BrewSLM run reaches offline KD through the experiment API: <code>POST /api/projects/{id}/training/experiments</code> accepts <code>training_mode: distillation</code> (or <code>distillation_offline: true</code>) and the offline keys the <code>recipe.kd.*</code> presets set. The capture file must sit inside the project's own data folder (by default its <code>distillation/teacher_capture.jsonl</code>), <code>distillation_offline_top_k</code> is at most 20, and offline KD together with live-teacher KD (<code>distillation_enabled</code>) is refused. The Train form's <em>Training Mode</em> list itself offers SFT, continued pretraining, DPO and ORPO (Lesson 3.11).</p>
         </div>
 
         <div class="callout callout--key">
