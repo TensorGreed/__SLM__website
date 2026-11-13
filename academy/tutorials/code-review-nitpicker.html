@@ -489,9 +489,9 @@
           <li>The comment is 1-3 sentences — long enough to explain, short enough to read in a glance.</li>
         </ul>
         <p>Collect each one as a row: the diff context (4-6 lines around the comment line) as the input, the comment verbatim as the expected answer, and a one-line rationale tag (<code>style-nit</code>, <code>bug-suggestion</code>, <code>test-gap</code>, <code>convention</code>, <code>security</code>). Spend 60 minutes here. These ~50-100 rows are the most important data in the project — they imprint voice on the rest.</p>
-        <div class="callout callout--warning">
-          <p class="callout__label">Known gap: no answer-key form for code-review (as of the current release)</p>
-          <p>On <strong>Data → Labels</strong> the <strong>Answer key</strong> card has no add-row form for code-review projects: the form only appears for the Q&amp;A, classification, span-extraction and summarization task types, so a code-review project sees the hint "Choose a task type … to unlock manual answer-key entry" even though a task type is set. The LLM generation panel is hidden too. A fix that adds hand entry for code-review is pending in the product. Until it ships, add the rows through the API. Save them as <code>answer_key.json</code>, with the diff as <code>question</code> and the review as <code>answer</code>:</p>
+        <div class="callout callout--note">
+          <p class="callout__label">Entering the rows: one at a time in the card, or in bulk through the API</p>
+          <p>On <strong>Data → Labels</strong> the <strong>Answer key</strong> card has an add-row form for code-review projects with two multi-line fields: <em>Input</em> (paste the diff context exactly as the model will see it; it is saved untrimmed, so leading spaces and line breaks survive) and <em>Expected output</em> (the review), plus a difficulty. Rows go to the Practice answer key unless you pick Final in the card's selector. The form has no rationale field, and the LLM generation panel is not offered for code-review. For 50-100 rows, or to keep the rationale tags, add them through the API instead. Save them as <code>answer_key.json</code>, with the diff as <code>question</code> and the review as <code>answer</code> (the same two fields the form fills):</p>
           <pre class="code-block"><code>{
   "dataset_type": "gold_dev",
   "pairs": [
