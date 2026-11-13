@@ -53,7 +53,7 @@
       "learningResourceType": "Lesson",
       "educationalLevel": "Beginner",
       "timeRequired": "PT8M",
-      "teaches": "After this lesson you can explain the difference between a base model and an instruct model, why one of them already speaks in chat turns and the other doesn't, and why you almost always fine-tune the instruct version.",
+      "teaches": "After this lesson you can explain the difference between a base model and an instruct model, why one of them already speaks in chat turns and the other doesn't, and why you usually fine-tune the instruct version.",
       "isAccessibleForFree": true,
       "isPartOf": {
         "@type": "Course",
@@ -306,7 +306,7 @@
           <p class="lesson-header__outcome">
             After this lesson you can explain the difference between a <em>base</em> model
             and an <em>instruct</em> model, why one of them already speaks in chat turns
-            and the other doesn't, and why you almost always fine-tune the instruct version.
+            and the other doesn't, and why you usually fine-tune the instruct version.
           </p>
           <div class="lesson-meta">
             <span><strong>Level:</strong> beginner</span>
@@ -360,6 +360,36 @@
           Same architecture, different parameter values. The result behaves like the chatbot you expected — because
           someone else paid the cost of teaching it to behave like one.
         </p>
+        <p>
+          That extra training is small next to pretraining. The LIMA paper fine-tuned a 65B base
+          model on just 1,000 carefully chosen examples and got a capable assistant, and proposed
+          the <em>superficial alignment hypothesis</em>: almost all knowledge comes from pretraining,
+          and alignment mostly teaches the format and style to use it in
+          (<a class="inline-link" href="https://arxiv.org/abs/2305.11206" target="_blank" rel="noopener noreferrer">Zhou et al. 2023, arXiv 2305.11206</a>).
+          It is a hypothesis, not a settled result, but it explains why a modest SFT dataset can
+          change behaviour so much. The line is also blurring: many recent base models saw
+          instruction-like and chat-formatted text during pretraining, so they follow simple
+          instructions better than older base models did.
+        </p>
+        <h2>The difference, in real output</h2>
+        <p>
+          Here is the same question sent to SmolLM2-135M (base, raw text) and SmolLM2-135M-Instruct
+          (through its chat template). Real output, greedy decoding, 40 new tokens at most,
+          <code>repetition_penalty=1.0</code>, run on a CPU with transformers 5.22:
+        </p>
+        <pre class="code-block"><code># base, prompt "What is the capital of France?"
+\n\nThe capital of France is Paris.\n\nWhat is the capital of France?\n\nThe capital of France is Paris.\n\nWhat is the capital of France?\n\nThe capital
+
+# instruct, same question inside the chat template
+The capital of France is Paris.
+
+# instruct, same question as raw text (no template)
+(empty: it ends the reply at once)</code></pre>
+        <p>
+          The base model knows the fact, but it has no notion of a finished answer: it continues the
+          text as a Q&amp;A page and only stops at the token limit. The instruct model answers and stops.
+          Without its template, the instruct model produced nothing at all.
+        </p>
 
         <h2>The chat template is for instruct models</h2>
         <p>
@@ -367,9 +397,21 @@
           that wraps each message with role markers like <code>&lt;|im_start|&gt;user</code> and
           <code>&lt;|im_start|&gt;assistant</code>. The model learned, during alignment training,
           that <em>those exact special tokens</em> mean "now it's the assistant's turn." Feed an
-          instruct model raw text without its chat template and it gets confused; feed it the
-          template and it produces clean assistant replies.
+          instruct model raw text without its chat template and quality usually drops, often
+          sharply (in the example above, to an empty reply); feed it the template and it produces
+          clean assistant replies.
         </p>
+        <p>
+          Templates are family-specific. <code>&lt;|im_start|&gt;</code> is ChatML, used by SmolLM2
+          and Qwen; Llama 3 marks roles with <code>&lt;|start_header_id|&gt;user&lt;|end_header_id|&gt;</code>;
+          others differ again, and some add a default system prompt (SmolLM2-Instruct's template adds
+          one when you don't). Never type the markers by hand. Let the tokenizer build the prompt:
+        </p>
+        <pre class="code-block"><code>prompt = tok.apply_chat_template(
+    [{"role": "user", "content": "What is the capital of France?"}],
+    add_generation_prompt=True,   # end with the assistant's turn marker
+    tokenize=False,
+)</code></pre>
         <p>
           A base model may ship a chat template too (Qwen2.5-1.5B's base tokenizer includes the same
           ChatML template as its instruct sibling), and many recent base models saw chat-formatted text
@@ -378,7 +420,7 @@
           text and continues it.
         </p>
 
-        <h2>Which one should you fine-tune? Almost always: instruct</h2>
+        <h2>Which one should you fine-tune? Usually: instruct</h2>
         <p>
           If your task is "answer this kind of question in this format" — classification,
           extraction, structured output, tone adjustment, any normal SLM use case — fine-tune
@@ -391,6 +433,12 @@
               task at the same time. That's a much harder problem on a much smaller budget.</li>
           <li>You are standing on the shoulders of whoever did the alignment work. Use them.</li>
         </ul>
+        <p>
+          This is a strong default, not a law. The gap shrinks when you have thousands of examples
+          and a narrow output format, because your SFT then teaches the format either way. Instruct
+          models can also drift into chatty answers where you wanted one label. If the measured
+          results are close, compare both on your held-out set.
+        </p>
 
         <div class="callout callout--key">
           <p class="callout__label">Key idea</p>
@@ -444,6 +492,30 @@
           picking the specific base model — license, tokenizer, context length, size.
         </p>
 
+        <div class="callout callout--key">
+          <p class="callout__label">Recap</p>
+          <ul>
+            <li>A base model is a raw next-token continuer; an instruct model is the same architecture with different parameter values after alignment training.</li>
+            <li>Instruct models expect their own family's chat template, so build prompts with <code>apply_chat_template</code>, never by hand.</li>
+            <li>Fine-tune the instruct version by default; pick base for continued pretraining, your own alignment, or when inherited behaviour fights your task.</li>
+          </ul>
+        </div>
+
+        <div class="callout callout--note">
+          <p class="callout__label">Try it (5 minutes)</p>
+          <p>Load the SmolLM2-135M-Instruct tokenizer (<code>AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-135M-Instruct")</code>) and print <code>tok.apply_chat_template([{"role": "user", "content": "Hi"}], tokenize=False, add_generation_prompt=True)</code>. (1) How many messages does the output contain? (2) What does the last line tell the model? (3) Which of these would you fine-tune for a 3-label sentiment classifier with 2,000 examples, and why?</p>
+          <details>
+            <summary>Show answer</summary>
+            <p>The output is:</p>
+            <pre class="code-block"><code>&lt;|im_start|&gt;system
+You are a helpful AI assistant named SmolLM, trained by Hugging Face&lt;|im_end|&gt;
+&lt;|im_start|&gt;user
+Hi&lt;|im_end|&gt;
+&lt;|im_start|&gt;assistant</code></pre>
+            <p>(1) Two: the template added a default system message you never wrote, which is one more reason to use the template rather than guess it. (2) <code>&lt;|im_start|&gt;assistant</code> with nothing after it means "your turn to speak", which is what <code>add_generation_prompt=True</code> adds. (3) The instruct version: the task is a normal instruction-following job, so start from the model that already follows instructions and the chat template, and let your 2,000 examples teach the labels.</p>
+          </details>
+        </div>
+
         <section class="key-terms">
           <h2>Key terms</h2>
           <dl>
@@ -453,6 +525,7 @@
             <dt>Chat template</dt><dd>The tokenizer rule wrapping messages with role markers (<code>&lt;|im_start|&gt;user</code>, …). Instruct models were aligned to it; a base model may ship one but wasn't.</dd>
             <dt>Continued pretraining</dt><dd>Continuing the next-token objective on new raw text to teach a base model a new domain — not the same as instruction tuning.</dd>
             <dt>Alignment tax</dt><dd>Capability lost on some benchmarks as a side effect of alignment training (Ouyang et al. 2022).</dd>
+            <dt>Superficial alignment hypothesis</dt><dd>LIMA's claim that knowledge comes from pretraining and alignment mostly teaches format and style (Zhou et al. 2023).</dd>
             <dt>Inherited behaviour</dt><dd>The instruct model's baked-in choices (refusals, hedges, style), which can fight your task.</dd>
           </dl>
         </section>
