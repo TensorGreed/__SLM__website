@@ -119,19 +119,21 @@
           <p class="eyebrow">Open-source small language model fine-tuning platform</p>
           <h1>Fine-tune small language models from a base model on your own data.</h1>
           <p class="hero-sub">
-            BrewSLM helps machine learning and LLM engineers turn custom datasets into
-            domain-specific small language models. Import rows from files, HuggingFace, Kaggle,
-            a git repository or a website, map them to the right task shape, run local training,
-            evaluate honestly, and export an artifact you can actually inspect.
+            Start from your documents. BrewSLM first measures the base model, with and without
+            your passages, so you know whether retrieval alone is enough. If it isn't, it writes
+            training data from those passages with a local or cloud model you choose, trains a
+            small model on your machine, and tells you whether the result beat the base model or
+            sits within noise. Then it exports an artifact you can ship and inspect. Existing
+            labelled datasets import too.
           </p>
           <div class="metric-row">
             <article class="metric-chip">
-              <strong>built-in sources</strong>
-              <span>files, HuggingFace, Kaggle, git, web</span>
+              <strong>documents → training data</strong>
+              <span>Q&amp;A pairs plus a held-out answer key, reviewed or accepted</span>
             </article>
             <article class="metric-chip">
-              <strong>built-in task mappers</strong>
-              <span>classification, QA, chat, DPO, RAG, NER, k-v, LM, code findings</span>
+              <strong>verdict vs the base model</strong>
+              <span>paired on the same test rows, with a noise band</span>
             </article>
             <article class="metric-chip">
               <strong>local + auditable</strong>
@@ -150,27 +152,27 @@
           </div>
         </div>
 
-        <aside class="hero-console reveal" aria-label="BrewSLM import session">
+        <aside class="hero-console reveal" aria-label="A BrewSLM project, from documents to a shipped model">
           <div class="console-top">
-            <p>session: import → train → export</p>
+            <p>project: documents → verdict → ship</p>
             <span>status: ready</span>
           </div>
           <div class="terminal-block">
-            <p>$ python -m app.cli.dataset_import introspect \</p>
-            <p>&nbsp;&nbsp;&nbsp;&nbsp;--locator hf:ai4privacy/pii-masking-200k:train</p>
-            <p>&nbsp;</p>
-            <p>top proposal: bio_to_spans (confidence 0.95) — safe to --auto</p>
-            <p>&nbsp;</p>
-            <p>$ python -m app.cli.dataset_import run \</p>
-            <p>&nbsp;&nbsp;&nbsp;&nbsp;--locator hf:ai4privacy/pii-masking-200k:train \</p>
-            <p>&nbsp;&nbsp;&nbsp;&nbsp;--project 1 --auto --limit 5000</p>
-            <p>&nbsp;</p>
-            <p>accepted=5000  mapper=bio_to_spans  target=structured_extraction</p>
+            <p># 1. Data → Sources: upload your PDFs, clean them into passages</p>
+            <p># 2. Documents → Q&amp;A: pairs from each passage, plus a</p>
+            <p>#    held-out answer key the model never trains on</p>
+            <p># 3. Pre-training check, judged on the test split:</p>
+            <p>#    base model alone  vs  base model + your passages</p>
+            <p>#    → retrieval ready? stop here and serve passages</p>
+            <p># 4. Train on the worker (LoRA by default)</p>
+            <p># 5. Results → Verdict: better than the base model,</p>
+            <p>#    worse, or within noise, on the same test rows</p>
+            <p># 6. Ship → Package: GGUF, Hugging Face or Docker</p>
           </div>
           <ul class="run-metrics">
-            <li><strong>introspect</strong><span>column-type sniff + ranked hypothesis list</span></li>
-            <li><strong>auto-gate</strong><span>confidence ≥ 0.80 needed, --force below</span></li>
-            <li><strong>audit</strong><span>RunEvent row emitted with mapper + row counts</span></li>
+            <li><strong>measure first</strong><span>the base model, with and without your passages</span></li>
+            <li><strong>verdict</strong><span>paired comparison against the base model</span></li>
+            <li><strong>ship</strong><span>export, publish to the Hub, deploy</span></li>
           </ul>
         </aside>
       </section>
@@ -301,150 +303,74 @@
 
       <section class="section">
         <div class="section-head reveal">
-          <p class="eyebrow">What actually shipped</p>
-          <h2>The pipeline, broken into the parts that are interesting</h2>
+          <p class="eyebrow">How a project runs</p>
+          <h2>Documents in, a verdict out, then ship</h2>
+          <p>
+            Each stage is a destination in the workspace (Overview, Data, Train, Results, Ship),
+            and each has an Academy lesson. Importing an existing dataset is covered on
+            <a class="inline-link" href="./capabilities.html#importer">Capabilities</a>.
+          </p>
         </div>
         <div class="pipeline-grid">
           <article class="pipeline-card reveal">
-            <p class="stage">01 Schema introspector</p>
-            <h3>Sniff columns, propose a mapping</h3>
+            <p class="stage">01 Documents</p>
+            <h3>Bring the text the model should know</h3>
             <p>
-              Reads ~20 sample rows from any source, classifies each column by content shape
-              (text-like, categorical, BIO tags, chat messages, etc.), ranks hypotheses with
-              confidence + rationale. Never silently auto-picks — the user confirms via
-              <code>--auto</code> above the threshold or <code>--force</code> under it.
+              Upload PDFs and other documents on Data → Sources, or pull a git repository or a
+              website. Cleaning splits them into passages at sentence boundaries; the passages
+              feed both generation and retrieval.
             </p>
-            <p class="card-note"><strong>You control:</strong> the threshold, the override, the field map.</p>
+            <p class="card-note"><a class="inline-link" href="./academy/with-brewslm/clean-prepare-manifest.html">Clean and prepare →</a></p>
           </article>
           <article class="pipeline-card reveal">
-            <p class="stage">02 Target mappers</p>
-            <h3>Domain-agnostic, registry-driven</h3>
+            <p class="stage">02 Synthetic data</p>
+            <h3>Training data written from your passages</h3>
             <p>
-              Built-ins include <code>bio_to_spans</code>, <code>label_to_classification</code>,
-              <code>qa_pair_passthrough</code>, <code>chat_messages_passthrough</code>,
-              <code>preference_pair</code>, <code>rag_passthrough</code>, <code>kv_to_structured</code>,
-              <code>text_only</code>, and three code-findings mappers (<code>code_label_to_findings</code>,
-              <code>contrast_functions</code>, <code>fix_pair</code>). Each declares the task profile it feeds.
+              A local model (Ollama) or a cloud API you configure writes question-answer pairs
+              from each passage and one held-out question per passage for the answer key.
+              The documents flow accepts its pairs directly; rows from the synthetic playbooks wait
+              in the review queue, where you reject them by reason in bulk.
             </p>
-            <p class="card-note"><strong>You control:</strong> custom mappers via plugin modules.</p>
+            <p class="card-note"><a class="inline-link" href="./academy/with-brewslm/synthetic-data-and-review.html">Synthetic data and review →</a></p>
           </article>
           <article class="pipeline-card reveal">
-            <p class="stage">03 Bulk-drop UX</p>
-            <h3>Group rejects by reason, drop in one click</h3>
+            <p class="stage">03 Measure first</p>
+            <h3>Is retrieval already enough?</h3>
             <p>
-              Per-row accountability is the contract — every raw row becomes either a
-              TransformedRow or a RejectedRow with a stable reason code. Counts stay in the audit
-              log even when you bulk-drop a category from the import.
+              Before training, a judge scores the base model reading your passages on the test
+              split, with the best retrieval settings a sweep can find. When that already answers
+              well, the flow stops before training and says to serve the passages instead.
             </p>
-            <p class="card-note"><strong>You control:</strong> which rejection categories to silence.</p>
+            <p class="card-note"><a class="inline-link" href="./academy/with-brewslm/auto-rag-and-reroute.html">When fine-tuning isn't the answer →</a></p>
           </article>
           <article class="pipeline-card reveal">
-            <p class="stage">04 Task-aware eval</p>
-            <h3>The metric matches the shape</h3>
+            <p class="stage">04 Train</p>
+            <h3>A run on your own GPU</h3>
             <p>
-              NER / PII get span-set scoring (strict <code>(type, start, end)</code> matching).
-              RAG gets faithfulness + context-recall alongside EM/F1. DPO gets similarity-to-chosen
-              vs similarity-to-rejected. Classification gets per-class P/R/F1 + confusion matrix.
-              No more "your F1 is 4% because the reference is one word."
+              Preflight checks the data and the config, then the Celery worker runs the
+              training script: LoRA by default, full fine-tuning, continued pretraining,
+              distillation or a token-classification head. The bell tracks it.
             </p>
-            <p class="card-note"><strong>You control:</strong> the gate policy + the metric registry.</p>
+            <p class="card-note"><a class="inline-link" href="./academy/with-brewslm/training-jobs-and-monitoring.html">Training jobs and monitoring →</a></p>
           </article>
           <article class="pipeline-card reveal">
-            <p class="stage">05 Saved mappings + audit log</p>
-            <h3>Reproducible imports, no re-introspecting</h3>
+            <p class="stage">05 Verdict</p>
+            <h3>Better than the base model, or within noise?</h3>
             <p>
-              Save a mapping after first import; re-run against a refreshed source with one click
-              (or one <code>POST /configs/{id}/run</code>). Every import — fresh or re-run — emits
-              a RunEvent with source, locator, mapper, row counts, and the config_id link.
+              When a run finishes, BrewSLM scores the base model and the trained one on the same
+              held-out rows and compares them row by row. The scorer matches the task shape, and
+              your pass/fail rule set says whether the run is good enough to ship.
             </p>
-            <p class="card-note"><strong>You control:</strong> when to refresh, when to retire.</p>
+            <p class="card-note"><a class="inline-link" href="./academy/with-brewslm/eval-packs-and-failure-clusters.html">Evaluate: rules and failure clusters →</a></p>
           </article>
           <article class="pipeline-card reveal">
-            <p class="stage">06 Local-first runtime</p>
-            <h3>Your data stays on your machine</h3>
+            <p class="stage">06 Ship</p>
+            <h3>Export, publish, deploy</h3>
             <p>
-              FastAPI backend + SQLite + a React workspace. Everything runs locally; the teacher
-              model is optional (Ollama, OpenAI-compatible endpoint, anything that speaks the
-              chat-completions API). Cloud burst is opt-in, not required.
+              Package a run as GGUF, ONNX, TensorRT, Hugging Face or Docker, publish a Hugging
+              Face export to the Hub, and track deployed versions with promote and rollback.
             </p>
-            <p class="card-note"><strong>You control:</strong> the inference backend, the storage path, the boundary.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-head reveal">
-          <p class="eyebrow">Operator view</p>
-          <h2>What you see during an actual session</h2>
-        </div>
-        <div class="dual-pane">
-          <article class="pane reveal">
-            <p class="pane-title">Import run audit (excerpt)</p>
-            <div class="terminal-block dense">
-              <p>POST /api/dataset-import/introspect</p>
-              <p>→ proposal: bio_to_spans  conf=0.95  needs_force=false</p>
-              <p>POST /api/projects/1/dataset-import/preview</p>
-              <p>→ accepted=4982  rejected=18 (length_mismatch=18)</p>
-              <p>POST /api/projects/1/dataset-import/run</p>
-              <p>→ written_path=…/projects/1/synthetic/synthetic.jsonl</p>
-              <p>RunEvent  stage=ingestion  reason=dataset_import_run</p>
-              <p>RunEvent  stage=training   summary="Training started: exp-7"</p>
-              <p>RunEvent  stage=eval       payload.pass_rate=0.92</p>
-              <p>RunEvent  stage=export     payload.format=gguf</p>
-            </div>
-          </article>
-          <article class="pane reveal">
-            <p class="pane-title">What lands in your project</p>
-            <div class="code-block dense">
-              <p><span class="code-key">source</span>: hf:ai4privacy/pii-masking-200k:train</p>
-              <p><span class="code-key">mapper</span>: bio_to_spans</p>
-              <p><span class="code-key">target_task_profile</span>: structured_extraction</p>
-              <p><span class="code-key">scoring_mode</span>: span_set</p>
-              <p><span class="code-key">written_rows</span>: 4982</p>
-              <p><span class="code-key">audit_log_entries</span>: 12 (RunEvent stream)</p>
-              <p><span class="code-key">saved_mapping</span>: pii-weekly-refresh</p>
-            </div>
-            <table class="mini-table" aria-label="Source connector summary">
-              <thead>
-                <tr>
-                  <th>Source</th>
-                  <th>Locator</th>
-                  <th>Cache</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>JSONL / CSV</td>
-                  <td><code>jsonl:/path</code></td>
-                  <td>local fs</td>
-                </tr>
-                <tr>
-                  <td>HuggingFace</td>
-                  <td><code>hf:org/dataset:split</code></td>
-                  <td><code>~/.cache/huggingface</code></td>
-                </tr>
-                <tr>
-                  <td>Kaggle</td>
-                  <td><code>kaggle:competition:slug</code></td>
-                  <td><code>~/.cache/brewslm/kaggle</code></td>
-                </tr>
-                <tr>
-                  <td>Any row file</td>
-                  <td><code>file:/path</code></td>
-                  <td>local fs (csv, tsv, jsonl, json, xlsx, parquet)</td>
-                </tr>
-                <tr>
-                  <td>Git repository</td>
-                  <td><code>git:&lt;url&gt;[@ref]</code></td>
-                  <td>shallow clone in a temp dir</td>
-                </tr>
-                <tr>
-                  <td>Website</td>
-                  <td><code>web:&lt;seed url&gt;</code></td>
-                  <td><code>DATA_DIR/web_cache</code></td>
-                </tr>
-              </tbody>
-            </table>
+            <p class="card-note"><a class="inline-link" href="./academy/with-brewslm/export-deploy-coach.html">Export, deploy and Coach →</a></p>
           </article>
         </div>
       </section>
@@ -456,33 +382,33 @@
         </div>
         <div class="insight-grid">
           <article class="insight-card reveal">
-            <h3>Stop writing per-dataset converters</h3>
+            <h3>Stop fine-tuning before you've measured</h3>
             <p>
-              The Kaggle PII converter was 175 lines of careful BIO-to-spans logic. The
-              introspector now infers the same mapping from sample rows — and it works on any
-              BIO-tagged dataset, not just one.
+              On IRS Publication 17 the base model reading retrieved passages scored 0.73 and a
+              fine-tune scored 0.02. The pre-training check said "don't fine-tune" before any
+              training ran.
+            </p>
+          </article>
+          <article class="insight-card reveal">
+            <h3>Stop trusting one number</h3>
+            <p>
+              The verdict pairs the base and trained model on the same rows and says when a
+              difference is within noise for a test set that size, instead of celebrating a
+              two-point gain.
             </p>
           </article>
           <article class="insight-card reveal">
             <h3>Stop guessing which metric to trust</h3>
             <p>
-              Task-aware eval handlers route to the metric shape that fits. NER doesn't get scored
-              with classification F1 anymore. RAG faithfulness shows up next to answer F1, so you
-              can tell retriever bugs from generation bugs.
-            </p>
-          </article>
-          <article class="insight-card reveal">
-            <h3>Stop re-introspecting weekly</h3>
-            <p>
-              Save the mapping the first time. The <em>Saved mappings</em> panel on Data → Sources
-              shows last-run row counts; one-click re-runs hit the same RunEvent audit stream as a fresh import.
+              Task-aware scorers match the shape: span F1 for taggers, typed field match with
+              nulls for JSON records, per-class F1 for classifiers, a judge for long answers.
             </p>
           </article>
           <article class="insight-card reveal">
             <h3>Stop losing rows silently</h3>
             <p>
-              Per-row rejections carry stable reason codes. Bulk-drop happens only on categories
-              you explicitly select; counts stay in the result regardless.
+              Rejected rows carry a reason, in the review queue and in imports alike. Drop the
+              categories you choose; the counts stay in the record.
             </p>
           </article>
         </div>
@@ -584,7 +510,7 @@
       <section id="quickstart" class="section cta reveal">
         <div class="cta-copy">
           <p class="eyebrow">Quickstart</p>
-          <h2>Clone, install, import, train</h2>
+          <h2>Clone, install, train a demo</h2>
           <p>
             Six blocks. The first four boot the platform; the last two are the demo run-through.
             Match this against the README for the canonical version.
@@ -610,9 +536,9 @@
             <p># 5. Open http://localhost:5173, log in as admin with the API_KEY from</p>
             <p>#    backend/.env (sk-mock-admin-key), then "+ New Project" or a starter project</p>
             <p>&nbsp;</p>
-            <p># 6. Import from Data → Sources → "Import dataset (auto-mapping)", or from the CLI:</p>
-            <p>$ cd backend &amp;&amp; python -m app.cli.dataset_import run \</p>
-            <p>&nbsp;&nbsp;&nbsp;&nbsp;--locator hf:imdb:train --project 1 --auto --limit 5000</p>
+            <p># 6. Open demo "Demo · Support FAQ" → Train → Train → Launch, then watch the</p>
+            <p>#    bell and the worker log. Your own data: upload documents on Data → Sources,</p>
+            <p>#    or import a labelled dataset (see Capabilities → Importing datasets).</p>
           </div>
         </div>
 

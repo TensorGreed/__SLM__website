@@ -39,7 +39,7 @@
     {
       "@context": "https://schema.org",
       "@type": "WebPage",
-      "name": "Turn custom datasets into domain-specific small language models.",
+      "name": "Turn documents and custom datasets into domain-specific small language models.",
       "description": "What BrewSLM does: ingest custom datasets, map them to task shapes, adapt a base model with LoRA, score with task-aware metrics, and extend it with plugins.",
       "url": "https://brewslm.com/capabilities.html",
       "inLanguage": "en",
@@ -93,12 +93,145 @@
 
       <section class="section page-hero reveal">
         <p class="eyebrow">Capabilities for ML engineers</p>
-        <h1>Turn custom datasets into domain-specific small language models.</h1>
+        <h1>Turn documents and custom datasets into domain-specific small language models.</h1>
         <p class="page-sub">
-          BrewSLM is built for engineers fine-tuning a base model on real data. Source connectors,
-          task mappers, task-aware evaluation, and plugin contracts all exist so you can move from
-          messy domain-specific data to a small model you trust.
+          BrewSLM is built for engineers fine-tuning a base model on real data. The capability
+          families below cover the path from your documents to a verdict and a shipped model; the
+          importer, source connectors, task mappers, task-aware evaluation and plugin contracts
+          exist so messy domain-specific data can take the same path.
         </p>
+      </section>
+
+      <section class="section" id="families">
+        <div class="section-head reveal">
+          <p class="eyebrow">Capability families</p>
+          <h2>From documents to a verdict you can trust</h2>
+        </div>
+        <div class="cluster-grid">
+          <article class="cluster-card reveal">
+            <h3>Documents → Q&amp;A, with a pre-training check</h3>
+            <p>One flow turns cleaned passages into training pairs plus a held-out answer key, sizes the test split for a decision, then judges the base model reading the passages before it trains. When retrieval alone is good enough, it stops.</p>
+            <ul class="capability-list">
+              <li><a class="inline-link" href="./academy/with-brewslm/auto-rag-and-reroute.html">Lesson 3.9: When fine-tuning isn't the answer</a></li>
+            </ul>
+          </article>
+          <article class="cluster-card reveal">
+            <h3>Auto-RAG sweep and reroute</h3>
+            <p>Compares the base model, the base model with passages and the fine-tune on the same questions, sweeps the retrieval settings, and can clone a project into a retrieval-first sibling.</p>
+            <ul class="capability-list">
+              <li><a class="inline-link" href="./academy/with-brewslm/auto-rag-and-reroute.html">Lesson 3.9: Auto-RAG and reroute</a></li>
+              <li><a class="inline-link" href="./blog-irs-pub17-fine-tune-lost-retrieval-won.html">The Pub 17 run where retrieval won</a></li>
+            </ul>
+          </article>
+          <article class="cluster-card reveal">
+            <h3>Paired lift, across seeds</h3>
+            <p>Every finished run is scored against its own base model on the same held-out rows; the verdict reports the change with a 95% interval, says when it is within noise, and states the smallest gap the test set can detect. <em>Check across 3 seeds</em> repeats the run.</p>
+            <ul class="capability-list">
+              <li><a class="inline-link" href="./academy/with-brewslm/eval-packs-and-failure-clusters.html">Lesson 3.8: Evaluate</a></li>
+              <li><a class="inline-link" href="./academy/advanced/beyond-a-single-run.html">Beyond a single run</a></li>
+            </ul>
+          </article>
+          <article class="cluster-card reveal">
+            <h3>Splits you can defend</h3>
+            <p>Random splits deduplicate and stratify by default; <em>Use my own train / val / test files</em> imports predefined splits and refuses (or drops) training rows that leak into the test set. Data health checks training rows against the answer key.</p>
+            <ul class="capability-list">
+              <li><a class="inline-link" href="./academy/with-brewslm/clean-prepare-manifest.html">Lesson 3.4: Clean and prepare</a></li>
+            </ul>
+          </article>
+          <article class="cluster-card reveal">
+            <h3>Span thresholds, recall floors, compliance bundles</h3>
+            <p>Token-classification taggers get per-type decoding thresholds tuned on validation to keep recall floors, a <em>Try redaction</em> box, and compliance bundles (PCI DSS, GDPR, HIPAA, CCPA) that add entity types and report recall per regime.</p>
+            <ul class="capability-list">
+              <li><a class="inline-link" href="./academy/tutorials/pii-span-tagging.html">Tutorial 7: PII span tagging</a></li>
+              <li><a class="inline-link" href="./blog-sensitive-data-detector-from-zero.html">The sensitive-data tagger, built from zero</a></li>
+            </ul>
+          </article>
+          <article class="cluster-card reveal">
+            <h3>Typed JSON records</h3>
+            <p>The <code>json-extraction</code> recipe trains text → one JSON record with fixed keys and scores it field by field: numbers compare as numbers, and a <code>null</code> for an unstated field is told apart from a wrong value.</p>
+            <ul class="capability-list">
+              <li><a class="inline-link" href="./academy/tutorials/invoice-field-extraction.html">Tutorial 3: Invoice field extraction</a></li>
+              <li><a class="inline-link" href="./blog-ntsb-accident-report-extractor.html">The accident-report extractor</a></li>
+            </ul>
+          </article>
+          <article class="cluster-card reveal">
+            <h3>Ship and publish</h3>
+            <p>Export a run as GGUF, ONNX, TensorRT, Hugging Face or Docker; publish a Hugging Face export to the Hub; deploy versions with promote and rollback.</p>
+            <ul class="capability-list">
+              <li><a class="inline-link" href="./academy/with-brewslm/export-deploy-coach.html">Lesson 3.10: Export, deploy and Coach</a></li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="importer">
+        <div class="section-head reveal">
+          <p class="eyebrow">Importing existing datasets</p>
+          <h2>Bring a labelled dataset: sniff columns, map, keep every row accounted for</h2>
+          <p>
+            When you already have labelled rows, the importer maps them to a task shape. Imported
+            rows are written as accepted: they skip the review queue and train directly.
+          </p>
+        </div>
+        <div class="pipeline-grid">
+          <article class="pipeline-card reveal">
+            <p class="stage">01 Schema introspector</p>
+            <h3>Sniff columns, propose a mapping</h3>
+            <p>
+              Reads ~20 sample rows from any source, classifies each column by content shape
+              (text-like, categorical, BIO tags, chat messages, etc.), ranks hypotheses with
+              confidence + rationale. Never silently auto-picks — the user confirms via
+              <code>--auto</code> above the threshold or <code>--force</code> under it.
+            </p>
+            <p class="card-note"><strong>You control:</strong> the threshold, the override, the field map.</p>
+          </article>
+          <article class="pipeline-card reveal">
+            <p class="stage">02 Target mappers</p>
+            <h3>Domain-agnostic, registry-driven</h3>
+            <p>
+              Each mapper declares the task profile it feeds; the tables below list the built-ins.
+              The Kaggle PII converter that came before was 175 lines of BIO-to-spans logic; the
+              introspector infers the same mapping from sample rows, for any BIO-tagged dataset.
+            </p>
+            <p class="card-note"><strong>You control:</strong> custom mappers via plugin modules.</p>
+          </article>
+          <article class="pipeline-card reveal">
+            <p class="stage">03 Bulk-drop UX</p>
+            <h3>Group rejects by reason, drop in one click</h3>
+            <p>
+              Per-row accountability is the contract — every raw row becomes either a
+              TransformedRow or a RejectedRow with a stable reason code. Counts stay in the audit
+              log even when you bulk-drop a category from the import.
+            </p>
+            <p class="card-note"><strong>You control:</strong> which rejection categories to silence.</p>
+          </article>
+        </div>
+        <div class="dual-pane">
+          <article class="pane reveal">
+            <p class="pane-title">An import session (excerpt)</p>
+            <div class="terminal-block dense">
+              <p>$ python -m app.cli.dataset_import introspect \</p>
+              <p>&nbsp;&nbsp;&nbsp;&nbsp;--locator hf:ai4privacy/pii-masking-200k:train</p>
+              <p>top proposal: bio_to_spans (confidence 0.95) — safe to --auto</p>
+              <p>POST /api/projects/1/dataset-import/preview</p>
+              <p>→ accepted=4982  rejected=18 (length_mismatch=18)</p>
+              <p>POST /api/projects/1/dataset-import/run</p>
+              <p>→ written_path=…/projects/1/synthetic/synthetic.jsonl</p>
+              <p>RunEvent  stage=ingestion  reason=dataset_import_run</p>
+            </div>
+          </article>
+          <article class="pane reveal">
+            <p class="pane-title">What lands in your project</p>
+            <div class="code-block dense">
+              <p><span class="code-key">source</span>: hf:ai4privacy/pii-masking-200k:train</p>
+              <p><span class="code-key">mapper</span>: bio_to_spans</p>
+              <p><span class="code-key">target_task_profile</span>: structured_extraction</p>
+              <p><span class="code-key">scoring_mode</span>: span_set</p>
+              <p><span class="code-key">written_rows</span>: 4982</p>
+              <p><span class="code-key">saved_mapping</span>: pii-weekly-refresh</p>
+            </div>
+          </article>
+        </div>
       </section>
 
       <section class="section">
@@ -312,9 +445,41 @@
           <article class="cluster-card reveal">
             <h3>Vision + audio</h3>
             <ul class="capability-list">
-              <li>Image captioning / VQA → vision-language handler.</li>
+              <li>Image captioning / VQA → vision-language handler; captioning reports BLEU-4 and ROUGE-L.</li>
               <li>Speech-to-text → audio-transcript handler (WER / CER).</li>
               <li>Multimodal media flag enforced at preflight.</li>
+            </ul>
+          </article>
+          <article class="cluster-card reveal">
+            <h3>JSON records</h3>
+            <ul class="capability-list">
+              <li>Field-by-field typed match (numbers compare numerically), with token-F1 partial credit on string fields.</li>
+              <li>Null precision / recall: an unstated field answered <code>null</code> is told apart from a wrong value.</li>
+              <li>JSON validity and, with a declared output schema, schema compliance.</li>
+            </ul>
+          </article>
+          <article class="cluster-card reveal">
+            <h3>Tool calling</h3>
+            <ul class="capability-list">
+              <li><code>tool_selection_accuracy</code>: the right tool was named.</li>
+              <li><code>tool_args_match_rate</code>, and the headline <code>tool_call_pass_rate</code> (tool and arguments).</li>
+              <li>With a tool catalog, a call must also be valid against it.</li>
+            </ul>
+          </article>
+          <article class="cluster-card reveal">
+            <h3>Safety</h3>
+            <ul class="capability-list">
+              <li>Prompt-injection, secret-extraction, PII-regurgitation, jailbreak and unknown-answer probes.</li>
+              <li>Each response scored refused / complied / ambiguous by keyword heuristics.</li>
+              <li>Pass rate per probe type, not one coarse number.</li>
+            </ul>
+          </article>
+          <article class="cluster-card reveal">
+            <h3>LLM judge</h3>
+            <ul class="capability-list">
+              <li>For long free-text answers where exact match is meaningless: a judge model you configure grades each answer.</li>
+              <li>Reports <code>llm_judge_pass_rate</code>, usable as a pass/fail rule.</li>
+              <li>Judge calibration compares the judge with a reference model's blind labels.</li>
             </ul>
           </article>
         </div>
