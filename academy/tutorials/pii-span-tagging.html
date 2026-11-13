@@ -560,7 +560,7 @@
           <li><strong>false positive</strong> — the synth produced a span that <em>shouldn't</em> be tagged at all (e.g. tagged "May" as PERSON). Reject; write a hard-negative row for it yourself.</li>
           <li><strong>false negative</strong> — the synth row contains a PII span that wasn't tagged (e.g. an email in the carrier text that the teacher missed). Reject, then add a corrected row by hand.</li>
           <li><strong>wrong label</strong> — the span was found, but tagged as the wrong entity type (e.g. an email got tagged as PERSON because the carrier sentence said "Email Sarah at sarah@example.com" and the teacher conflated). Reject.</li>
-          <li><strong>offset drift</strong> — the span's start/end don't match its text (e.g. <code>start</code> is off by one because the teacher counted a leading space). Reject. Nothing in the app checks offsets, on imported or generated rows, so this one is on you (the offset check in the Ingest section works on any JSONL export of the rows).</li>
+          <li><strong>offset drift</strong> — the span's start/end don't match its text (e.g. <code>start</code> is off by one because the teacher counted a leading space). Reject. The Import dataset wizard rejects imported rows whose entity <code>text</code> doesn't match <code>text[start:end]</code> (reason <code>span_text_mismatch</code>), but generated rows aren't checked, so this one is on you (the offset check in the Ingest section works on any JSONL export of the rows).</li>
         </ul>
         <p>Per-row actions:</p>
         <ul>
