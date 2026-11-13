@@ -171,7 +171,8 @@
     if (x.method === "full") out.push("use LoRA or QLoRA");
     else if (x.method === "lora" && x.prec !== "int8" && !x.moe) out.push("use QLoRA");
     return out.slice(0, -1).join(", ") + " or " + out[out.length - 1] +
-      (x.moe && (x.prec === "nf4" || x.prec === "int8") ? ". The experts are counted unquantized here; see the note below" : "");
+      (x.moe && (x.prec === "nf4" || x.prec === "int8") ? ". The experts are counted unquantized here (see the note below), " +
+        "so plain LoRA on a bf16 base" + (x.kbit ? ", or skipping the kbit prep," : "") + " needs less" : "");
   }
 
   function render() {

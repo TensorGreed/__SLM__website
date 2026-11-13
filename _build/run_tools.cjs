@@ -34,6 +34,17 @@ for (let n = 5; n <= 80; n++) {
   }
 }
 
+// The unpaired path too: a lift or drop needs some paired split (all |T - B| changed rows one way) to reach p < 0.05.
+for (let n = 1; n <= 150; n++) {
+  for (let B = 0; B <= n; B++) for (let T = 0; T <= n; T++) {
+    const r = LiftStats.analyze({ n, base: B, tuned: T });
+    scanned++;
+    if ((r.verdict === "lift" || r.verdict === "drop") && !(LiftStats.mcnemarExact(Math.abs(T - B), 0) < 0.05)) verdictViolations.push([n, B, T, "unpaired"]);
+    if (r.verdict === "lift" && !(r.ci[0] > 0)) verdictViolations.push([n, B, T, "unpaired ci"]);
+    if (r.verdict === "drop" && !(r.ci[1] < 0)) verdictViolations.push([n, B, T, "unpaired ci"]);
+  }
+}
+
 // Malformed or hostile query strings must parse without throwing and keep numbers finite.
 const hostile = ["?p=%E0%A4%A", "?n=%E0%A4%A", "?%E0%A4%A=1", "?preset=constructor", "?preset=__proto__",
                  "?preset=toString&s=%", "?seq=abc&b=-1", "?n=50.6&base=22&tuned=26", "?constructor=1&__proto__=2"];

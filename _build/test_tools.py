@@ -136,6 +136,9 @@ class LiftCalculator(unittest.TestCase):
         self.assertEqual(ref["five-3-0"]["verdict"], "borderline")
         self.assertEqual(ref["fifty-4-0"]["verdict"], "borderline")
         self.assertEqual(ref["fifty-6-0"]["verdict"], "lift")
+        # unpaired: |T - B| <= 5 cannot reach p < 0.05 with any paired counts
+        self.assertEqual(ref["unpaired-0-to-4"]["verdict"], "borderline")
+        self.assertEqual(ref["unpaired-0-to-3"]["verdict"], "borderline")
 
     def test_at_least_eight_cases_with_edges(self):
         lift = CASES["lift"]

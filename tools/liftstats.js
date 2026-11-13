@@ -15,7 +15,9 @@
  *   McNemar exact test: the two-sided binomial test of the discordant rows
  *     against 1/2 (McNemar 1947; exact form as in statsmodels mcnemar).
  *   Verdict: paired, "lift" / "drop" needs the interval to exclude 0 AND the
- *     exact McNemar p < 0.05, else "borderline"; unpaired, the interval alone.
+ *     exact McNemar p < 0.05, else "borderline"; unpaired, the interval, and
+ *     "borderline" when even all |T - B| changed rows one way could not give
+ *     p < 0.05 (|T - B| <= 5).
  *   Paired t-interval: what BrewSLM's lift check reports
  *     (paired_comparison_stats.py on public main).
  *   Sizing: normal approximation at 95% confidence and 80% power,
@@ -206,7 +208,13 @@
     r.unpairedGap = Z_TOTAL * Math.sqrt(v / n);
     r.unpairedRows = rowsFor(Math.sqrt(v), gap);
     r.ci = r.paired ? r.ciPaired : r.ciUnpaired;
+    // Unpaired: at least |T - B| rows changed. The most favourable split, all of them one way, gives
+    // the smallest exact McNemar p any paired counts could: 2^(1 - |T - B|). When even that is not
+    // under 0.05 (|T - B| <= 5) no paired split can confirm the interval, so the verdict is borderline.
+    r.minChanged = Math.abs(T - B);
+    r.bestPairedP = r.minChanged > 0 ? Math.min(1, Math.pow(2, 1 - r.minChanged)) : 1;
     r.verdict = n < MIN_ROWS ? "few" : verdictOf(r.ci, r.paired ? r.mcnemarP : null);
+    if (!r.paired && (r.verdict === "lift" || r.verdict === "drop") && !(r.bestPairedP < ALPHA)) r.verdict = "borderline";
     r.intervalSide = verdictOf(r.ci, null);
     return r;
   }

@@ -36,6 +36,12 @@
           : "The whole 95% interval for the change is " + where + " zero, from the two scores alone. The exact paired " +
             "test needs the row-by-row counts; add them to check it, and the interval usually gets narrower too.";
       case "borderline":
+        if (!r.paired) {
+          return "The 95% interval for the change is " + (r.intervalSide === "lift" ? "above" : "below") + " zero, but the " +
+            "scores differ by only " + count(r.minChanged) + " rows, so at least that many rows changed and perhaps no " +
+            "more. Even all of them one way gives an exact McNemar p of " + pval(r.bestPairedP) + ", not under 0.05, " +
+            "whatever the row-by-row counts are. Add rows.";
+        }
         return r.intervalSide === "noise"
           ? "The exact McNemar test says the split is unlikely to be luck (" + p + "), but the 95% interval for the " +
             "change still includes zero. The two disagree, so this is not settled: add rows."

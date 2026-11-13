@@ -20,7 +20,8 @@ Where each reference comes from:
   sizing                    Z = norm.ppf(0.975) + norm.ppf(0.80)
   verdict                   paired: lift / drop only when the paired interval excludes 0
                             and the exact McNemar p < 0.05, else borderline (or noise);
-                            unpaired: the interval alone
+                            unpaired: the interval, but borderline when even
+                            |T - B| changed rows all one way give p >= 0.05
 """
 from __future__ import annotations
 
@@ -100,6 +101,9 @@ def reference(case: dict) -> dict:
         # Paired: a lift or drop needs the interval AND the exact McNemar test (p < 0.05) to agree.
         p = out["mcnemarP"]
         side = ("borderline" if p < 0.05 else "noise") if side == "noise" else (side if p < 0.05 else "borderline")
+    elif side in ("lift", "drop") and stats.binomtest(0, abs(T - B), 0.5).pvalue >= 0.05:
+        # Unpaired: even all |T - B| changed rows one way (the most favourable paired counts) give p >= 0.05.
+        side = "borderline"
     out["verdict"] = "few" if n < MIN_ROWS else side
     return out
 
