@@ -1,5 +1,5 @@
-"""Mutation tests for the quiz, certificate, lesson-order, "Lesson X.Y" and
-freshness checks in _build/site.py.
+"""Mutation tests for the quiz, certificate, lesson-order, "Lesson X.Y",
+freshness and shared-box checks in _build/site.py.
 
 Each test breaks a copy of the real pages in memory (never on disk) and
 asserts that `check` would catch it. Run with:
@@ -364,6 +364,100 @@ class FreshnessChecks(unittest.TestCase):
                 del pages_cfg[self.lesson]
             else:
                 pages_cfg[self.lesson] = saved
+
+
+class BoxChecks(unittest.TestCase):
+    BOXES = {"demo-box": "<!--\nsources: here\n-->\n<aside class=\"sbox\"><p>Demo v1</p></aside>\n"}
+
+    def page(self, marker: str) -> str:
+        return f"<main>\n<p>Before</p>\n{marker}\n<p>After</p>\n</main>\n"
+
+    def test_real_boxes_and_pages_pass(self):
+        self.assertTrue(S.BOXES, "no _build/boxes/*.html found")
+        self.assertEqual(S.box_file_errors(S.BOXES), [])
+        self.assertEqual(S.check_boxes(real_pages(), S.BOXES), [])
+
+    def test_real_boxes_expand(self):
+        for name in S.BOXES:
+            out = S.build_boxes(self.page(f"<!-- box:{name} -->"))
+            self.assertIn(S.box_begin(name), out)
+            self.assertEqual(S.build_boxes(out), out, name)
+            self.assertEqual(S.check_boxes({"p.html": out}, S.BOXES), [], name)
+
+    def test_marker_expands_once_and_build_is_idempotent(self):
+        once = S.build_boxes(self.page("<!-- box:demo-box -->"), self.BOXES)
+        self.assertIn(S.box_begin("demo-box") + "\n<aside", once)
+        self.assertIn("</aside>\n" + S.box_end("demo-box"), once)
+        self.assertNotIn("sources: here", once)            # the doc comment stays in the box file
+        self.assertTrue(once.startswith("<main>\n<p>Before</p>\n") and once.endswith("\n<p>After</p>\n</main>\n"))
+        self.assertEqual(S.build_boxes(once, self.BOXES), once)
+        self.assertEqual(S.check_boxes({"p.html": once}, self.BOXES), [])
+
+    def test_changed_box_rewrites_the_region_in_place(self):
+        once = S.build_boxes(self.page("<!-- box:demo-box -->"), self.BOXES)
+        v2 = {"demo-box": self.BOXES["demo-box"].replace("Demo v1", "Demo v2")}
+        twice = S.build_boxes(once, v2)
+        self.assertIn("Demo v2", twice)
+        self.assertNotIn("Demo v1", twice)
+        self.assertEqual(twice.count(S.box_begin("demo-box")), 1)
+        self.assertEqual(twice.count(S.box_end("demo-box")), 1)
+        # until rebuilt, the old region reads as a hand edit
+        self.assertTrue(any("edited in the page" in e for e in S.check_boxes({"p.html": once}, v2)))
+
+    def test_unknown_box_is_left_alone_and_fails(self):
+        text = self.page("<!-- box:no-such-box -->")
+        self.assertEqual(S.build_boxes(text, self.BOXES), text)
+        errs = S.check_boxes({"p.html": text}, self.BOXES)
+        self.assertEqual(len(errs), 1, errs)
+        self.assertIn("p.html:3: unknown box 'no-such-box'", errs[0])
+
+    def test_unknown_region_fails(self):
+        once = S.build_boxes(self.page("<!-- box:demo-box -->"), self.BOXES)
+        errs = S.check_boxes({"p.html": once}, {})
+        self.assertTrue(any("unknown box 'demo-box'" in e for e in errs), errs)
+
+    def test_hand_edit_inside_the_region_fails(self):
+        once = S.build_boxes(self.page("<!-- box:demo-box -->"), self.BOXES)
+        edited = once.replace("Demo v1", "Demo (fixed by hand)")
+        errs = S.check_boxes({"p.html": edited}, self.BOXES)
+        self.assertTrue(any("box 'demo-box' was edited in the page" in e for e in errs), errs)
+        self.assertEqual(S.build_boxes(edited, self.BOXES), once)   # build restores it
+
+    def test_unpaired_region_markers_fail(self):
+        once = S.build_boxes(self.page("<!-- box:demo-box -->"), self.BOXES)
+        no_end = once.replace(S.box_end("demo-box"), "")
+        no_begin = once.replace(S.box_begin("demo-box"), "")
+        for text in (no_end, no_begin):
+            errs = S.check_boxes({"p.html": text}, self.BOXES)
+            self.assertTrue(any("malformed or unpaired box marker" in e for e in errs), errs)
+
+    def test_malformed_markers_fail(self):
+        for marker in ("<!-- box:Demo_Box -->", "<!-- box: demo-box -->", "<!-- box:demo-box- -->",
+                       "<!-- /box:demo-box -->", "<!--box:-->"):
+            errs = S.check_boxes({"p.html": self.page(marker)}, self.BOXES)
+            self.assertTrue(any("malformed or unpaired box marker" in e for e in errs), (marker, errs))
+            self.assertEqual(S.build_boxes(self.page(marker), self.BOXES), self.page(marker))
+
+    def test_box_file_rules(self):
+        ok = '<figure class="sbox-fig"><svg class="sbox-svg"><rect class="sv-node" fill="none"></rect></svg>' \
+             '<a href="#abc">x</a> &#123;</figure>'
+        self.assertEqual(S.box_file_errors({"fine": ok}), [])
+        bad = {
+            "inline-style": '<p style="margin:0">x</p>',
+            "style-element": "<style>.a{}</style><p>x</p>",
+            "hex": "<p>colour #1a1a1a</p>",
+            "fn": '<svg><rect class="a"></rect></svg><p>rgb(0, 0, 0)</p>',
+            "attr": '<svg><rect fill="currentColor"></rect></svg>',
+            "stroke": '<svg><line stroke="black"></line></svg>',
+            "nested": "<p>x</p><!-- box:other -->",
+            "empty": "<!-- only a doc comment -->\n",
+            "Bad_Name": "<p>x</p>",
+        }
+        for name, body in bad.items():
+            self.assertTrue(S.box_file_errors({name: body}), name)
+
+    def test_doc_comment_is_not_scanned_for_colours(self):
+        self.assertEqual(S.box_file_errors({"doc": "<!-- was #000000, style=\"x\" -->\n<p>x</p>"}), [])
 
 
 if __name__ == "__main__":
