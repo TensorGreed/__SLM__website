@@ -296,7 +296,11 @@
           intervals differ by a point or two. The 50-row example in the box below is the same case as the first
           validation row: its "−3 to +19" is BrewSLM's t-interval, the tool's paired interval is −2.7 to +18.3.
           On its own the t-interval, like the paired interval, can clear zero on 3 or 4 changed rows all one way;
-          this tool does not call that a lift without the exact test.
+          this tool does not call that a lift without the exact test, and neither does BrewSLM: when every row is
+          scored right or wrong, its lift check, Compare and Auto-RAG verdicts also need the exact McNemar p under
+          0.05 and report it as <code>mcnemar_p</code>. Where this tool says <em>borderline</em>, BrewSLM says
+          <em>within noise</em> and notes that too few rows changed (4 better, 0 worse on 50 rows: p = 0.125). For
+          scores with partial credit (F1, a judge score) BrewSLM keeps the t-interval alone.
         </p>
         <h3>How many rows you need</h3>
         <p>
@@ -320,7 +324,7 @@
         <aside class="sbox" data-box="small-test-sets" aria-label="Small test sets: is the difference real?">
           <p class="sbox__label">Small test sets: is the difference real?</p>
           <p>Score both models on the <strong>same rows</strong> and look at the change row by row (a paired comparison), not just at the two headline numbers. On a small test set one answer moves the score a lot: one row in 20 is 5 points, one in 50 is 2.</p>
-          <p>BrewSLM pairs the rows, counts how many got better, worse or stayed the same, and puts a 95% confidence interval (a paired t-interval) around the mean change. If the interval includes zero, the change is <strong>within noise</strong>: the data cannot tell a gain from a loss. Under 5 paired rows it gives no verdict.</p>
+          <p>BrewSLM pairs the rows, counts how many got better, worse or stayed the same, and puts a 95% confidence interval (a paired t-interval) around the mean change. If the interval includes zero, the change is <strong>within noise</strong>: the data cannot tell a gain from a loss. When every row is scored right or wrong, a gain or a drop also needs the exact McNemar test on the rows that changed to give p under 0.05, so 4 rows better and 0 worse is still within noise (p = 0.125) and 6 better, 0 worse is the smallest change that counts (p = 0.031). Scores with partial credit (F1, a judge score) use the interval alone. Under 5 paired rows it gives no verdict.</p>
           <div class="table-wrap">
             <table class="mini-table">
               <caption class="sbox__caption">Worked example: 50 test rows</caption>
@@ -329,6 +333,7 @@
                 <tr><th scope="row">Fine-tuned</th><td>26 right (52%): +8 points</td></tr>
                 <tr><th scope="row">Row by row</th><td>6 better, 2 worse, 42 the same</td></tr>
                 <tr><th scope="row">95% interval</th><td>&minus;3 to +19 points: within noise</td></tr>
+                <tr><th scope="row">Exact McNemar</th><td>p = 0.289 on the 8 rows that changed</td></tr>
                 <tr><th scope="row">Visible gap</th><td>about 16 points at this size; about 500 rows to see a 5-point change</td></tr>
               </tbody>
             </table>

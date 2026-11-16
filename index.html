@@ -555,10 +555,13 @@
             <p>$ git clone https://github.com/TensorGreed/__SLM__ brewslm &amp;&amp; cd brewslm</p>
             <p>&nbsp;</p>
             <p># 2. Backend (Python 3.11+)</p>
-            <p>$ cd backend &amp;&amp; python -m venv .venv &amp;&amp; source .venv/bin/activate</p>
+            <p>$ cd backend &amp;&amp; python3 -m venv .venv &amp;&amp; source .venv/bin/activate</p>
             <p>$ pip install -r requirements.txt &amp;&amp; cp .env.example .env</p>
             <p>$ uvicorn app.main:app --reload --port 8000</p>
             <p># once, after this first boot creates the tables: alembic stamp head</p>
+            <p># no GPU, no Redis? set TRAINING_BACKEND="simulate" and</p>
+            <p>#   ALLOW_SIMULATED_TRAINING=true in .env and skip step 3:</p>
+            <p>#   a loss curve end to end, but no weights and no verdict</p>
             <p>&nbsp;</p>
             <p># 3. Redis + the training worker (new shell). Without them Train never runs.</p>
             <p>$ redis-server &amp;   # or any Redis on localhost:6379</p>
@@ -566,7 +569,7 @@
             <p>$ celery -A app.worker.celery_app worker --pool=threads --concurrency=2</p>
             <p>&nbsp;</p>
             <p># 4. Frontend (new shell; Node 20.19+ or 22.12+)</p>
-            <p>$ cd frontend &amp;&amp; npm install &amp;&amp; npm run dev</p>
+            <p>$ cd frontend &amp;&amp; npm ci &amp;&amp; npm run dev</p>
             <p>&nbsp;</p>
             <p># 5. Open http://localhost:5173, log in as admin with the API_KEY from</p>
             <p>#    backend/.env (sk-mock-admin-key), then "+ New Project" or a starter project</p>

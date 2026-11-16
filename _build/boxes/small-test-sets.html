@@ -1,23 +1,26 @@
 <!--
 Shared box: paired comparisons, confidence intervals, why small test sets mislead (PROPOSAL CC12).
-Sources, PUBLIC BrewSLM main (580e616, rechecked 2026-11-13):
+Sources, PUBLIC BrewSLM main (f5e6961, rechecked 2026-11-16):
   backend/app/services/paired_comparison_stats.py  paired_difference_evidence: 95% paired t-interval on the mean
     per-row change; verdict better / worse / within_noise; too_few_rows under MIN_ROWS_FOR_VERDICT = 5;
-    seed_spread_evidence (MIN_SEEDS_FOR_VERDICT = 2)
+    when every paired score is 0/1, better / worse also need exact_mcnemar_p < MCNEMAR_ALPHA = 0.05
+    (1d1b0d6; mcnemar_p on the evidence, None for continuous scores);
+    seed_spread_evidence (MIN_SEEDS_FOR_VERDICT = 2, binary_guard=False: interval only)
   backend/app/services/eval_sizing_service.py  paired_sizing: detectable gap at 95% confidence and 80% power
   agent-notes/evaluation.md  Compare: no verdict when answer key / judge / scoring differ; decoding adds a caveat;
     the answer key is matched by content hash, so a re-stamped test file is the same key (6512373); mixed
     span_set scorer versions are flagged (472d274);
     answer key practice (GOLD_DEV) vs final (GOLD_TEST)
 Worked example run through those two functions (CPU, 2026-11-13): 50 rows, before 22/50, after 26/50,
-6 better / 2 worse / 42 same -> mean +0.08, CI -0.032 .. +0.192, within_noise; paired_sizing -> detectable gap
+6 better / 2 worse / 42 same -> mean +0.08, CI -0.032 .. +0.192, mcnemar_p 0.2890625, within_noise
+(rerun 2026-11-16 at f5e6961; 4/0 on 50 -> CI +0.002 .. +0.158, p 0.125, within_noise; 6/0 -> p 0.03125, better); paired_sizing -> detectable gap
 0.1569 (~16 pts), 493 rows for 5 pts (its line rounds to ~500).
 Reference: E. Miller, "Adding Error Bars to Evals", arXiv 2411.00640.
 -->
 <aside class="sbox" data-box="small-test-sets" aria-label="Small test sets: is the difference real?">
   <p class="sbox__label">Small test sets: is the difference real?</p>
   <p>Score both models on the <strong>same rows</strong> and look at the change row by row (a paired comparison), not just at the two headline numbers. On a small test set one answer moves the score a lot: one row in 20 is 5 points, one in 50 is 2.</p>
-  <p>BrewSLM pairs the rows, counts how many got better, worse or stayed the same, and puts a 95% confidence interval (a paired t-interval) around the mean change. If the interval includes zero, the change is <strong>within noise</strong>: the data cannot tell a gain from a loss. Under 5 paired rows it gives no verdict.</p>
+  <p>BrewSLM pairs the rows, counts how many got better, worse or stayed the same, and puts a 95% confidence interval (a paired t-interval) around the mean change. If the interval includes zero, the change is <strong>within noise</strong>: the data cannot tell a gain from a loss. When every row is scored right or wrong, a gain or a drop also needs the exact McNemar test on the rows that changed to give p under 0.05, so 4 rows better and 0 worse is still within noise (p = 0.125) and 6 better, 0 worse is the smallest change that counts (p = 0.031). Scores with partial credit (F1, a judge score) use the interval alone. Under 5 paired rows it gives no verdict.</p>
   <div class="table-wrap">
     <table class="mini-table">
       <caption class="sbox__caption">Worked example: 50 test rows</caption>
@@ -26,6 +29,7 @@ Reference: E. Miller, "Adding Error Bars to Evals", arXiv 2411.00640.
         <tr><th scope="row">Fine-tuned</th><td>26 right (52%): +8 points</td></tr>
         <tr><th scope="row">Row by row</th><td>6 better, 2 worse, 42 the same</td></tr>
         <tr><th scope="row">95% interval</th><td>&minus;3 to +19 points: within noise</td></tr>
+        <tr><th scope="row">Exact McNemar</th><td>p = 0.289 on the 8 rows that changed</td></tr>
         <tr><th scope="row">Visible gap</th><td>about 16 points at this size; about 500 rows to see a 5-point change</td></tr>
       </tbody>
     </table>

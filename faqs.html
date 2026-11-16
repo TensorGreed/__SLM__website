@@ -52,7 +52,7 @@
           "name": "What do I install?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Python 3.11+, Node 20.19+ or 22.12+ (the frontend uses Vite 7), Redis and Git, plus a GPU for real training. 8 GB of VRAM fits LoRA on models up to about 1.5B; a 3B model is about 6 GB of bf16 weights alone, so it needs gradient checkpointing and short sequences (the memory table in Academy Lesson 1.15 shows the arithmetic). Clone the repo, run pip install -r backend/requirements.txt, copy backend/.env.example to backend/.env, run npm install in the frontend, then start the backend, Redis, a Celery worker and the frontend. Training is queued to the worker, so without Redis and the worker the Train button never runs. AUTH_ENABLED defaults to true: log in as admin with the API_KEY from .env. The README and the quickstart have the command list."
+            "text": "Python 3.11+, Node 20.19+ or 22.12+ (the frontend uses Vite 7), Redis and Git, plus a GPU for real training. 8 GB of VRAM fits LoRA on models up to about 1.5B; a 3B model is about 6 GB of bf16 weights alone, so it needs gradient checkpointing and short sequences (the memory table in Academy Lesson 1.15 shows the arithmetic). Clone the repo, run pip install -r backend/requirements.txt, copy backend/.env.example to backend/.env, run npm ci in the frontend, then start the backend, Redis, a Celery worker and the frontend. Training is queued to the worker, so without Redis and the worker the Train button never runs. With no GPU and no Redis you can still walk the whole flow with simulated training (next question). AUTH_ENABLED defaults to true: log in as admin with the API_KEY from .env. The README and the quickstart have the command list."
           }
         },
         {
@@ -60,7 +60,7 @@
           "name": "Can I run BrewSLM without a GPU?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Ingest, export, and the workspace work fine CPU-only, and eval runs on CPU, slowly. Training a generative model of 1B parameters or more on CPU is impractically slow; preflight's plan adapts to CPU (smaller batch, no bf16 or flash attention). Encoder token classifiers such as DeBERTa train on CPU in tens of minutes. To walk the pipeline end-to-end without a model, set TRAINING_BACKEND=simulate."
+            "text": "Ingest, export, and the workspace work fine CPU-only, and eval runs on CPU, slowly. Training a generative model of 1B parameters or more on CPU is impractically slow; preflight's plan adapts to CPU (smaller batch, no bf16 or flash attention). Encoder token classifiers such as DeBERTa train on CPU in tens of minutes. To walk the pipeline end-to-end without a GPU or Redis, set TRAINING_BACKEND=\"simulate\" and ALLOW_SIMULATED_TRAINING=true in backend/.env (neither is the default). A simulated run draws a loss curve but trains no weights, so it gets no lift check and no verdict on Results; the Verdict tab says so."
           }
         },
         {
@@ -140,7 +140,7 @@
           "name": "How do I know a fine-tune helped?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Compare it with the model you started from, on the same rows. When a real training run finishes, BrewSLM queues a lift check in the bell: it scores the base model and the fine-tuned model on the same held-out test split and pairs them row by row (the base model is scored with neutral decoding and, when its own generation settings differ, with those too; the higher score is the bar). The summary card on Results → Verdict then says whether the run is better or worse than the base model, and its evidence line says whether that change is beyond row noise, within noise or based on too few rows to tell, with the average change per row and its 95% range. Check across 3 seeds repeats the run to see whether the gain survives a new seed. For document Q&A, the honest bar is the base model reading your passages, not the base model alone. Whether the run is good enough to ship is a separate question, answered by the pass/fail rule set. Simulated runs are not checked, and a project can switch the check off (auto_lift_eval=false)."
+            "text": "Compare it with the model you started from, on the same rows. When a real training run finishes, BrewSLM queues a lift check in the bell: it scores the base model and the fine-tuned model on the same held-out test split and pairs them row by row (the base model is scored with neutral decoding and, when its own generation settings differ, with those too; the higher score is the bar). The summary card on Results → Verdict then says whether the run is better or worse than the base model, and its evidence line says whether that change is beyond row noise, within noise or based on too few rows to tell, with the average change per row and its 95% range (for right-or-wrong scores, also the exact McNemar p on the rows that changed). Check across 3 seeds repeats the run to see whether the gain survives a new seed. For document Q&A, the honest bar is the base model reading your passages, not the base model alone. Whether the run is good enough to ship is a separate question, answered by the pass/fail rule set. Simulated runs are not checked (they train no weights, and the Verdict tab says so), and a project can switch the check off (auto_lift_eval=false)."
           }
         },
         {
@@ -156,7 +156,7 @@
           "name": "What does \"within noise\" mean?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "That the test set can't tell the two models apart. A score on n test rows is a sample, so two runs differ a little by chance. BrewSLM pairs the rows, takes the mean per-row difference and its 95% confidence interval; when that interval includes zero, the result is within noise (on the Compare tab that reads, for example, \"B is within noise of A: 2 better, 7 worse, 69 same of 78 rows; change −6.4 pts (95% CI −14 to +1)\"). Under five paired rows it says too few rows to tell. It does not mean \"no effect\", only \"not measurable with this many rows\". The verdict also states the smallest gap the test set could detect and how many rows a smaller gap would need. To get a clearer answer, add test rows or check across seeds; don't read a two-point gain on 40 rows as progress. To run the numbers on your own counts, use Is the lift real?"
+            "text": "That the test set can't tell the two models apart. A score on n test rows is a sample, so two runs differ a little by chance. BrewSLM pairs the rows, takes the mean per-row difference and its 95% confidence interval; when that interval includes zero, the result is within noise (on the Compare tab that reads, for example, \"B is within noise of A: 2 better, 7 worse, 69 same of 78 rows; change −6.4 pts (95% CI −14 to +1; exact McNemar p = 0.180)\"). When every row is scored right or wrong (exact match, accuracy, a pass rate), a gain or a drop also needs the exact McNemar test on the rows that changed to give p under 0.05: 4 rows better and 0 worse on 50 rows clears zero but has p = 0.125, so it is still within noise, and 6 better, 0 worse is the smallest change that counts. Under five paired rows it says too few rows to tell. It does not mean \"no effect\", only \"not measurable with this many rows\". The verdict also states the smallest gap the test set could detect and how many rows a smaller gap would need. To get a clearer answer, add test rows or check across seeds; don't read a two-point gain on 40 rows as progress. To run the numbers on your own counts, use Is the lift real?"
           }
         },
         {
@@ -262,9 +262,10 @@
               sequences (the <a class="inline-link" href="academy/sft-fundamentals/gpu-memory-math.html#memory-table">memory
               table</a> in Academy Lesson 1.15 shows the arithmetic). Clone the repo, run <code>pip install -r backend/requirements.txt</code>,
               copy <code>backend/.env.example</code> to <code>backend/.env</code>, run
-              <code>npm install</code> in the frontend, then start the backend, Redis, a Celery
+              <code>npm ci</code> in the frontend, then start the backend, Redis, a Celery
               worker and the frontend. Training is queued to the worker, so without Redis and the
-              worker the Train button never runs. <code>AUTH_ENABLED</code> defaults to true: log
+              worker the Train button never runs. With no GPU and no Redis you can still walk the
+              whole flow with simulated training (next question). <code>AUTH_ENABLED</code> defaults to true: log
               in as <code>admin</code> with the <code>API_KEY</code> from <code>.env</code>. The
               README and the <a class="inline-link" href="./index.html#quickstart">quickstart</a>
               have the command list.
@@ -277,7 +278,10 @@
               Training a generative model of 1B parameters or more on CPU is impractically slow;
               preflight's plan adapts to CPU (smaller batch, no bf16 or flash attention).
               Encoder token classifiers such as DeBERTa train on CPU in tens of minutes. To walk the
-              pipeline end-to-end without a model, set <code>TRAINING_BACKEND=simulate</code>.
+              pipeline end-to-end without a GPU or Redis, set <code>TRAINING_BACKEND="simulate"</code>
+              and <code>ALLOW_SIMULATED_TRAINING=true</code> in <code>backend/.env</code> (neither is
+              the default). A simulated run draws a loss curve but trains no weights, so it gets no
+              lift check and no verdict on Results; the Verdict tab says so.
             </p>
           </details>
           <details class="faq-item reveal">
@@ -415,12 +419,13 @@
               <strong>Results → Verdict</strong> then says whether the run is better or worse than
               the base model, and its evidence line says whether that change is <em>beyond row
               noise</em>, <em>within noise</em> or based on <em>too few rows to tell</em>, with the
-              average change per row and its 95% range.
+              average change per row and its 95% range (for right-or-wrong scores, also the exact
+              McNemar p on the rows that changed).
               <em>Check across 3 seeds</em> repeats the run to see whether the gain survives a new
               seed. For document Q&amp;A, the honest bar is the base model <em>reading your
               passages</em>, not the base model alone. Whether the run is good enough to ship is a
               separate question, answered by the pass/fail rule set. Simulated runs are not
-              checked, and a project can switch the check off (<code>auto_lift_eval=false</code>).
+              checked (they train no weights, and the Verdict tab says so), and a project can switch the check off (<code>auto_lift_eval=false</code>).
             </p>
           </details>
           <details class="faq-item reveal">
@@ -449,8 +454,12 @@
               mean per-row difference and its 95% confidence interval; when that interval
               includes zero, the result is <em>within noise</em> (on the Compare tab that reads, for
               example, "B is within noise of A: 2 better, 7 worse, 69 same of 78 rows; change
-              −6.4 pts (95% CI −14 to +1)"). Under five paired rows it says <em>too few rows to
-              tell</em>. It does
+              −6.4 pts (95% CI −14 to +1; exact McNemar p = 0.180)"). When every row is scored
+              right or wrong (exact match, accuracy, a pass rate), a gain or a drop also needs the
+              exact McNemar test on the rows that changed to give p under 0.05: 4 rows better and
+              0 worse on 50 rows clears zero but has p = 0.125, so it is still within noise, and
+              6 better, 0 worse is the smallest change that counts. Under five paired rows it says
+              <em>too few rows to tell</em>. It does
               not mean "no effect", only "not measurable with this many rows". The verdict also
               states the smallest gap the test set could detect and how many rows a smaller gap
               would need. To get a clearer answer, add test rows or check across seeds; don't
@@ -463,7 +472,7 @@
         <aside class="sbox" data-box="small-test-sets" aria-label="Small test sets: is the difference real?">
           <p class="sbox__label">Small test sets: is the difference real?</p>
           <p>Score both models on the <strong>same rows</strong> and look at the change row by row (a paired comparison), not just at the two headline numbers. On a small test set one answer moves the score a lot: one row in 20 is 5 points, one in 50 is 2.</p>
-          <p>BrewSLM pairs the rows, counts how many got better, worse or stayed the same, and puts a 95% confidence interval (a paired t-interval) around the mean change. If the interval includes zero, the change is <strong>within noise</strong>: the data cannot tell a gain from a loss. Under 5 paired rows it gives no verdict.</p>
+          <p>BrewSLM pairs the rows, counts how many got better, worse or stayed the same, and puts a 95% confidence interval (a paired t-interval) around the mean change. If the interval includes zero, the change is <strong>within noise</strong>: the data cannot tell a gain from a loss. When every row is scored right or wrong, a gain or a drop also needs the exact McNemar test on the rows that changed to give p under 0.05, so 4 rows better and 0 worse is still within noise (p = 0.125) and 6 better, 0 worse is the smallest change that counts (p = 0.031). Scores with partial credit (F1, a judge score) use the interval alone. Under 5 paired rows it gives no verdict.</p>
           <div class="table-wrap">
             <table class="mini-table">
               <caption class="sbox__caption">Worked example: 50 test rows</caption>
@@ -472,6 +481,7 @@
                 <tr><th scope="row">Fine-tuned</th><td>26 right (52%): +8 points</td></tr>
                 <tr><th scope="row">Row by row</th><td>6 better, 2 worse, 42 the same</td></tr>
                 <tr><th scope="row">95% interval</th><td>&minus;3 to +19 points: within noise</td></tr>
+                <tr><th scope="row">Exact McNemar</th><td>p = 0.289 on the 8 rows that changed</td></tr>
                 <tr><th scope="row">Visible gap</th><td>about 16 points at this size; about 500 rows to see a 5-point change</td></tr>
               </tbody>
             </table>
