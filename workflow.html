@@ -110,9 +110,10 @@
           <p class="eyebrow">The workspace</p>
           <h2>Six destinations, one project</h2>
           <p>
-            Every project opens on its <strong>Overview</strong>: the current stage, one button for
-            the next step, the latest run's lift against its base model, the shipped export, and up
-            to three Coach notices worth a look. The sidebar below it is the whole map:
+            A project's <strong>Overview</strong> shows the current stage, one button for
+            the next step, the latest run's lift against its base model, the shipped export, and one
+            Coach notice worth a look (any others wait under "N more tips"). A new blank project opens
+            on <strong>Data › Sources</strong>, its first step; a starter project opens on its Overview. The sidebar below it is the whole map:
             <strong>Data</strong> (five steps: Sources, Prepare, Labels, Generate, Split),
             <strong>Train</strong> (one form), <strong>Results</strong> (Verdict, Failures, Compare,
             Try it), <strong>Ship</strong> (Package, Publish, Deploy, Monitor) and
@@ -120,7 +121,7 @@
           </p>
         </div>
         <figure class="blog-figure reveal">
-          <img src="./assets/screens/workspace/overview.png" alt="A project's Overview: the sidebar with Overview, Data, Train, Results, Ship and Settings; cards for Where you are (Training) with a Next step button, Latest run (Run #1 beats its base model, judge_correct 0.167 to 0.225), Shipped model (Export #1 gguf) and three Coach notices under Worth a look" loading="lazy" width="1600" height="1000" />
+          <img src="./assets/screens/workspace/overview.png" alt="A project's Overview: the sidebar with Overview, Data, Train, Results, Ship and Settings; Where you are (Training) with a Next step button; Latest run (Run #1 loses to its base model, judge_correct 0.167 to 0.119); Shipped model (Export #1 gguf, not published yet); one Coach warning under Worth a look with a 2 more tips link; a collapsed Full plan" loading="lazy" width="1600" height="1000" />
           <figcaption>The Overview of the Support FAQ starter project after one training run and a GGUF export. Everything below is reachable from the sidebar on the left.</figcaption>
         </figure>
       </section>
@@ -181,7 +182,7 @@
           </article>
           <article class="workflow-step reveal">
             <div class="step-head"><span>07</span><h3>Train</h3></div>
-            <p><strong>Where:</strong> <strong>Train</strong> — one form: base model (+ Browse), task, one run or three seeds, run name, a readiness line, and <strong>Train</strong>. Epochs, LoRA, checks, cloud burst, presets and the plan-vs-data gaps wait under <em>More options</em>. The runs list with each run's live dashboard sits below the form.</p>
+            <p><strong>Where:</strong> <strong>Train</strong> — one form: base model (+ Browse), task, one run or three seeds, run name, a readiness line, and <strong>Train</strong> (then <strong>Launch</strong> in the confirm dialog). Epochs, learning rate, optimizer, LoRA and seeds wait under <em>More options</em>; checks, cloud burst, presets and the plan-vs-data gaps under its <em>Advanced</em>. The runs list with each run's live dashboard sits below the form.</p>
             <p><strong>Inputs:</strong> prepared manifest + base model + the resolved config (shown in a confirm dialog with an estimate before Launch).</p>
             <p><strong>Outputs:</strong> checkpoints + per-step loss / eval traces + adapter weights (or a full model for encoders). Preflight runs first and returns errors and warnings: an error blocks the launch, a warning does not (the readiness line on the form shows both).</p>
             <p><strong>Contract:</strong> preflight → a training job queued to the Celery worker (Redis plus a worker are required with the default <code>TRAINING_BACKEND=external</code>) → checkpoints → when a real run completes, a <code>post_training_lift_eval</code> Job scores the base model and the run on the same test split. Tokenizing and loss masking happen in the trainer. Cancel stops the process.</p>
@@ -189,15 +190,15 @@
           </article>
           <article class="workflow-step reveal">
             <div class="step-head"><span>08</span><h3>Results</h3></div>
-            <p><strong>Where:</strong> <strong>Results</strong> — <strong>Verdict</strong> (did it work? the lift against the base model, pass/fail rules, the scorecard), <strong>Failures</strong> (where it fails: clusters, eval gaps, built-in and custom checks, slices), <strong>Compare</strong> (other runs, external benchmarks, Auto-RAG) and <strong>Try it</strong> (chat with the run; a redaction box for span runs).</p>
+            <p><strong>Where:</strong> <strong>Results</strong> — <strong>Verdict</strong> (is the fine-tune better than the base model? the score of record and base vs fine-tuned per test set, the pass/fail rules line, <em>Score this run</em>, <em>How it's scored</em>; the full rule report and the run scorecard under <em>Details</em>), <strong>Failures</strong> (where it fails: failure clusters, the failing rows, eval gaps; custom checks, slices and the rule-set editor under <em>Advanced</em>), <strong>Compare</strong> (other runs, external benchmarks, Auto-RAG) and <strong>Try it</strong> (chat with the run; a redaction box for span runs).</p>
             <p><strong>Inputs:</strong> trained model + the test examples (or the answer key) + the rule set.</p>
             <p><strong>Outputs:</strong> task-aware metrics (per-class P/R/F1, span-set, faithfulness, alignment margin, BLEU/ROUGE, WER, etc.), paired base-vs-fine-tuned evidence (better / worse / within noise), and the pass/fail verdict.</p>
-            <p><strong>Contract:</strong> the task-handler dispatcher picks the scorer from the task profile: ClassificationHandler, QAHandler, StructuredExtractionHandler (span_set or field_match), RAGHandler, AlignmentHandler, Seq2SeqHandler, VisionLanguageHandler, AudioTranscriptHandler, SafetyHandler or ToolCallHandler, with GenericHandler as the fallback. The metric shape comes from the handler's <code>score()</code>; the pass/fail rules in the rule set decide the verdict. They block an export only when the project's gate policy says so, which is off by default. The lift check runs by itself when a real run completes (not for simulate or weightless runs; turn it off per project under <strong>Train → More options → Automatic base-vs-fine-tuned check</strong>; a check you start by hand always runs).</p>
+            <p><strong>Contract:</strong> the task-handler dispatcher picks the scorer from the task profile: ClassificationHandler, QAHandler, StructuredExtractionHandler (span_set or field_match), RAGHandler, AlignmentHandler, Seq2SeqHandler, VisionLanguageHandler, AudioTranscriptHandler, SafetyHandler or ToolCallHandler, with GenericHandler as the fallback. The metric shape comes from the handler's <code>score()</code>; the pass/fail rules in the rule set decide the verdict. They block an export only when the project's gate policy says so, which is off by default. The lift check runs by itself when a real run completes (not for simulate or weightless runs; turn it off per project under <strong>Results → Verdict → How it's scored → Change how it's scored → Automatic base-vs-fine-tuned check</strong>; a check you start by hand always runs).</p>
             <p><strong>RunEvent:</strong> <code>eval</code> / info when an eval completes, parented to <code>exp-&lt;id&gt;</code> (payload: eval_type, dataset_name, pass_rate). The taxonomy's <code>eval_*</code> failure codes are not emitted yet.</p>
           </article>
           <article class="workflow-step reveal">
             <div class="step-head"><span>09</span><h3>Package &amp; publish</h3></div>
-            <p><strong>Where:</strong> <strong>Ship → Package</strong> (<em>New export</em>: run, format, quantization, deployment targets; the <strong>Releases</strong> table; Options: <em>Compress first</em> and the manifest) and <strong>Ship → Publish</strong> (a completed Hugging Face export to the Hub).</p>
+            <p><strong>Where:</strong> <strong>Ship → Package</strong> (<em>New export</em>: the run (preselected), format (GGUF or Hugging Face; ONNX, TensorRT-LLM and Docker under <em>Advanced</em>), quantization; deployment targets and smoke tests under <em>Advanced</em>; the <strong>Releases</strong> table; Options: <em>Compress first</em> and the manifest) and <strong>Ship → Publish</strong> (a completed Hugging Face export to the Hub).</p>
             <p><strong>Inputs:</strong> trained model + target format (Hugging Face / GGUF / ONNX / TensorRT / Docker). vLLM is a deployment target under Ship → Deploy, not an export format.</p>
             <p><strong>Outputs:</strong> artifact bundle with weights, tokenizer, manifest, smoke-check trace. A LoRA run is merged first.</p>
             <p><strong>Contract:</strong> quantization variants (for example Q4_K_M, Q8_0, F16) are tracked per run so a GGUF export packages only that run's converted files (converting the run first when it has none) — no raw-weights fallback under a compressed label.</p>
@@ -253,14 +254,14 @@
           <h2>Train is a form; Results is a verdict</h2>
         </div>
         <figure class="blog-figure reveal">
-          <img src="./assets/screens/workspace/train.png" alt="The Train page: a readiness line reading Ready to train, 1 warning; a form with Base model HuggingFaceTB/SmolLM2-135M-Instruct and a Browse button, Task Question &amp; Answer Assistant (qa-sft) with Change, Seeds One run or Three seeds, Run name, and a Train button; two Coach warnings above it" loading="lazy" width="1600" height="1000" />
+          <img src="./assets/screens/workspace/train.png" alt="The Train page: a step tip, one Coach warning (Training config has 1 warning) with a 2 more tips link, then the form with Base model HuggingFaceTB/SmolLM2-135M-Instruct and Browse, Task Question &amp; Answer Assistant (qa-sft) with Change, Seeds One run or Three seeds, Run name, a Ready to train, 1 warning line and the Train button; a collapsed More options and the Runs list below" loading="lazy" width="1600" height="1000" />
           <figcaption><strong>Train</strong>: base model, task, seeds, run name, Train. Everything else is under <em>More options</em>; runs and live metrics stay below.</figcaption>
         </figure>
         <figure class="blog-figure reveal">
-          <img src="./assets/screens/workspace/results-verdict.png" alt="Results → Verdict: tabs Verdict, Failures, Compare, Try it; a step tip with Watch the walkthrough; two Coach notices; then the summary card Better than the base model for run #1 (v09-narrated-run vs base HuggingFaceTB/SmolLM2-135M-Instruct, 20 test examples): judge answer correct 0.167 (base) to 0.225 (fine-tuned), +0.058, judged by the template smoke backend, with Re-run lift check and Check across 3 seeds buttons, and the list of where it still fails" loading="lazy" width="1600" height="1000" />
-          <figcaption>Results → Verdict: the lift of run #1 over its base model, judged on 20 test examples. Below it on the same tab, the pass/fail rules card for the same run (next figure). The numbers are from a smoke run of the Support FAQ starter on a 135M model, not a result to repeat.</figcaption>
+          <img src="./assets/screens/workspace/results-verdict.png" alt="Results → Verdict: tabs Verdict, Failures, Compare, Try it; a step tip; one Coach notice with a 1 more tip link; then the Verdict card Is the fine-tune better than the base model? for Run #1 · faq-assistant-v1: judge score 11.9% on 21 rows, base vs fine-tuned on the built-in test examples 0.167 to 0.119 (−0.048), within noise with 4 rows better and 6 worse, 2 rules still failing, Open side by side, and the line Pass/fail rules (General Default Gates): FAIL, failed min_exact_match, min_f1; More on this run below" loading="lazy" width="1600" height="1000" />
+          <figcaption>Results → Verdict: run #1 against its base model on 21 test examples, judged by the template smoke backend: 0.167 → 0.119, within noise (4 rows better, 6 worse). The pass/fail rules line under it reads FAIL; the full rule report is under <em>Details</em> (next figure). The numbers are from a smoke run of the Support FAQ starter on a 135M model, not a result to repeat.</figcaption>
         </figure>
-<figure class="blog-figure"><img src="./assets/screens/workspace/results-verdict-rules.png" alt="The Pass/fail rules card on Results → Verdict: FAIL, Run #1 · v09-narrated-run, Rule set General Default Gates, the time it was checked, and Failed required rules: min_exact_match, min_f1" loading="lazy" width="1600" height="188" /><figcaption>The pass/fail rules card for the same run: it beat its base model and still fails the required rules. Both are true; the card says which bar it misses. This demo project was scored against <em>General Default Gates</em>; a new project with no rule set chosen shows <em>Domain Profile Gates</em> instead.</figcaption></figure>
+<figure class="blog-figure"><img src="./assets/screens/workspace/results-verdict-rules.png" alt="The Pass/fail rules report under Results → Verdict → Details: FAIL, Run #1 · faq-assistant-v1, Rule set General Default Gates, the time it was checked, and Failed required rules: min_exact_match, min_f1" loading="lazy" width="1216" height="136" /><figcaption>The full pass/fail rules report for the same run (Verdict → Details): within noise against its base model and failing the required rules; the card says which bar it misses. This demo project was scored against <em>General Default Gates</em>; a new project with no rule set chosen shows <em>Domain Profile Gates</em> instead.</figcaption></figure>
       </section>
 
       <section class="section">
