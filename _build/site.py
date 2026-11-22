@@ -1288,7 +1288,22 @@ def content_key(text: str) -> str:
         head = re.sub(r"<!--\s*site:head\b.*?<!--\s*/site:head\s*-->", "", head, flags=re.S)
         head = TAG_RE.sub(lambda t: "" if managed_key(t.group(0)) else t.group(0), head)
         text = text[:m.start(1)] + head + text[m.end(1):]
+    text = HREF_RE.sub(_norm_href, text)
     return " ".join(text.split())
+
+
+# A link to "dir/index.html" and one to "dir/" (or "index.html" and "./") reach the same page, so
+# rewriting one form into the other is not a content change and must not move a page's date.
+HREF_RE = re.compile(r'href="([^"#]*?)(#[^"]*)?"')
+
+
+def _norm_href(m: re.Match) -> str:
+    path = m.group(1)
+    if path == "index.html" or path.endswith("/index.html"):
+        path = path[: -len("index.html")]
+    if path == "./":
+        path = ""
+    return f'href="{path}{m.group(2) or ""}"'
 
 
 _LASTMOD: dict[tuple[str, str], str] = {}

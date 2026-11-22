@@ -571,3 +571,17 @@ class BoxChecks(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ContentKeyLinkForms(unittest.TestCase):
+    """Rewriting "dir/index.html" links to "dir/" must not count as a content change (no date bump)."""
+
+    def test_index_html_and_directory_links_have_the_same_key(self):
+        a = '<body><a href="../index.html">A</a> <a href="index.html#q">Q</a> <a href="./index.html">H</a></body>'
+        b = '<body><a href="../">A</a> <a href="./#q">Q</a> <a href="./">H</a></body>'
+        self.assertEqual(S.content_key(a), S.content_key(b))
+
+    def test_a_real_link_change_still_changes_the_key(self):
+        a = '<body><a href="../foundations/">A</a></body>'
+        b = '<body><a href="../advanced/">A</a></body>'
+        self.assertNotEqual(S.content_key(a), S.content_key(b))
