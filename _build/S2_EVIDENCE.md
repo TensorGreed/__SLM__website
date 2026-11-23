@@ -43,7 +43,7 @@ Code paths are in the BrewSLM repo (`~/Desktop/GitHub/__SLM__`, `main` at `c5303
 | RUN_HAS_NO_WEIGHTS | `backend/app/api/export.py:114` |
 | Pub 17 reader 0.073 / 0.570 / 0.688, 32 better / 12 worse of 157, 292 → 4 deictic questions, 628 / 242 / 386 / 69 revise round | blog: Pub 17 reader post |
 | Pub 17 SFT 0.20 → 0.02, RAG 0.73, run #148 loss 0.53 / 243 steps | blog: Pub 17 post |
-| SQLi bootstrap (4,000/class, 11 attack + 9 benign, 60/40 gold) | `backend/scripts/bootstrap_sqli_demo.py` |
+| SQLi bootstrap (4,000/class, 11 attack + 10 benign, 60/40 gold) | `backend/scripts/bootstrap_sqli_demo.py` `BENIGN_TEMPLATES` (10 keys; the comment at line 35 still says 9) |
 | Own-split import `on_leak=fail` | `backend/app/api/dataset.py:469` |
 | NTSB 9,931 / 1,256 / 1,234, 0 shared, 0 dup | blog: NTSB extractor post |
 | Ticket Router template: 5 labels, 200-row gold, brief macro-F1 0.85 | `backend/data/project_templates/ticket-router` |
@@ -52,3 +52,4 @@ Code paths are in the BrewSLM repo (`~/Desktop/GitHub/__SLM__`, `main` at `c5303
 | Tagger #52 F1 0.11 (45 steps), #53 0.90 on 29 texts | blog: tagger post |
 | `teacher_filter_keep: "correct"` API-only; revise checkbox | `frontend/src/components/training/DocumentsQaFlowCard.tsx:178`; documents-QA flow API |
 | general-pack-v1 gates staging 0.65/0.75, prod 0.70/0.80/0.92/0.03; duplicate → v2 | `backend/app/services/domain_pack_service.py:18` |
+| Demo answer keys are 200 rows (sentiment 70 / 65 / 65) | app commit aa04beb; `backend/data/demo_samples/*/gold.jsonl` |

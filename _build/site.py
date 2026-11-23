@@ -2202,6 +2202,8 @@ def check_sequence(vis: dict, pages: dict[str, str]) -> list[str]:
     # back to that index and the last returns to it.
     tidx = "academy/tutorials/index.html"
     tuts = tutorial_order(vis, pages)
+    if any(page_type(r) == "tutorial" for r in pages) and not tuts:
+        errs.append(f"{tidx}: links no tutorials, so the tutorial pagers can't be checked")
     for i, k in enumerate(tuts):
         prev, nxt = pager_links(pages[k])
         for got, want, what in ((prev, tuts[i - 1] if i else tidx, "Previous"),
