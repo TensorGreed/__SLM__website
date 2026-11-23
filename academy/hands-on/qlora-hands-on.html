@@ -408,7 +408,7 @@ trainer.save_model("qlora-out/adapter")</code></pre>
 
         <div class="callout callout--brewslm">
           <p class="callout__label">Do this in BrewSLM</p>
-          <p>An honest note: BrewSLM does not run QLoRA. Nothing in its trainer loads a 4-bit or 8-bit base; the only 8-bit piece is the optional paged AdamW optimizer. That is why this lesson's code is plain Transformers and PEFT.</p>
+          <p>BrewSLM does not run QLoRA. Nothing in its trainer loads a 4-bit or 8-bit base; the only 8-bit piece is the optimizer state of its default paged AdamW 8-bit optimizer (plain AdamW when bitsandbytes is missing). That is why this lesson's code is plain Transformers and PEFT.</p>
           <p>What BrewSLM does instead when memory is tight: LoRA with the frozen base in bf16, automatic gradient checkpointing for big models or long rows, micro-batch 1 with more accumulation for long rows, and an OOM retry planner that steps down batch, length, packing, flash attention and finally rank. If a model only fits in 4-bit, QLoRA outside BrewSLM is the right tool. The <a class="inline-link" href="../../tools/fine-tuning-memory-calculator.html">memory calculator</a> shows both options for your model.</p>
         </div>
         <div class="callout callout--key">

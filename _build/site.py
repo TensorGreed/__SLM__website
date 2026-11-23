@@ -759,7 +759,8 @@ def jsonld_blocks(rel: str, facts: dict[str, "Facts"], pages: list[str]) -> list
         blocks.append({"@type": "CollectionPage", "@id": f.url + "#docs", "name": f.h1,
                        "description": f.description, "url": f.url, "inLanguage": "en",
                        "isPartOf": {"@id": SITE_ID},
-                       "hasPart": [{"@type": "TechArticle", "position": i, "headline": facts[k].h1,
+                       "hasPart": [{"@type": "TechArticle", "@id": url_of(k) + "#article", "position": i,
+                                    "headline": facts[k].h1,
                                     "url": url_of(k)} for i, k in enumerate(kids, 1)]})
     elif pt in ("top_level", "certificate", "roadmap", "academy_page"):
         page = {"@type": "WebPage", "name": f.h1, "description": f.description, "url": f.url,

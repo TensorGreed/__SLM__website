@@ -137,3 +137,13 @@ model, not published elsewhere; numbers quoted with its failed bar). Re-check li
 | CLI wrapper, global flags, every subcommand and default | `brewslm:5-10`; `backend/scripts/brewslm.py` `build_parser()` (walked 2026-11-23, output kept in the session scratchpad) |
 | Demo slugs support-faq, sentiment-classifier, pii-detector | `backend/data/demo_samples/` |
 | train start defaults to autopilot one-click with a note | `backend/scripts/brewslm.py:535-539` |
+
+## Corrections after review (2026-11-23)
+
+| Claim | Evidence |
+|---|---|
+| Judge falls back to a configured cloud judge only when no local backend answers | `backend/app/services/answer_judge_service.py:20-27,559-583` |
+| Teacher-target runs withhold no passages; run #152 (20% withheld) said "the passages don't say" on 35% of validation questions | `backend/app/services/passage_prompts_service.py:439` (`withheld_fraction: 0.0`); blog Pub 17 part 2 |
+| Score form radio label "Both, base vs fine-tuned"; Both is the default only when the set has no base score yet | `frontend/src/components/evaluation/EvalRunForm.tsx:412-413,782-784` |
+| paged_adamw_8bit is the default optimizer | `backend/app/schemas/training.py:64` |
+| Run #148 trained on 324 of 405 generated pairs | blog Pub 17 part 1 (324 train / 40 val / 41 test) |
