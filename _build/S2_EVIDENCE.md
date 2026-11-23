@@ -1,8 +1,8 @@
 # S2 claim → evidence (2026-11-23)
 
 Product claims added in phase S2 (45 "Do this in BrewSLM" boxes, tutorial pagers, glossary/roadmap docs links).
-Code paths are in the BrewSLM repo (`~/Desktop/GitHub/__SLM__`, `main` at `c530316`), relative to its root.
-"blog:" = a published post on this site; "facts:" = `~/Videos/BrewSLM/PRODUCT_FACTS.md`; "A/B:" =
+Code paths are in the BrewSLM repo (github.com/TensorGreed/__SLM__, `main` at `c530316`), relative to its root.
+"blog:" = a published post on this site; "facts:" = the internal product-facts list (claim → file:line); "A/B:" =
 `data/curriculum_ab/curriculum_ab_results.json` (2026-05-25). Re-check line numbers when main moves.
 
 ## Training / telemetry / data (Foundations, SFT, Hands-on boxes)

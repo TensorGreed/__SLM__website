@@ -1,8 +1,8 @@
 # S1 claim → evidence (2026-11-23)
 
 Every product claim added in phase S1 (docs/ and the "Do this in BrewSLM" boxes) and where it comes from.
-Code paths are in the BrewSLM repo (`~/Desktop/GitHub/__SLM__`, `main` at `808833e`), relative to its root.
-"blog:" means a published post on this site; "report:" means `~/brewslm-handoff/showcase/model6/v2/` (tool-call
+Code paths are in the BrewSLM repo (github.com/TensorGreed/__SLM__, `main` at `808833e`), relative to its root.
+"blog:" means a published post on this site; "report:" means the internal Model 6 showcase report (tool-call
 model, not published elsewhere; numbers quoted with its failed bar). Re-check line numbers when main moves.
 
 ## Training defaults (docs/training-defaults.html; boxes in what-is-a-model, how-models-learn, tokens-and-embeddings, anatomy, learning-rate, batch-size, overfitting, full-ft-vs-lora, lora-knobs, gpu-memory-math, surviving-oom, continued-pretraining, qlora-hands-on)
