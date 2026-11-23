@@ -25,6 +25,13 @@ The hand-written HTML stays the source of truth. This script only:
     diagrams: edit the box file, never the region in a page);
   * writes whole generated files: sitemap.xml, feed.xml, 404.html.
 
+Pages under docs/ are product reference pages: TechArticle + BreadcrumbList,
+dated by the same Updated/Verified line as lessons; docs/index.html is their
+hub (CollectionPage, and `check` fails when it misses one). A page whose
+site.toml robots says noindex is left out of the sitemap, and `check` fails
+when the sitemap, canonicals and robots disagree, when a lesson or tutorial
+has no breadcrumb, or when a page is more than two clicks from the home page.
+
 Pages under tools/ (the calculators) get WebApplication + FAQPage +
 BreadcrumbList JSON-LD; `check` also fails on an inline style or a colour
 literal in a tool page's body, tools/*.css or tools/*.js. The calculators'
@@ -130,6 +137,8 @@ def page_type(rel: str) -> str:
         return "tutorial" if parts[1] == "tutorials" else "lesson"
     if parts[0] == "tools":
         return "tool"
+    if parts[0] == "docs":
+        return "docs_index" if rel == "docs/index.html" else "reference"
     return "top_level"
 
 
@@ -347,7 +356,7 @@ def head_values(rel: str, s: "Scan") -> dict:
     ptype = page_type(rel)
     v = {"canonical": url_of(rel)}
     v["robots"] = ov.get("robots", CFG["robots"])
-    v["og_type"] = "article" if ptype in ("post", "lesson", "tutorial") else "website"
+    v["og_type"] = "article" if ptype in ("post", "lesson", "tutorial", "reference") else "website"
     v["og_title"] = ov.get("og_title", s.title or "")
     v["og_description"] = ov.get("og_description", s.metas.get("description", ""))
     img = ov.get("og_image", CFG["default_image"])
@@ -736,6 +745,22 @@ def jsonld_blocks(rel: str, facts: dict[str, "Facts"], pages: list[str]) -> list
                            "mainEntity": [{"@type": "Question", "name": q,
                                            "acceptedAnswer": {"@type": "Answer", "text": a}}
                                           for q, a in qa]})
+    elif pt == "reference":
+        # A product reference page under /docs/: TechArticle, dated by the
+        # visible Updated/Verified line (git or site.toml), like a lesson.
+        blocks.append({"@type": "TechArticle", "@id": f.url + "#article", "headline": f.h1,
+                       "name": f.h1, "description": f.description, "url": f.url,
+                       "mainEntityOfPage": f.url, "inLanguage": "en", "dateModified": f.verified,
+                       "isAccessibleForFree": True, "author": org, "publisher": org,
+                       "isPartOf": {"@type": "CollectionPage", "@id": url_of("docs/index.html") + "#docs",
+                                    "url": url_of("docs/index.html")}})
+    elif pt == "docs_index":
+        kids = f.child_pages(pages, lambda t: page_type(t) == "reference")
+        blocks.append({"@type": "CollectionPage", "@id": f.url + "#docs", "name": f.h1,
+                       "description": f.description, "url": f.url, "inLanguage": "en",
+                       "isPartOf": {"@id": SITE_ID},
+                       "hasPart": [{"@type": "TechArticle", "position": i, "headline": facts[k].h1,
+                                    "url": url_of(k)} for i, k in enumerate(kids, 1)]})
     elif pt in ("top_level", "certificate", "roadmap", "academy_page"):
         page = {"@type": "WebPage", "name": f.h1, "description": f.description, "url": f.url,
                 "inLanguage": "en", "isPartOf": academy_ref() if rel.startswith("academy/") else {"@id": SITE_ID}}
@@ -1224,7 +1249,7 @@ STALE_AFTER_DAYS = int(CFG.get("academy", {}).get("stale_after_days", 180))
 
 
 def has_verified(rel: str) -> bool:
-    return page_type(rel) in ("lesson", "tutorial")
+    return page_type(rel) in ("lesson", "tutorial", "reference")
 
 
 def verified_by_hand(rel: str) -> str | None:
@@ -1288,8 +1313,14 @@ def content_key(text: str) -> str:
         head = re.sub(r"<!--\s*site:head\b.*?<!--\s*/site:head\s*-->", "", head, flags=re.S)
         head = TAG_RE.sub(lambda t: "" if managed_key(t.group(0)) else t.group(0), head)
         text = text[:m.start(1)] + head + text[m.end(1):]
+    # The shared header (nav) and footer are site chrome, not page content: adding a nav
+    # link must not move every page's Updated date and sitemap lastmod.
+    text = CHROME_RE.sub("", text)
     text = HREF_RE.sub(_norm_href, text)
     return " ".join(text.split())
+
+
+CHROME_RE = re.compile(r'<header class="site-header">.*?</header>|<footer class="site-footer">.*?</footer>', re.S)
 
 
 # A link to "dir/index.html" and one to "dir/" (or "index.html" and "./") reach the same page, so
@@ -1331,9 +1362,17 @@ def _lastmod(rel: str, key: str) -> str:
     return today
 
 
+def is_noindex(rel: str) -> bool:
+    """A page set to noindex in site.toml ([pages."<rel>"].robots)."""
+    robots = CFG.get("pages", {}).get(rel, {}).get("robots", CFG["robots"])
+    return "noindex" in [x.strip() for x in robots.lower().split(",")]
+
+
 def build_sitemap(pages: list[str], texts: dict[str, str]) -> str:
+    # noindex pages stay out: a sitemap URL Google is told not to index is a
+    # mixed signal (Search Console reports it as "Submitted URL marked noindex").
     excl = set(CFG["sitemap"].get("exclude", [])) | {NOTFOUND}
-    keep = [p for p in pages if p not in excl]
+    keep = [p for p in pages if p not in excl and not is_noindex(p)]
     order: list[str] = []
     cur = ROOT / CFG["sitemap"]["path"]
     if cur.exists():   # keep the existing (curated) order, append new pages
@@ -1686,6 +1725,7 @@ LD_REQUIRED = {
     "Course": ["name", "description", "provider", "url"],
     "LearningResource": ["name", "url", "learningResourceType", "isPartOf"],
     "Article": ["headline", "author"],
+    "TechArticle": ["headline", "author", "publisher", "dateModified", "mainEntityOfPage"],
     "Quiz": ["about", "hasPart"],
     "FAQPage": ["mainEntity"],
     "BreadcrumbList": ["itemListElement"],
@@ -1708,6 +1748,8 @@ LD_EXPECTED = {
     "roadmap": {"WebPage", "BreadcrumbList"},
     "academy_page": {"BreadcrumbList"},
     "top_level": {"BreadcrumbList"},
+    "reference": {"TechArticle", "BreadcrumbList"},
+    "docs_index": {"CollectionPage", "BreadcrumbList"},
     "tool": {"WebApplication", "BreadcrumbList"},   # + FAQPage when the page has <details> Q&As
 }
 DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?")
@@ -1851,7 +1893,7 @@ def check_jsonld(rel: str, text: str, vis: dict, pages: set[str], texts: dict) -
         # ── agreement with the visible page ──
         main_url = n.get("url")
         if types & {"BlogPosting", "Blog", "LearningResource", "HowTo", "DefinedTermSet", "WebPage",
-                    "CollectionPage", "FAQPage", "WebSite", "SoftwareApplication", "WebApplication"} or \
+                    "CollectionPage", "TechArticle", "FAQPage", "WebSite", "SoftwareApplication", "WebApplication"} or \
                 (types == {"Course"} and pt in ("academy_index", "track_index")):
             if main_url != url:
                 err(f"{name}.url {main_url!r} is not this page ({url})")
@@ -1862,13 +1904,24 @@ def check_jsonld(rel: str, text: str, vis: dict, pages: set[str], texts: dict) -
                      "WebApplication"}
                 or (types == {"Course"} and pt == "track_index")) and heading != v.h1:
             err(f"{name} name/headline {heading!r} is not the h1 {v.h1!r}")
-        if "Article" in types and n.get("headline") != v.h1:
+        if types & {"Article", "TechArticle"} and n.get("headline") != v.h1:
             err(f"{name}.headline {n.get('headline')!r} is not the h1")
         if "BlogPosting" in types and pt == "post":
             if n.get("datePublished") != v.published:
                 err(f"BlogPosting.datePublished {n.get('datePublished')!r} is not the visible date {v.published!r}")
             if str(n.get("dateModified", "")) < str(n.get("datePublished", "")):
                 err("BlogPosting.dateModified is before datePublished")
+        if "TechArticle" in types and n.get("dateModified") != v.verified:
+            err(f"TechArticle.dateModified {n.get('dateModified')!r} is not the visible Updated/Verified date "
+                f"{v.verified!r}")
+        if types == {"CollectionPage"} and pt == "docs_index":
+            kids = kids_of(rel, lambda t: page_type(t) == "reference")
+            if [(p.get("headline"), p.get("url")) for p in n.get("hasPart", [])] != \
+                    [(vis[k].h1, url_of(k)) for k in kids]:
+                err("CollectionPage.hasPart differs from the reference pages the docs hub links")
+            missing = sorted(r for r in pages if page_type(r) == "reference" and r not in kids)
+            if missing:
+                err(f"the docs hub does not link {', '.join(missing)}")
         if "LearningResource" in types:
             if v.level and str(n.get("educationalLevel", "")).lower() != v.level.lower():
                 err(f"educationalLevel {n.get('educationalLevel')!r} is not the visible level {v.level!r}")
@@ -2351,6 +2404,72 @@ def resolve_link(rel: str, href: str):
     return path
 
 
+CANONICAL_RE = re.compile(r'<link rel="canonical" href="([^"]+)"')
+ROBOTS_RE = re.compile(r'<meta name="robots" content="([^"]+)"')
+LESSON_TYPES = ("lesson", "tutorial")
+
+
+def click_depths(pages: dict[str, str]) -> dict[str, int]:
+    """Clicks from the home page to each page, following <a href> links."""
+    links = {rel: {resolve_link(rel, html.unescape(h)) for h, k, _ in scan(t).links if k == "a"}
+             for rel, t in pages.items()}
+    depth, queue = {"index.html": 0}, ["index.html"]
+    while queue:
+        cur = queue.pop(0)
+        for nxt in links.get(cur, ()):
+            if nxt in pages and nxt not in depth:
+                depth[nxt] = depth[cur] + 1
+                queue.append(nxt)
+    return depth
+
+
+MAX_CLICK_DEPTH = 2
+
+
+def check_index_signals(pages: dict[str, str], sitemap: str) -> list[str]:
+    """Indexing signals agree: every sitemap URL is a page whose canonical is
+    that URL and whose robots meta is not noindex; every noindex page is out of
+    the sitemap and every other page is in it; every lesson and tutorial has a
+    visible breadcrumb and a BreadcrumbList; every page is at most
+    MAX_CLICK_DEPTH clicks from the home page."""
+    errs = []
+    ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    try:
+        locs = [(x.text or "").strip() for x in ET.fromstring(sitemap.encode("utf-8")).findall("s:url/s:loc", ns)]
+    except ET.ParseError:
+        return ["sitemap: not well-formed XML"]
+    by_url = {url_of(r): r for r in pages}
+    excluded = set(CFG["sitemap"].get("exclude", []))
+    for u in locs:
+        rel = by_url.get(u)
+        if rel is None:
+            errs.append(f"sitemap: {u} is not a page")
+            continue
+        canon = CANONICAL_RE.search(pages[rel])
+        if not canon or canon.group(1) != u:
+            errs.append(f"sitemap: {u} has canonical {canon.group(1) if canon else None!r}")
+        robots = ROBOTS_RE.search(pages[rel])
+        if robots and "noindex" in robots.group(1).lower():
+            errs.append(f"sitemap: {u} is noindex")
+    listed = set(locs)
+    for rel, text in pages.items():
+        robots = ROBOTS_RE.search(text)
+        noindex = bool(robots and "noindex" in robots.group(1).lower())
+        if not noindex and rel not in excluded and url_of(rel) not in listed:
+            errs.append(f"{rel}: indexable but not in the sitemap")
+        if page_type(rel) in LESSON_TYPES:
+            if not re.search(r'<nav class="breadcrumb[^"]*"', text):
+                errs.append(f"{rel}: no visible breadcrumb")
+            if '"BreadcrumbList"' not in text:
+                errs.append(f"{rel}: no BreadcrumbList JSON-LD")
+    depth = click_depths(pages)
+    for rel in sorted(pages):
+        if depth.get(rel, MAX_CLICK_DEPTH + 1) > MAX_CLICK_DEPTH:
+            errs.append(f"{rel}: {depth.get(rel, 'not reachable')} clicks from the home page "
+                        f"(want at most {MAX_CLICK_DEPTH})")
+    return errs
+
+
 def cmd_check(args) -> int:
     errors: list[str] = []
     warns: list[str] = []
@@ -2366,6 +2485,7 @@ def cmd_check(args) -> int:
     errors += check_certificate(vis, pages)
     errors += check_sequence(vis, pages)
     errors += check_lesson_refs(vis, pages)
+    errors += check_index_signals(pages, gen[CFG["sitemap"]["path"]])
     errors += box_file_errors(BOXES)
     errors += tool_file_errors(list(pages))
     errors += check_boxes({rel: (ROOT / rel).read_text(encoding="utf-8") for rel in pages}, BOXES)

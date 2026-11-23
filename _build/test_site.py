@@ -585,3 +585,120 @@ class ContentKeyLinkForms(unittest.TestCase):
         a = '<body><a href="../foundations/">A</a></body>'
         b = '<body><a href="../advanced/">A</a></body>'
         self.assertNotEqual(S.content_key(a), S.content_key(b))
+
+
+class ChromeIsNotContent(unittest.TestCase):
+    """A nav or footer change must not move every page's Updated date / lastmod."""
+
+    def test_nav_link_does_not_change_the_key(self):
+        a = '<body><header class="site-header"><a href="x">X</a></header><p>Body</p></body>'
+        b = '<body><header class="site-header"><a href="x">X</a><a href="docs/">Docs</a></header><p>Body</p></body>'
+        self.assertEqual(S.content_key(a), S.content_key(b))
+
+    def test_body_change_still_changes_the_key(self):
+        a = '<body><header class="site-header"></header><p>Body</p></body>'
+        b = '<body><header class="site-header"></header><p>Body, edited</p></body>'
+        self.assertNotEqual(S.content_key(a), S.content_key(b))
+
+
+class IndexSignalChecks(unittest.TestCase):
+    """Sitemap, canonical, robots, breadcrumbs and click depth agree (check_index_signals)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.pages, cls.gen, _ = S.render()
+        cls.sitemap = cls.gen[S.CFG["sitemap"]["path"]]
+        cls.lesson = next(r for r in sorted(cls.pages) if S.page_type(r) == "lesson")
+        cls.post = next(r for r in sorted(cls.pages) if S.page_type(r) == "post")
+
+    def errs(self, pages=None, sitemap=None):
+        return S.check_index_signals(pages or self.pages, sitemap or self.sitemap)
+
+    def test_real_site_passes(self):
+        self.assertEqual(self.errs(), [])
+
+    def test_every_sitemap_url_has_a_matching_canonical_and_is_indexable(self):
+        locs = re.findall(r"<loc>([^<]+)</loc>", self.sitemap)
+        by_url = {S.url_of(r): r for r in self.pages}
+        self.assertTrue(locs)
+        for u in locs:
+            text = self.pages[by_url[u]]
+            self.assertIn(f'<link rel="canonical" href="{u}" />', text, u)
+            self.assertNotIn("noindex", S.ROBOTS_RE.search(text).group(1), u)
+
+    def test_noindex_pages_are_not_in_the_sitemap(self):
+        noindex = [r for r in self.pages if S.is_noindex(r)]
+        self.assertIn("academy/certificate.html", noindex)
+        for r in noindex:
+            self.assertNotIn(f"<loc>{S.url_of(r)}</loc>", self.sitemap, r)
+            self.assertIn('content="noindex', self.pages[r], r)
+
+    def test_noindex_page_in_the_sitemap_fails(self):
+        text = S.ROBOTS_RE.sub('<meta name="robots" content="noindex,follow"', self.pages[self.post], count=1)
+        errs = self.errs({**self.pages, self.post: text})
+        self.assertTrue(any("is noindex" in e for e in errs), errs)
+
+    def test_canonical_mismatch_fails(self):
+        text = self.pages[self.post].replace(f'<link rel="canonical" href="{S.url_of(self.post)}"',
+                                             '<link rel="canonical" href="https://brewslm.com/"')
+        errs = self.errs({**self.pages, self.post: text})
+        self.assertTrue(any("has canonical" in e for e in errs), errs)
+
+    def test_indexable_page_missing_from_the_sitemap_fails(self):
+        sitemap = self.sitemap.replace(f"<loc>{S.url_of(self.post)}</loc>", "<loc>https://brewslm.com/</loc>")
+        errs = self.errs(sitemap=sitemap)
+        self.assertTrue(any(e.startswith(self.post) and "not in the sitemap" in e for e in errs), errs)
+
+    def test_lesson_without_a_breadcrumb_fails(self):
+        text = self.pages[self.lesson].replace('<nav class="breadcrumb"', '<nav class="crumbs"')
+        errs = self.errs({**self.pages, self.lesson: text})
+        self.assertTrue(any(e.startswith(self.lesson) and "breadcrumb" in e for e in errs), errs)
+
+    def test_every_lesson_and_tutorial_has_breadcrumbs(self):
+        for r, t in self.pages.items():
+            if S.page_type(r) in ("lesson", "tutorial"):
+                self.assertRegex(t, r'<nav class="breadcrumb', r)
+                self.assertIn('"BreadcrumbList"', t, r)
+
+    def test_every_page_is_two_clicks_from_home(self):
+        depth = S.click_depths(self.pages)
+        self.assertEqual(sorted(r for r in self.pages if depth.get(r, 99) > 2), [])
+
+    def test_a_page_three_clicks_deep_fails(self):
+        pages = {
+            "index.html": '<body><a href="a.html">a</a></body>',
+            "a.html": '<body><a href="b.html">b</a></body>',
+            "b.html": '<body><a href="c.html">c</a></body>',
+            "c.html": "<body></body>",
+        }
+        depth = S.click_depths(pages)
+        self.assertEqual(depth, {"index.html": 0, "a.html": 1, "b.html": 2, "c.html": 3})
+
+
+class ReferencePages(unittest.TestCase):
+    """docs/: TechArticle pages dated like lessons, all linked from the docs hub."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.pages, _, _ = S.render()
+        cls.vis = {r: S.Visible(r, t) for r, t in cls.pages.items()}
+        cls.refs = sorted(r for r in cls.pages if S.page_type(r) == "reference")
+
+    def test_reference_pages_exist_and_carry_techarticle(self):
+        self.assertGreaterEqual(len(self.refs), 5)
+        for r in self.refs:
+            errs, found = S.check_jsonld(r, self.pages[r], self.vis, set(self.pages), self.pages)
+            self.assertEqual(errs, [], r)
+            self.assertIn("TechArticle", found, r)
+            self.assertIn("BreadcrumbList", found, r)
+
+    def test_hub_must_link_every_reference_page(self):
+        hub = "docs/index.html"
+        victim = self.refs[0]
+        name = victim.split("/")[-1]
+        text = re.sub(rf'<li class="docs-card">\s*<h2><a href="{re.escape(name)}">.*?</li>', "",
+                      self.pages[hub], flags=re.S)
+        pages = {**self.pages, hub: text}
+        vis = {**self.vis, hub: S.Visible(hub, text)}
+        errs, _ = S.check_jsonld(hub, text, vis, set(pages), pages)
+        self.assertTrue(any("does not link" in e for e in errs), errs)
