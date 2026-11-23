@@ -46,7 +46,8 @@ Usage:
                                  # JSON-LD node lacks a required property or
                                  # disagrees with the visible page, the lesson
                                  # order (track index -> badge numbers, pagers,
-                                 # hub, certificate) disagrees, a "Lesson X.Y"
+                                 # hub, certificate; tutorials index -> tutorial
+                                 # pagers) disagrees, a "Lesson X.Y"
                                  # names no lesson or the wrong one, a box
                                  # marker names no box file or a box region
                                  # was hand-edited or copied in by hand, ...;
@@ -2075,6 +2076,17 @@ def track_lessons(vis: dict, pages) -> dict[str, list[str]]:
     return out
 
 
+def tutorial_order(vis: dict, pages) -> list[str]:
+    """The tutorials in the order academy/tutorials/index.html links them: the
+    order their previous / next pagers follow."""
+    idx, out = "academy/tutorials/index.html", []
+    for href in vis[idx].main_links if idx in vis else []:
+        k = resolve_link(idx, html.unescape(href))
+        if k in pages and page_type(k) == "tutorial" and k not in out:
+            out.append(k)
+    return out
+
+
 def lesson_numbers(vis: dict, pages) -> dict[str, str]:
     """{"X.Y": lesson rel}: track X (its place in course_tracks), lesson Y."""
     return {f"{ti}.{li}": k for ti, ks in enumerate(track_lessons(vis, pages).values())
@@ -2154,7 +2166,8 @@ def check_sequence(vis: dict, pages: dict[str, str]) -> list[str]:
     """Lesson order is the track index order: each index item's number, each
     lesson's badge, each pager's prev/next (crossing tracks; the first lesson
     goes back to the Academy, the last on to the certificate) and the hub's
-    per-track lesson list must agree with it."""
+    per-track lesson list must agree with it. Tutorial pagers follow the
+    tutorials index order (see tutorial_order)."""
     errs = []
     tracks = track_lessons(vis, pages)
     order = [k for ks in tracks.values() for k in ks]
@@ -2184,6 +2197,19 @@ def check_sequence(vis: dict, pages: dict[str, str]) -> list[str]:
             if target != want:
                 errs.append(f"{k}: pager {what} goes to {target}, want {want} (the track index order)")
             elif want in vis and page_type(want) == "lesson" and not names_lesson(got[1], vis, want):
+                errs.append(f"{k}: pager {what} title {got[1]!r} does not name {want} ({vis[want].h1!r})")
+    # Tutorials: the same rule over the tutorials index order; the first goes
+    # back to that index and the last returns to it.
+    tidx = "academy/tutorials/index.html"
+    tuts = tutorial_order(vis, pages)
+    for i, k in enumerate(tuts):
+        prev, nxt = pager_links(pages[k])
+        for got, want, what in ((prev, tuts[i - 1] if i else tidx, "Previous"),
+                                (nxt, tuts[i + 1] if i + 1 < len(tuts) else tidx, "Next")):
+            target = resolve_link(k, got[0]) if got else None
+            if target != want:
+                errs.append(f"{k}: pager {what} goes to {target}, want {want} (the tutorials index order)")
+            elif want != tidx and not sig_words(got[1]) & title_words(vis, want):
                 errs.append(f"{k}: pager {what} title {got[1]!r} does not name {want} ({vis[want].h1!r})")
     hub = pages.get(start, "")
     for t, ks in tracks.items():

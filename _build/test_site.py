@@ -251,6 +251,46 @@ class SequenceChecks(unittest.TestCase):
                                  'href="../index.html" class="lesson-nav__next"')
         self.assertTrue(any("want academy/certificate.html" in e for e in self.seq(pages, vis)))
 
+    def test_tutorials_follow_the_tutorials_index(self):
+        order = S.tutorial_order(self.vis, self.pages)
+        self.assertEqual(len(order), 10)
+        self.assertEqual(order[0], "academy/tutorials/setup-brewslm.html")
+        self.assertEqual(order[-1], "academy/tutorials/building-domain-packs-finance-example.html")
+        for rel in order:
+            prev, nxt = S.pager_links(self.pages[rel])
+            self.assertIsNotNone(prev, rel)
+            self.assertIsNotNone(nxt, rel)
+
+    def test_tutorial_pager_to_the_wrong_tutorial_fails(self):
+        rel = "academy/tutorials/sql-injection-classifier.html"
+        pages, vis = self.mutate(rel, 'href="invoice-field-extraction.html" class="lesson-nav__next"',
+                                 'href="customer-ticket-triage.html" class="lesson-nav__next"')
+        errs = self.seq(pages, vis)
+        self.assertTrue(any(e.startswith(rel + ": pager Next") and "tutorials index order" in e
+                            for e in errs), errs)
+
+    def test_missing_tutorial_pager_fails(self):
+        rel = "academy/tutorials/pii-span-tagging.html"
+        text = self.pages[rel]
+        a, b = text.index('<nav class="lesson-nav"'), text.index("</nav>", text.index('<nav class="lesson-nav"'))
+        pages = {**self.pages, rel: text[:a] + text[b + len("</nav>"):]}
+        vis = {**self.vis, rel: S.Visible(rel, pages[rel])}
+        errs = self.seq(pages, vis)
+        self.assertTrue(any(e.startswith(rel + ": pager Previous goes to None") for e in errs), errs)
+
+    def test_tutorial_pager_title_must_name_the_target(self):
+        rel = "academy/tutorials/setup-brewslm.html"
+        pages, vis = self.mutate(rel, '<span class="lesson-nav__title">Tutorial 1: Support FAQ assistant</span>',
+                                 '<span class="lesson-nav__title">Tutorial 1: next one</span>')
+        errs = self.seq(pages, vis)
+        self.assertTrue(any("title 'Tutorial 1: next one' does not name" in e for e in errs), errs)
+
+    def test_last_tutorial_returns_to_the_tutorials_index(self):
+        rel = "academy/tutorials/building-domain-packs-finance-example.html"
+        pages, vis = self.mutate(rel, 'href="./" class="lesson-nav__next"',
+                                 'href="../certificate.html" class="lesson-nav__next"')
+        self.assertTrue(any("want academy/tutorials/index.html" in e for e in self.seq(pages, vis)))
+
     def test_badge_number_fails(self):
         rel = "academy/advanced/structured-pruning.html"
         pages, vis = self.mutate(rel, "Track 4 · Advanced · Lesson 13", "Track 4 · Advanced · Lesson 12")
