@@ -2538,8 +2538,10 @@ class LearnParts(HTMLParser):
             self.questions.append({"q": [], "a": [], "links": 0})
         if tag == "a" and a.get("href") and self.questions and in_questions and \
                 self._in(lambda t, x: t == "details") and not self._in(lambda t, x: t == "summary"):
-            href = html.unescape(a["href"])
-            if not href.startswith(("#", "http:", "https:")) and resolve_link(self.rel, href) != self.rel:
+            href = html.unescape(a["href"]).strip()
+            target = None if re.match(r"[a-zA-Z][a-zA-Z0-9+.-]*:|//|#", href) else resolve_link(self.rel, href)
+            track_index = self.rel.rsplit("/", 1)[0] + "/index.html"
+            if target and target not in (self.rel, track_index):    # a page on this site that isn't this one
                 self.questions[-1]["links"] += 1
         if tag == "p" and "learn-brewslm" in cls and self.brewslm is None:
             self.brewslm = []

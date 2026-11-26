@@ -868,7 +868,13 @@ class LearnInterviewPages(unittest.TestCase):
         self.assertTrue(any("links to no page" in e for e in self.errs(self.page(link=False))))
 
     def test_outside_or_self_links_do_not_count_as_coverage(self):
-        text = self.page().replace('href="bm25.html"', 'href="https://example.org/"')
+        for href in ("https://example.org/", "HTTPS://example.org/", "//example.org/x.html", "mailto:a@example.org",
+                     "rag-interview-questions.html#x", "#questions", "./", "index.html"):
+            text = self.page().replace('href="bm25.html">BM25', f'href="{href}">BM25')
+            self.assertTrue(any("links to no page" in e for e in self.errs(text)), href)
+
+    def test_a_link_only_in_the_summary_does_not_count(self):
+        text = self.page(link=False).replace("Why?</summary>", 'Why <a href="bm25.html">BM25</a>?</summary>')
         self.assertTrue(any("links to no page" in e for e in self.errs(text)))
 
     def test_checked_line_and_direct_answer_are_still_required(self):

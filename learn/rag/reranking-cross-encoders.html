@@ -215,7 +215,7 @@ print("sha256:", hashlib.sha256(open("p17.pdf", "rb").read()).hexdigest()[:16], 
       "| questions:", len(qs), "| with a relevant chunk:", sum(map(bool, gold)))</code></pre>
         <p class="learn-output-label">Output</p>
         <pre class="code-block code-output" data-output-of="load"><code>sha256: 2d2381d62c7c77ed | chunks: 2170 | questions: 80 | with a relevant chunk: 79</code></pre>
-        <p><strong>Setup.</strong> The hybrid ranking from the <a class="inline-link" href="hybrid-search-rrf.html">hybrid search page</a> (BM25 and all-MiniLM-L6-v2 fused by RRF, k = 60) supplies the candidates. The cross-encoder scores the top 50 once per question; a pool of N keeps the N best-ranked candidates and reorders them by score. A BM25-only pool of 30 is the setup BrewSLM uses by default. MRR is the mean of 1 / (rank of the first relevant chunk) within the top 10.</p>
+        <p><strong>Setup.</strong> The hybrid ranking from the <a class="inline-link" href="hybrid-search-rrf.html">hybrid search page</a> (BM25 and all-MiniLM-L6-v2 fused by RRF, k = 60) supplies the candidates. The cross-encoder scores the top 50 once per question; a pool of N keeps the N best-ranked candidates and reorders them by score. The BM25-only row is the shape BrewSLM uses when a reranker is switched on. MRR is the mean of 1 / (rank of the first relevant chunk) within the top 10.</p>
         <pre class="code-block" data-run="measure"><code>import math, time
 import numpy as np
 from sentence_transformers import SentenceTransformer
@@ -314,14 +314,14 @@ relevant chunk inside the pool of 30: hybrid 76 | bm25 74</code></pre>
         <section id="pitfalls" aria-labelledby="pitfalls-heading">
           <h2 id="pitfalls-heading">Pitfalls</h2>
           <ul>
-            <li><strong>Treating scores as probabilities.</strong> This model outputs logits. A fixed cut-off such as "keep scores above 0" depends on the model and the domain; the <a class="inline-link" href="https://sbert.net/docs/cross_encoder/usage/usage.html" target="_blank" rel="noopener noreferrer">sentence-transformers cross-encoder docs</a> apply a sigmoid only when you ask for it.</li>
+            <li><strong>Treating scores as probabilities.</strong> This model outputs logits. A fixed cut-off such as "keep scores above 0" depends on the model and the domain; this model's config sets an identity activation, so <code>predict</code> returns logits, while other single-label cross-encoders get a sigmoid by default (<a class="inline-link" href="https://sbert.net/docs/cross_encoder/usage/usage.html" target="_blank" rel="noopener noreferrer">sentence-transformers cross-encoder docs</a>). Check which you have before thresholding.</li>
             <li><strong>A pool too small to matter.</strong> With a pool of 10 the reranker reached 69 at top 5, three short of larger pools (<a class="inline-link" href="#measure">table above</a>). Check the pool's own recall before blaming the reranker.</li>
             <li><strong>Latency surprises.</strong> 30 candidates mean 30 model passes per question. On CPU that is fine for a demo, not for high traffic. BrewSLM caps an explicit pool at 100 so one reranking call stays a few seconds on CPU (<a class="inline-link" href="https://github.com/TensorGreed/__SLM__/blob/main/backend/app/services/retrieval_reranker.py" target="_blank" rel="noopener noreferrer">retrieval_reranker.py</a>).</li>
             <li><strong>A stronger reranker is not always better downstream.</strong> In BrewSLM's Pub 17 run, answer quality with the MiniLM reranker went from 0.61 (top 5, no reranker) to 0.55, while a larger bge reranker reached 0.67 (<a class="inline-link" href="../../blog-irs-pub17-fine-tune-lost-retrieval-won.html">IRS Pub 17 post</a>). Measure answers, not only retrieval.</li>
           </ul>
         </section>
 
-        <p class="learn-brewslm"><strong>In BrewSLM:</strong> retrieval reranks BM25 candidates with this same MiniLM cross-encoder by default (pool 4 × k, between 10 and 40), and the <a class="inline-link" href="../../docs/documents-qa-flow.html">documents → Q&amp;A</a> sweep also tries a larger reranker.</p>
+        <p class="learn-brewslm"><strong>In BrewSLM:</strong> retrieval is BM25 top 3 by default; the <a class="inline-link" href="../../docs/documents-qa-flow.html">documents → Q&amp;A</a> sweep can add this MiniLM cross-encoder or a larger one, over a pool of 4 × k (10 to 40).</p>
 
         <section id="practice" class="learn-practice" aria-labelledby="practice-heading">
           <h2 id="practice-heading">Practice</h2>

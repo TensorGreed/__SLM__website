@@ -281,11 +281,11 @@ only bm25 found:
    Can I deduct trash pickup fees on my property tax bill as real estate taxes?</code></pre>
         <ul>
           <li><strong>On totals, close.</strong> BM25 is three ahead at top 1, dense one ahead at top 5 and six ahead at top 10. At top 5 the paired test can't separate them (12 against 11 questions, p = 1.0).</li>
-          <li><strong>Question by question, they differ a lot.</strong> 23 of 80 questions were found by only one of the two, and the union in the top 5 is 68, eleven above either alone. That disagreement is what <a class="inline-link" href="hybrid-search-rrf.html">hybrid search</a> exploits.</li>
+          <li><strong>Question by question, they differ a lot.</strong> 23 of 80 questions were found by only one of the two, and the union in the top 5 is 68, eleven above dense and twelve above BM25. That disagreement is what <a class="inline-link" href="hybrid-search-rrf.html">hybrid search</a> exploits.</li>
           <li><strong>The misses have a pattern.</strong> Of the 12 questions only dense found, many are worded unlike the publication: "babysitter" for child care, "shareholders' meeting" for stockholders' meetings, "let a friend talk to the IRS" for the third party designee. Most of the 11 only BM25 found share a rarer exact phrase with the passage: "trash pickup", "child support", "nondeductible IRA contributions", "savings bond".</li>
           <li><strong>FAISS's flat index returned exactly the numpy ranking.</strong> Flat search is exact; use it until the matrix no longer fits in memory or a query takes too long. Approximate indexes start paying off well past this page's 2,170 vectors.</li>
         </ul>
-        <p>Limits: one small model (22 million parameters, trained on inputs of at most 128 tokens), one document and 80 single-fact questions drafted with an AI assistant. The <a class="inline-link" href="../embeddings/choosing-an-embedding-model.html">embedding model comparison</a> runs five other models on the same questions.</p>
+        <p>Limits: one small model (about 23 million parameters, trained on inputs of at most 128 tokens), one document and 80 single-fact questions drafted with an AI assistant. The <a class="inline-link" href="../embeddings/choosing-an-embedding-model.html">embedding model comparison</a> runs five other models on the same questions.</p>
 
         <h2 id="variations">Variations and parameters</h2>
         <div class="table-wrap">
@@ -307,25 +307,25 @@ only bm25 found:
             <li><strong>Long chunks lose their ends.</strong> all-MiniLM-L6-v2 truncates input over 256 word pieces (<a class="inline-link" href="https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2" target="_blank" rel="noopener noreferrer">model card</a>); at 512 characters, 89 Pub 17 chunks hit that limit, all on tax-table pages (<a class="inline-link" href="chunking-strategies.html#measure">chunking page</a>).</li>
             <li><strong>Different model or revision on each side.</strong> Vectors from two models, or two revisions of one model, are not comparable, and nothing raises an error: scores just get worse. Pin the revision, as the code does, and store it next to the index (<a class="inline-link" href="https://sbert.net/docs/package_reference/sentence_transformer/SentenceTransformer.html" target="_blank" rel="noopener noreferrer">the <code>revision</code> argument</a>).</li>
             <li><strong>Unnormalised vectors with a dot product.</strong> If the model doesn't normalise, a dot product favours long vectors over close ones. See <a class="inline-link" href="../embeddings/cosine-dot-l2.html">cosine, dot and L2</a> for what that does to recall.</li>
-            <li><strong>Exact tokens.</strong> Dense models blur identifiers such as "W-2c" or "Schedule LEP" into their neighbours; the questions only BM25 found above are the evidence. Keep a keyword retriever such as <a class="inline-link" href="bm25.html">BM25</a> in the mix.</li>
+            <li><strong>Exact tokens.</strong> Dense models blur rare exact phrases into their neighbours: the questions only BM25 found above turn on phrases such as trash pickup and child support, and identifiers such as form numbers behave the same way. Keep a keyword retriever such as <a class="inline-link" href="bm25.html">BM25</a> in the mix.</li>
           </ul>
         </section>
 
-        <p class="learn-brewslm"><strong>In BrewSLM:</strong> document retrieval is BM25 plus a cross-encoder reranker, not dense vectors; all-MiniLM-L6-v2 embeddings are used for dataset diagnostics. Compare both on your data with the <a class="inline-link" href="../../docs/documents-qa-flow.html">documents → Q&amp;A</a> sweep.</p>
+        <p class="learn-brewslm"><strong>In BrewSLM:</strong> document retrieval is BM25, with an optional cross-encoder reranker, not dense vectors; all-MiniLM-L6-v2 embeddings are used for dataset diagnostics (<a class="inline-link" href="../../docs/documents-qa-flow.html">documents → Q&amp;A</a>).</p>
 
         <section id="practice" class="learn-practice" aria-labelledby="practice-heading">
           <h2 id="practice-heading">Practice</h2>
           <details>
-            <summary>1. Why can a dense index be built once, while a cross-encoder can't be precomputed?</summary>
-            <p>A bi-encoder embeds the passage without seeing the question, so passage vectors don't depend on the query. A cross-encoder's score depends on the question and passage read together, so it has to run for every new question against every candidate.</p>
+            <summary>1. BM25 and dense retrieval found 56 and 57 of 80 in their top 5. Are they interchangeable?</summary>
+            <p>No. 23 questions were found by only one of the two, and together they cover 68. Equal totals hide different failures, which is why the next step is to combine them rather than pick one.</p>
           </details>
           <details>
-            <summary>2. How much memory does a float32 index of one million 384-dimensional vectors take?</summary>
-            <p>1,000,000 × 384 × 4 bytes = 1.536 GB, before any index overhead. The 2,170 vectors above take 3.3 MB. Smaller vectors or int8 storage cut that; see <a class="inline-link" href="../embeddings/embedding-dimensions.html">dimensions vs quality</a>.</p>
+            <summary>2. A user asks "can I write off my kid's daycare?" and the passage that answers it is about the child and dependent care credit. Which retriever is more likely to find it, and why?</summary>
+            <p>Dense. Apart from "care", the question and passage share no words, and BM25 only scores shared tokens. An embedding model trained on paraphrase and question-answer pairs can place both near each other. Storage for such an index is covered on <a class="inline-link" href="../embeddings/embedding-dimensions.html">dimensions vs quality</a>.</p>
           </details>
           <details>
-            <summary>3. Dense finds 57 of 80 and BM25 56. Are they interchangeable?</summary>
-            <p>No. Equal totals can hide different misses. Look at the questions each one found alone (the discordant pairs); here the union was far above either total, which says to combine them rather than pick one.</p>
+            <summary>3. Why normalise the vectors before taking the dot product here?</summary>
+            <p>all-MiniLM-L6-v2 was trained for cosine similarity. With <code>normalize_embeddings=True</code> every vector has length 1, so the dot product is the cosine and a plain inner-product index ranks correctly. The <a class="inline-link" href="../embeddings/cosine-dot-l2.html">cosine, dot and L2 page</a> shows when that matters.</p>
           </details>
         </section>
 

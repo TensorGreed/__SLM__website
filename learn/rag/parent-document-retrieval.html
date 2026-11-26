@@ -325,7 +325,7 @@ windows vs 256-char chunks:   4 vs 9, p = 0.267</code></pre>
             <li><strong>Children that straddle parents.</strong> Splitting the whole text twice, once at each size, produces children that cross parent boundaries and map to the wrong parent. Split each parent, as the <a class="inline-link" href="#code">code above</a> does, and assert that both levels rebuild the text.</li>
             <li><strong>Duplicate parents.</strong> Several top children often share a parent. Deduplicate before counting k, or two of your "top 2" are the same text; the <a class="inline-link" href="#measure">measurement</a> keeps each parent once, in the order of its best-ranked child.</li>
             <li><strong>Parents longer than the generator should read.</strong> Whole chapters as parents blow the prompt budget; the <a class="inline-link" href="long-context-vs-rag.html">long context page</a> measures what that costs on CPU.</li>
-            <li><strong>Embedding big chunks and expecting the model to read them.</strong> all-MiniLM-L6-v2 truncates input over 256 word pieces (<a class="inline-link" href="https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2" target="_blank" rel="noopener noreferrer">model card</a>), so a 1,024-character chunk's vector often ignores its second half. That alone explains part of the gap above.</li>
+            <li><strong>Embedding big chunks and expecting the model to read them.</strong> all-MiniLM-L6-v2 truncates input over 256 word pieces (<a class="inline-link" href="https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2" target="_blank" rel="noopener noreferrer">model card</a>), so about one in eight 1,024-character chunks here (mostly tables) is cut short. The bigger cost is that one vector has to average several topics.</li>
           </ul>
         </section>
 
@@ -335,7 +335,7 @@ windows vs 256-char chunks:   4 vs 9, p = 0.267</code></pre>
           <h2 id="practice-heading">Practice</h2>
           <details>
             <summary>1. Why does finding a parent through its child beat finding it through its own embedding?</summary>
-            <p>The child's vector is about one thing and the model reads all of it. The parent's vector mixes several topics and, with a 256-word-piece limit, may ignore its second half, so a question about that part matches it weakly.</p>
+            <p>The child's vector is about one thing and the model reads all of it. The parent's vector averages several topics, so a question about one of them matches it weakly; and a parent long enough to pass the 256-word-piece limit loses its tail.</p>
           </details>
           <details>
             <summary>2. Three of your top five children belong to the same parent. What does that suggest, and what do you send?</summary>
