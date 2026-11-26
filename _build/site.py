@@ -32,6 +32,17 @@ site.toml robots says noindex is left out of the sitemap, and `check` fails
 when the sitemap, canonicals and robots disagree, when a lesson or tutorial
 has no breadcrumb, or when a page is more than two clicks from the home page.
 
+Pages under learn/ are BrewSLM Learn, short lookup pages: learn/index.html is
+the hub and learn/<track>/index.html a track index (CollectionPage +
+BreadcrumbList; `check` fails when either misses one of its pages), and
+learn/<track>/<page>.html is a TechArticle whose dependencies are the page's
+"Tested on" line. `check` fails a learn page that lacks a direct answer
+(2-3 sentences), runnable code (data-run) with its output (data-output-of), a
+"Tested on <date> · versions · CPU" line, sourced pitfalls, practice questions
+with answers in <details>, 4+ related links, or 600 words of prose (code and
+output don't count); it warns over 1,500. _build/learn_snippets.py reruns the
+code in a CPU-only venv and compares the output the page shows.
+
 Pages under tools/ (the calculators) get WebApplication + FAQPage +
 BreadcrumbList JSON-LD; `check` also fails on an inline style or a colour
 literal in a tool page's body, tools/*.css or tools/*.js. The calculators'
@@ -97,6 +108,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CFG = tomllib.loads((ROOT / "_build" / "site.toml").read_text(encoding="utf-8"))
 BASE = CFG["base_url"].rstrip("/") + "/"
 NOTFOUND = CFG["notfound"]["path"]
+LEARN_HUB = "learn/index.html"
 # Top-level paths that are not site pages (this tooling lives in _build/).
 SKIP_DIRS = {".git", ".github", "node_modules", "_build"}
 RASTER = (".png", ".jpg", ".jpeg", ".gif", ".webp")
@@ -140,6 +152,10 @@ def page_type(rel: str) -> str:
         return "tool"
     if parts[0] == "docs":
         return "docs_index" if rel == "docs/index.html" else "reference"
+    if parts[0] == "learn":
+        if rel == LEARN_HUB:
+            return "learn_hub"
+        return "learn_track" if parts[-1] == "index.html" else "learn"
     return "top_level"
 
 
@@ -357,7 +373,7 @@ def head_values(rel: str, s: "Scan") -> dict:
     ptype = page_type(rel)
     v = {"canonical": url_of(rel)}
     v["robots"] = ov.get("robots", CFG["robots"])
-    v["og_type"] = "article" if ptype in ("post", "lesson", "tutorial", "reference") else "website"
+    v["og_type"] = "article" if ptype in ("post", "lesson", "tutorial", "reference", "learn") else "website"
     v["og_title"] = ov.get("og_title", s.title or "")
     v["og_description"] = ov.get("og_description", s.metas.get("description", ""))
     img = ov.get("og_image", CFG["default_image"])
@@ -530,6 +546,7 @@ class Facts:
         except ValueError:
             self.quiz = None   # check reports it (Visible parses the same data)
         self.quiz_title = text_of(first(r'class="quiz__title"[^>]*>(.*?)</h2>', body) or "") or None
+        self.tested = text_of(first(r'<p class="learn-tested"[^>]*>(.*?)</p>', body) or "") or None
         self.verified = None   # set by render() (git / site.toml), not read from the page
 
     def _crumbs(self, body: str) -> list[tuple[str, str]]:
@@ -763,6 +780,26 @@ def jsonld_blocks(rel: str, facts: dict[str, "Facts"], pages: list[str]) -> list
                        "hasPart": [{"@type": "TechArticle", "@id": url_of(k) + "#article", "position": i,
                                     "headline": facts[k].h1,
                                     "url": url_of(k)} for i, k in enumerate(kids, 1)]})
+    elif pt == "learn":
+        # A BrewSLM Learn page: TechArticle dated by the visible Updated/Verified
+        # line, with the "Tested on" line (versions, CPU) as its dependencies.
+        track = rel.rsplit("/", 1)[0] + "/index.html"
+        blocks.append({"@type": "TechArticle", "@id": f.url + "#article", "headline": f.h1,
+                       "name": f.h1, "description": f.description, "url": f.url,
+                       "mainEntityOfPage": f.url, "inLanguage": "en", "dateModified": f.verified,
+                       "dependencies": tested_dependencies(f.tested),
+                       "isAccessibleForFree": True, "author": org, "publisher": org,
+                       "isPartOf": {"@type": "CollectionPage", "@id": url_of(track) + "#learn",
+                                    "name": facts[track].h1 if track in facts else None,
+                                    "url": url_of(track)}})
+    elif pt in ("learn_hub", "learn_track"):
+        kids = f.child_pages(pages, lambda t: learn_child(rel, t))
+        blocks.append({"@type": "CollectionPage", "@id": f.url + "#learn", "name": f.h1,
+                       "description": f.description, "url": f.url, "inLanguage": "en",
+                       "isPartOf": {"@id": SITE_ID} if pt == "learn_hub"
+                       else {"@type": "CollectionPage", "@id": url_of(LEARN_HUB) + "#learn", "url": url_of(LEARN_HUB)},
+                       "hasPart": [{"@type": "TechArticle", "@id": url_of(k) + "#article", "position": i,
+                                    "headline": facts[k].h1, "url": url_of(k)} for i, k in enumerate(kids, 1)]})
     elif pt in ("top_level", "certificate", "roadmap", "academy_page"):
         page = {"@type": "WebPage", "name": f.h1, "description": f.description, "url": f.url,
                 "inLanguage": "en", "isPartOf": academy_ref() if rel.startswith("academy/") else {"@id": SITE_ID}}
@@ -773,6 +810,20 @@ def jsonld_blocks(rel: str, facts: dict[str, "Facts"], pages: list[str]) -> list
     if bc:
         blocks.append(bc)
     return [{"@context": "https://schema.org", **prune(b)} for b in blocks]
+
+
+def tested_dependencies(tested: str | None) -> str | None:
+    """The versions part of a "Tested on <date> · ..." line (JSON-LD dependencies)."""
+    if not tested:
+        return None
+    return re.sub(r"^Tested on [^·]*·\s*", "", tested).strip() or None
+
+
+def learn_child(rel: str, target: str) -> bool:
+    """Pages a learn hub (every learn page) or track index (its own track's pages) lists."""
+    if page_type(target) != "learn":
+        return False
+    return rel == LEARN_HUB or target.startswith(rel.rsplit("/", 1)[0] + "/")
 
 
 def prune(o):
@@ -1251,7 +1302,7 @@ STALE_AFTER_DAYS = int(CFG.get("academy", {}).get("stale_after_days", 180))
 
 
 def has_verified(rel: str) -> bool:
-    return page_type(rel) in ("lesson", "tutorial", "reference")
+    return page_type(rel) in ("lesson", "tutorial", "reference", "learn")
 
 
 def verified_by_hand(rel: str) -> str | None:
@@ -1538,6 +1589,7 @@ class Visible(HTMLParser):
         self.verified = None             # <time datetime> in the lesson-meta "Updated"/"Verified" span
         self.verified_label = None       # "Updated" or "Verified"
         self.verified_count = 0
+        self.tested = None               # text of <p class="learn-tested"> (learn pages)
         self.quiz_raw: str | None = None
         self.quiz_count = 0   # the build reads only the first quiz; check fails on a second
         self.faq: list[tuple[str, str]] = []
@@ -1614,6 +1666,8 @@ class Visible(HTMLParser):
             self._open("verified")
         if tag == "p" and "blog-post-meta" in cls:
             self._open("postmeta")
+        if tag == "p" and "learn-tested" in cls:
+            self._open("tested")
         if self._in_main:
             if tag == "details":
                 self._open("details")
@@ -1678,6 +1732,8 @@ class Visible(HTMLParser):
         elif k == "verified":
             m = re.match(r"(\w+):", text)
             self.verified_label = self.verified_label or (m.group(1) if m else text)
+        elif k == "tested":
+            self.tested = self.tested or text or None
         elif k == "quiz":
             self.quiz_count += 1
             if self.quiz_raw is None:
@@ -1753,6 +1809,9 @@ LD_EXPECTED = {
     "reference": {"TechArticle", "BreadcrumbList"},
     "docs_index": {"CollectionPage", "BreadcrumbList"},
     "tool": {"WebApplication", "BreadcrumbList"},   # + FAQPage when the page has <details> Q&As
+    "learn": {"TechArticle", "BreadcrumbList"},
+    "learn_hub": {"CollectionPage", "BreadcrumbList"},
+    "learn_track": {"CollectionPage", "BreadcrumbList"},
 }
 DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?")
 
@@ -1924,6 +1983,16 @@ def check_jsonld(rel: str, text: str, vis: dict, pages: set[str], texts: dict) -
             missing = sorted(r for r in pages if page_type(r) == "reference" and r not in kids)
             if missing:
                 err(f"the docs hub does not link {', '.join(missing)}")
+        if "TechArticle" in types and pt == "learn" and n.get("dependencies") != tested_dependencies(v.tested):
+            err(f"TechArticle.dependencies {n.get('dependencies')!r} is not the visible Tested-on line")
+        if types == {"CollectionPage"} and pt in ("learn_hub", "learn_track"):
+            kids = kids_of(rel, lambda t: learn_child(rel, t))
+            if [(p.get("headline"), p.get("url")) for p in n.get("hasPart", [])] != \
+                    [(vis[k].h1, url_of(k)) for k in kids]:
+                err("CollectionPage.hasPart differs from the learn pages this page links")
+            missing = sorted(r for r in pages if learn_child(rel, r) and r not in kids)
+            if missing:
+                err(f"{'the learn hub' if pt == 'learn_hub' else 'the track index'} does not link {', '.join(missing)}")
         if "LearningResource" in types:
             if v.level and str(n.get("educationalLevel", "")).lower() != v.level.lower():
                 err(f"educationalLevel {n.get('educationalLevel')!r} is not the visible level {v.level!r}")
@@ -2364,6 +2433,265 @@ def check_certificate(vis: dict, pages: dict[str, str]) -> list[str]:
     return errs
 
 
+# ── BrewSLM Learn pages (learn/<track>/<page>.html) ──────────────────────
+# A learn page is a short lookup page. What sets it apart from a generic
+# explainer is that its code was run, so `check` fails a page that lacks any of
+# the parts below. `_build/learn_snippets.py` reruns the code and compares the
+# output; `check` only sees that the parts are there.
+
+LEARN_MIN_WORDS = 600
+LEARN_MAX_WORDS = 1500
+LEARN_MIN_RELATED = 4
+
+
+class LearnParts(HTMLParser):
+    """The required parts of a learn page, read with html.parser."""
+
+    def __init__(self, text: str, rel: str = ""):
+        super().__init__(convert_charrefs=True)
+        self.rel = rel
+        self.answer: list[str] = []
+        self.answer_count = 0
+        self.runs: list[str] = []
+        self.outputs: dict[str, list[str]] = {}
+        self.tested: list[str] | None = None
+        self.tested_date = None
+        self.tested_pkgs = 0
+        self.pitfalls: list[dict] = []
+        self.practice: list[dict] = []
+        self.related_links: list[tuple[str, list[str]]] = []   # (href, text)
+        self.code: list[list[str]] = []                       # text of each data-run block
+        self.nd: list[tuple[str, str]] = []                   # (data-nd kind, title)
+        self.pkgs: dict[str, str] = {}                        # Tested-on data-pkg spans
+        self.files: list[str] = []                            # article data-run-files
+        self._nd_open = False
+        self._pkg = None
+        self.brewslm: list[str] | None = None
+        self.prose: list[str] = []
+        self._stack: list[tuple[str, dict]] = []
+        self.feed(text)
+        self.close()
+
+    def _in(self, pred) -> bool:
+        return any(pred(t, a) for t, a in self._stack)
+
+    def handle_starttag(self, tag, attrs):
+        a = {k: (v or "") for k, v in attrs}
+        cls = set(a.get("class", "").split())
+        if tag in VOID:
+            if tag == "br":
+                self.handle_data(" ")
+            return
+        self._stack.append((tag, a))
+        if tag == "p" and "learn-answer" in cls:
+            self.answer_count += 1
+        if tag == "pre" and "data-run" in a:
+            self.runs.append(a["data-run"])
+            self.code.append([])
+        if tag == "article" and a.get("data-run-files"):
+            self.files += a["data-run-files"].split()
+        if tag == "span" and "data-nd" in a:
+            self.nd.append((a["data-nd"], a.get("title", "")))
+            out = next((x["data-output-of"] for t, x in reversed(self._stack) if t == "pre" and "data-output-of" in x), None)
+            if out is not None:
+                self.outputs[out].append(ND_MARK)
+                self._nd_open = True
+        if tag == "pre" and "data-output-of" in a:
+            self.outputs.setdefault(a["data-output-of"], [])
+        if tag == "p" and "learn-tested" in cls and self.tested is None:
+            self.tested = []
+        if tag == "time" and self._in(lambda t, x: t == "p" and "learn-tested" in x.get("class", "").split()):
+            self.tested_date = a.get("datetime")
+        if tag == "span" and "data-pkg" in a and \
+                self._in(lambda t, x: t == "p" and "learn-tested" in x.get("class", "").split()):
+            self.tested_pkgs += 1
+            self._pkg = [a["data-pkg"], ""]
+        if tag == "li" and self._in(lambda t, x: t == "section" and x.get("id") == "pitfalls"):
+            self.pitfalls.append({"links": 0, "outside": 0, "words": 0})
+        if tag == "a" and a.get("href"):
+            if self.pitfalls and self._in(lambda t, x: t == "li") and \
+                    self._in(lambda t, x: t == "section" and x.get("id") == "pitfalls"):
+                self.pitfalls[-1]["links"] += 1
+                if resolve_link(self.rel, html.unescape(a["href"])) != self.rel and not a["href"].startswith("#"):
+                    self.pitfalls[-1]["outside"] += 1
+            if self._in(lambda t, x: t == "section" and "related-lessons" in x.get("class", "").split()):
+                self.related_links.append((a["href"], []))
+        if tag == "details" and self._in(lambda t, x: t == "section" and x.get("id") == "practice"):
+            self.practice.append({"q": [], "a": []})
+        if tag == "p" and "learn-brewslm" in cls and self.brewslm is None:
+            self.brewslm = []
+
+    def handle_endtag(self, tag):
+        if tag == "span" and self._nd_open:
+            self._nd_open = False
+        if tag == "span" and self._pkg is not None:
+            self.pkgs[self._pkg[0]] = self._pkg[1].strip()
+            self._pkg = None
+        for i in range(len(self._stack) - 1, -1, -1):
+            if self._stack[i][0] == tag:
+                del self._stack[i:]
+                break
+
+    def handle_data(self, data):
+        stack = self._stack
+        if self._pkg is not None:
+            self._pkg[1] += data
+        if any(t in ("script", "style") for t, _ in stack):
+            return
+        classes = [set(a.get("class", "").split()) for _, a in stack]
+        in_article = any(t == "article" for t, _ in stack)
+        if any("learn-answer" in c for c in classes):
+            self.answer.append(data)
+        if self.tested is not None and any("learn-tested" in c for c in classes):
+            self.tested.append(data)
+        if self.brewslm is not None and any("learn-brewslm" in c for c in classes):
+            self.brewslm.append(data)
+        if any(t == "pre" and "data-run" in a for t, a in stack):
+            self.code[-1].append(data)
+        if self.related_links and any(t == "a" for t, _ in stack) and \
+                any("related-lessons" in c for c in classes):
+            self.related_links[-1][1].append(data)
+        out = next((a["data-output-of"] for t, a in reversed(stack) if t == "pre" and "data-output-of" in a), None)
+        if out is not None and not self._nd_open:
+            self.outputs[out].append(data)
+        if self.pitfalls and any(t == "li" for t, _ in stack) and \
+                any(t == "section" and a.get("id") == "pitfalls" for t, a in stack):
+            self.pitfalls[-1]["words"] += len(data.split())
+        if self.practice and any(t == "details" for t, _ in stack):
+            self.practice[-1]["q" if any(t == "summary" for t, _ in stack) else "a"].append(data)
+        # Real content: the article's prose, not its code, output, related links or chrome.
+        if in_article and not any(t in ("pre", "nav", "aside") for t, _ in stack) and \
+                not any("related-lessons" in c or "lesson-header__badge" in c for c in classes):
+            self.prose.append(data)
+
+    def words(self) -> int:
+        # words, not numbers: a table of figures should not pad the count
+        return len([w for w in re.findall(r"[A-Za-z0-9][A-Za-z0-9'’.,%/-]*", " ".join(self.prose))
+                    if re.search(r"[A-Za-z]", w)])
+
+
+LEARN_STAMPS = ROOT / "_build" / "learn_stamps.json"
+
+
+ND_MARK = "\x00nd\x00"
+
+
+def learn_page_hash(rel: str, lp: "LearnParts") -> str:
+    """Same hash as _build/learn_snippets.py writes into learn_stamps.json: code, shown
+    output (nd spans masked) and the bytes of the data files."""
+    outs = ["".join(lp.outputs.get(r, [])) for r in lp.runs]
+    files = []
+    for f in lp.files:
+        try:
+            digest = hashlib.sha256((ROOT / rel).parent.joinpath(f).read_bytes()).hexdigest()
+        except OSError:
+            digest = "missing"
+        files.append(f"{f}\n{digest}")
+    payload = "\n\x01\n".join(["\n\x00\n".join("".join(c) for c in lp.code), "\n\x00\n".join(outs),
+                                "\n\x00\n".join(files)])
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def load_learn_stamps() -> dict:
+    try:
+        return json.loads(LEARN_STAMPS.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def _sentences(s: str) -> int:
+    return len([x for x in re.split(r"(?<=[.!?])\s+(?=[A-Z0-9“\"(])", s.strip()) if x])
+
+
+def check_learn(pages: dict[str, str], today: dt.date | None = None,
+                stamps: dict | None = None) -> tuple[list[str], list[str]]:
+    """(errors, warnings) for every learn page's required parts, and its agreement
+    with the stamp _build/learn_snippets.py wrote when the page last passed."""
+    errs, warns = [], []
+    stamps = load_learn_stamps() if stamps is None else stamps
+    for rel, text in sorted(pages.items()):
+        if page_type(rel) != "learn":
+            continue
+        lp = LearnParts(text, rel)
+        e = lambda m: errs.append(f"{rel}: {m}")
+        answer = " ".join(" ".join(lp.answer).split())
+        if lp.answer_count != 1 or not answer:
+            e(f"want one direct answer (<p class=\"learn-answer\">), found {lp.answer_count}")
+        elif not 2 <= _sentences(answer) <= 3:
+            e(f"the direct answer has {_sentences(answer)} sentences (want 2-3)")
+        if not lp.runs:
+            e('no runnable code (<pre class="code-block" data-run="ID">)')
+        for rid in lp.runs:
+            if lp.runs.count(rid) > 1:
+                e(f"data-run id {rid!r} used twice")
+            if not "".join(lp.outputs.get(rid, [])).strip():
+                e(f"code block {rid!r} has no real output (<pre data-output-of=\"{rid}\">)")
+        for oid in lp.outputs:
+            if oid not in lp.runs:
+                e(f"output block for {oid!r} has no data-run block")
+        tested = " ".join(" ".join(lp.tested or []).split())
+        if not tested.startswith("Tested on"):
+            e('no "Tested on <date> · <versions> · CPU" line (<p class="learn-tested">)')
+        else:
+            if not (lp.tested_date and re.fullmatch(r"\d{4}-\d{2}-\d{2}", lp.tested_date)):
+                e("the Tested-on line has no <time datetime=\"YYYY-MM-DD\">")
+            elif stale_days(lp.tested_date, today) < 0:
+                e(f"the Tested-on date {lp.tested_date} is in the future")
+            elif stale_days(lp.tested_date, today) > STALE_AFTER_DAYS:
+                warns.append(f"{rel}: tested {lp.tested_date}, over {STALE_AFTER_DAYS} days ago (rerun the snippets)")
+            if not lp.tested_pkgs:
+                e("the Tested-on line names no versions (<span data-pkg=\"NAME\">X.Y</span>)")
+            if not re.search(r"\bCPU\b", tested):
+                e("the Tested-on line does not say CPU")
+        if len(lp.pitfalls) < 2:
+            e(f"{len(lp.pitfalls)} pitfall(s) in <section id=\"pitfalls\"> (want at least 2)")
+        for i, pf in enumerate(lp.pitfalls, 1):
+            if not pf["links"]:
+                e(f"pitfall {i} has no source link")
+        if lp.pitfalls and not any(pf["outside"] for pf in lp.pitfalls):
+            e("no pitfall cites a source outside this page")
+        for kind, title in lp.nd:
+            if kind not in ("number", "any"):
+                e(f"unknown data-nd kind {kind!r} (number or any)")
+            elif kind == "any" and not title.strip():
+                e('a data-nd="any" span needs a title saying why it varies')
+        track = rel.rsplit("/", 1)[0] + "/index.html"
+        real = [h for h, t in lp.related_links
+                if resolve_link(rel, html.unescape(h)) not in (track, rel)
+                and "coming soon" not in " ".join(t).lower()]
+        if len(lp.practice) < 2:
+            e(f"{len(lp.practice)} practice question(s) in <section id=\"practice\"> (want at least 2, "
+              f"answers in <details>)")
+        for i, q in enumerate(lp.practice, 1):
+            if not "".join(q["q"]).strip():
+                e(f"practice question {i} has no <summary>")
+            if len(" ".join(q["a"]).split()) < 5:
+                e(f"practice question {i} has no answer in its <details>")
+        if len(real) < LEARN_MIN_RELATED:
+            e(f"{len(real)} related link(s) to other pages (want at least {LEARN_MIN_RELATED} in .related-lessons; "
+              f"the track index and coming-soon placeholders don't count)")
+        st = stamps.get(rel)
+        if lp.runs and not st:
+            e("no passing snippet run on record (run `python3 _build/learn_snippets.py run`)")
+        elif lp.runs:
+            if st.get("page_sha256") != learn_page_hash(rel, lp):
+                e("the code, shown output or data files changed since the last passing snippet run "
+                  "(rerun _build/learn_snippets.py)")
+            for name, ver in sorted(lp.pkgs.items()):
+                if (st.get("versions") or {}).get(name) != ver:
+                    e(f"Tested-on says {name} {ver}; the last passing run had {(st.get('versions') or {}).get(name)}")
+            if lp.tested_date and str(st.get("last_pass", "")) < lp.tested_date:
+                e(f"Tested-on date {lp.tested_date} is later than the last passing run ({st.get('last_pass')})")
+        if lp.brewslm is not None and len(" ".join(lp.brewslm).split()) > 45:
+            e("the In BrewSLM line is over 45 words (keep it to one line)")
+        n = lp.words()
+        if n < LEARN_MIN_WORDS:
+            e(f"{n} words of real content (want at least {LEARN_MIN_WORDS}; code and output don't count)")
+        elif n > LEARN_MAX_WORDS:
+            warns.append(f"{rel}: {n} words of content, over the {LEARN_MAX_WORDS}-word budget")
+    return errs, warns
+
+
 # ── build / check ──────────────────────────────────────────────────────────
 
 def render() -> tuple[dict[str, str], dict[str, str], dict[str, "Facts"]]:
@@ -2486,7 +2814,7 @@ def check_index_signals(pages: dict[str, str], sitemap: str) -> list[str]:
         noindex = bool(robots and "noindex" in robots.group(1).lower())
         if not noindex and rel not in excluded and url_of(rel) not in listed:
             errs.append(f"{rel}: indexable but not in the sitemap")
-        if page_type(rel) in LESSON_TYPES:
+        if page_type(rel) in LESSON_TYPES + ("learn", "learn_track", "learn_hub"):
             if not re.search(r'<nav class="breadcrumb[^"]*"', text):
                 errs.append(f"{rel}: no visible breadcrumb")
             if '"BreadcrumbList"' not in text:
@@ -2520,6 +2848,9 @@ def cmd_check(args) -> int:
     errors += check_boxes({rel: (ROOT / rel).read_text(encoding="utf-8") for rel in pages}, BOXES)
     ferr, stale = check_freshness(vis)
     errors += ferr
+    lerr, lwarn = check_learn(pages)
+    errors += lerr
+    warns += lwarn
     on_disk = {rel: (ROOT / rel).read_text(encoding="utf-8") for rel in pages}
     errors += [e + " (in the page as it is on disk)" for e in
                check_freshness_labels({rel: Visible(rel, t) for rel, t in on_disk.items()})]

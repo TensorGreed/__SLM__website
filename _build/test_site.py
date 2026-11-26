@@ -742,3 +742,191 @@ class ReferencePages(unittest.TestCase):
         vis = {**self.vis, hub: S.Visible(hub, text)}
         errs, _ = S.check_jsonld(hub, text, vis, set(pages), pages)
         self.assertTrue(any("does not link" in e for e in errs), errs)
+
+
+class LearnPages(unittest.TestCase):
+    """BrewSLM Learn: page types, JSON-LD and the required-parts check."""
+
+    PAGE = "learn/rag/chunking-strategies.html"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.pages, cls.gen, _ = S.render()
+        cls.vis = {r: S.Visible(r, t) for r, t in cls.pages.items()}
+
+    def learn_errs(self, text):
+        errs, _ = S.check_learn({self.PAGE: text}, today=dt.date(2026, 11, 26))
+        return errs
+
+    def test_page_types(self):
+        self.assertEqual(S.page_type("learn/index.html"), "learn_hub")
+        self.assertEqual(S.page_type("learn/rag/index.html"), "learn_track")
+        self.assertEqual(S.page_type(self.PAGE), "learn")
+
+    def test_real_learn_pages_pass(self):
+        errs, _ = S.check_learn(self.pages, today=dt.date(2026, 11, 26))
+        self.assertEqual(errs, [])
+        for r in ("learn/index.html", "learn/rag/index.html", self.PAGE):
+            errs, found = S.check_jsonld(r, self.pages[r], self.vis, set(self.pages), self.pages)
+            self.assertEqual(errs, [], r)
+        self.assertEqual(S.check_index_signals(self.pages, self.gen[S.CFG["sitemap"]["path"]]), [])
+
+    def test_learn_page_is_a_techarticle_with_learn_breadcrumbs(self):
+        _, found = S.check_jsonld(self.PAGE, self.pages[self.PAGE], self.vis, set(self.pages), self.pages)
+        self.assertIn("TechArticle", found)
+        names = [n for n, _ in self.vis[self.PAGE].crumbs]
+        self.assertEqual(names[1:3], ["Learn", "RAG"])
+        for r in ("learn/index.html", "learn/rag/index.html"):
+            _, found = S.check_jsonld(r, self.pages[r], self.vis, set(self.pages), self.pages)
+            self.assertIn("CollectionPage", found, r)
+
+    def test_learn_pages_are_in_the_sitemap(self):
+        sm = self.gen[S.CFG["sitemap"]["path"]]
+        for r in ("learn/index.html", "learn/rag/index.html", self.PAGE):
+            self.assertIn(f"<loc>{S.url_of(r)}</loc>", sm, r)
+
+    def test_dependencies_must_match_the_tested_line(self):
+        text = self.pages[self.PAGE].replace('"dependencies": "Python 3.12.3', '"dependencies": "Python 3.11.0', 1)
+        errs, _ = S.check_jsonld(self.PAGE, text, {**self.vis, self.PAGE: S.Visible(self.PAGE, text)},
+                                 set(self.pages), self.pages)
+        self.assertTrue(any("dependencies" in e for e in errs), errs)
+
+    def test_hub_and_track_must_link_every_learn_page(self):
+        for hub in ("learn/index.html", "learn/rag/index.html"):
+            text = self.pages[hub].replace('href="rag/chunking-strategies.html"', 'href="rag/"') \
+                .replace('href="chunking-strategies.html"', 'href="./"')
+            vis = {**self.vis, hub: S.Visible(hub, text)}
+            errs, _ = S.check_jsonld(hub, text, vis, set(self.pages), {**self.pages, hub: text})
+            self.assertTrue(any("does not link" in e for e in errs), (hub, errs))
+
+    def test_missing_parts_fail(self):
+        page = self.pages[self.PAGE]
+        cases = {
+            "direct answer": re.sub(r'<p class="learn-answer">.*?</p>', "", page, flags=re.S),
+            "one-sentence answer": re.sub(r'(<p class="learn-answer">).*?(</p>)', r"\1Chunk your text.\2", page, flags=re.S),
+            "runnable code": page.replace("data-run=", "data-x="),
+            "real output": re.sub(r'<pre class="code-block code-output" data-output-of="fixed">.*?</pre>', "",
+                                  page, flags=re.S),
+            "Tested on": page.replace('<p class="learn-tested">Tested on', '<p class="learn-tested">Run on'),
+            "versions": re.sub(r'<span data-pkg="[^"]+">([^<]*)</span>', r"\1", page),
+            "CPU": page.replace("· CPU (20-core Arm, no GPU)", "· a laptop"),
+            "pitfalls": page.replace('<section id="pitfalls"', '<section id="gotchas"'),
+            "pitfall source": re.sub(r'(<section id="pitfalls".*?<li>.*?)<a\b[^>]*>(.*?)</a>', r"\1\2",
+                                     page, count=1, flags=re.S),
+            "practice": page.replace('<section id="practice"', '<section id="quiz"'),
+            "practice answer": re.sub(r"(<details>\s*<summary>.*?</summary>)\s*<p>.*?</p>", r"\1", page,
+                                      count=1, flags=re.S),
+            "related": re.sub(r'<section class="related-lessons".*?</section>', "", page, flags=re.S),
+            "600 words": re.sub(r"(<h2 id=\"concept\">).*?(<h2 id=\"pitfalls-heading\">)", r"\1\2", page,
+                                flags=re.S),
+        }
+        self.assertEqual(self.learn_errs(page), [])
+        for what, text in cases.items():
+            self.assertNotEqual(text, page, what)
+            self.assertTrue(self.learn_errs(text), what)
+
+    def test_future_tested_date_fails(self):
+        text = self.pages[self.PAGE].replace('Tested on <time datetime="2026-11-26">',
+                                             'Tested on <time datetime="2027-01-01">')
+        self.assertTrue(any("future" in e for e in self.learn_errs(text)))
+
+    def test_long_brewslm_line_fails(self):
+        text = self.pages[self.PAGE].replace("<strong>In BrewSLM:</strong>",
+                                             "<strong>In BrewSLM:</strong> " + "more words " * 30)
+        self.assertTrue(any("In BrewSLM" in e for e in self.learn_errs(text)))
+
+
+class LearnStampsAndSources(unittest.TestCase):
+    """Stamp agreement, placeholder related links and outside sources."""
+
+    PAGE = LearnPages.PAGE
+
+    @classmethod
+    def setUpClass(cls):
+        cls.page = (S.ROOT / cls.PAGE).read_text(encoding="utf-8")
+        cls.stamps = S.load_learn_stamps()
+
+    def errs(self, text, stamps=None):
+        e, _ = S.check_learn({self.PAGE: text}, today=dt.date(2026, 11, 26),
+                             stamps=self.stamps if stamps is None else stamps)
+        return e
+
+    def test_real_page_matches_its_stamp(self):
+        self.assertIn(self.PAGE, self.stamps)
+        self.assertEqual(self.errs(self.page), [])
+
+    def test_edited_code_without_a_rerun_fails(self):
+        text = self.page.replace("print(len(sample), &quot;characters&quot;)", "print(len(sample))", 1)
+        if text == self.page:
+            text = self.page.replace('print(len(sample), "characters")', "print(len(sample))", 1)
+        self.assertNotEqual(text, self.page)
+        self.assertTrue(any("changed since the last passing" in e for e in self.errs(text)))
+
+    def test_edited_output_without_a_rerun_fails(self):
+        text = self.page.replace("25/30 (8, 1,604)", "29/30 (8, 1,604)", 1)
+        self.assertNotEqual(text, self.page)
+        self.assertTrue(any("changed since the last passing" in e for e in self.errs(text)))
+
+    def test_edited_timing_inside_an_nd_span_is_allowed(self):
+        text = re.sub(r'(data-nd="number"[^>]*>)\d+(</span>)', r"\g<1>999\2", self.page, count=1)
+        self.assertNotEqual(text, self.page)
+        self.assertEqual(self.errs(text), [])
+
+    def test_version_not_in_the_run_fails(self):
+        text = self.page.replace('data-pkg="torch">2.5.1', 'data-pkg="torch">2.9.0', 1)
+        self.assertTrue(any("torch 2.9.0" in e for e in self.errs(text)))
+
+    def test_no_stamp_fails(self):
+        self.assertTrue(any("no passing snippet run" in e for e in self.errs(self.page, stamps={})))
+
+    def test_tested_date_after_the_last_run_fails(self):
+        st = {self.PAGE: {**self.stamps[self.PAGE], "last_pass": "2026-11-01"}}
+        self.assertTrue(any("later than the last passing run" in e for e in self.errs(self.page, stamps=st)))
+
+    def test_placeholders_and_track_links_do_not_count_as_related(self):
+        sec = re.search(r'<section class="related-lessons".*?</section>', self.page, re.S).group(0)
+        fake = re.sub(r'<li><a class="inline-link" href="[^"]*">([^<]*)</a>',
+                      r'<li><a class="inline-link" href="./">\1 (coming soon)</a>', sec)
+        text = self.page.replace(sec, fake)
+        self.assertTrue(any("related link" in e for e in self.errs(text)))
+
+    def test_pitfalls_sourced_only_by_anchors_fail(self):
+        sec = re.search(r'<section id="pitfalls".*?</section>', self.page, re.S).group(0)
+        text = self.page.replace(sec, re.sub(r'href="[^"]*"', 'href="#measure"', sec))
+        self.assertTrue(any("outside this page" in e for e in self.errs(text)))
+
+    def test_unexplained_any_wildcard_fails(self):
+        text = self.page.replace('data-nd="number" title="Wall-clock time; varies by machine"', 'data-nd="any"', 1)
+        self.assertTrue(any('data-nd="any"' in e for e in self.errs(text)))
+
+
+class LearnSnippetMatching(unittest.TestCase):
+    """The output comparison in _build/learn_snippets.py (no venv needed)."""
+
+    @classmethod
+    def setUpClass(cls):
+        spec = importlib.util.spec_from_file_location("learn_snippets", Path(__file__).with_name("learn_snippets.py"))
+        cls.L = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.L)
+
+    def parts(self, html_text):
+        b = self.L.Blocks()
+        b.feed(f'<pre data-run="a"><code>print(1)</code></pre><pre data-output-of="a"><code>{html_text}</code></pre>')
+        return b.outputs["a"]
+
+    def test_exact_output_matches_and_drift_fails(self):
+        _, rx = self.L.expected_regex(self.parts("size 256 &gt; 0\n24/30  "))
+        self.assertTrue(rx.fullmatch("size 256 > 0\n24/30"))
+        self.assertFalse(rx.fullmatch("size 256 > 0\n23/30"))
+
+    def test_marked_number_may_vary_and_nothing_else(self):
+        _, rx = self.L.expected_regex(self.parts('took <span class="nd" data-nd="number">31</span> s, 24/30'))
+        self.assertTrue(rx.fullmatch("took 7.5 s, 24/30"))
+        self.assertFalse(rx.fullmatch("took 7.5 s, 23/30"))
+        self.assertFalse(rx.fullmatch("took fast s, 24/30"))
+
+    def test_page_blocks_are_paired(self):
+        b = self.L.parse(S.ROOT / LearnPages.PAGE)
+        self.assertTrue(b.runs)
+        self.assertEqual(sorted(b.outputs), sorted(i for i, _ in b.runs))
+        self.assertIn("python", b.pkgs)
