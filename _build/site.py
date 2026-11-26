@@ -40,7 +40,12 @@ learn/<track>/<page>.html is a TechArticle whose dependencies are the page's
 (2-3 sentences), runnable code (data-run) with its output (data-output-of), a
 "Tested on <date> · versions · CPU" line, sourced pitfalls, practice questions
 with answers in <details>, 4+ related links, or 600 words of prose (code and
-output don't count); it warns over 1,500. _build/learn_snippets.py reruns the
+output don't count); it warns over 1,500. An interview page (<section
+id="questions" class="learn-interview">) needs no code, pitfalls or practice: it
+needs 15-25 questions with answers of 20+ words in <details>, each linking to a
+page on this site that covers it, a "Checked on <date>" line (or a Tested-on
+line if it carries code) and the same answer, related-link and In BrewSLM
+rules; it warns over 4,000 words. _build/learn_snippets.py reruns the
 code in a CPU-only venv and compares the output the page shows.
 
 Pages under tools/ (the calculators) get WebApplication + FAQPage +
@@ -814,8 +819,8 @@ def jsonld_blocks(rel: str, facts: dict[str, "Facts"], pages: list[str]) -> list
 
 def tested_dependencies(tested: str | None) -> str | None:
     """The versions part of a "Tested on <date> · ..." line (JSON-LD dependencies)."""
-    if not tested:
-        return None
+    if not tested or not tested.startswith("Tested on"):
+        return None                     # an interview page's "Checked on <date>" line names no versions
     return re.sub(r"^Tested on [^·]*·\s*", "", tested).strip() or None
 
 
@@ -2442,6 +2447,11 @@ def check_certificate(vis: dict, pages: dict[str, str]) -> list[str]:
 LEARN_MIN_WORDS = 600
 LEARN_MAX_WORDS = 1500
 LEARN_MIN_RELATED = 4
+# Interview pages (<section id="questions" class="learn-interview">): questions with real answers in
+# <details>, each pointing at the pages that cover it. No code is required; any they carry is checked.
+LEARN_INTERVIEW_QUESTIONS = (15, 25)
+LEARN_INTERVIEW_MIN_ANSWER_WORDS = 20
+LEARN_INTERVIEW_MAX_WORDS = 4000
 
 
 class LearnParts(HTMLParser):
@@ -2459,6 +2469,8 @@ class LearnParts(HTMLParser):
         self.tested_pkgs = 0
         self.pitfalls: list[dict] = []
         self.practice: list[dict] = []
+        self.interview = False                                 # <section id="questions" class="learn-interview">
+        self.questions: list[dict] = []                       # {"q", "a", "links"} per <details>
         self.related_links: list[tuple[str, list[str]]] = []   # (href, text)
         self.code: list[list[str]] = []                       # text of each data-run block
         self.nd: list[tuple[str, str]] = []                   # (data-nd kind, title)
@@ -2518,6 +2530,17 @@ class LearnParts(HTMLParser):
                 self.related_links.append((a["href"], []))
         if tag == "details" and self._in(lambda t, x: t == "section" and x.get("id") == "practice"):
             self.practice.append({"q": [], "a": []})
+        if tag == "section" and a.get("id") == "questions" and "learn-interview" in cls:
+            self.interview = True
+        in_questions = self._in(lambda t, x: t == "section" and x.get("id") == "questions"
+                                and "learn-interview" in x.get("class", "").split())
+        if tag == "details" and in_questions:
+            self.questions.append({"q": [], "a": [], "links": 0})
+        if tag == "a" and a.get("href") and self.questions and in_questions and \
+                self._in(lambda t, x: t == "details") and not self._in(lambda t, x: t == "summary"):
+            href = html.unescape(a["href"])
+            if not href.startswith(("#", "http:", "https:")) and resolve_link(self.rel, href) != self.rel:
+                self.questions[-1]["links"] += 1
         if tag == "p" and "learn-brewslm" in cls and self.brewslm is None:
             self.brewslm = []
 
@@ -2557,8 +2580,12 @@ class LearnParts(HTMLParser):
         if self.pitfalls and any(t == "li" for t, _ in stack) and \
                 any(t == "section" and a.get("id") == "pitfalls" for t, a in stack):
             self.pitfalls[-1]["words"] += len(data.split())
-        if self.practice and any(t == "details" for t, _ in stack):
+        if self.practice and any(t == "details" for t, _ in stack) and \
+                any(t == "section" and a.get("id") == "practice" for t, a in stack):
             self.practice[-1]["q" if any(t == "summary" for t, _ in stack) else "a"].append(data)
+        if self.questions and any(t == "details" for t, _ in stack) and \
+                any(t == "section" and a.get("id") == "questions" for t, a in stack):
+            self.questions[-1]["q" if any(t == "summary" for t, _ in stack) else "a"].append(data)
         # Real content: the article's prose, not its code, output, related links or chrome.
         if in_article and not any(t in ("pre", "nav", "aside") for t, _ in stack) and \
                 not any("related-lessons" in c or "lesson-header__badge" in c for c in classes):
@@ -2619,7 +2646,7 @@ def check_learn(pages: dict[str, str], today: dt.date | None = None,
             e(f"want one direct answer (<p class=\"learn-answer\">), found {lp.answer_count}")
         elif not 2 <= _sentences(answer) <= 3:
             e(f"the direct answer has {_sentences(answer)} sentences (want 2-3)")
-        if not lp.runs:
+        if not lp.runs and not lp.interview:
             e('no runnable code (<pre class="code-block" data-run="ID">)')
         for rid in lp.runs:
             if lp.runs.count(rid) > 1:
@@ -2630,7 +2657,17 @@ def check_learn(pages: dict[str, str], today: dt.date | None = None,
             if oid not in lp.runs:
                 e(f"output block for {oid!r} has no data-run block")
         tested = " ".join(" ".join(lp.tested or []).split())
-        if not tested.startswith("Tested on"):
+        if lp.interview and not lp.runs:
+            # no code to test: the line says when the answers were last checked against the pages they cite
+            if not tested.startswith("Checked on"):
+                e('no "Checked on <date>" line (<p class="learn-tested">)')
+            elif not (lp.tested_date and re.fullmatch(r"\d{4}-\d{2}-\d{2}", lp.tested_date)):
+                e("the Checked-on line has no <time datetime=\"YYYY-MM-DD\">")
+            elif stale_days(lp.tested_date, today) < 0:
+                e(f"the Checked-on date {lp.tested_date} is in the future")
+            elif stale_days(lp.tested_date, today) > STALE_AFTER_DAYS:
+                warns.append(f"{rel}: checked {lp.tested_date}, over {STALE_AFTER_DAYS} days ago")
+        elif not tested.startswith("Tested on"):
             e('no "Tested on <date> · <versions> · CPU" line (<p class="learn-tested">)')
         else:
             if not (lp.tested_date and re.fullmatch(r"\d{4}-\d{2}-\d{2}", lp.tested_date)):
@@ -2643,7 +2680,19 @@ def check_learn(pages: dict[str, str], today: dt.date | None = None,
                 e("the Tested-on line names no versions (<span data-pkg=\"NAME\">X.Y</span>)")
             if not re.search(r"\bCPU\b", tested):
                 e("the Tested-on line does not say CPU")
-        if len(lp.pitfalls) < 2:
+        if lp.interview:
+            lo, hi = LEARN_INTERVIEW_QUESTIONS
+            if not lo <= len(lp.questions) <= hi:
+                e(f"{len(lp.questions)} interview question(s) in <section id=\"questions\"> (want {lo}-{hi})")
+            for i, q in enumerate(lp.questions, 1):
+                if not "".join(q["q"]).strip():
+                    e(f"interview question {i} has no <summary>")
+                if len(" ".join(q["a"]).split()) < LEARN_INTERVIEW_MIN_ANSWER_WORDS:
+                    e(f"interview question {i} has no real answer (want at least "
+                      f"{LEARN_INTERVIEW_MIN_ANSWER_WORDS} words in its <details>)")
+                if not q["links"]:
+                    e(f"interview question {i} links to no page that covers it")
+        if len(lp.pitfalls) < 2 and not lp.interview:
             e(f"{len(lp.pitfalls)} pitfall(s) in <section id=\"pitfalls\"> (want at least 2)")
         for i, pf in enumerate(lp.pitfalls, 1):
             if not pf["links"]:
@@ -2659,7 +2708,7 @@ def check_learn(pages: dict[str, str], today: dt.date | None = None,
         real = [h for h, t in lp.related_links
                 if resolve_link(rel, html.unescape(h)) not in (track, rel)
                 and "coming soon" not in " ".join(t).lower()]
-        if len(lp.practice) < 2:
+        if len(lp.practice) < 2 and not lp.interview:
             e(f"{len(lp.practice)} practice question(s) in <section id=\"practice\"> (want at least 2, "
               f"answers in <details>)")
         for i, q in enumerate(lp.practice, 1):
@@ -2685,10 +2734,11 @@ def check_learn(pages: dict[str, str], today: dt.date | None = None,
         if lp.brewslm is not None and len(" ".join(lp.brewslm).split()) > 45:
             e("the In BrewSLM line is over 45 words (keep it to one line)")
         n = lp.words()
+        top = LEARN_INTERVIEW_MAX_WORDS if lp.interview else LEARN_MAX_WORDS
         if n < LEARN_MIN_WORDS:
             e(f"{n} words of real content (want at least {LEARN_MIN_WORDS}; code and output don't count)")
-        elif n > LEARN_MAX_WORDS:
-            warns.append(f"{rel}: {n} words of content, over the {LEARN_MAX_WORDS}-word budget")
+        elif n > top:
+            warns.append(f"{rel}: {n} words of content, over the {top}-word budget")
     return errs, warns
 
 

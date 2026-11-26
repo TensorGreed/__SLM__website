@@ -35,6 +35,14 @@ Usage:
 Everything runs on CPU: CUDA_VISIBLE_DEVICES is set to "". The venv, model
 caches and working folders live under ~/.cache/brewslm/learn (override with
 BREWSLM_LEARN_CACHE).
+
+Pages that generate text call a local Ollama at $OLLAMA_HOST. The runner sets
+OLLAMA_HOST to its own CPU-only instance, 127.0.0.1:6572 (override with
+BREWSLM_LEARN_OLLAMA), never the default port, so a run can't reach a shared
+server. Start that instance first:
+
+  CUDA_VISIBLE_DEVICES="" OLLAMA_HOST=127.0.0.1:6572 \
+      OLLAMA_MODELS=~/.cache/brewslm/learn/ollama-models ollama serve
 """
 from __future__ import annotations
 
@@ -61,6 +69,8 @@ REQS = ROOT / "_build" / "learn-requirements.txt"
 # later than the last passing run.
 STAMPS = ROOT / "_build" / "learn_stamps.json"
 TORCH_INDEX = "https://download.pytorch.org/whl/cpu"
+# The runner's own Ollama (CPU only). Pages read $OLLAMA_HOST; never the default :11434.
+OLLAMA = os.environ.get("BREWSLM_LEARN_OLLAMA", "127.0.0.1:6572")
 NUMBER = r"-?\d+(?:[.,]\d+)*"
 
 
@@ -207,7 +217,8 @@ def run_page(rel: str, show: bool, fresh: bool) -> list[str]:
     (work / "_pkgs.json").write_text(json.dumps(sorted(b.pkgs)), encoding="utf-8")
     env = {**os.environ, "CUDA_VISIBLE_DEVICES": "", "TOKENIZERS_PARALLELISM": "false",
            "PYTHONHASHSEED": "0", "HF_HOME": str(CACHE / "hf"),
-           "SENTENCE_TRANSFORMERS_HOME": str(CACHE / "hf" / "sentence-transformers")}
+           "SENTENCE_TRANSFORMERS_HOME": str(CACHE / "hf" / "sentence-transformers"),
+           "OLLAMA_HOST": OLLAMA}
     py = VENV / "bin" / "python"
     if not py.exists():
         return [f"no venv at {VENV}; run `python3 _build/learn_snippets.py setup` first"]

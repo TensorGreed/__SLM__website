@@ -836,6 +836,58 @@ class LearnPages(unittest.TestCase):
         self.assertTrue(any("In BrewSLM" in e for e in self.learn_errs(text)))
 
 
+class LearnInterviewPages(unittest.TestCase):
+    """The interview variant: questions with linked answers instead of code, pitfalls and practice."""
+
+    PAGE = "learn/rag/rag-interview-questions.html"
+
+    @staticmethod
+    def page(n=18, words=30, link=True, checked='Checked on <time datetime="2026-11-26">26 Nov 2026</time>',
+             answer="Two sentences answer it. This is the second one."):
+        body = " ".join(["Retrieval"] * words)
+        href = '<a class="inline-link" href="bm25.html">BM25</a>' if link else "BM25"
+        qs = "".join(f"<details><summary>{i}. Why?</summary><p>{body} {href}.</p></details>" for i in range(n))
+        rel = "".join(f'<li><a class="inline-link" href="{h}">{h}</a></li>'
+                      for h in ("bm25.html", "dense-retrieval.html", "hybrid-search-rrf.html", "../../docs/"))
+        return (f'<html><body><article><h1>Q</h1><p class="learn-answer">{answer}</p>'
+                f'<p class="learn-tested">{checked}</p><p>{"plain words " * 300}</p>'
+                f'<section id="questions" class="learn-interview">{qs}</section>'
+                f'<section class="related-lessons"><ul>{rel}</ul></section></article></body></html>')
+
+    def errs(self, text):
+        e, _ = S.check_learn({self.PAGE: text}, today=dt.date(2026, 11, 26), stamps={})
+        return e
+
+    def test_a_good_interview_page_passes_without_code_pitfalls_or_practice(self):
+        self.assertEqual(self.errs(self.page()), [])
+
+    def test_question_count_answer_length_and_links_are_enforced(self):
+        self.assertTrue(any("interview question(s)" in e for e in self.errs(self.page(n=10))))
+        self.assertTrue(any("interview question(s)" in e for e in self.errs(self.page(n=30))))
+        self.assertTrue(any("no real answer" in e for e in self.errs(self.page(words=3))))
+        self.assertTrue(any("links to no page" in e for e in self.errs(self.page(link=False))))
+
+    def test_outside_or_self_links_do_not_count_as_coverage(self):
+        text = self.page().replace('href="bm25.html"', 'href="https://example.org/"')
+        self.assertTrue(any("links to no page" in e for e in self.errs(text)))
+
+    def test_checked_line_and_direct_answer_are_still_required(self):
+        self.assertTrue(any("Checked on" in e for e in self.errs(self.page(checked="Reviewed recently"))))
+        future = self.page(checked='Checked on <time datetime="2027-01-01">1 Jan 2027</time>')
+        self.assertTrue(any("future" in e for e in self.errs(future)))
+        self.assertTrue(any("direct answer" in e for e in self.errs(self.page(answer="Only one."))))
+
+    def test_without_the_marker_it_is_an_ordinary_learn_page(self):
+        text = self.page().replace('class="learn-interview"', "")
+        errs = self.errs(text)
+        self.assertTrue(any("no runnable code" in e for e in errs), errs)
+        self.assertTrue(any("pitfall" in e for e in errs), errs)
+
+    def test_checked_line_gives_no_jsonld_dependencies(self):
+        self.assertIsNone(S.tested_dependencies("Checked on 26 Nov 2026"))
+        self.assertEqual(S.tested_dependencies("Tested on 26 Nov 2026 · Python 3.12.3 · CPU"), "Python 3.12.3 · CPU")
+
+
 class LearnStampsAndSources(unittest.TestCase):
     """Stamp agreement, placeholder related links and outside sources."""
 
