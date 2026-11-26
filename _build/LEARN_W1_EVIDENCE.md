@@ -78,7 +78,7 @@ entry carries no licence tag.
    character budget, which needed the 80-question set and its own table.
 2. **Normalisation merged into cosine, dot and L2** (`learn/embeddings/cosine-dot-l2.html`). On its own it is one
    paragraph; the measurement that makes it interesting (a dot-product model normalised or not) belongs with the
-   similarity comparison. The embeddings track therefore has eight topic pages plus the interview page, not ten.
+   similarity comparison. The embeddings track therefore has seven topic pages plus the interview page (eight, against about ten in the brief); the brief's "what an embedding is" and "similarity" topics also absorbed the intro material a separate page would have repeated.
 3. **RAG evaluation split from faithfulness**, as the brief asked: retrieval metrics on one page, answer
    faithfulness (NLI and LLM checkers) on another.
 4. **Plain BM25 stays the baseline everywhere** (rank-bm25 defaults, lowercase alphanumeric tokens), even though
@@ -142,10 +142,24 @@ Pages that generate text (qwen2.5:1.5b-instruct on CPU through Ollama, temperatu
 
 ## Hand check of the what-is-RAG answers
 
-HAND_CHECK
+After the page's two runs, a third run of the same blocks logged every answer (counts again 30 and 41). The 47
+answers of the reranked arm were read against the evidence spans by the agent that built the pages, not by a
+domain expert:
+
+- 41 key matches: 38 answer the question. Two are weak: q02 names gross income but not the other two factors the
+  span lists (filing status, age), and q24 gives the right 60 days but describes a traditional IRA when the question
+  asks about a Roth. One is wrong: q08 says the spouse "must not have lived apart from you for the last 6 months",
+  the opposite of the span, and passes because it contains "6 months".
+- 6 misses: q17 ("your state does not tax the interest") and q34 ("you can elect to include their income") are right
+  in other words. q06, q18 (says the passages don't mention the age), q20 and q26 ($31,500 for a single filer) are
+  wrong or declined.
+- About 40 of 47 are right by hand against 41 by key; the two disagree on 5 questions in both directions, which is
+  why the key count is described as crude on the page.
+
+The page's limits line summarises this.
 
 ## Hub and track pages
 
-Page counts on the hub cards are counted from the published pages. The RAG track index lists every RAG page in
-seven groups; the embeddings index lists its nine pages in four groups. The A-Z list on the hub names every learn
+Page counts on the hub cards are counted from the published pages. The RAG track index lists all 17 RAG pages (16 new
+in this wave plus wave 0's chunking page) in topic groups; the embeddings index lists its 8 pages the same way. The A-Z list on the hub names every learn
 page, and `check` fails if a learn page is missing from the hub or its track.
